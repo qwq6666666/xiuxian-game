@@ -2,6 +2,8 @@ import { SLOT_NAMES, slotProblems } from "./slots";
 import {
   ATTRIBUTE_KEYS,
   type AttributeKey,
+  ENDS_LIFE,
+  type EndsLife,
   REVIEW_CAUSES,
   type BreakthroughRule,
   type ChoiceDef,
@@ -178,6 +180,10 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
         breakthroughRule.pillBonus = num(r, "pillBonus", rw, { min: 0 });
       }
     }
+    const endsLife = o.endsLife === undefined ? "never" : o.endsLife;
+    if (!(ENDS_LIFE as readonly unknown[]).includes(endsLife)) {
+      fail(where, "endsLife", `必須是 ${ENDS_LIFE.map((v) => `"${v}"`).join("、")} 其中之一，目前為 ${JSON.stringify(endsLife)}`);
+    }
     return {
       id,
       name: str(o, "name", where),
@@ -189,11 +195,13 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
         growth: num(need, "growth", `${where} 欄位 need`, { gt: 0 }),
       },
       breakthrough,
+      endsLife: endsLife as EndsLife,
       daoYun: num(o, "daoYun", where, { min: 0, integer: true }),
       ...(breakthroughRule ? { breakthroughRule } : {}),
     };
   });
   uniqueIds(realms, file);
+  if (!realms.some((r) => r.endsLife !== "never")) fail(file, "endsLife", "至少要有一個境界會結束這一世（通關），否則遊戲沒有終點");
   return realms;
 }
 

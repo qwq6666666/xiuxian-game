@@ -51,6 +51,9 @@ export interface BreakthroughRule {
   pillBonus?: number;
 }
 
+export type EndsLife = "always" | "untilCleared" | "never";
+export const ENDS_LIFE: readonly EndsLife[] = ["always", "untilCleared", "never"];
+
 export interface RealmDef {
   id: string;
   name: string;
@@ -65,6 +68,11 @@ export interface RealmDef {
   breakthrough: "auto" | "manual";
   /** 每達成一個階段可得的道韻 */
   daoYun: number;
+  /**
+   * 進入這個境界時是否結束這一世（通關）：
+   * always 一律結束；untilCleared 沒通關過才結束，通關過就繼續活；never（預設）不結束。
+   */
+  endsLife: EndsLife;
   /** 手動突破到下一境界的規則（最後一個境界不需要） */
   breakthroughRule?: BreakthroughRule;
 }

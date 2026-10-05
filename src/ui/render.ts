@@ -15,6 +15,7 @@ import { buildWorldMap, mapStamp } from "./worldmap";
 import { eraName, lifeIndex } from "../core/era";
 import { splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
+import { CLEARED_FLAG } from "../core/review";
 import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
 import {
@@ -548,7 +549,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const realm = realmOf(state, data);
     const need = stageNeed(realm, state.stage);
     const [years, months] = splitAge(state.ageMonths);
-    e.realm.textContent = realmLabel(realm, state.stage);
+    e.realm.textContent = realmLabel(realm, state.stage) + (state.flags.includes(CLEARED_FLAG) ? "（已通關）" : "");
     e.name.textContent = `${state.name}（${eraName(lifeIndex(state), data)}年間）`;
     e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespanYears(state, data)}`;
     e.stones.textContent = `靈石 ${state.spiritStones}`;

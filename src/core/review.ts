@@ -1,9 +1,35 @@
 // 一生的結束：回顧、道韻結算。死亡與通關的每個出口都從 endLife 進來，確保只結算一次。
 import { gameData } from "../data/load";
-import type { GameData, ReviewCause } from "../data/types";
+import type { GameData, RealmDef, ReviewCause } from "../data/types";
 import { CLEAR_FRAGMENT_ID, grantFragment } from "./fragments";
 import { eventOf, realmOf } from "./progress";
 import type { GameState, LifeReview, LogEntry } from "./state";
+
+/** 通關後仍繼續活著的那一世，用旗標標示（只在介面顯示「已通關」） */
+export const CLEARED_FLAG = "cleared";
+
+/** 各出身通關次數的總和 */
+export function totalClears(state: GameState): number {
+  return Object.values(state.meta.clears).reduce((sum, n) => sum + n, 0);
+}
+
+/** 進入這個境界是否結束這一世。untilCleared 看的是進入之前的通關紀錄。 */
+export function endsLifeOnEntry(realm: RealmDef, state: GameState): boolean {
+  if (realm.endsLife === "always") return true;
+  return realm.endsLife === "untilCleared" && totalClears(state) === 0;
+}
+
+/** 記一次通關：該出身次數加一，首次通關得固定殘卷。結束這一世與繼續活著的通關都走這裡。 */
+export function applyClear(state: GameState): GameState {
+  const withFragment = grantFragment(state, CLEAR_FRAGMENT_ID);
+  return {
+    ...withFragment,
+    meta: {
+      ...withFragment.meta,
+      clears: { ...state.meta.clears, [state.originId]: (state.meta.clears[state.originId] ?? 0) + 1 },
+    },
+  };
+}
 
 /** 回顧要挑出的關鍵事件數量 */
 export const HIGHLIGHT_COUNT = 5;
@@ -100,8 +126,8 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
     daoYunBonus: bonus,
     highlights: selectHighlights(state.log, data),
   };
-  // 首次通關固定得到最後一份殘卷
-  const earned = cause === "cleared" ? grantFragment(state, CLEAR_FRAGMENT_ID) : state;
+  // 通關：記一次通關，首次得到最後一份殘卷
+  const earned = cause === "cleared" ? applyClear(state) : state;
   return {
     ...state,
     phase: cause === "cleared" ? "cleared" : "dead",
@@ -113,10 +139,7 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       reached: [...state.meta.reached, ...newlyReached],
       lives: state.meta.lives + 1,
       fragments: earned.meta.fragments,
-      clears:
-        cause === "cleared"
-          ? { ...state.meta.clears, [state.originId]: (state.meta.clears[state.originId] ?? 0) + 1 }
-          : state.meta.clears,
+      clears: earned.meta.clears,
     },
   };
 }

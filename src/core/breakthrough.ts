@@ -2,7 +2,7 @@
 import { gameData } from "../data/load";
 import type { BreakthroughRule, GameData } from "../data/types";
 import { breakthroughFailLoss, breakthroughRate, talentBonus } from "./formulas";
-import { endLife } from "./review";
+import { applyClear, CLEARED_FLAG, endLife, endsLifeOnEntry } from "./review";
 import { nextRandom } from "./rng";
 import type { GameState } from "./state";
 import { addLog, atBottleneck, nextRealm, realmOf } from "./tick";
@@ -40,7 +40,7 @@ export function currentBreakthroughRate(state: GameState, usePill: boolean, data
 }
 
 /**
- * 嘗試突破。成功進入下一境界（到最後一個境界即通關）；
+ * 嘗試突破。成功進入下一境界（依該境界的 endsLife 決定是否通關結束這一世）；
  * 失敗損失部分修為，可再試。丹藥在嘗試時就消耗，成敗皆然。
  */
 export function attemptBreakthrough(state: GameState, usePill: boolean, data: GameData = gameData): GameState {
@@ -60,13 +60,16 @@ export function attemptBreakthrough(state: GameState, usePill: boolean, data: Ga
   const limit = data.config.logLimit;
 
   if (v < rate) {
-    const cleared = data.realms[data.realms.length - 1].id === next.id;
     const won = addLog(
       { ...s, realmId: next.id, stage: 0, cultivation: 0, breakthroughs: s.breakthroughs + 1 },
       { month: s.ageMonths, kind: "breakthroughSuccess", realmId: next.id, stage: 0 },
       limit,
     );
-    return cleared ? endLife(won, "cleared", data) : won;
+    if (next.endsLife === "never") return won;
+    if (endsLifeOnEntry(next, state)) return endLife(won, "cleared", data);
+    // 通關過的存檔：記一次通關，這一世繼續
+    const cont = applyClear(won);
+    return { ...cont, flags: cont.flags.includes(CLEARED_FLAG) ? cont.flags : [...cont.flags, CLEARED_FLAG] };
   }
   const loss = currentFailLoss(s, data);
   return addLog(
