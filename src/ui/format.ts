@@ -1,5 +1,5 @@
-import type { Changes, LogEntry } from "../core/state";
-import { ATTRIBUTE_KEYS, type AttributeKey, type GameData, type RealmDef } from "../data/types";
+import type { Changes, LifeReview, LogEntry } from "../core/state";
+import { ATTRIBUTE_KEYS, type AttributeKey, type GameData, type RealmDef, type TalentDef } from "../data/types";
 
 export const ATTR_LABEL: Record<AttributeKey, string> = {
   bone: "根骨",
@@ -29,7 +29,45 @@ export function formatChanges(changes: Changes | undefined, data: GameData): str
   return out;
 }
 
-/** 選項無法選擇的原因，可以選則回傳 null */
+/** 輪迴天賦在指定等級的總效果描述，例如「修煉速度 +15%」 */
+export function describeTalent(talent: TalentDef, level: number): string {
+  const pct = (v: number) => `${Math.round(v * level * 100)}%`;
+  switch (talent.effect) {
+    case "cultivation":
+      return `修煉速度 +${pct(talent.perLevel)}`;
+    case "rerolls":
+      return `開局重擲 +${talent.perLevel * level} 次`;
+    case "fortune":
+      return `氣運 +${talent.perLevel * level}`;
+    case "stoneCarry":
+      return `保留上一世 ${pct(talent.perLevel)} 的靈石`;
+    case "failLoss":
+      return `突破失敗的修為損失 −${pct(talent.perLevel)}`;
+  }
+}
+
+/** 擲骰畫面用的輪迴加成摘要，沒有任何天賦時回傳空陣列 */
+export function talentSummary(talents: Record<string, number>, data: GameData): string[] {
+  return data.talents
+    .filter((t) => (talents[t.id] ?? 0) > 0)
+    .map((t) => `${t.name} ${talents[t.id]} 級：${describeTalent(t, talents[t.id])}`);
+}
+
+/** 一生回顧的標題 */
+export function reviewTitle(review: LifeReview | null): string {
+  return review?.cause === "cleared" ? "金丹大成" : "此生已盡";
+}
+
+/** 「享年一百一十九歲，終身練氣六層。臨終之際……」 */
+export function formatReviewSummary(review: LifeReview, data: GameData): string {
+  const realm = data.realms.find((r) => r.id === review.realmId);
+  if (!realm) throw new Error(`回顧：找不到境界 ${review.realmId}`);
+  const closing = data.text.review[review.cause][review.closing]?.text ?? "";
+  const years = toChineseNumber(Math.floor(review.ageMonths / 12));
+  return `享年${years}歲，終身${realmLabel(realm, review.stage)}。${closing}`;
+}
+
+/** 選項無法選擇的原因，可以選則回傳 null 。 */
 export function choiceBlockReason(
   requires: { spiritStones?: number; items?: Record<string, number> } | undefined,
   state: { spiritStones: number; items: Record<string, number> },

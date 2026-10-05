@@ -1,8 +1,10 @@
 import {
   ATTRIBUTE_KEYS,
   type AttributeKey,
+  REVIEW_CAUSES,
   type BreakthroughRule,
   type ChoiceDef,
+  type ClosingVariant,
   type Effects,
   type EventConditions,
   type EventDef,
@@ -14,6 +16,7 @@ import {
   type RealmDef,
   type ScheduleDef,
   type SpiritRootDef,
+  type TalentDef,
   type TextData,
 } from "./types";
 
@@ -117,6 +120,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     eventIntervalMin: eventMin,
     eventIntervalMax: num(o, "eventIntervalMax", file, { min: eventMin, integer: true }),
     fortuneGoodWeight: num(o, "fortuneGoodWeight", file, { min: 0 }),
+    daoYunFirstTimeMult: num(o, "daoYunFirstTimeMult", file, { min: 1 }),
   };
 }
 
@@ -154,6 +158,7 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
         growth: num(need, "growth", `${where} 欄位 need`, { gt: 0 }),
       },
       breakthrough,
+      daoYun: num(o, "daoYun", where, { min: 0, integer: true }),
       ...(breakthroughRule ? { breakthroughRule } : {}),
     };
   });
@@ -354,6 +359,7 @@ export function validateEvents(raw: unknown, file = "events.json"): EventDef[] {
       maxPerLife: o.maxPerLife === undefined ? 1 : num(o, "maxPerLife", where, { gt: 0, integer: true }),
       conditions: parseConditions(o.conditions, `${where} 欄位 conditions`),
     };
+    if (o.highlight !== undefined) ev.highlight = num(o, "highlight", where, { min: 0 });
     if (o.scheduleWeights !== undefined) {
       const sw = obj(o.scheduleWeights, `${where} 欄位 scheduleWeights`);
       ev.scheduleWeights = {};
@@ -375,6 +381,39 @@ export function validateEvents(raw: unknown, file = "events.json"): EventDef[] {
   });
   uniqueIds(events, file);
   return events;
+}
+
+export function validateTalents(raw: unknown, file = "talents.json"): TalentDef[] {
+  const talents = list(raw, file).map((r, i): TalentDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const where = `${file} 第 ${i + 1} 筆（${id}）`;
+    const effect = o.effect;
+    if (
+      effect !== "cultivation" &&
+      effect !== "rerolls" &&
+      effect !== "fortune" &&
+      effect !== "stoneCarry" &&
+      effect !== "failLoss"
+    ) {
+      fail(where, "effect", `必須是 cultivation、rerolls、fortune、stoneCarry 或 failLoss，目前為 ${JSON.stringify(effect)}`);
+    }
+    const cost = obj(o.cost, `${where} 欄位 cost`);
+    return {
+      id,
+      name: str(o, "name", where),
+      desc: str(o, "desc", where),
+      maxLevel: num(o, "maxLevel", where, { gt: 0, integer: true }),
+      effect,
+      perLevel: num(o, "perLevel", where, { gt: 0 }),
+      cost: {
+        base: num(cost, "base", `${where} 欄位 cost`, { gt: 0 }),
+        growth: num(cost, "growth", `${where} 欄位 cost`, { gt: 0 }),
+      },
+    };
+  });
+  uniqueIds(talents, file);
+  return talents;
 }
 
 export function validateSpiritRoots(raw: unknown, file = "spiritRoots.json"): SpiritRootDef[] {
@@ -441,8 +480,29 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       find: strList(log, "find", where),
       adventureDeath: str(log, "adventureDeath", where),
     },
-    cleared: str(o, "cleared", file),
+    review: parseReview(o.review, `${file} 欄位 review`),
   };
+}
+
+function parseReview(raw: unknown, where: string): TextData["review"] {
+  const o = obj(raw, where);
+  const out = {} as TextData["review"];
+  for (const cause of REVIEW_CAUSES) {
+    const variants = list(o[cause], `${where}.${cause}`).map((v, i): ClosingVariant => {
+      const vw = `${where}.${cause}[${i}]`;
+      const vo = obj(v, vw);
+      return {
+        text: str(vo, "text", vw),
+        ...(vo.ifItem !== undefined ? { ifItem: str(vo, "ifItem", vw) } : {}),
+      };
+    });
+    // 至少要有一句不限物品的，否則可能沒有句子可用
+    if (!variants.some((v) => v.ifItem === undefined)) {
+      throw new Error(`${where}.${cause}：至少要有一句沒有 ifItem 的收尾句`);
+    }
+    out[cause] = variants;
+  }
+  return out;
 }
 
 /** 檢查各檔案之間的對應關係 */
@@ -474,6 +534,12 @@ export function validateGameData(data: GameData): GameData {
   data.origins.forEach((o, i) => {
     for (const id of Object.keys(o.items)) has(itemIds, id, `origins.json 第 ${i + 1} 筆（${o.id}）的 items`, "items.json");
   });
+
+  for (const cause of REVIEW_CAUSES) {
+    for (const v of data.text.review[cause]) {
+      if (v.ifItem !== undefined) has(itemIds, v.ifItem, `text.json 的 review.${cause}`, "items.json");
+    }
+  }
 
   const scheduleIds = new Set(data.schedules.map((s) => s.id));
   const allEffects = (ev: EventDef): Effects[] => [

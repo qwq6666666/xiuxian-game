@@ -1,13 +1,23 @@
 // 大境界的手動突破。
 import { gameData } from "../data/load";
 import type { BreakthroughRule, GameData } from "../data/types";
-import { breakthroughFailLoss, breakthroughRate } from "./formulas";
+import { breakthroughFailLoss, breakthroughRate, talentBonus } from "./formulas";
+import { endLife } from "./review";
 import { nextRandom } from "./rng";
 import type { GameState } from "./state";
 import { addLog, atBottleneck, nextRealm, realmOf } from "./tick";
 
 export function breakthroughRuleOf(state: GameState, data: GameData = gameData): BreakthroughRule | undefined {
   return realmOf(state, data).breakthroughRule;
+}
+
+/** 突破失敗時損失的修為比例，含心性與道心天賦的減免 */
+export function currentFailLoss(state: GameState, data: GameData = gameData): number {
+  return breakthroughFailLoss(
+    data.config,
+    state.attributes.mind,
+    talentBonus(state.meta, data.talents, "failLoss"),
+  );
 }
 
 /** 修行中、卡在瓶頸，且有下一個境界可進 */
@@ -51,20 +61,14 @@ export function attemptBreakthrough(state: GameState, usePill: boolean, data: Ga
 
   if (v < rate) {
     const cleared = data.realms[data.realms.length - 1].id === next.id;
-    return addLog(
-      {
-        ...s,
-        realmId: next.id,
-        stage: 0,
-        cultivation: 0,
-        breakthroughs: s.breakthroughs + 1,
-        phase: cleared ? "cleared" : s.phase,
-      },
+    const won = addLog(
+      { ...s, realmId: next.id, stage: 0, cultivation: 0, breakthroughs: s.breakthroughs + 1 },
       { month: s.ageMonths, kind: "breakthroughSuccess", realmId: next.id, stage: 0 },
       limit,
     );
+    return cleared ? endLife(won, "cleared", data) : won;
   }
-  const loss = breakthroughFailLoss(data.config, s.attributes.mind);
+  const loss = currentFailLoss(s, data);
   return addLog(
     { ...s, cultivation: s.cultivation * (1 - loss) },
     { month: s.ageMonths, kind: "breakthroughFail", realmId: s.realmId, stage: s.stage },

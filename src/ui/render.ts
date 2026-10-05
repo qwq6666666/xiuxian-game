@@ -1,18 +1,30 @@
-import { canBuyItem, canUseItem } from "../core/actions";
+import { canBuyItem, canBuyTalent, canUseItem } from "../core/actions";
 import {
   breakthroughRuleOf,
   canBreakthrough,
   currentBreakthroughRate,
+  currentFailLoss,
   pillAvailable,
 } from "../core/breakthrough";
-import { breakthroughFailLoss, splitAge, stageNeed } from "../core/formulas";
+import { eventOf } from "../core/events";
+import { splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
-import { eventOf } from "../core/events";
-import { ATTR_LABEL, choiceBlockReason, formatChanges, formatLogEntry, realmLabel } from "./format";
+import {
+  ATTR_LABEL,
+  choiceBlockReason,
+  describeTalent,
+  formatChanges,
+  formatLogEntry,
+  formatReviewSummary,
+  realmLabel,
+  reviewTitle,
+  talentSummary,
+} from "./format";
 
 export interface UiHandlers {
+  onBuyTalent(talentId: string): void;
   onAutoChoice(enabled: boolean): void;
   onChoose(choiceIndex: number): void;
   onSpeed(speed: number): void;
@@ -56,7 +68,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   const autoEl = root.querySelector<HTMLInputElement>("#auto")!;
   autoEl.addEventListener("change", () => handlers.onAutoChoice(autoEl.checked));
   root.querySelector("#reset")!.addEventListener("click", () => {
-    if (confirm("確定要清除存檔並重新開始嗎？")) handlers.onReset();
+    if (confirm("確定要清除存檔並重新開始嗎？道韻與輪迴天賦也會一併清除。")) handlers.onReset();
   });
 
   const itemName = (id: string) => data.items.find((i) => i.id === id)?.name ?? id;
@@ -80,14 +92,16 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   let rollKey = "";
 
   function renderRoll(state: GameState): void {
-    const key = `${JSON.stringify(state.attributes)}|${state.rerolls}|${state.spiritRootId}|${state.originId}`;
+    const key = `${JSON.stringify(state.attributes)}|${state.rerolls}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
     if (built === "roll" && key === rollKey) return;
     built = "roll";
     rollKey = key;
+    const perks = talentSummary(state.meta.talents, data);
     stageEl.innerHTML = `
       <main class="card roll">
         <h1>一念輪迴</h1>
-        <p class="sub">命盤已擲，是好是壞，且看天意。</p>
+        <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲，是好是壞，且看天意。</p>
+        ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
         ${statsHtml(state)}
         ${identityHtml(state)}
         <div class="actions">
@@ -111,9 +125,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     eventTitle: HTMLElement;
     eventText: HTMLElement;
     eventChoices: HTMLElement;
+    life: HTMLElement;
     modal: HTMLElement;
-    modalTitle: HTMLElement;
-    summary: HTMLElement;
+    modalBody: HTMLElement;
     schedules: { id: string; b: HTMLButtonElement }[];
     btSection: HTMLElement;
     btInfo: HTMLElement;
@@ -137,7 +151,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     eventKey = "";
     stageEl.innerHTML = `
       <section class="status">
-        <div class="line"><strong id="realm"></strong><span id="age"></span><span id="stones"></span></div>
+        <div class="line"><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="life" class="muted"></span></div>
         <div class="progress"><div id="fill"></div><span id="barText"></span></div>
       </section>
       <div class="cols">
@@ -162,11 +176,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         </div>
       </div>
       <div class="modal" id="modal" hidden>
-        <div class="card">
-          <h2 id="modalTitle"></h2>
-          <p id="summary"></p>
-          <div class="actions"><button id="newlife" type="button" class="primary">重新開局</button></div>
-        </div>
+        <div class="card review"><div id="modalBody"></div></div>
       </div>`;
     const q = <T extends HTMLElement>(sel: string) => stageEl.querySelector<T>(sel)!;
 
@@ -206,9 +216,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       eventTitle: q("#eventTitle"),
       eventText: q("#eventText"),
       eventChoices: q("#eventChoices"),
+      life: q("#life"),
       modal: q("#modal"),
-      modalTitle: q("#modalTitle"),
-      summary: q("#summary"),
+      modalBody: q("#modalBody"),
       schedules,
       btSection: q("#btSection"),
       btInfo: q("#btInfo"),
@@ -219,7 +229,6 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       bag: q("#bag"),
       market,
     };
-    q("#newlife").addEventListener("click", () => handlers.onNewLife());
     els.btButton.addEventListener("click", () => handlers.onBreakthrough(els!.pill.checked));
     // 勾選丹藥後立刻更新成功率，不用等下一個月
     els.pill.addEventListener("change", () => lastState && renderBreakthrough(lastState, els!));
@@ -238,7 +247,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     e.btButton.disabled = !can;
     if (can) {
       const rate = Math.round(currentBreakthroughRate(state, e.pill.checked, data) * 100);
-      const loss = Math.round(breakthroughFailLoss(data.config, state.attributes.mind) * 100);
+      const loss = Math.round(currentFailLoss(state, data) * 100);
       e.btInfo.textContent = `成功率 ${rate}%，失敗將損失 ${loss}% 修為。`;
     } else {
       e.btInfo.textContent = "修為圓滿，遇上瓶頸時方可突破。";
@@ -339,15 +348,112 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       }
     }
 
+    e.life.textContent = `第 ${state.meta.lives + (state.review === null ? 1 : 0)} 世`;
+    renderModal(state, e);
+  }
+
+  // ---- 一生回顧與輪迴天賦（死亡或通關後的彈窗）----
+  let modalView: "review" | "talents" = "review";
+  let modalKey = "";
+
+  const el = (tag: string, className?: string, text?: string): HTMLElement => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const button = (text: string, onClick: () => void, primary = false): HTMLButtonElement => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = text;
+    if (primary) b.className = "primary";
+    b.addEventListener("click", onClick);
+    return b;
+  };
+
+  function showView(view: "review" | "talents"): void {
+    modalView = view;
+    if (lastState && els) renderModal(lastState, els);
+  }
+
+  function buildReview(state: GameState): HTMLElement {
+    const box = el("div");
+    const review = state.review;
+    box.append(el("h2", undefined, reviewTitle(review)));
+    if (review === null) {
+      // 輪迴功能加入前存下的死亡存檔沒有回顧，直接進入輪迴即可
+      box.append(el("p", undefined, "此生已了，且入輪迴。"));
+    } else {
+      box.append(el("p", "summary", formatReviewSummary(review, data)));
+      const origin = data.origins.find((o) => o.id === review.originId);
+      const root = data.spiritRoots.find((r) => r.id === review.spiritRootId);
+      const facts = el("dl", "facts");
+      for (const [k, v] of [
+        ["出身", origin?.name ?? review.originId],
+        ["靈根", root?.name ?? review.spiritRootId],
+        ["突破次數", `${review.breakthroughs} 次`],
+      ] as const) {
+        const row = el("div");
+        row.append(el("dt", undefined, k), el("dd", undefined, v));
+        facts.append(row);
+      }
+      box.append(facts, el("h3", undefined, "此生所記"));
+      const ul = el("ul", "highlights");
+      if (review.highlights.length === 0) ul.append(el("li", "desc", "平平淡淡，無甚可記。"));
+      for (const entry of review.highlights) {
+        const li = el("li", undefined, formatLogEntry(entry, data));
+        const changes = formatChanges(entry.changes, data);
+        if (changes.length > 0) li.append(el("small", "changes", changes.join("　")));
+        ul.append(li);
+      }
+      box.append(ul);
+      const gained = review.daoYunBase + review.daoYunBonus;
+      const bonus = review.daoYunBonus > 0 ? `（其中首次達成 +${review.daoYunBonus}）` : "";
+      box.append(el("p", "daoyun", `獲得道韻 +${gained}${bonus}　道韻餘額 ${state.meta.daoYun}`));
+    }
+    const actions = el("div", "actions");
+    actions.append(button("前往輪迴", () => showView("talents"), true));
+    box.append(actions);
+    return box;
+  }
+
+  function buildTalents(state: GameState): HTMLElement {
+    const box = el("div");
+    box.append(el("h2", undefined, "輪迴天賦"), el("p", "daoyun", `道韻餘額 ${state.meta.daoYun}`));
+    const ul = el("ul", "items talents");
+    for (const talent of data.talents) {
+      const level = state.meta.talents[talent.id] ?? 0;
+      const maxed = level >= talent.maxLevel;
+      const li = el("li");
+      const info = el("div");
+      info.append(el("strong", undefined, `${talent.name} ${level}／${talent.maxLevel}`));
+      info.append(el("small", undefined, talent.desc));
+      info.append(el("small", "changes", level > 0 ? `目前：${describeTalent(talent, level)}` : `每級：${describeTalent(talent, 1)}`));
+      li.append(info);
+      const buy = button(maxed ? "已滿" : `提升（${talentCost(talent, level)} 道韻）`, () => handlers.onBuyTalent(talent.id));
+      buy.disabled = !canBuyTalent(state, talent.id, data);
+      li.append(buy);
+      ul.append(li);
+    }
+    box.append(ul);
+    const actions = el("div", "actions");
+    actions.append(button("返回", () => showView("review")), button("轉世", () => handlers.onNewLife(), true));
+    box.append(actions);
+    return box;
+  }
+
+  function renderModal(state: GameState, e: LifeEls): void {
     const ended = state.phase === "dead" || state.phase === "cleared";
     e.modal.hidden = !ended;
-    if (state.phase === "dead") {
-      e.modalTitle.textContent = "此生已盡";
-      e.summary.textContent = `享年 ${years} 歲，最高境界${realmLabel(realm, state.stage)}。`;
-    } else if (state.phase === "cleared") {
-      e.modalTitle.textContent = "金丹大成";
-      e.summary.textContent = `${data.text.cleared}（${years} 歲，突破 ${state.breakthroughs} 次）`;
+    if (!ended) {
+      modalView = "review";
+      modalKey = "";
+      return;
     }
+    const key = `${state.phase}|${modalView}|${state.meta.daoYun}|${JSON.stringify(state.meta.talents)}`;
+    if (key === modalKey) return;
+    modalKey = key;
+    e.modalBody.replaceChildren(modalView === "review" ? buildReview(state) : buildTalents(state));
   }
 
   return {

@@ -2,15 +2,13 @@
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type ChoiceDef, type Effects, type EventDef, type GameData } from "../data/types";
 import { eventWeight, outcomeWeight, stageNeed } from "./formulas";
-import { addLog, atBottleneck, realmOf, resolveStages, scheduleOf } from "./progress";
+import { addLog, atBottleneck, eventOf, realmOf, resolveStages, scheduleOf } from "./progress";
+import { endLife } from "./review";
 import { nextInt, pickWeighted } from "./rng";
 import type { Attributes, Changes, GameState } from "./state";
 
-export function eventOf(id: string, data: GameData = gameData): EventDef {
-  const ev = data.events.find((e) => e.id === id);
-  if (!ev) throw new Error(`事件：找不到事件 ${id}`);
-  return ev;
-}
+// 其他模組從這裡取用 eventOf，維持原本的匯入路徑
+export { eventOf };
 
 /** 事件目前能否出現：條件、重複上限都要符合 */
 export function eventAvailable(state: GameState, ev: EventDef, data: GameData = gameData): boolean {
@@ -121,11 +119,8 @@ function applyEffects(
 }
 
 function dieByEvent(state: GameState, month: number, data: GameData): GameState {
-  return addLog(
-    { ...state, phase: "dead", pendingEvent: null },
-    { month, kind: "death", realmId: state.realmId, stage: state.stage },
-    data.config.logLimit,
-  );
+  const s = addLog(state, { month, kind: "death", realmId: state.realmId, stage: state.stage }, data.config.logLimit);
+  return endLife(s, "event", data);
 }
 
 /** 見聞：直接套用效果並寫入日誌 */

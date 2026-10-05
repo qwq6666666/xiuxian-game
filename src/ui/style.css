@@ -89,6 +89,21 @@ label { display: block; margin: 6px 0; font-size: 0.9em; }
 .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; }
 .modal[hidden] { display: none; }
 .modal .card { min-width: 280px; }
+.review { max-width: 520px; width: calc(100% - 32px); max-height: 90vh; overflow-y: auto; }
+.review h3 { margin: 14px 0 6px; font-size: 0.95em; color: var(--muted); font-weight: normal; }
+.summary { margin: 8px 0 12px; }
+.facts { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; font-size: 0.9em; }
+.facts div { display: flex; gap: 6px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.highlights { list-style: none; margin: 0; padding: 0; }
+.highlights li { padding: 4px 0; border-bottom: 1px dashed var(--line); }
+.highlights li:last-child { border-bottom: 0; }
+.daoyun { color: var(--accent); margin-top: 12px; }
+.perks { list-style: none; margin: 0 0 12px; padding: 0; color: var(--accent); font-size: 0.9em; }
+.muted { color: var(--muted); }
+.talents li { align-items: flex-start; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.talents button { white-space: nowrap; }
 
 @media (max-width: 640px) {
   .cols { grid-template-columns: 1fr; }

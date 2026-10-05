@@ -5,6 +5,7 @@ import originsJson from "./origins.json";
 import realmsJson from "./realms.json";
 import schedulesJson from "./schedules.json";
 import spiritRootsJson from "./spiritRoots.json";
+import talentsJson from "./talents.json";
 import textJson from "./text.json";
 import type { GameData } from "./types";
 import {
@@ -16,6 +17,7 @@ import {
   validateRealms,
   validateSchedules,
   validateSpiritRoots,
+  validateTalents,
   validateText,
 } from "./validate";
 
@@ -25,6 +27,7 @@ export const gameData: GameData = validateGameData({
   schedules: validateSchedules(schedulesJson),
   items: validateItems(itemsJson),
   events: validateEvents(eventsJson),
+  talents: validateTalents(talentsJson),
   spiritRoots: validateSpiritRoots(spiritRootsJson),
   origins: validateOrigins(originsJson),
   text: validateText(textJson),

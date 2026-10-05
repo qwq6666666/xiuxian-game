@@ -1,7 +1,7 @@
 // 玩家主動的操作：切換日常安排、坊市購買、使用丹藥。
 import { gameData } from "../data/load";
 import type { GameData } from "../data/types";
-import { stageNeed } from "./formulas";
+import { stageNeed, talentCost } from "./formulas";
 import type { GameState } from "./state";
 import { addLog, atBottleneck, realmOf, resolveStages } from "./tick";
 
@@ -32,6 +32,28 @@ export function buyItem(state: GameState, itemId: string, data: GameData = gameD
     { month: state.ageMonths, kind: "buy", realmId: state.realmId, stage: state.stage, itemId },
     data.config.logLimit,
   );
+}
+
+/** 一生結束後（死亡或通關），道韻足夠且未達上限時可以提升輪迴天賦 */
+export function canBuyTalent(state: GameState, talentId: string, data: GameData = gameData): boolean {
+  const talent = data.talents.find((t) => t.id === talentId);
+  if (!talent || (state.phase !== "dead" && state.phase !== "cleared")) return false;
+  const level = state.meta.talents[talentId] ?? 0;
+  return level < talent.maxLevel && state.meta.daoYun >= talentCost(talent, level);
+}
+
+export function buyTalent(state: GameState, talentId: string, data: GameData = gameData): GameState {
+  if (!canBuyTalent(state, talentId, data)) return state;
+  const talent = data.talents.find((t) => t.id === talentId)!;
+  const level = state.meta.talents[talentId] ?? 0;
+  return {
+    ...state,
+    meta: {
+      ...state.meta,
+      daoYun: state.meta.daoYun - talentCost(talent, level),
+      talents: { ...state.meta.talents, [talentId]: level + 1 },
+    },
+  };
 }
 
 /** 背包裡可以直接服用的丹藥（築基丹在突破時才消耗，不能直接服用） */

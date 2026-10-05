@@ -1,0 +1,47 @@
+[
+  {
+    "id": "suhui",
+    "name": "宿慧",
+    "desc": "前世的修行烙在神魂裡，今生吐納更為順暢。",
+    "maxLevel": 20,
+    "effect": "cultivation",
+    "perLevel": 0.05,
+    "cost": { "base": 2, "growth": 1.35 }
+  },
+  {
+    "id": "tianjuan",
+    "name": "天眷",
+    "desc": "天道垂憐，開局可多擲一次命盤。",
+    "maxLevel": 5,
+    "effect": "rerolls",
+    "perLevel": 1,
+    "cost": { "base": 8, "growth": 2 }
+  },
+  {
+    "id": "fuyuan",
+    "name": "福緣",
+    "desc": "冥冥之中的善緣，使氣運更盛。",
+    "maxLevel": 3,
+    "effect": "fortune",
+    "perLevel": 1,
+    "cost": { "base": 10, "growth": 2.2 }
+  },
+  {
+    "id": "yize",
+    "name": "遺澤",
+    "desc": "前世留下的些許家底，可帶一部分到來世。",
+    "maxLevel": 5,
+    "effect": "stoneCarry",
+    "perLevel": 0.1,
+    "cost": { "base": 6, "growth": 1.8 }
+  },
+  {
+    "id": "daoxin",
+    "name": "道心",
+    "desc": "道心愈堅，衝關失敗時所損愈少。",
+    "maxLevel": 4,
+    "effect": "failLoss",
+    "perLevel": 0.05,
+    "cost": { "base": 12, "growth": 2 }
+  }
+]

@@ -1,8 +1,9 @@
 // 開局擲骰與每一世的開始、重擲、轉世。
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
+import { talentBonus } from "./formulas";
 import { nextInt, pickWeighted } from "./rng";
-import { SAVE_VERSION, type Attributes, type GameState } from "./state";
+import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type Meta } from "./state";
 
 /** 重新擲出屬性、靈根、出身，並套用出身效果 */
 export function rollLife(state: GameState, data: GameData = gameData): GameState {
@@ -18,6 +19,8 @@ export function rollLife(state: GameState, data: GameData = gameData): GameState
   const [originIdx, s2] = pickWeighted(s1, data.origins);
   const origin = data.origins[originIdx];
   for (const key of ATTRIBUTE_KEYS) attributes[key] += origin.attributes[key] ?? 0;
+  // 福緣天賦：氣運加成
+  attributes.fortune += talentBonus(state.meta, data.talents, "fortune");
   return {
     ...state,
     rngSeed: s2,
@@ -25,13 +28,22 @@ export function rollLife(state: GameState, data: GameData = gameData): GameState
     spiritRootId: data.spiritRoots[rootIdx].id,
     originId: origin.id,
     cultivationBonus: origin.cultivationBonus,
-    spiritStones: origin.spiritStones,
+    // 遺澤天賦帶來的靈石一併算進初始靈石
+    spiritStones: origin.spiritStones + state.carriedStones,
     items: { ...origin.items },
   };
 }
 
-/** 建立新的一世，停在擲骰階段 */
-export function createInitialState(seed: number, data: GameData = gameData): GameState {
+/**
+ * 建立新的一世，停在擲骰階段。
+ * meta 是前幾世累積的跨世資料，carriedStones 是遺澤天賦帶來的靈石。
+ */
+export function createInitialState(
+  seed: number,
+  data: GameData = gameData,
+  meta: Meta = emptyMeta(),
+  carriedStones = 0,
+): GameState {
   const zero = {} as Attributes;
   for (const key of ATTRIBUTE_KEYS) zero[key] = 0;
   return rollLife(
@@ -41,7 +53,8 @@ export function createInitialState(seed: number, data: GameData = gameData): Gam
       speed: 1,
       phase: "rolling",
       ageMonths: data.config.startAgeYears * 12,
-      rerolls: data.config.startRerolls,
+      // 天眷天賦：開局重擲次數
+      rerolls: data.config.startRerolls + Math.round(talentBonus(meta, data.talents, "rerolls")),
       attributes: zero,
       spiritRootId: "",
       originId: "",
@@ -61,6 +74,9 @@ export function createInitialState(seed: number, data: GameData = gameData): Gam
       eventThreshold: 0,
       pendingEvent: null,
       autoChoice: false,
+      carriedStones,
+      meta,
+      review: null,
       log: [],
     },
     data,
@@ -80,8 +96,17 @@ export function startLife(state: GameState, data: GameData = gameData): GameStat
   return { ...state, phase: "living", eventThreshold, eventClock: 0, rngSeed };
 }
 
-/** 死亡或通關後轉世，進入下一世的擲骰階段（道韻與天賦是 M4 的事） */
+/**
+ * 死亡或通關後轉世，進入下一世的擲骰階段。
+ * 跨世資料（道韻、天賦）全數保留；遺澤天賦保留一部分靈石，其餘物品與狀態重來。
+ */
 export function newLife(state: GameState, data: GameData = gameData): GameState {
   if (state.phase !== "dead" && state.phase !== "cleared") return state;
-  return { ...createInitialState(state.rngSeed, data), speed: state.speed, autoChoice: state.autoChoice };
+  const keep = Math.min(1, talentBonus(state.meta, data.talents, "stoneCarry"));
+  const carried = Math.floor(state.spiritStones * keep);
+  return {
+    ...createInitialState(state.rngSeed, data, state.meta, carried),
+    speed: state.speed,
+    autoChoice: state.autoChoice,
+  };
 }

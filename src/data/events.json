@@ -2,6 +2,7 @@
   {
     "id": "cave_001",
     "type": "choice",
+    "highlight": 2,
     "title": "山中古洞",
     "text": "你在採藥途中發現一處被藤蔓遮蔽的洞口，洞內隱隱有靈氣流出。",
     "weight": 10,
@@ -43,6 +44,7 @@
   {
     "id": "cave_002",
     "type": "choice",
+    "highlight": 4,
     "title": "重返古洞",
     "text": "你循著記號重返古洞。這一次，洞深處有微光閃動，似是一處久封的洞府。",
     "weight": 15,
@@ -89,6 +91,7 @@
   {
     "id": "senior_001",
     "type": "choice",
+    "highlight": 2,
     "title": "路遇老者",
     "text": "山道旁，一位白髮老者拄杖而立，自稱乾糧遺失，想向你討口吃食。",
     "weight": 8,
@@ -131,6 +134,7 @@
   {
     "id": "senior_002",
     "type": "choice",
+    "highlight": 4,
     "title": "老者回贈",
     "text": "多年之後，你在市集上遇見當年那位老者。他衣衫依舊樸素，氣度卻已大不相同。",
     "weight": 15,
@@ -209,6 +213,7 @@
   {
     "id": "beast_001",
     "type": "choice",
+    "highlight": 1.5,
     "title": "山道遇獸",
     "text": "山道轉角處，一頭灰狼低伏於草叢，目光冷冷地盯著你。",
     "weight": 8,
@@ -525,6 +530,7 @@
   {
     "id": "mountain_001",
     "type": "anecdote",
+    "highlight": 1.5,
     "title": "山澗靜坐",
     "text": "你於山澗旁靜坐三日，忽有所悟。起身時方知，所悟者不過是腿麻了。",
     "weight": 10,
@@ -586,6 +592,7 @@
   {
     "id": "dream_001",
     "type": "anecdote",
+    "highlight": 1.5,
     "title": "夢中舊事",
     "text": "夜裡你夢見一座從未到過的古寺，鐘聲悠遠。醒來時，枕邊濕了一小片。",
     "weight": 6,

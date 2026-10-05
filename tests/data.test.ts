@@ -8,6 +8,7 @@ import {
   validateRealms,
   validateSchedules,
   validateSpiritRoots,
+  validateTalents,
   validateText,
 } from "../src/data/validate";
 import { gameData } from "../src/data/load";
@@ -41,7 +42,11 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     const t = gameData.text;
     expect(() => validateText({ ...t, log: { ...t.log, stageUp: [] } })).toThrow("stageUp");
     expect(() => validateText({ ...t, log: { ...t.log, buy: [] } })).toThrow("buy");
-    expect(() => validateText({ log: t.log })).toThrow("cleared");
+    expect(() => validateText({ log: t.log })).toThrow("review");
+    expect(() => validateText({ ...t, review: { ...t.review, cleared: [{ text: "a", ifItem: "juqi_dan" }] } })).toThrow(
+      "review.cleared：至少要有一句沒有 ifItem",
+    );
+    expect(() => validateText({ ...t, review: { ...t.review, event: [] } })).toThrow("review.event");
   });
 
   it("schedules", () => {
@@ -57,6 +62,24 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(() => validateItems([{ ...i, price: 0 }])).toThrow("第 1 筆（juqi_dan）：欄位 price");
     expect(() => validateItems([{ ...i, effect: { kind: "boom" } }])).toThrow("kind");
     expect(() => validateItems([{ ...i, effect: { kind: "lifespan", years: 10 } }])).toThrow("maxPerLife");
+  });
+
+  it("talents", () => {
+    const t = gameData.talents[0];
+    expect(() => validateTalents([{ ...t, effect: "luck" }])).toThrow("第 1 筆（suhui）：欄位 effect");
+    expect(() => validateTalents([{ ...t, maxLevel: 0 }])).toThrow("maxLevel");
+    expect(() => validateTalents([{ ...t, perLevel: 0 }])).toThrow("perLevel");
+    expect(() => validateTalents([{ ...t, cost: { base: 0, growth: 1.5 } }])).toThrow("cost");
+    expect(() => validateTalents([t, { ...t }])).toThrow("重複");
+  });
+
+  it("道韻與一生回顧的資料欄位", () => {
+    const r = gameData.realms[1];
+    expect(() => validateRealms([{ ...r, daoYun: -1 }])).toThrow("daoYun");
+    expect(() => validateEvents([{ ...gameData.events[0], highlight: -1 }])).toThrow("highlight");
+    expect(() => validateConfig({ ...gameData.config, daoYunFirstTimeMult: 0.5 })).toThrow("daoYunFirstTimeMult");
+    const bad = { ...gameData, text: { ...gameData.text, review: { ...gameData.text.review, lifespan: [{ text: "a", ifItem: "ghost" }, { text: "b" }] } } };
+    expect(() => validateGameData(bad)).toThrow("ghost");
   });
 
   it("events：指出哪一筆事件的哪個欄位", () => {

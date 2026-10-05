@@ -1,14 +1,17 @@
 import { gameData } from "../data/load";
-import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
+import { ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "../data/types";
 import { createInitialState } from "./life";
 import {
+  emptyMeta,
   LOG_KINDS,
   SAVE_VERSION,
   type Attributes,
   type Changes,
   type GameState,
+  type LifeReview,
   type LogEntry,
   type LogKind,
+  type Meta,
   type Phase,
 } from "./state";
 
@@ -45,6 +48,14 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
     pendingEvent: null,
     autoChoice: false,
   }),
+  // v4 沒有輪迴：補上空的跨世資料。停在死亡畫面的舊存檔沒有回顧，只能直接轉世。
+  4: (d) => ({
+    ...d,
+    version: 5,
+    carriedStones: 0,
+    meta: emptyMeta(),
+    review: null,
+  }),
 };
 
 function fail(field: string, msg: string): never {
@@ -70,10 +81,10 @@ function obj(v: unknown, path: string): Obj {
   return v as Obj;
 }
 
-function intRecord(o: Obj, key: string): Record<string, number> {
-  const raw = obj(o[key], key);
+function intRecord(o: Obj, key: string, path = key): Record<string, number> {
+  const raw = obj(o[key], path);
   const out: Record<string, number> = {};
-  for (const k of Object.keys(raw)) out[k] = num(raw, k, { integer: true, min: 0 }, `${key}.${k}`);
+  for (const k of Object.keys(raw)) out[k] = num(raw, k, { integer: true, min: 0 }, `${path}.${k}`);
   return out;
 }
 
@@ -96,6 +107,75 @@ function parseChanges(v: unknown, path: string): Changes {
     for (const k of Object.keys(it)) c.items[k] = num(it, k, { integer: true }, `${path}.items.${k}`);
   }
   return c;
+}
+
+function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
+  const eo = obj(e, p);
+  const kind = str(eo, "kind", `${p}.kind`);
+  if (!(LOG_KINDS as readonly string[]).includes(kind)) fail(`${p}.kind`, `不是合法的日誌類型：${kind}`);
+  const entry: LogEntry = {
+    month: num(eo, "month", { integer: true, min: 0 }, `${p}.month`),
+    kind: kind as LogKind,
+    realmId: str(eo, "realmId", `${p}.realmId`),
+    stage: num(eo, "stage", { integer: true, min: 0 }, `${p}.stage`),
+  };
+  if (eo.itemId !== undefined) entry.itemId = str(eo, "itemId", `${p}.itemId`);
+  if (eo.eventId !== undefined) {
+    entry.eventId = str(eo, "eventId", `${p}.eventId`);
+    if (!data.events.some((ev) => ev.id === entry.eventId)) fail(`${p}.eventId`, `找不到事件 ${entry.eventId}`);
+  }
+  if (eo.choice !== undefined) entry.choice = num(eo, "choice", { integer: true, min: 0 }, `${p}.choice`);
+  if (eo.outcome !== undefined) entry.outcome = num(eo, "outcome", { integer: true, min: 0 }, `${p}.outcome`);
+  if (eo.changes !== undefined) entry.changes = parseChanges(eo.changes, `${p}.changes`);
+  if (kind === "event" && entry.eventId === undefined) fail(`${p}.eventId`, "事件日誌必須有 eventId");
+  return entry;
+}
+
+function parseMeta(v: unknown, data: GameData): Meta {
+  const o = obj(v, "meta");
+  const talents = intRecord(o, "talents", "meta.talents");
+  for (const [id, level] of Object.entries(talents)) {
+    const def = data.talents.find((t) => t.id === id);
+    if (!def) fail(`meta.talents.${id}`, `找不到天賦 ${id}`);
+    if (level > def.maxLevel) fail(`meta.talents.${id}`, `超過上限 ${def.maxLevel}，目前為 ${level}`);
+  }
+  if (!Array.isArray(o.reached) || !o.reached.every((k) => typeof k === "string")) {
+    fail("meta.reached", "必須是字串陣列");
+  }
+  return {
+    daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
+    talents,
+    reached: o.reached as string[],
+    lives: num(o, "lives", { integer: true, min: 0 }, "meta.lives"),
+  };
+}
+
+function parseReview(v: unknown, data: GameData): LifeReview | null {
+  if (v === null) return null;
+  const o = obj(v, "review");
+  const cause = str(o, "cause", "review.cause");
+  if (!(REVIEW_CAUSES as readonly string[]).includes(cause)) fail("review.cause", `不是合法的結束方式：${cause}`);
+  const closing = num(o, "closing", { integer: true, min: 0 }, "review.closing");
+  if (closing >= data.text.review[cause as ReviewCause].length) fail("review.closing", `超出收尾句數量，目前為 ${closing}`);
+  const realmId = str(o, "realmId", "review.realmId");
+  const realm = data.realms.find((r) => r.id === realmId);
+  if (!realm) fail("review.realmId", `找不到境界 ${realmId}`);
+  const stage = num(o, "stage", { integer: true, min: 0 }, "review.stage");
+  if (stage >= realm.stageNames.length) fail("review.stage", `超出 ${realm.name} 的階段數，目前為 ${stage}`);
+  if (!Array.isArray(o.highlights)) fail("review.highlights", "必須是陣列");
+  return {
+    cause: cause as ReviewCause,
+    closing,
+    ageMonths: num(o, "ageMonths", { integer: true, min: 0 }, "review.ageMonths"),
+    originId: str(o, "originId", "review.originId"),
+    spiritRootId: str(o, "spiritRootId", "review.spiritRootId"),
+    realmId,
+    stage,
+    breakthroughs: num(o, "breakthroughs", { integer: true, min: 0 }, "review.breakthroughs"),
+    daoYunBase: num(o, "daoYunBase", { integer: true, min: 0 }, "review.daoYunBase"),
+    daoYunBonus: num(o, "daoYunBonus", { integer: true, min: 0 }, "review.daoYunBonus"),
+    highlights: o.highlights.map((e, i) => parseLogEntry(e, `review.highlights[${i}]`, data)),
+  };
 }
 
 /** 讀取存檔，格式錯誤時丟出指出欄位的錯誤 */
@@ -141,28 +221,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   if (!data.schedules.some((s) => s.id === schedule)) fail("schedule", `找不到日常安排 ${schedule}`);
 
   if (!Array.isArray(o.log)) fail("log", "必須是陣列");
-  const log = o.log.map((e, i): LogEntry => {
-    const p = `log[${i}]`;
-    const eo = obj(e, p);
-    const kind = str(eo, "kind", `${p}.kind`);
-    if (!(LOG_KINDS as readonly string[]).includes(kind)) fail(`${p}.kind`, `不是合法的日誌類型：${kind}`);
-    const entry: LogEntry = {
-      month: num(eo, "month", { integer: true, min: 0 }, `${p}.month`),
-      kind: kind as LogKind,
-      realmId: str(eo, "realmId", `${p}.realmId`),
-      stage: num(eo, "stage", { integer: true, min: 0 }, `${p}.stage`),
-    };
-    if (eo.itemId !== undefined) entry.itemId = str(eo, "itemId", `${p}.itemId`);
-    if (eo.eventId !== undefined) {
-      entry.eventId = str(eo, "eventId", `${p}.eventId`);
-      if (!data.events.some((e) => e.id === entry.eventId)) fail(`${p}.eventId`, `找不到事件 ${entry.eventId}`);
-    }
-    if (eo.choice !== undefined) entry.choice = num(eo, "choice", { integer: true, min: 0 }, `${p}.choice`);
-    if (eo.outcome !== undefined) entry.outcome = num(eo, "outcome", { integer: true, min: 0 }, `${p}.outcome`);
-    if (eo.changes !== undefined) entry.changes = parseChanges(eo.changes, `${p}.changes`);
-    if (kind === "event" && entry.eventId === undefined) fail(`${p}.eventId`, "事件日誌必須有 eventId");
-    return entry;
-  });
+  const log = o.log.map((e, i) => parseLogEntry(e, `log[${i}]`, data));
 
   if (!Array.isArray(o.flags) || !o.flags.every((f) => typeof f === "string")) fail("flags", "必須是字串陣列");
   const pendingEvent = o.pendingEvent;
@@ -198,6 +257,9 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     eventThreshold: num(o, "eventThreshold", { min: 0 }),
     pendingEvent: pendingEvent as string | null,
     autoChoice: o.autoChoice,
+    carriedStones: num(o, "carriedStones", { integer: true, min: 0 }),
+    meta: parseMeta(o.meta, data),
+    review: parseReview(o.review, data),
     log,
   };
 }

@@ -25,6 +25,8 @@ export interface GameConfig {
   eventIntervalMax: number;
   /** 好事件的權重 ×(1 + 氣運 × 此值) */
   fortuneGoodWeight: number;
+  /** 首次達成某階段時，該階段道韻的倍率（2 = 加倍） */
+  daoYunFirstTimeMult: number;
 }
 
 /** 大境界手動突破的成功率規則 */
@@ -49,6 +51,8 @@ export interface RealmDef {
   need: { base: number; growth: number };
   /** 最後一階段圓滿後的進入方式 */
   breakthrough: "auto" | "manual";
+  /** 每達成一個階段可得的道韻 */
+  daoYun: number;
   /** 手動突破到下一境界的規則（最後一個境界不需要） */
   breakthroughRule?: BreakthroughRule;
 }
@@ -133,6 +137,8 @@ export interface EventDef {
   tone: "good" | "bad" | "neutral";
   /** 每世最多出現幾次 */
   maxPerLife: number;
+  /** 一生回顧挑選關鍵事件的分數（預設：抉擇 1、見聞 0.5） */
+  highlight?: number;
   conditions: EventConditions;
   /** 依日常安排調整權重的倍率 */
   scheduleWeights?: Record<string, number>;
@@ -160,6 +166,28 @@ export interface OriginDef {
   attributes: Partial<Record<AttributeKey, number>>;
 }
 
+export type TalentEffect = "cultivation" | "rerolls" | "fortune" | "stoneCarry" | "failLoss";
+
+/** 輪迴天賦：每級效果 = perLevel，第 n 級的價格 = ceil(base × growth^(目前等級)) */
+export interface TalentDef {
+  id: string;
+  name: string;
+  desc: string;
+  maxLevel: number;
+  effect: TalentEffect;
+  perLevel: number;
+  cost: { base: number; growth: number };
+}
+
+export type ReviewCause = "lifespan" | "adventure" | "event" | "cleared";
+export const REVIEW_CAUSES: readonly ReviewCause[] = ["lifespan", "adventure", "event", "cleared"];
+
+/** 一生回顧的收尾句；有 ifItem 的只在持有該物品（未用完）時使用 */
+export interface ClosingVariant {
+  text: string;
+  ifItem?: string;
+}
+
 export interface TextData {
   log: {
     stageUp: string[];
@@ -173,8 +201,8 @@ export interface TextData {
     find: string[];
     adventureDeath: string;
   };
-  /** 通關畫面的敘述 */
-  cleared: string;
+  /** 一生回顧的收尾句，依結束方式分類 */
+  review: Record<ReviewCause, ClosingVariant[]>;
 }
 
 export interface GameData {
@@ -183,6 +211,7 @@ export interface GameData {
   schedules: ScheduleDef[];
   items: ItemDef[];
   events: EventDef[];
+  talents: TalentDef[];
   spiritRoots: SpiritRootDef[];
   origins: OriginDef[];
   text: TextData;

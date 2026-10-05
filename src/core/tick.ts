@@ -1,8 +1,9 @@
 import { gameData } from "../data/load";
 import type { GameData, ScheduleDef } from "../data/types";
 import { advanceEvents } from "./events";
-import { cultivationPerMonth, lifespanMonths } from "./formulas";
+import { cultivationPerMonth, lifespanMonths, talentBonus } from "./formulas";
 import { addLog, atBottleneck, realmOf, resolveStages, scheduleOf } from "./progress";
+import { endLife } from "./review";
 import { nextInt, nextRandom } from "./rng";
 import type { GameState } from "./state";
 
@@ -20,11 +21,12 @@ function applySchedule(state: GameState, sched: ScheduleDef, month: number, data
   };
 
   if (sched.deathChance > 0 && draw() < sched.deathChance) {
-    return addLog(
-      { ...state, rngSeed: seed, phase: "dead" },
+    const died = addLog(
+      { ...state, rngSeed: seed },
       { month, kind: "adventureDeath", realmId: state.realmId, stage: state.stage },
       limit,
     );
+    return endLife(died, "adventure", data);
   }
 
   let stones = state.spiritStones;
@@ -71,14 +73,15 @@ function stepMonth(state: GameState, data: GameData): GameState {
       realmMult: realm.cultivationMult,
       scheduleMult: sched.cultivationMult,
       originBonus: s.cultivationBonus,
-      reincarnationBonus: 0,
+      reincarnationBonus: talentBonus(s.meta, data.talents, "cultivation"),
     });
     s = resolveStages({ ...s, cultivation: s.cultivation + gain }, month, data);
   }
   s = applySchedule(s, sched, month, data);
   if (s.phase !== "living") return s;
   if (month >= lifespanMonths(realmOf(s, data), s.lifespanBonus)) {
-    return addLog({ ...s, phase: "dead" }, { month, kind: "death", realmId: s.realmId, stage: s.stage }, data.config.logLimit);
+    const died = addLog(s, { month, kind: "death", realmId: s.realmId, stage: s.stage }, data.config.logLimit);
+    return endLife(died, "lifespan", data);
   }
   return advanceEvents(s, month, data);
 }

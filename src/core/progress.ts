@@ -1,6 +1,6 @@
 // 境界、瓶頸、日誌等 tick 與事件共用的基礎函式。
 import { gameData } from "../data/load";
-import type { GameData, RealmDef, ScheduleDef } from "../data/types";
+import type { EventDef, GameData, RealmDef, ScheduleDef } from "../data/types";
 import { lifespanMonths, stageNeed } from "./formulas";
 import type { GameState, LogEntry } from "./state";
 
@@ -14,6 +14,12 @@ export function scheduleOf(state: GameState, data: GameData = gameData): Schedul
   const sched = data.schedules.find((s) => s.id === state.schedule);
   if (!sched) throw new Error(`狀態：找不到日常安排 ${state.schedule}`);
   return sched;
+}
+
+export function eventOf(id: string, data: GameData = gameData): EventDef {
+  const ev = data.events.find((e) => e.id === id);
+  if (!ev) throw new Error(`事件：找不到事件 ${id}`);
+  return ev;
 }
 
 export function nextRealm(realm: RealmDef, data: GameData = gameData): RealmDef | undefined {

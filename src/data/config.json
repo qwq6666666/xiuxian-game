@@ -13,5 +13,6 @@
   "mindLossReduction": 0.02,
   "eventIntervalMin": 12,
   "eventIntervalMax": 36,
-  "fortuneGoodWeight": 0.05
+  "fortuneGoodWeight": 0.05,
+  "daoYunFirstTimeMult": 2
 }

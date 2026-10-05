@@ -1,6 +1,6 @@
 import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
-import { buyItem, setSchedule, useItem } from "./core/actions";
+import { buyItem, buyTalent, setSchedule, useItem } from "./core/actions";
 import { attemptBreakthrough } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
 import { createInitialState, newLife, reroll, startLife } from "./core/life";
@@ -51,6 +51,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onAutoChoice: (enabled) => update(setAutoChoice(state, enabled, data)),
   onChoose: (i) => update(chooseEvent(state, i, data)),
   onNewLife: () => update(newLife(state, data)),
+  onBuyTalent: (id) => update(buyTalent(state, id, data)),
   onSchedule: (id) => update(setSchedule(state, id, data)),
   onBreakthrough: (usePill) => update(attemptBreakthrough(state, usePill, data)),
   onUseItem: (id) => update(useItem(state, id, data)),

@@ -26,8 +26,9 @@ describe("format", () => {
     const up = formatLogEntry({ month: 400, kind: "stageUp", realmId: "lianqi", stage: 2 }, gameData);
     expect(up).toContain("三十三歲");
     expect(up).toContain("練氣三層");
+    // 享年與終身境界改由一生回顧呈現，日誌只留一句收束
     const death = formatLogEntry({ month: 119 * 12, kind: "death", realmId: "lianqi", stage: 5 }, gameData);
-    expect(death).toContain("享年一百一十九歲，終身練氣六層");
+    expect(death).toBe("你的這一世，至此落幕。");
   });
 
   it("突破成功的文字：築基用 GDD 範例，不帶吐槽", () => {

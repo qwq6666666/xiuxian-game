@@ -1,6 +1,43 @@
-import type { AttributeKey } from "../data/types";
+import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
+
+/** 跨世保留的資料 */
+export interface Meta {
+  /** 道韻餘額 */
+  daoYun: number;
+  /** 各輪迴天賦的等級 */
+  talents: Record<string, number>;
+  /** 已首次達成的階段（"境界id:階段"），首次達成的道韻加倍只算一次 */
+  reached: string[];
+  /** 已走完的世數 */
+  lives: number;
+}
+
+export function emptyMeta(): Meta {
+  return { daoYun: 0, talents: {}, reached: [], lives: 0 };
+}
+
+/** 一生回顧：死亡或通關時結算一次 */
+export interface LifeReview {
+  cause: ReviewCause;
+  /** 收尾句在該結束方式的句子清單中的索引 */
+  closing: number;
+  /** 死亡或通關時的年齡（月） */
+  ageMonths: number;
+  originId: string;
+  spiritRootId: string;
+  /** 最高境界（境界只升不降，即結束時的境界） */
+  realmId: string;
+  stage: number;
+  breakthroughs: number;
+  /** 各階段的基本道韻 */
+  daoYunBase: number;
+  /** 首次達成階段的額外道韻 */
+  daoYunBonus: number;
+  /** 挑出的關鍵事件，依時間排序 */
+  highlights: LogEntry[];
+}
 
 /** cleared：突破到金丹，第一版通關 */
 export type Phase = "rolling" | "living" | "dead" | "cleared";
@@ -87,5 +124,11 @@ export interface GameState {
   pendingEvent: string | null;
   /** 設定：自動選第一個可選的選項 */
   autoChoice: boolean;
+  /** 遺澤天賦從上一世帶來的靈石，擲骰時加進初始靈石 */
+  carriedStones: number;
+  /** 跨世資料 */
+  meta: Meta;
+  /** 本世結束後的回顧；進行中為 null */
+  review: LifeReview | null;
   log: LogEntry[];
 }

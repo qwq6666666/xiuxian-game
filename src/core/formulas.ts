@@ -1,5 +1,6 @@
 // 數值公式集中處。倍率、機率等參數放在 src/data/，這裡只放算式。
-import type { AttributeKey, BreakthroughRule, GameConfig, RealmDef } from "../data/types";
+import type { AttributeKey, BreakthroughRule, GameConfig, RealmDef, TalentDef, TalentEffect } from "../data/types";
+import type { Meta } from "./state";
 
 /** 現實經過的毫秒數換算成遊戲月數（含小數） */
 export function msToMonths(ms: number, speed: number, msPerMonth: number): number {
@@ -76,7 +77,19 @@ export function breakthroughRate(rule: BreakthroughRule, insight: number, usePil
   return Math.min(1, Math.max(0, rate));
 }
 
-/** 突破失敗損失的修為比例 = 基礎損失 − 心性 × 每點減免，最低 0 */
-export function breakthroughFailLoss(config: GameConfig, mind: number): number {
-  return Math.max(0, config.breakthroughFailLoss - mind * config.mindLossReduction);
+/** 突破失敗損失的修為比例 = 基礎損失 − 心性 × 每點減免 − 道心天賦減免，最低 0 */
+export function breakthroughFailLoss(config: GameConfig, mind: number, talentReduction = 0): number {
+  return Math.max(0, config.breakthroughFailLoss - mind * config.mindLossReduction - talentReduction);
+}
+
+/** 某類輪迴天賦目前的總效果 = Σ 等級 × 每級效果 */
+export function talentBonus(meta: Meta, talents: TalentDef[], effect: TalentEffect): number {
+  let total = 0;
+  for (const t of talents) if (t.effect === effect) total += (meta.talents[t.id] ?? 0) * t.perLevel;
+  return total;
+}
+
+/** 天賦從目前等級升一級的價格，無條件進位 */
+export function talentCost(talent: TalentDef, currentLevel: number): number {
+  return Math.ceil(talent.cost.base * talent.cost.growth ** currentLevel);
 }
