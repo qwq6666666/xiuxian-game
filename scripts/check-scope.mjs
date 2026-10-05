@@ -1,0 +1,33 @@
+// 分支範圍檢查：ai/chatgpt 只負責介面與文件，不能動核心、資料、模擬與建置設定。
+// 確實需要時，在該分支任一 commit 訊息加上 [scope-ok]，並由整合者審過。
+import { execSync } from "node:child_process";
+
+const SCOPES = {
+  "ai/chatgpt": {
+    forbidden: ["src/core/", "src/data/", "scripts/", ".github/", "package.json", "package-lock.json", "vite.config.ts", "AGENTS.md", "CLAUDE.md", "tests/save-shape.json"],
+  },
+};
+
+const run = (cmd) => execSync(cmd, { encoding: "utf-8" }).trim();
+const branch = process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || run("git rev-parse --abbrev-ref HEAD");
+const scope = SCOPES[branch];
+if (!scope) {
+  console.log(`分支 ${branch} 沒有範圍限制。`);
+  process.exit(0);
+}
+
+const base = process.env.SCOPE_BASE || "origin/master";
+const files = run(`git diff --name-only ${base}...HEAD`).split("\n").filter(Boolean);
+const messages = run(`git log ${base}..HEAD --format=%B`);
+if (messages.includes("[scope-ok]")) {
+  console.log("commit 訊息有 [scope-ok]，略過範圍檢查（整合者要人工審）。");
+  process.exit(0);
+}
+
+const bad = files.filter((f) => scope.forbidden.some((p) => f === p || f.startsWith(p)));
+if (bad.length > 0) {
+  console.error(`分支 ${branch} 動到了不在負責範圍內的檔案：\n${bad.map((f) => `  ${f}`).join("\n")}`);
+  console.error("這些由 Claude 負責。若確實需要，請先跟整合者討論，並在 commit 訊息加上 [scope-ok]。");
+  process.exit(1);
+}
+console.log(`分支 ${branch}：${files.length} 個檔案都在範圍內。`);

@@ -106,6 +106,8 @@ docs/
 - 整合者（使用者指定一位，預設是 Claude Code）負責合併進 `master`：`git fetch --all`、`git log master..origin/<分支>` 看新內容、合併、解衝突、跑 `npm run verify`，通過後**一次**推上 `master`。其他助手不直接推 `master`。
 - 部署只由 `master` 的推送觸發。連續推 `master` 會讓排隊中的部署被後一次取代，整合完再推一次即可。
 - 開工前先在 `docs/TODO.md` 預約下一個里程碑編號與章節編號（寫上助手名），避免兩邊撞號。
+- 範圍由 CI 檢查（`scripts/check-scope.mjs`）：`ai/chatgpt` 不得動 `src/core/`、`src/data/`、`scripts/`、`.github/`、`package.json`、`AGENTS.md`、`tests/save-shape.json`；確實需要時在 commit 訊息加 `[scope-ok]` 並由整合者審。
+- 架構規則由 `tests/architecture.test.ts` 守住：`core/` 不得使用 `Math.random`、`Date.now`、DOM、不得 import `ui/`；改存檔欄位必須升 `SAVE_VERSION`、寫遷移函式並更新 `tests/save-shape.json`。
 - `docs/GDD.md`、`docs/TODO.md` 最容易衝突：只在自己的章節新增內容，不整檔改寫、不改換行符號。
 - 新增圖片要壓縮（JPEG／WebP，寬度不超過實際顯示的兩倍）；圖會被內嵌進單一 `index.html`，`verify` 在超過 1500 KB 時會失敗。
 
