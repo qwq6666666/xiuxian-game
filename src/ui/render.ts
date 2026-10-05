@@ -12,6 +12,7 @@ import { CLEAR_FRAGMENT_ID } from "../core/fragments";
 import { activeWorldEffects, itemPrice } from "../core/worldeffects";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
+import { formatDuration, formatGain, paceHint, yearsLeft } from "./derived";
 import type { MapTarget } from "./mapinfo";
 import { buildWorldMap, mapStamp } from "./worldmap";
 import { eraName, lifeIndex } from "../core/era";
@@ -62,20 +63,29 @@ export interface Ui {
 export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers): Ui {
   root.innerHTML = `
     <header class="bar">
-      <span class="speeds"></span>
-      <label class="auto"><input type="checkbox" id="auto" /> 自動抉擇</label>
-      <button id="codex-open" type="button"></button>
-      <button id="map-open" type="button"></button>
-      <button id="collection-open" type="button">收藏</button>
-      <button id="export" type="button">匯出存檔</button>
-      <button id="import" type="button">匯入存檔</button>
-      <button id="reset" type="button">重新開始</button>
+      <div class="bar-left">
+        <span class="speeds" role="group" aria-label="流速"></span>
+        <label class="auto"><input type="checkbox" id="auto" /> 自動抉擇</label>
+      </div>
+      <div class="bar-right">
+        <button id="codex-open" type="button"></button>
+        <button id="map-open" type="button"></button>
+        <button id="collection-open" type="button">收藏</button>
+        <details class="menu" id="menu">
+          <summary>更多</summary>
+          <div class="menu-list">
+            <button id="export" type="button">匯出存檔</button>
+            <button id="import" type="button">匯入存檔</button>
+            <button id="reset" type="button" class="danger">重新開始</button>
+          </div>
+        </details>
+      </div>
     </header>
-    <p id="notice" hidden></p>
+    <p id="notice" role="status" hidden></p>
     <div id="stage"></div>
-    <div class="modal codex" id="codex" hidden><div class="card review" id="codex-card"></div></div>
-    <div class="modal codex" id="map" hidden><div class="card review" id="map-card"></div></div>
-    <div class="modal codex" id="collection" hidden><div class="card review" id="collection-card"></div></div>
+    <div class="modal codex" id="codex" role="dialog" aria-modal="true" aria-label="殘卷錄" hidden><div class="card review" id="codex-card"></div></div>
+    <div class="modal codex" id="map" role="dialog" aria-modal="true" aria-label="天下圖" hidden><div class="card review" id="map-card"></div></div>
+    <div class="modal codex" id="collection" role="dialog" aria-modal="true" aria-label="收藏" hidden><div class="card review" id="collection-card"></div></div>
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
   const noticeEl = root.querySelector<HTMLElement>("#notice")!;
@@ -91,15 +101,82 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   });
   const autoEl = root.querySelector<HTMLInputElement>("#auto")!;
   autoEl.addEventListener("change", () => handlers.onAutoChoice(autoEl.checked));
-  root.querySelector("#export")!.addEventListener("click", () => handlers.onExport());
+
+  // 「更多」選單：點選項、點選單外面或按 Escape 都會收起
+  const menuEl = root.querySelector<HTMLDetailsElement>("#menu")!;
+  document.addEventListener("click", (ev) => {
+    if (menuEl.open && !menuEl.contains(ev.target as Node)) menuEl.open = false;
+  });
+  menuEl.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape") return;
+    menuEl.open = false;
+    menuEl.querySelector("summary")!.focus();
+    ev.stopPropagation();
+  });
+  root.querySelector("#export")!.addEventListener("click", () => {
+    menuEl.open = false;
+    handlers.onExport();
+  });
   root.querySelector("#import")!.addEventListener("click", () => {
+    menuEl.open = false;
     const text = prompt("請貼上先前匯出的存檔文字：");
     if (text === null || text.trim() === "") return;
     if (confirm("匯入會覆蓋目前的存檔，確定嗎？")) handlers.onImport(text);
   });
   root.querySelector("#reset")!.addEventListener("click", () => {
+    menuEl.open = false;
     if (confirm("確定要清除存檔並重新開始嗎？道韻與輪迴天賦也會一併清除。")) handlers.onReset();
   });
+
+  // ---- 彈窗的鍵盤與焦點：開啟時移入、Tab 圈在最上層彈窗內、關閉時還原 ----
+  const FOCUSABLE = 'button:not([disabled]), input:not([disabled]), summary, [href], [tabindex]:not([tabindex="-1"])';
+  const visibleModals = (): HTMLElement[] =>
+    Array.from(root.querySelectorAll<HTMLElement>(".modal")).filter((m) => !m.hidden);
+  const lastFocus = new WeakMap<HTMLElement, HTMLElement | null>();
+  function watchModal(modal: HTMLElement): void {
+    const card = modal.querySelector<HTMLElement>(".card")!;
+    card.tabIndex = -1;
+    new MutationObserver(() => {
+      if (!modal.hidden) {
+        if (!lastFocus.has(modal)) {
+          lastFocus.set(modal, document.activeElement as HTMLElement | null);
+          card.focus({ preventScroll: true });
+          card.scrollTop = 0;
+        }
+      } else if (lastFocus.has(modal)) {
+        const back = lastFocus.get(modal);
+        lastFocus.delete(modal);
+        if (back && back.isConnected) back.focus({ preventScroll: true });
+      }
+    }).observe(modal, { attributes: true, attributeFilter: ["hidden"] });
+  }
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Tab") return;
+    const open = visibleModals();
+    const top = open[open.length - 1];
+    if (!top) return;
+    const items = Array.from(top.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((x) => !x.hidden && x.offsetParent !== null);
+    const card = top.querySelector<HTMLElement>(".card")!;
+    if (items.length === 0) {
+      ev.preventDefault();
+      card.focus();
+      return;
+    }
+    const first = items[0];
+    const last = items[items.length - 1];
+    const active = document.activeElement;
+    if (!top.contains(active) || active === card) {
+      ev.preventDefault();
+      (ev.shiftKey ? last : first).focus();
+    } else if (ev.shiftKey && active === first) {
+      ev.preventDefault();
+      last.focus();
+    } else if (!ev.shiftKey && active === last) {
+      ev.preventDefault();
+      first.focus();
+    }
+  });
+  for (const id of ["codex", "map", "collection"]) watchModal(root.querySelector<HTMLElement>(`#${id}`)!);
 
   // ---- 殘卷錄 ----
   const SEEN_KEY = "xiuxian-fragments-seen";
@@ -385,6 +462,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     stones: HTMLElement;
     fill: HTMLElement;
     barText: HTMLElement;
+    progress: HTMLElement;
+    sched: HTMLElement;
+    pace: HTMLElement;
+    todo: HTMLElement;
+    todoText: HTMLElement;
+    todoGo: HTMLButtonElement;
+    live: HTMLElement;
     log: HTMLElement;
     eventModal: HTMLElement;
     eventTitle: HTMLElement;
@@ -417,46 +501,55 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     logKey = "";
     bagKey = "";
     eventKey = "";
+    // 桌面：日誌在左、側欄在右；手機（≤640px）改單欄，順序由 CSS 排：安排、突破、坐化、日誌、角色、背包、坊市。
+    // 日誌、角色、背包、坊市可收合；桌面預設全開，手機只開日誌。
+    const wide = window.matchMedia("(min-width: 641px)").matches;
     stageEl.innerHTML = `
-      <section class="status">
-        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="life" class="muted"></span></div>
-        <div class="progress"><div id="fill"></div><span id="barText"></span></div>
+      <section class="status" aria-label="狀態">
+        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><span id="life" class="muted"></span></div>
+        <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
+        <p id="pace" class="pace"></p>
+        <div id="todo" class="todo" hidden><span id="todoText"></span><button id="todoGo" type="button" class="primary">前往突破</button></div>
       </section>
+      <div class="sr-only" id="live" aria-live="polite"></div>
       <div class="cols">
-        <section class="log"><h2>修仙日誌</h2><ul id="log"></ul></section>
+        <details class="log fold" id="foldLog" open><summary>修仙日誌</summary><ul id="log"></ul></details>
         <aside class="side">
-          <section><h2>角色</h2>${statsHtml(state)}${identityHtml(state)}</section>
-          <section><h2>日常安排</h2><div id="schedules" class="choices"></div></section>
-          <section id="btSection"><h2>突破</h2>
+          <section id="schedSection" class="s-sched"><h2>日常安排</h2><div id="schedules" class="choices"></div></section>
+          <section id="btSection" class="s-bt"><h2>突破</h2>
             <p id="btInfo" class="desc"></p>
             <label id="pillRow" hidden><input type="checkbox" id="pill" /> <span id="pillText"></span></label>
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
           </section>
-          <section id="zuohuaBox" hidden>
+          <section id="zuohuaBox" class="s-zuohua" hidden>
             <h2>閉關坐化</h2>
             <p id="zuohuaInfo" class="desc"></p>
             <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
-          <section><h2>背包</h2><ul id="bag" class="items"></ul></section>
-          <section><h2>坊市</h2><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p></section>
+          <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}${identityHtml(state)}</details>
+          <details class="fold s-bag"${wide ? " open" : ""}><summary>背包</summary><ul id="bag" class="items"></ul></details>
+          <details class="fold s-market"${wide ? " open" : ""}><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p></details>
         </aside>
       </div>
-      <div class="modal" id="eventModal" hidden>
+      <div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" hidden>
         <div class="card event">
           <h2 id="eventTitle"></h2>
           <p id="eventText"></p>
           <div id="eventChoices" class="choices"></div>
         </div>
       </div>
-      <div class="modal" id="modal" hidden>
+      <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="一生回顧" hidden>
         <div class="card review"><div id="modalBody"></div></div>
       </div>`;
     const q = <T extends HTMLElement>(sel: string) => stageEl.querySelector<T>(sel)!;
+    watchModal(q("#eventModal"));
+    watchModal(q("#modal"));
 
     const schedBox = q("#schedules");
     const schedules = data.schedules.map((s) => {
       const b = document.createElement("button");
       b.type = "button";
+      b.setAttribute("aria-pressed", "false");
       b.innerHTML = `<strong>${s.name}</strong><small>${s.desc}</small>`;
       b.addEventListener("click", () => handlers.onSchedule(s.id));
       schedBox.appendChild(b);
@@ -485,6 +578,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       stones: q("#stones"),
       fill: q("#fill"),
       barText: q("#barText"),
+      progress: q("#progress"),
+      sched: q("#sched"),
+      pace: q("#pace"),
+      todo: q("#todo"),
+      todoText: q("#todoText"),
+      todoGo: q<HTMLButtonElement>("#todoGo"),
+      live: q("#live"),
       log: q("#log"),
       eventModal: q("#eventModal"),
       eventTitle: q("#eventTitle"),
@@ -507,6 +607,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       marketNote: q("#marketNote"),
     };
     els.btButton.addEventListener("click", () => handlers.onBreakthrough(els!.pill.checked));
+    els.todoGo.addEventListener("click", () => {
+      els!.btSection.scrollIntoView({ block: "nearest" });
+      els!.btButton.focus();
+    });
     q("#zuohua").addEventListener("click", () => {
       // 結束這一世不可回頭，先問一聲
       if (lastState && confirm("閉關坐化會立刻結束這一世，確定嗎？")) handlers.onZuohua();
@@ -573,13 +677,46 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const [years, months] = splitAge(state.ageMonths);
     e.realm.textContent = realmLabel(realm, state.stage) + (state.flags.includes(CLEARED_FLAG) ? "（已通關）" : "");
     e.name.textContent = `${state.name}（${eraName(lifeIndex(state), data)}年間）`;
-    e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespanYears(state, data)}`;
+    const lifespan = lifespanYears(state, data);
+    const left = yearsLeft(state.ageMonths, lifespan);
+    e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespan}（餘 ${left} 年）`;
     e.stones.textContent = `靈石 ${state.spiritStones}`;
+    e.sched.textContent = `安排：${data.schedules.find((s) => s.id === state.schedule)?.name ?? ""}`;
     e.fill.style.width = `${Math.min(100, (state.cultivation / need) * 100)}%`;
-    e.barText.textContent = `修為 ${Math.floor(state.cultivation)} / ${need}${atBottleneck(state, data) ? "　瓶頸" : ""}`;
+    const cultivation = Math.floor(state.cultivation);
+    const stuck = atBottleneck(state, data);
+    e.barText.textContent = `修為 ${cultivation} / ${need}${stuck ? "　瓶頸" : ""}`;
+    e.progress.setAttribute("aria-valuemin", "0");
+    e.progress.setAttribute("aria-valuemax", String(need));
+    e.progress.setAttribute("aria-valuenow", String(Math.min(cultivation, need)));
+
+    const pace = paceHint(state, data);
+    if (pace.kind === "eta") {
+      e.pace.textContent = `每月約 +${formatGain(pace.perMonth)} 修為，約 ${formatDuration(pace.seconds)}後進入下一階段（依目前安排與速度估算）。`;
+    } else if (pace.kind === "bottleneck") {
+      e.pace.textContent = "修為已圓滿，不再增長，要靠突破才能再進一步。";
+    } else {
+      e.pace.textContent = "";
+    }
+
+    // 待辦：此刻最需要玩家處理的一件事（抉擇事件另以彈窗處理）
+    const canBt = canBreakthrough(state, data);
+    const gated = stuck && !canBt && breakthroughRuleOf(state, data) !== null && missingTalent(state, data) !== null;
+    if (canBt && stuck) {
+      e.todoText.textContent = "修為圓滿，可以嘗試突破。";
+    } else if (gated) {
+      e.todoText.textContent = data.text.breakthroughGate;
+    } else if (state.phase === "living" && left < lifespan * 0.1) {
+      e.todoText.textContent = `壽元將盡，只剩 ${left} 年。`;
+    } else {
+      e.todoText.textContent = "";
+    }
+    e.todo.hidden = e.todoText.textContent === "";
+    e.todoGo.hidden = !(canBt && stuck);
 
     for (const { id, b } of e.schedules) {
       b.classList.toggle("active", id === state.schedule);
+      b.setAttribute("aria-pressed", String(id === state.schedule));
       b.hidden = !scheduleOpen(state, data.schedules.find((s) => s.id === id)!, data);
     }
     e.zuohuaBox.hidden = !canZuohua(state, data);
@@ -591,7 +728,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     for (const m of e.market) {
       const item = data.items.find((i) => i.id === m.id)!;
       const price = itemPrice(state, m.id, data);
-      m.price.textContent = `${price} 靈石`;
+      m.price.textContent = `${price} 靈石${price > item.price ? "　↑ 較平日貴" : price < item.price ? "　↓ 較平日便宜" : ""}`;
       m.price.classList.toggle("price-up", price > item.price);
       m.price.classList.toggle("price-down", price < item.price);
       m.owned.textContent = `持有 ${state.items[m.id] ?? 0}`;
@@ -613,6 +750,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const key = `${state.log.length}:${last?.month ?? ""}:${last?.kind ?? ""}`;
     if (key !== logKey) {
       logKey = key;
+      if (last) e.live.textContent = formatLogEntry(last, data, state.name, slotsOf(state));
       e.log.innerHTML = "";
       for (const entry of [...state.log].reverse()) {
         const li = document.createElement("li");
@@ -778,7 +916,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       if (!collectionEl.hidden) buildCollection(state);
       if (!mapEl.hidden) buildMap(state);
       autoEl.checked = state.autoChoice;
-      for (const { s, b } of speedButtons) b.disabled = s === state.speed;
+      for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));
       if (state.phase === "rolling") renderRoll(state);
       else renderLife(state);
     },
