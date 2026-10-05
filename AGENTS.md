@@ -94,8 +94,31 @@ docs/
 
 ## 協作守則（多個助手並行時）
 
-- 同一個分支一次只讓一個工具動；要並行就各開分支或 git worktree，合併前跑 `npm run test`。
+- 同一個資料夾、同一個分支一次只讓一個工具動。要並行，一律用 git worktree（見下節），不要兩個工具共用同一個工作目錄。
 - 進度與設計只認 repo 裡的檔案（`docs/`），不要靠對話記憶；做完一個階段就更新 `docs/TODO.md`。
 - 換行符號統一用 LF（見 `.gitattributes`）。在 Windows 用 Python 讀寫檔案時要用 `open(..., newline='')`；改完用 `git diff --stat` 檢查行數是否合理，整檔重寫代表換行被改了。
 - 沒有瀏覽器預覽工具的助手，驗收時用 `npm run dev` 自己開頁面操作，或請人看。
 - 驗證時若要手動改 localStorage 的存檔（`xiuxian-save`），頁面卸載會用目前狀態覆蓋它；改用遊戲內的「匯入存檔」。
+
+## 並行作業流程（git worktree）
+
+兩個以上的助手同時做事時，各自在獨立的工作目錄與分支，互不影響檔案：
+
+```bash
+git worktree add ../xiuxian-claude -b ai/claude
+git worktree add ../xiuxian-chatgpt -b ai/chatgpt
+```
+
+- 各助手只在自己的 worktree 裡改檔、commit；主資料夾 `xiuxian-game` 留給使用者看與合併，助手不直接改。
+- 每個 worktree 第一次要 `npm install`。
+- 開工前先 `git fetch && git rebase origin/master`；每完成一個小單位就 commit 並再同步一次，不要讓分支放太久。
+- 合併進 `master` 前跑「推送到 GitHub」那節的前提 2、3；合併由使用者或使用者指定的一個助手負責，不要兩邊同時往 `master` 推。
+- 開在別處的 worktree 用完後以 `git worktree remove ../xiuxian-claude` 清掉。
+
+### 分工與認領
+
+- 開工前在 `docs/TODO.md` 要做的項目後面標上 `（進行中：助手名）`，完成勾選時一併拿掉。看到別人已標的項目就不要碰。
+- 大型資料檔（尤其 `src/data/events.json`）同一時間只讓一個助手改；要改的先認領。
+- 建議的切法：一個做 `src/ui/` 與 `src/core/`，另一個做 `src/data/` 的文字與事件。同一個檔案要兩邊都改時，先商量誰先。
+- 發現工作區有不是自己改的未提交變更，不要動也不要順手 commit，先回報使用者。
+
