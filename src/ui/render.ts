@@ -79,6 +79,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         <details class="menu" id="menu">
           <summary>更多</summary>
           <div class="menu-list">
+            <button id="mobile-codex-open" class="menu-mobile-only" type="button"></button>
+            <button id="mobile-map-open" class="menu-mobile-only" type="button"></button>
+            <button id="mobile-collection-open" class="menu-mobile-only" type="button">收藏</button>
             <button id="export" type="button">匯出存檔</button>
             <button id="import" type="button">匯入存檔</button>
             <button id="reset" type="button" class="danger">重新開始</button>
@@ -206,12 +209,15 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   const codexEl = root.querySelector<HTMLElement>("#codex")!;
   const codexCard = root.querySelector<HTMLElement>("#codex-card")!;
   const codexBtn = root.querySelector<HTMLButtonElement>("#codex-open")!;
+  const mobileCodexBtn = root.querySelector<HTMLButtonElement>("#mobile-codex-open")!;
   const totalFragments = data.fragments.items.length;
 
   function updateCodexButton(state: GameState): void {
     const seen = readSeen();
     const fresh = state.meta.fragments.some((id) => !seen.includes(id));
-    codexBtn.textContent = `殘卷錄 ${state.meta.fragments.length}／${totalFragments}${fresh ? " ●" : ""}`;
+    const label = `殘卷錄 ${state.meta.fragments.length}／${totalFragments}${fresh ? " ●" : ""}`;
+    codexBtn.textContent = label;
+    mobileCodexBtn.textContent = label;
   }
 
   function buildCodex(state: GameState): void {
@@ -276,12 +282,15 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   const mapEl = root.querySelector<HTMLElement>("#map")!;
   const mapCard = root.querySelector<HTMLElement>("#map-card")!;
   const mapBtn = root.querySelector<HTMLButtonElement>("#map-open")!;
+  const mobileMapBtn = root.querySelector<HTMLButtonElement>("#mobile-map-open")!;
   let mapSelected: MapTarget | null = null;
 
   function updateMapButton(state: GameState): void {
     // 擲骰時不提示：重擲會一直換世界，提示只會吵
     const fresh = state.phase !== "rolling" && mapStamp(state, data) !== readMapSeen();
-    mapBtn.textContent = `天下圖${fresh ? " ●" : ""}`;
+    const label = `天下圖${fresh ? " ●" : ""}`;
+    mapBtn.textContent = label;
+    mobileMapBtn.textContent = label;
   }
 
   function buildMap(state: GameState): void {
@@ -317,6 +326,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     mapEl.hidden = true;
   }
   mapBtn.addEventListener("click", openMap);
+  mobileMapBtn.addEventListener("click", () => { menuEl.open = false; openMap(); });
   mapEl.addEventListener("click", (ev) => {
     if (ev.target === mapEl) closeMap();
   });
@@ -325,6 +335,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   const collectionEl = root.querySelector<HTMLElement>("#collection")!;
   const collectionCard = root.querySelector<HTMLElement>("#collection-card")!;
   const collectionBtn = root.querySelector<HTMLButtonElement>("#collection-open")!;
+  const mobileCollectionBtn = root.querySelector<HTMLButtonElement>("#mobile-collection-open")!;
 
   function buildCollection(state: GameState): void {
     const sum = collectionSummary(state.meta, data);
@@ -389,6 +400,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     collectionEl.hidden = true;
   }
   collectionBtn.addEventListener("click", openCollection);
+  mobileCollectionBtn.addEventListener("click", () => { menuEl.open = false; openCollection(); });
   collectionEl.addEventListener("click", (ev) => {
     if (ev.target === collectionEl) closeCollection();
   });
@@ -406,6 +418,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     codexEl.hidden = true;
   }
   codexBtn.addEventListener("click", openCodex);
+  mobileCodexBtn.addEventListener("click", () => { menuEl.open = false; openCodex(); });
   codexEl.addEventListener("click", (ev) => {
     if (ev.target === codexEl) closeCodex();
   });
