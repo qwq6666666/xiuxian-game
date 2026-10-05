@@ -11,6 +11,7 @@ import { eventOf } from "../core/events";
 import { placesAt } from "../core/travel";
 import { CLEAR_FRAGMENT_ID } from "../core/fragments";
 import { activeWorldEffects, itemPrice } from "../core/worldeffects";
+import { marketTerritory } from "../core/travel";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
 import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
@@ -857,6 +858,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
     // 世局讓價格變動時，說明原因
     const reasons = activeWorldEffects(state, data).map((x) => fillSlots(x.reason, slotsOf(state)));
+    if (marketTerritory(state, data)?.contested) reasons.push(`坊市一帶國界正在易手，商路不穩，物價約漲 ${Math.round((data.map.territoryRules.marketMultiplier - 1) * 100)}%。`);
     e.marketNote.hidden = reasons.length === 0;
     e.marketNote.textContent = reasons.join("　");
     e.marketLink.hidden = reasons.length === 0;

@@ -2,6 +2,7 @@
 import { gameData } from "../data/load";
 import type { GameData, Point } from "../data/types";
 import { travelMonths } from "./formulas";
+import { sectReach, territoriesAt, territoryForPoint } from "./territory";
 import type { GameState, TravelState } from "./state";
 import { worldAt, worldFor } from "./world";
 
@@ -45,6 +46,30 @@ export function placesAt(state: GameState, data: GameData = gameData): TravelPla
   return places;
 }
 
+export function localTerritory(state: GameState, data: GameData = gameData) {
+  const place = placesAt(state, data).find((p) => p.id === state.travel.locationId);
+  if (!place) return undefined;
+  return territoryForPoint(territoriesAt(worldFor(state.worldSeed, data), Math.floor(state.ageMonths / 12), data), place.region, place.point);
+}
+
+export function marketTerritory(state: GameState, data: GameData = gameData) {
+  const world = worldFor(state.worldSeed, data);
+  const region = data.map.regions.find((r) => r.id === world.birth.region)!;
+  return territoryForPoint(territoriesAt(world, Math.floor(state.ageMonths / 12), data), region.id, region.ferries![0]);
+}
+
+export function localSectInfluence(state: GameState, data: GameData = gameData): boolean {
+  const place = placesAt(state, data).find((p) => p.id === state.travel.locationId);
+  if (!place) return false;
+  const snap = worldAt(worldFor(state.worldSeed, data), Math.floor(state.ageMonths / 12));
+  return snap.sects.some((sect) => {
+    const reach = sectReach(sect, data);
+    if (reach === 0 || sect.region !== place.region) return false;
+    const point = data.map.regions.find((r) => r.id === sect.region)!.sites![sect.site];
+    return Math.hypot(place.point[0] - point[0], place.point[1] - point[1]) <= reach;
+  });
+}
+
 /** 固定地域相鄰圖上的最短路徑；鄰居的資料順序決定同長度時的走法。 */
 export function regionRoute(from: string, to: string, data: GameData = gameData): string[] {
   if (from === to) return [from];
@@ -75,6 +100,7 @@ export interface TravelRoute {
   regions: string[];
   points: Point[];
   months: number;
+  delayMonths: number;
 }
 
 export function routeTo(state: GameState, targetId: string, data: GameData = gameData): TravelRoute | null {
@@ -84,7 +110,9 @@ export function routeTo(state: GameState, targetId: string, data: GameData = gam
   if (!from || !to || from.id === to.id) return null;
   const regions = regionRoute(from.region, to.region, data);
   const anchors = regions.length > 1 ? regions.map((id) => data.map.regions.find((r) => r.id === id)!.capital!) : [];
-  return { from, to, regions, points: [from.point, ...anchors, to.point], months: travelMonths(regions.length - 1) };
+  const territory = territoryForPoint(territoriesAt(worldFor(state.worldSeed, data), Math.floor(state.ageMonths / 12), data), to.region, to.point);
+  const delayMonths = territory?.contested ? data.map.territoryRules.travelDelayMonths : 0;
+  return { from, to, regions, points: [from.point, ...anchors, to.point], months: travelMonths(regions.length - 1) + delayMonths, delayMonths };
 }
 
 export function beginTravel(state: GameState, targetId: string, data: GameData = gameData): GameState {

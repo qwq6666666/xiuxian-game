@@ -152,6 +152,10 @@ export interface EventConditions {
   world?: string[];
   /** 當下世局不能有的任一效果 id */
   worldNot?: string[];
+  /** 目前所在地是否正逢國界推移 */
+  territoryConflict?: boolean;
+  /** 目前所在地是否在開放宗門的靈脈範圍內 */
+  sectInfluence?: boolean;
 }
 
 export interface OutcomeDef {
@@ -349,6 +353,8 @@ export interface MapRegion {
   sites?: Point[];
   ferries?: Point[];
   birth?: { village: Point; mountain: Point };
+  /** 領土分區的中心；只決定地圖形狀，不是新地名 */
+  territories?: Point[];
 }
 
 /** 世界骨架：每世都一樣 */
@@ -356,6 +362,7 @@ export interface MapData {
   viewBox: [number, number];
   /** 國家顏色，依序分配 */
   palette: string[];
+  territoryRules: { transitionYears: number; travelDelayMonths: number; marketMultiplier: number; greatReach: number; schoolReach: number; prosperReachMultiplier: number; declineReachMultiplier: number };
   regions: MapRegion[];
   adjacency: Record<string, string[]>;
   stairs: { x: number; y: number; text: string };

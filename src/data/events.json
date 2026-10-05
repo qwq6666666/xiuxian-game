@@ -2944,6 +2944,32 @@
     "conditions": { "realmMin": "jindan", "flags": ["jindan_dispute_ruled"] }
   },
   {
+    "id": "border_caravan_001",
+    "type": "choice",
+    "title": "關道商隊",
+    "text": "關道剛換了旗，商隊停在路旁，不知該向誰交路引。掌櫃看見你，便問前面的渡口是否還通。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "territoryConflict": true },
+    "choices": [
+      { "text": "領他們繞過關道", "outcomes": [{ "weight": 100, "text": "你帶商隊走了山邊舊路。掌櫃在渡口停下時，硬塞了一筆謝禮。", "effects": { "spiritStones": 5 } }] },
+      { "text": "自行趕路", "outcomes": [{ "weight": 100, "text": "商隊仍在爭路引，你已走過下一道山坡。誰的旗都沒跟上來。", "effects": {} }] }
+    ]
+  },
+  {
+    "id": "sect_vein_001",
+    "type": "choice",
+    "title": "山門靈脈",
+    "text": "山門外的石徑沿靈脈而上，夜裡偶有清光透出。守路的弟子說可以停留，但天亮前須下山。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "lianqi", "sectInfluence": true },
+    "choices": [
+      { "text": "留在石徑吐納", "outcomes": [{ "weight": 100, "text": "你盤坐至夜深，山風漸靜，氣息也隨之沉定。天亮時，守路弟子已換了一班。", "effects": { "cultivation": 0.03 } }] },
+      { "text": "先往山下坊市", "outcomes": [{ "weight": 100, "text": "你順山道下行，替一位挑夫帶了封信。他把攢下的幾枚靈石當作腳程，推也推不回去。", "effects": { "spiritStones": 5 } }] }
+    ]
+  },
+  {
     "id": "jindan_offering_001",
     "type": "choice",
     "title": "年年供品",

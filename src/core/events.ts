@@ -1,6 +1,7 @@
 // 事件系統：計時、依條件抽取、抉擇結算。
 import { gameData } from "../data/load";
 import { worldFlagsOf } from "./worldeffects";
+import { localSectInfluence, localTerritory } from "./travel";
 import { ATTRIBUTE_KEYS, type AttributeKey, type ChoiceDef, type Effects, type EventDef, type GameData } from "../data/types";
 import { availableFragments, drawFragment, grantFragment } from "./fragments";
 import { eventWeight, outcomeWeight, stageNeed } from "./formulas";
@@ -30,6 +31,8 @@ export function eventAvailable(state: GameState, ev: EventDef, data: GameData = 
     if (c.world && !c.world.every((f) => active.includes(f))) return false;
     if (c.worldNot && c.worldNot.some((f) => active.includes(f))) return false;
   }
+  if (c.territoryConflict !== undefined && Boolean(localTerritory(state, data)?.contested) !== c.territoryConflict) return false;
+  if (c.sectInfluence !== undefined && localSectInfluence(state, data) !== c.sectInfluence) return false;
   if (c.bottleneck !== undefined && atBottleneck(state, data) !== c.bottleneck) return false;
   if (c.fragmentAvailable !== undefined && availableFragments(state, c.fragmentAvailable, data).length === 0) return false;
   return true;

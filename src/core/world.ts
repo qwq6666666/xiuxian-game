@@ -441,6 +441,9 @@ function buildChanges(world: World, seed: number, data: GameData, usedAtStart: S
   const pickRng = makeRng(seed);
   const pool = data.worldEvents;
   const want = CHANGE_MIN + Math.floor(pickRng() * (CHANGE_SPREAD + 1));
+  const expansionPool = pool.filter((e) => e.kind === "merge" && e.ageMin <= GUARANTEE_WINDOW[1] && e.ageMax >= GUARANTEE_WINDOW[0]);
+  const expansion = expansionPool.length ? pickOne(pickRng, expansionPool) : null;
+  const expansionAge = expansion ? Math.max(expansion.ageMin, GUARANTEE_WINDOW[0]) + Math.floor(pickRng() * (Math.min(expansion.ageMax, GUARANTEE_WINDOW[1]) - Math.max(expansion.ageMin, GUARANTEE_WINDOW[0]) + 1)) : 0;
 
   const simulate = (picks: Pick[]): WorldChange[] => {
     const rng = makeRng(deriveSeed(seed, 5));
@@ -460,7 +463,7 @@ function buildChanges(world: World, seed: number, data: GameData, usedAtStart: S
   };
 
   // 多抽幾條備用，因為有些候選在這個世界裡不成立
-  let picks = pickCandidates(pickRng, pool, want + 10, []);
+  let picks = pickCandidates(pickRng, pool, want + 10, expansion ? [{ ev: expansion, age: expansionAge }] : []);
   let changes = simulate(picks);
   const inWindow = (cs: WorldChange[]): boolean => cs.some((c) => c.age >= GUARANTEE_WINDOW[0] && c.age <= GUARANTEE_WINDOW[1]);
 

@@ -394,6 +394,14 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   c.schedules = optStrList(o, "schedules", where);
   c.world = optStrList(o, "world", where);
   c.worldNot = optStrList(o, "worldNot", where);
+  if (o.territoryConflict !== undefined) {
+    if (typeof o.territoryConflict !== "boolean") fail(where, "territoryConflict", "必須是 true 或 false");
+    c.territoryConflict = o.territoryConflict;
+  }
+  if (o.sectInfluence !== undefined) {
+    if (typeof o.sectInfluence !== "boolean") fail(where, "sectInfluence", "必須是 true 或 false");
+    c.sectInfluence = o.sectInfluence;
+  }
   if (o.bottleneck !== undefined) {
     if (typeof o.bottleneck !== "boolean") fail(where, "bottleneck", "必須是 true 或 false");
     c.bottleneck = o.bottleneck;
@@ -403,7 +411,7 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   }
   for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
   for (const k of Object.keys(o)) {
-    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot"].includes(k)) {
+    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence"].includes(k)) {
       fail(where, k, "不是合法的條件");
     }
   }
@@ -753,6 +761,16 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     return c as string;
   });
   if (palette.length < 6) fail(file, "palette", `至少需要 6 種顏色，目前 ${palette.length} 種`);
+  const rules = obj(o.territoryRules, `${file} 欄位 territoryRules`);
+  const territoryRules = {
+    transitionYears: num(rules, "transitionYears", `${file} 欄位 territoryRules`, { min: 1, integer: true }),
+    travelDelayMonths: num(rules, "travelDelayMonths", `${file} 欄位 territoryRules`, { min: 0, integer: true }),
+    marketMultiplier: num(rules, "marketMultiplier", `${file} 欄位 territoryRules`, { min: 1 }),
+    greatReach: num(rules, "greatReach", `${file} 欄位 territoryRules`, { gt: 0 }),
+    schoolReach: num(rules, "schoolReach", `${file} 欄位 territoryRules`, { gt: 0 }),
+    prosperReachMultiplier: num(rules, "prosperReachMultiplier", `${file} 欄位 territoryRules`, { min: 1 }),
+    declineReachMultiplier: num(rules, "declineReachMultiplier", `${file} 欄位 territoryRules`, { min: 0, max: 1 }),
+  };
 
   const regions = list(o.regions, `${file} 欄位 regions`).map((r, i): MapRegion => {
     const where = `${file} 第 ${i + 1} 筆地域`;
@@ -771,6 +789,9 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     };
     if (ro.land) {
       region.capital = point(ro.capital, w, "capital", box);
+      const territoryPoints = list(ro.territories, `${w} 欄位 territories`);
+      if (territoryPoints.length < 3) fail(w, "territories", "至少需要 3 個領土中心");
+      region.territories = territoryPoints.map((p, j) => point(p, w, `territories[${j}]`, box));
       const sites = list(ro.sites, `${w} 欄位 sites`);
       if (sites.length < 5) fail(w, "sites", `至少需要 5 個宗門位置，目前 ${sites.length} 個`);
       region.sites = sites.map((p, j) => point(p, w, `sites[${j}]`, box));
@@ -838,7 +859,7 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     market: blurb(bo.market, "market"),
     mountain: blurb(bo.mountain, "mountain"),
   } as MapData["blurbs"];
-  return { viewBox: box, palette, regions, adjacency, stairs, blurbs };
+  return { viewBox: box, palette, territoryRules, regions, adjacency, stairs, blurbs };
 }
 
 /** 世局候選池各種類允許的目標、欄位與模板欄位 */
