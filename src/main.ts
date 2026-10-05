@@ -1,22 +1,24 @@
+import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
+import { createInitialState, newLife, reroll, startLife } from "./core/life";
 import { deserialize, serialize } from "./core/save";
-import { createInitialState, type GameState } from "./core/state";
+import type { GameState } from "./core/state";
 import { tick } from "./core/tick";
-import { config } from "./data/load";
+import { gameData as data } from "./data/load";
 import { mountUi } from "./ui/render";
 
 const SAVE_KEY = "xiuxian-save";
 
 function newGame(): GameState {
   // 種子由外部（這裡）決定，core 不讀時間
-  return createInitialState(Date.now(), config.startAgeYears);
+  return createInitialState(Date.now(), data);
 }
 
 let notice = "";
 function load(): GameState {
   try {
     const text = localStorage.getItem(SAVE_KEY);
-    if (text !== null) return deserialize(text);
+    if (text !== null) return deserialize(text, data);
   } catch (e) {
     notice = `存檔無法讀取，已重新開始。（${(e as Error).message}）`;
   }
@@ -33,21 +35,25 @@ function save(s: GameState): void {
 
 let state = load();
 
-const ui = mountUi(document.getElementById("app")!, config.speeds, {
-  onSpeed(speed) {
-    state = { ...state, speed };
-    save(state);
-    ui.render(state);
-  },
+function update(next: GameState): void {
+  state = next;
+  save(state);
+  ui.render(state);
+}
+
+const ui = mountUi(document.getElementById("app")!, data, {
+  onSpeed: (speed) => update({ ...state, speed }),
+  onReroll: () => update(reroll(state, data)),
+  onStart: () => update(startLife(state)),
+  onNewLife: () => update(newLife(state, data)),
   onReset() {
     try {
       localStorage.removeItem(SAVE_KEY);
     } catch {
       // 忽略
     }
-    state = newGame();
     ui.notice("");
-    ui.render(state);
+    update(newGame());
   },
 });
 ui.notice(notice);
@@ -57,15 +63,17 @@ ui.render(state);
 let last = performance.now();
 let acc = 0;
 function frame(now: number): void {
-  acc += msToMonths(now - last, state.speed, config.msPerMonth);
+  const dt = now - last;
   last = now;
-  let months = Math.floor(acc);
-  if (months > 0) {
-    acc -= months;
-    months = Math.min(months, config.maxCatchUpMonths);
-    state = tick(state, months);
-    save(state);
-    ui.render(state);
+  if (state.phase === "living") {
+    acc += msToMonths(dt, state.speed, data.config.msPerMonth);
+    const months = Math.min(Math.floor(acc), data.config.maxCatchUpMonths);
+    if (months > 0) {
+      acc -= Math.floor(acc); // 超過補算上限的部分直接捨棄
+      update(tick(state, months, data));
+    }
+  } else {
+    acc = 0;
   }
   requestAnimationFrame(frame);
 }

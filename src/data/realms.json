@@ -1,0 +1,20 @@
+[
+  {
+    "id": "mortal",
+    "name": "凡人",
+    "lifespan": 80,
+    "cultivationMult": 1,
+    "stageNames": [""],
+    "need": { "base": 50, "growth": 1 },
+    "breakthrough": "auto"
+  },
+  {
+    "id": "lianqi",
+    "name": "練氣",
+    "lifespan": 120,
+    "cultivationMult": 1,
+    "stageNames": ["一層", "二層", "三層", "四層", "五層", "六層", "七層", "八層", "九層"],
+    "need": { "base": 100, "growth": 1.5 },
+    "breakthrough": "manual"
+  }
+]

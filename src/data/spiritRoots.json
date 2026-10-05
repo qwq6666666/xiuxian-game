@@ -1,0 +1,6 @@
+[
+  { "id": "za", "name": "雜靈根", "mult": 0.6, "weight": 50 },
+  { "id": "san", "name": "三靈根", "mult": 1.0, "weight": 35 },
+  { "id": "shuang", "name": "雙靈根", "mult": 1.5, "weight": 13 },
+  { "id": "tian", "name": "天靈根", "mult": 2.5, "weight": 2 }
+]

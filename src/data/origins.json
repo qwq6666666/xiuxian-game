@@ -1,0 +1,42 @@
+[
+  {
+    "id": "farmer",
+    "name": "農戶",
+    "desc": "世代務農，家中無人識得靈氣為何物。",
+    "weight": 25,
+    "spiritStones": 10,
+    "items": {},
+    "cultivationBonus": 0,
+    "attributes": {}
+  },
+  {
+    "id": "merchant",
+    "name": "商賈",
+    "desc": "家中算盤打得比誰都響，連修仙也想先問個價錢。",
+    "weight": 25,
+    "spiritStones": 50,
+    "items": {},
+    "cultivationBonus": 0,
+    "attributes": {}
+  },
+  {
+    "id": "noble",
+    "name": "修仙世家",
+    "desc": "家學淵源，自幼耳濡目染，家中另藏有一顆聚氣丹。",
+    "weight": 25,
+    "spiritStones": 10,
+    "items": { "juqi_dan": 1 },
+    "cultivationBonus": 0.1,
+    "attributes": {}
+  },
+  {
+    "id": "orphan",
+    "name": "孤兒",
+    "desc": "父母不詳，自幼漂泊，倒也養出了幾分命硬。",
+    "weight": 25,
+    "spiritStones": 0,
+    "items": {},
+    "cultivationBonus": 0,
+    "attributes": { "fortune": 2 }
+  }
+]

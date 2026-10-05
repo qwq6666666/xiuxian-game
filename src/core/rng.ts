@@ -16,3 +16,18 @@ export function nextInt(seed: number, min: number, max: number): [number, number
   const [v, s] = nextRandom(seed);
   return [min + Math.floor(v * (max - min + 1)), s];
 }
+
+/** 依權重抽一個，回傳索引與新的種子 */
+export function pickWeighted(
+  seed: number,
+  items: readonly { weight: number }[],
+): [number, number] {
+  const total = items.reduce((sum, it) => sum + it.weight, 0);
+  const [v, s] = nextRandom(seed);
+  let r = v * total;
+  for (let i = 0; i < items.length; i++) {
+    r -= items[i].weight;
+    if (r < 0) return [i, s];
+  }
+  return [items.length - 1, s];
+}
