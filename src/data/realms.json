@@ -37,7 +37,7 @@
     "lifespan": 500,
     "cultivationMult": 6,
     "stageNames": ["初期", "中期", "後期"],
-    "need": { "base": 60000, "growth": 1.8 },
+    "need": { "base": 16000, "growth": 1.8 },
     "breakthrough": "manual",
     "endsLife": "untilCleared",
     "daoYun": 250,

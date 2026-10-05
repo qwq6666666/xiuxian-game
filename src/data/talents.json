@@ -51,6 +51,6 @@
     "maxLevel": 6,
     "effect": "breakthroughAid",
     "perLevel": 1,
-    "cost": { "base": 300, "growth": 1.5 }
+    "cost": { "base": 250, "growth": 1.5 }
   }
 ]

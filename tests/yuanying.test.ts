@@ -100,12 +100,12 @@ describe("結嬰：結果", () => {
 describe("神光天賦", () => {
   it("價格依成長率，上限 6 級，道韻足夠才能買", () => {
     expect(shenguang.maxLevel).toBe(6);
-    expect(talentCost(shenguang, 0)).toBe(300);
-    expect(talentCost(shenguang, 1)).toBe(450);
-    const dead = { ...endLife(atCap(0), "lifespan"), meta: { ...emptyMeta(), daoYun: 300 } };
+    expect(talentCost(shenguang, 0)).toBe(250);
+    expect(talentCost(shenguang, 1)).toBe(375);
+    const dead = { ...endLife(atCap(0), "lifespan"), meta: { ...emptyMeta(), daoYun: 250 } };
     expect(canBuyTalent(dead, "shenguang")).toBe(true);
     expect(buyTalent(dead, "shenguang").meta.talents.shenguang).toBe(1);
-    expect(canBuyTalent({ ...dead, meta: { ...dead.meta, daoYun: 299 } }, "shenguang")).toBe(false);
+    expect(canBuyTalent({ ...dead, meta: { ...dead.meta, daoYun: 249 } }, "shenguang")).toBe(false);
   });
 
   it("說明文字帶出等級", () => {
