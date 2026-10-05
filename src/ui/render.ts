@@ -1,4 +1,4 @@
-import { canBuyItem, canBuyTalent, canUseItem, pillsTaken } from "../core/actions";
+import { canBuyItem, canBuyTalent, canUseItem, canZuohua, pillsTaken, zuohuaDaoYun } from "../core/actions";
 import {
   breakthroughRuleOf,
   canBreakthrough,
@@ -18,7 +18,7 @@ import { eraName, lifeIndex } from "../core/era";
 import { pillPower, splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { CLEARED_FLAG } from "../core/review";
-import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
+import { atBottleneck, lifespanYears, realmOf, scheduleOpen } from "../core/tick";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
 import {
   ATTR_LABEL,
@@ -51,6 +51,7 @@ export interface UiHandlers {
   onBreakthrough(usePill: boolean): void;
   onUseItem(itemId: string): void;
   onBuyItem(itemId: string): void;
+  onZuohua(): void;
 }
 
 export interface Ui {
@@ -393,6 +394,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     modal: HTMLElement;
     modalBody: HTMLElement;
     schedules: { id: string; b: HTMLButtonElement }[];
+    zuohuaBox: HTMLElement;
+    zuohuaInfo: HTMLElement;
     btSection: HTMLElement;
     btInfo: HTMLElement;
     btButton: HTMLButtonElement;
@@ -428,6 +431,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <p id="btInfo" class="desc"></p>
             <label id="pillRow" hidden><input type="checkbox" id="pill" /> <span id="pillText"></span></label>
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
+          </section>
+          <section id="zuohuaBox" hidden>
+            <h2>閉關坐化</h2>
+            <p id="zuohuaInfo" class="desc"></p>
+            <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
           <section><h2>背包</h2><ul id="bag" class="items"></ul></section>
           <section><h2>坊市</h2><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p></section>
@@ -486,6 +494,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       modal: q("#modal"),
       modalBody: q("#modalBody"),
       schedules,
+      zuohuaBox: q("#zuohuaBox"),
+      zuohuaInfo: q("#zuohuaInfo"),
       btSection: q("#btSection"),
       btInfo: q("#btInfo"),
       btButton: q<HTMLButtonElement>("#breakthrough"),
@@ -497,6 +507,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       marketNote: q("#marketNote"),
     };
     els.btButton.addEventListener("click", () => handlers.onBreakthrough(els!.pill.checked));
+    q("#zuohua").addEventListener("click", () => {
+      // 結束這一世不可回頭，先問一聲
+      if (lastState && confirm("閉關坐化會立刻結束這一世，確定嗎？")) handlers.onZuohua();
+    });
     // 勾選丹藥後立刻更新成功率，不用等下一個月
     els.pill.addEventListener("change", () => lastState && renderBreakthrough(lastState, els!));
   }
@@ -564,7 +578,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     e.fill.style.width = `${Math.min(100, (state.cultivation / need) * 100)}%`;
     e.barText.textContent = `修為 ${Math.floor(state.cultivation)} / ${need}${atBottleneck(state, data) ? "　瓶頸" : ""}`;
 
-    for (const { id, b } of e.schedules) b.classList.toggle("active", id === state.schedule);
+    for (const { id, b } of e.schedules) {
+      b.classList.toggle("active", id === state.schedule);
+      b.hidden = !scheduleOpen(state, data.schedules.find((s) => s.id === id)!, data);
+    }
+    e.zuohuaBox.hidden = !canZuohua(state, data);
+    if (!e.zuohuaBox.hidden) {
+      e.zuohuaInfo.textContent = `把剩餘壽元一次坐完，結束這一世，額外換得道韻 +${zuohuaDaoYun(state, data)}。已達階段的道韻照常結算。`;
+    }
     renderBreakthrough(state, e);
     renderBag(state, e);
     for (const m of e.market) {

@@ -8,7 +8,7 @@ import { nextInt, nextRandom } from "./rng";
 import type { GameState } from "./state";
 
 // 其他模組一直從 tick 取用這些函式，維持原本的匯入路徑
-export { addLog, atBottleneck, lifespanYears, nextRealm, realmOf, resolveStages, scheduleOf } from "./progress";
+export { addLog, atBottleneck, lifespanYears, nextRealm, realmOf, resolveStages, scheduleOf, scheduleOpen } from "./progress";
 
 /** 日常安排的每月收穫與風險：靈石、拾得物品、歷練身亡 */
 function applySchedule(state: GameState, sched: ScheduleDef, month: number, data: GameData): GameState {

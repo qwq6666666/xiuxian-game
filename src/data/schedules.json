@@ -28,5 +28,16 @@
     "stones": { "chance": 1, "min": 3, "max": 3 },
     "finds": [],
     "deathChance": 0
+  },
+  {
+    "id": "wander",
+    "name": "走訪渡口",
+    "desc": "在渡口與茶棚之間走動，聽人閒話。修行稍緩。",
+    "realmMin": "lianqi",
+    "cultivationMult": 0.3,
+    "eventRateMult": 1.5,
+    "stones": { "chance": 0, "min": 0, "max": 0 },
+    "finds": [],
+    "deathChance": 0
   }
 ]

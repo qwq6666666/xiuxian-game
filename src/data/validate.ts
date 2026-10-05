@@ -221,6 +221,9 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
       ending: ending as EndingCause,
       daoYun: num(o, "daoYun", where, { min: 0, integer: true }),
       ...(breakthroughRule ? { breakthroughRule } : {}),
+      ...(o.zuohua !== undefined
+        ? { zuohua: { daoYunPerYear: num(obj(o.zuohua, `${where} 欄位 zuohua`), "daoYunPerYear", `${where} 欄位 zuohua`, { gt: 0 }) } }
+        : {}),
     };
   });
   uniqueIds(realms, file);
@@ -260,6 +263,7 @@ export function validateSchedules(raw: unknown, file = "schedules.json"): Schedu
       stones: { chance, min, max: num(stones, "max", sw, { min, integer: true }) },
       finds,
       deathChance,
+      ...(o.realmMin !== undefined ? { realmMin: str(o, "realmMin", where) } : {}),
     };
   });
   uniqueIds(schedules, file);
@@ -580,6 +584,7 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       buy: strList(log, "buy", where),
       find: strList(log, "find", where),
       adventureDeath: str(log, "adventureDeath", where),
+      zuohua: str(log, "zuohua", where),
       retreat: {
         short: strList(retreat, "short", `${where}.retreat`),
         medium: strList(retreat, "medium", `${where}.retreat`),
@@ -996,6 +1001,7 @@ export function validateGameData(data: GameData): GameData {
     }
   });
   data.schedules.forEach((s, i) => {
+    if (s.realmMin !== undefined) has(realmIds, s.realmMin, `schedules.json 第 ${i + 1} 筆（${s.id}）的 realmMin`, "realms.json");
     for (const f of s.finds) has(itemIds, f.itemId, `schedules.json 第 ${i + 1} 筆（${s.id}）的 finds`, "items.json");
   });
   data.origins.forEach((o, i) => {

@@ -108,11 +108,14 @@ export function pickClosing(state: GameState, cause: ReviewCause, data: GameData
 
 /**
  * 結束這一世：產生一生回顧、結算道韻、更新跨世資料，並進入死亡（或通關）階段。
- * 呼叫前，死亡或通關的日誌應已寫好。已結算過的狀態原樣回傳。
+ * 呼叫前，死亡或通關的日誌應已寫好。已結算過的狀態原樣回傳。extraBase 是額外的基本道韻（坐化用）。
  */
-export function endLife(state: GameState, cause: ReviewCause, data: GameData = gameData): GameState {
+export function endLife(state: GameState, cause: ReviewCause, data: GameData = gameData, extraBase = 0): GameState {
   if (state.review !== null) return state;
-  const { base, bonus, newlyReached } = settleDaoYun(state, data);
+  const settled = settleDaoYun(state, data);
+  const { bonus, newlyReached } = settled;
+  // extraBase：坐化把剩餘壽元折成的道韻，算進基本道韻
+  const base = settled.base + extraBase;
   const review: LifeReview = {
     cause,
     closing: pickClosing(state, cause, data),

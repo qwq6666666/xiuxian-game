@@ -4,10 +4,12 @@ import type { GameData } from "../data/types";
 import { pillPower, stageNeed, talentCost } from "./formulas";
 import { itemPrice } from "./worldeffects";
 import type { GameState } from "./state";
-import { addLog, atBottleneck, realmOf, resolveStages } from "./tick";
+import { endLife } from "./review";
+import { addLog, atBottleneck, lifespanYears, realmOf, resolveStages, scheduleOpen } from "./tick";
 
 export function setSchedule(state: GameState, scheduleId: string, data: GameData = gameData): GameState {
-  if (state.phase !== "living" || !data.schedules.some((s) => s.id === scheduleId)) return state;
+  const sched = data.schedules.find((s) => s.id === scheduleId);
+  if (state.phase !== "living" || !sched || !scheduleOpen(state, sched, data)) return state;
   return { ...state, schedule: scheduleId };
 }
 
@@ -101,4 +103,29 @@ export function useItem(state: GameState, itemId: string, data: GameData = gameD
     s = { ...s, lifespanBonus: s.lifespanBonus + item.effect.years };
   }
   return s;
+}
+
+/** 閉關坐化能換得的道韻：剩餘壽元（整年）× 該境界的每年道韻，不含已達階段的道韻 */
+export function zuohuaDaoYun(state: GameState, data: GameData = gameData): number {
+  const rule = realmOf(state, data).zuohua;
+  if (!rule) return 0;
+  const remaining = Math.max(0, Math.floor(lifespanYears(state, data) - state.ageMonths / 12));
+  return Math.floor(remaining * rule.daoYunPerYear);
+}
+
+/** 目前的境界提供坐化，且正在修行、沒有等待中的抉擇 */
+export function canZuohua(state: GameState, data: GameData = gameData): boolean {
+  return state.phase === "living" && state.pendingEvent === null && realmOf(state, data).zuohua !== undefined;
+}
+
+/** 閉關坐化：提前結束這一世，剩餘壽元折成道韻，其餘結算與死亡相同 */
+export function zuohua(state: GameState, data: GameData = gameData): GameState {
+  if (!canZuohua(state, data)) return state;
+  const extra = zuohuaDaoYun(state, data);
+  const logged = addLog(
+    state,
+    { month: state.ageMonths, kind: "zuohua", realmId: state.realmId, stage: state.stage },
+    data.config.logLimit,
+  );
+  return endLife(logged, "zuohua", data, extra);
 }

@@ -41,6 +41,7 @@
     "breakthrough": "manual",
     "endsLife": "untilCleared",
     "daoYun": 250,
+    "zuohua": { "daoYunPerYear": 0.15 },
     "breakthroughRule": {
       "baseRate": 0.05,
       "insightBonus": 0.02,

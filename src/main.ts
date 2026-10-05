@@ -1,6 +1,6 @@
 import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
-import { buyItem, renameCharacter, buyTalent, setSchedule, useItem } from "./core/actions";
+import { buyItem, renameCharacter, buyTalent, setSchedule, useItem, zuohua } from "./core/actions";
 import { attemptBreakthrough } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
 import { applyOffline } from "./core/offline";
@@ -76,6 +76,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onSchedule: (id) => update(setSchedule(state, id, data)),
   onBreakthrough: (usePill) => update(attemptBreakthrough(state, usePill, data)),
   onUseItem: (id) => update(useItem(state, id, data)),
+  onZuohua: () => update(zuohua(state, data)),
   onBuyItem: (id) => update(buyItem(state, id, data)),
   onExport() {
     const text = serialize(state);

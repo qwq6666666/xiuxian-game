@@ -8,8 +8,9 @@
 // 通關後策略（post，第 5 個參數）：通關前與 mixed 相同；第一次通關之後道韻先買神光到結嬰門檻，
 // 再依較高的目標均衡購買，並量測首次元嬰、金丹期單世時長與結嬰嘗試次數（對照 GDD 第 23.6 節）。
 // 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
+// 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
 // 例：npm run sim -- 300 1 40 post
-import { buyItem, buyTalent, canBuyItem, canBuyTalent, canUseItem, setSchedule, useItem } from "../src/core/actions";
+import { buyItem, buyTalent, canBuyItem, canBuyTalent, canUseItem, canZuohua, setSchedule, useItem, zuohua } from "../src/core/actions";
 import { attemptBreakthrough, canBreakthrough } from "../src/core/breakthrough";
 import { canChoose, chooseEvent, eventOf } from "../src/core/events";
 import { createInitialState, newLife, startLife } from "../src/core/life";
@@ -22,7 +23,7 @@ import { realmLabel } from "../src/ui/format";
 const runs = Number(process.argv[2] ?? 1000);
 const baseSeed = Number(process.argv[3] ?? 1);
 const lives = Number(process.argv[4] ?? 1);
-const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : "simple";
+const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -54,6 +55,12 @@ function herbActions(state: GameState): GameState {
   while (s.realmId !== "mortal" && canBuyItem(s, "juqi_dan", gameData)) s = buyItem(s, "juqi_dan", gameData);
   while (canUseItem(s, "juqi_dan", gameData)) s = useItem(s, "juqi_dan", gameData);
   return s;
+}
+
+/** 走訪渡口策略的每月操作：練氣之後一直走訪，其餘照 mixed 買賣丹藥 */
+function wanderActions(state: GameState): GameState {
+  const s = mixedActions(state);
+  return s.realmId === "mortal" ? s : setSchedule(s, "wander", gameData);
 }
 
 /** 通關後策略的天賦購買：第一次通關前同 mixed；之後先把神光買到結嬰門檻，再依 POST_TARGETS 均衡 */
@@ -88,17 +95,18 @@ function buyTalentsBalanced(state: GameState, targets: Record<string, number> = 
 }
 
 /** 最近一世的量測：金丹期的結嬰嘗試次數與停留月數（沒進金丹為 0） */
-let lifeStats = { attempts: 0, jindanMonths: 0, ready: false };
+let lifeStats = { attempts: 0, jindanMonths: 0, ready: false, zuohua: false };
 
 /** 從開局玩到這一世結束（死亡、通關或元嬰大成） */
 function playLife(start: GameState): GameState {
   const need = gameData.realms.find((r) => r.id === "jindan")?.breakthroughRule?.requiresTalent;
-  lifeStats = { attempts: 0, jindanMonths: 0, ready: !need || (start.meta.talents[need.id] ?? 0) >= need.level };
+  lifeStats = { attempts: 0, jindanMonths: 0, ready: !need || (start.meta.talents[need.id] ?? 0) >= need.level, zuohua: false };
   let jindanEntered: number | null = null;
   let state = startLife(start, gameData);
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
     if (strategy === "herb" && state.phase === "living") state = herbActions(state);
+    else if (strategy === "wander" && state.phase === "living") state = wanderActions(state);
     else if (strategy !== "simple" && state.phase === "living") state = mixedActions(state);
     if (state.pendingEvent !== null) state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
     // 卡在瓶頸時反覆嘗試突破，直到成功或老死
@@ -108,6 +116,11 @@ function playLife(start: GameState): GameState {
       if (atBottleneck(state, gameData)) break;
     }
     if (jindanEntered === null && state.realmId === "jindan") jindanEntered = state.ageMonths;
+    // post 策略：神光沒到門檻，修到金丹後期圓滿、卡在瓶頸時坐化，不空等壽盡（第 24.2 節）
+    if (strategy === "post" && !lifeStats.ready && state.phase === "living" && canZuohua(state, gameData) && atBottleneck(state, gameData)) {
+      lifeStats.zuohua = true;
+      state = zuohua(state, gameData);
+    }
   }
   if (jindanEntered !== null) lifeStats.jindanMonths = state.ageMonths - jindanEntered;
   return state;
@@ -148,7 +161,7 @@ function singleLives(): void {
   const reached = new Map<string, number>();
   const eventTotals = new Map<string, number>();
   const choiceCounts: number[] = [];
-  const causes = { lifespan: 0, event: 0, adventure: 0, cleared: 0, yuanying: 0 };
+  const causes = { lifespan: 0, event: 0, adventure: 0, cleared: 0, yuanying: 0, zuohua: 0 };
   let totalMonths = 0;
   let totalProgress = 0;
 
@@ -234,6 +247,8 @@ function campaigns(): void {
   const jindanEnds = [0, 0, 0, 0];
   /** 通關後進了金丹、但神光還沒到門檻而空等的世數 */
   let waitingLives = 0;
+  /** 通關後進了金丹、神光未到門檻而選擇坐化的世數 */
+  let zuohuaLives = 0;
 
   for (let c = 0; c < runs; c++) {
     let state = createInitialState(freshSeed(), gameData);
@@ -286,7 +301,8 @@ function campaigns(): void {
         if (!gotClear) clearLife = k + 1;
         gotClear = true;
       }
-      if (lifeStats.jindanMonths > 0 && !lifeStats.ready) waitingLives++;
+      if (lifeStats.jindanMonths >= 0 && lifeStats.zuohua) zuohuaLives++;
+      else if (lifeStats.jindanMonths > 0 && !lifeStats.ready) waitingLives++;
       if (lifeStats.jindanMonths > 0 && lifeStats.ready) jindanMinutes.push((lifeStats.jindanMonths * gameData.config.msPerMonth) / 60000);
       if (lifeStats.attempts > 0) attemptCounts.push(lifeStats.attempts);
       if (lifeStats.jindanMonths > 0 && lifeStats.ready) jindanEnds[state.realmId === "yuanying" ? 3 : state.stage]++;
@@ -296,14 +312,14 @@ function campaigns(): void {
         yuanyingHours.push((months * gameData.config.msPerMonth) / 3_600_000);
       }
       // 把道韻優先花在宿慧
-      if (strategy === "mixed" || strategy === "herb") state = buyTalentsBalanced(state);
+      if (strategy === "mixed" || strategy === "herb" || strategy === "wander") state = buyTalentsBalanced(state);
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", simple: "優先買宿慧" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(
@@ -357,7 +373,7 @@ function campaigns(): void {
     console.log(`  ${ok(h >= 8 && h <= 12)} 首次元嬰累計遊玩：平均 ${h.toFixed(1)} 小時（目標 8–12 小時，僅計已結嬰者）`);
     const m = mean(jindanMinutes);
     console.log(`  ${ok(m >= 20 && m <= 40)} 金丹期單世時長：平均 ${m.toFixed(1)} 分鐘（目標 20–40 分鐘，僅計神光已到門檻的 ${jindanMinutes.length} 世）`);
-    console.log(`  （另有 ${waitingLives} 世進了金丹但神光未到門檻，只能空等壽盡，不計入上面的時長）`);
+    console.log(`  （神光未到門檻的金丹期：修到後期圓滿後坐化離場 ${zuohuaLives} 世；壽盡前沒修到圓滿 ${waitingLives} 世；皆不計入上面的時長）`);
     const a = mean(attemptCounts);
     console.log(`  ${ok(a >= 2 && a <= 5)} 每世結嬰嘗試：平均 ${a.toFixed(1)} 次（目標 2–5 次，僅計有嘗試的 ${attemptCounts.length} 世）`);
   }

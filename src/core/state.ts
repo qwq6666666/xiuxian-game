@@ -60,6 +60,7 @@ export const LOG_KINDS = [
   "buy",
   "find",
   "adventureDeath",
+  "zuohua",
   "event",
   "retreat",
   "era",

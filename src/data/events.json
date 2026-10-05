@@ -817,6 +817,7 @@
     "text": "一名行腳客借宿你處，自稱出身{wanderers}，夜裡與你聊到三更。",
     "weight": 7,
     "tone": "neutral",
+    "scheduleWeights": { "wander": 3 },
     "conditions": { "ageMin": 16, "fragmentAvailable": 3 },
     "choices": [
       {
@@ -976,6 +977,7 @@
     "weight": 7,
     "tone": "neutral",
     "maxPerLife": 2,
+    "scheduleWeights": { "wander": 3 },
     "conditions": { "ageMin": 12 },
     "choices": [
       {
@@ -1084,6 +1086,7 @@
     "weight": 8,
     "tone": "neutral",
     "maxPerLife": 2,
+    "scheduleWeights": { "wander": 3 },
     "conditions": { "ageMin": 14 },
     "choices": [
       {
@@ -2093,6 +2096,7 @@
     "text": "{market}的老船夫在渡口邊補網，船艙裡堆著一捆泛黃的紙，他說是歷任客人落下的。",
     "weight": 5,
     "tone": "neutral",
+    "scheduleWeights": { "wander": 3 },
     "conditions": { "ageMin": 16, "fragmentAvailable": 3 },
     "choices": [
       {
@@ -2318,5 +2322,117 @@
         ]
       }
     ]
+  },
+  {
+    "id": "wander_boatman_001",
+    "type": "choice",
+    "title": "渡口的老船夫",
+    "text": "渡口的石階上坐著一位老船夫，煙袋鍋子在手裡轉了好幾圈，看樣子是想找人說話。",
+    "weight": 14,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": {
+      "schedules": [
+        "wander"
+      ],
+      "fragmentAvailable": 3
+    },
+    "choices": [
+      {
+        "text": "請他喝一碗",
+        "requires": {
+          "spiritStones": 3
+        },
+        "outcomes": [
+          {
+            "weight": 45,
+            "text": "他喝了酒，話匣子開了。說到一半從懷裡摸出一張舊紙，說是客人落下的，沒人來取。",
+            "effects": {
+              "spiritStones": -3,
+              "fragment": {
+                "maxTier": 3
+              }
+            }
+          },
+          {
+            "weight": 55,
+            "text": "他喝完便睡了，鼾聲和江水聲是一個調子。",
+            "effects": {
+              "spiritStones": -3
+            }
+          }
+        ]
+      },
+      {
+        "text": "坐下來聽他說",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "他說的都是舊年的水位和船價，聽得你昏昏欲睡。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "wander_crowd_001",
+    "type": "choice",
+    "title": "渡口人多",
+    "text": "渡口候船的人很多，有人在高聲議價，有人湊在一起低聲說話。",
+    "weight": 14,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": {
+      "schedules": [
+        "wander"
+      ]
+    },
+    "choices": [
+      {
+        "text": "湊近聽低聲的那一群",
+        "outcomes": [
+          {
+            "weight": 40,
+            "text": "他們說的是{wanderers}的規矩。你沒全聽懂，但記住了幾個詞。",
+            "effects": {
+              "attributes": {
+                "insight": 1
+              }
+            }
+          },
+          {
+            "weight": 60,
+            "text": "他們看見你走近，話就停了，轉頭議起船價。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "替人看行李",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你替一位客人看了一個時辰的行李，得了幾塊靈石。",
+            "effects": {
+              "spiritStones": 6
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "wander_stranger_001",
+    "type": "anecdote",
+    "title": "渡口邊的行腳人",
+    "text": "渡口邊一個行腳的散修問你要不要結伴走一段。你說不必，他點點頭，沒有勉強。",
+    "weight": 10,
+    "tone": "neutral",
+    "conditions": {
+      "schedules": [
+        "wander"
+      ]
+    }
   }
 ]

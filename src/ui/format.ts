@@ -66,6 +66,7 @@ export function talentSummary(talents: Record<string, number>, data: GameData): 
 export function reviewTitle(review: LifeReview | null): string {
   if (review?.cause === "cleared") return "金丹大成";
   if (review?.cause === "yuanying") return "元嬰大成";
+  if (review?.cause === "zuohua") return "閉關坐化";
   return "此生已盡";
 }
 
@@ -189,6 +190,9 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
     case "adventureDeath":
       template = log.adventureDeath;
       break;
+    case "zuohua":
+      template = log.zuohua;
+      break;
     case "retreat": {
       const months = entry.retreatMonths ?? 0;
       const [mid, long] = data.config.offlineRetreatTierYears;
@@ -211,7 +215,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
   }
   const body = fill(template, vars);
   // 死亡文字自帶「享年」，不再加年齡前綴
-  return entry.kind === "death" || entry.kind === "adventureDeath" || entry.kind === "era" ? body : `${formatAgeZh(entry.month)}，${body}`;
+  return entry.kind === "death" || entry.kind === "adventureDeath" || entry.kind === "zuohua" || entry.kind === "era" ? body : `${formatAgeZh(entry.month)}，${body}`;
 }
 
 export interface CollectionSummary {

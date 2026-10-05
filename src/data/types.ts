@@ -81,6 +81,8 @@ export interface RealmDef {
   ending: EndingCause;
   /** 手動突破到下一境界的規則（最後一個境界不需要） */
   breakthroughRule?: BreakthroughRule;
+  /** 閉關坐化（M18）：在這個境界可以提前結束這一世，剩餘壽元每年換得這麼多道韻 */
+  zuohua?: { daoYunPerYear: number };
 }
 
 export interface ScheduleDef {
@@ -96,6 +98,8 @@ export interface ScheduleDef {
   finds: { itemId: string; chance: number }[];
   /** 每月身亡機率 */
   deathChance: number;
+  /** 達到這個境界才開放（預設一開始就能選） */
+  realmMin?: string;
 }
 
 export type ItemEffect =
@@ -222,8 +226,8 @@ export interface TalentDef {
   cost: { base: number; growth: number };
 }
 
-export type ReviewCause = "lifespan" | "adventure" | "event" | "cleared" | "yuanying";
-export const REVIEW_CAUSES: readonly ReviewCause[] = ["lifespan", "adventure", "event", "cleared", "yuanying"];
+export type ReviewCause = "lifespan" | "adventure" | "event" | "cleared" | "yuanying" | "zuohua";
+export const REVIEW_CAUSES: readonly ReviewCause[] = ["lifespan", "adventure", "event", "cleared", "yuanying", "zuohua"];
 /** 境界結束這一世時可用的結束方式 */
 export type EndingCause = "cleared" | "yuanying";
 export const ENDING_CAUSES: readonly EndingCause[] = ["cleared", "yuanying"];
@@ -246,6 +250,8 @@ export interface TextData {
     buy: string[];
     find: string[];
     adventureDeath: string;
+    /** 閉關坐化的日誌 */
+    zuohua: string;
     /** 閉關見聞：依閉關長短分檔，結束原因的補句接在後面（時間用完不補） */
     retreat: {
       short: string[];
