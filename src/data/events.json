@@ -2434,5 +2434,494 @@
         "wander"
       ]
     }
+  },
+  {
+    "id": "jindan_visit_001",
+    "type": "anecdote",
+    "title": "路人叩拜",
+    "text": "山下的村民遠遠見你走過，齊齊跪下，口稱仙師。你想扶，又覺得扶起來他們更不安，便由著他們跪完了。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    }
+  },
+  {
+    "id": "jindan_peer_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "舊名冊",
+    "text": "你翻出當年同輩的名冊，一個個數過去，還能對上活人的，一個也沒有。你把名冊合上，放回原處。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    }
+  },
+  {
+    "id": "jindan_friend_001",
+    "type": "choice",
+    "title": "故人來訪",
+    "text": "一位白髮老者登門，自稱當年曾在你門外站過一個下午。你想了很久，才想起那是個十來歲的孩子。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    },
+    "choices": [
+      {
+        "text": "請他進來",
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "你們喝了一盞茶，話不多。他臨走時說，今生怕是不及再來了，你點點頭，沒有勸他。",
+            "effects": {
+              "attributes": {
+                "mind": 1
+              }
+            }
+          },
+          {
+            "weight": 40,
+            "text": "他坐下後只說了一句家常，便睡著了。你替他蓋了件衣裳，等他醒來。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "隔門道謝",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你隔著門道了謝。腳步聲在門外停了一會兒，漸漸遠了。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jindan_askway_001",
+    "type": "choice",
+    "title": "有人問路",
+    "text": "一位築基修士攔下你，問金丹之後還有什麼。他問得很認真，像是已經問過許多人。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    },
+    "choices": [
+      {
+        "text": "實話相告",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你說不知道。他愣了片刻，竟笑了，說這是他聽過最像樣的答案。",
+            "effects": {
+              "attributes": {
+                "mind": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "text": "隨口編一個",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你編了一個，聽起來頗有道理。他謝過你，走遠了，你忽然有些後悔。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "不答",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你搖搖頭，繼續趕路。他在原地站了很久。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jindan_guard_001",
+    "type": "choice",
+    "title": "山門請帖",
+    "text": "{guard}遣人送來一張請帖，邀你赴山門論道。信寫得很客氣，客氣得沒有一句實話。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    },
+    "choices": [
+      {
+        "text": "赴約",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "席間一位長老講起瓶頸，只說了兩句，你記到今日。",
+            "effects": {
+              "attributes": {
+                "insight": 1
+              }
+            }
+          },
+          {
+            "weight": 50,
+            "text": "席間話題始終繞著規矩與正統打轉。你聽了半日，什麼也沒帶走。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "婉拒",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你回信說近日不便。對方回得更客氣，彷彿鬆了口氣。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jindan_merchant_001",
+    "type": "choice",
+    "title": "掌櫃作保",
+    "text": "{merchant}的掌櫃親自上門，想請你替一批貨作保。他說得誠懇，只是算盤一直沒有放下。",
+    "weight": 6,
+    "tone": "good",
+    "conditions": {
+      "realmMin": "jindan"
+    },
+    "choices": [
+      {
+        "text": "應下",
+        "outcomes": [
+          {
+            "weight": 80,
+            "text": "貨平安到了。掌櫃付了酬金，數得一文不差。",
+            "effects": {
+              "spiritStones": 30
+            }
+          },
+          {
+            "weight": 20,
+            "text": "貨晚了三個月，掌櫃仍按約付了錢，只是下回再沒來找你。",
+            "effects": {
+              "spiritStones": 10
+            }
+          }
+        ]
+      },
+      {
+        "text": "回絕",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你說自己不作保。掌櫃點頭，把算盤收進袖中。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jindan_wander_001",
+    "type": "anecdote",
+    "title": "渡口認人",
+    "text": "{wanderers}的幾位散修在渡口邊認出了你，彼此使了個眼色，齊聲說不認識。你覺得這樣也好。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    }
+  },
+  {
+    "id": "jindan_dream_001",
+    "type": "anecdote",
+    "highlight": 1,
+    "title": "夢中渡口",
+    "text": "你夢見一處從未到過的渡口，船家對你點了點頭，像是等了很久。醒來時，窗外的月亮還在原處。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    }
+  },
+  {
+    "id": "jindan_cave_001",
+    "type": "choice",
+    "title": "舊洞府",
+    "text": "{mountain}深處有一處荒廢的洞府，門上的字跡你只認得一半，另一半像是被人刻意磨去。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    },
+    "choices": [
+      {
+        "text": "入內查看",
+        "outcomes": [
+          {
+            "weight": 40,
+            "text": "洞中空無一物，只有牆上幾道刻痕，數得出是計日用的。你數到最後一道，便不再數了。",
+            "effects": {
+              "attributes": {
+                "insight": 1
+              }
+            }
+          },
+          {
+            "weight": 60,
+            "text": "洞裡落滿塵土，連腳印都沒有。看來上一位訪客也是你這個年紀。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "在門外站一會兒",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在門外站了一會兒，什麼也沒發生，這大概也算一種結果。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jindan_pill_001",
+    "type": "choice",
+    "title": "丹師兜售",
+    "text": "一位老丹師帶著幾顆延壽丹上門，說專為年事已高的前輩準備，另有折扣。你不確定這個折扣是怎麼算的。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    },
+    "choices": [
+      {
+        "text": "買下一顆（一百五十靈石）",
+        "requires": {
+          "spiritStones": 150
+        },
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "丹師收了錢，千恩萬謝。藥效與市面上的並無兩樣，折扣大約只是客氣。",
+            "effects": {
+              "spiritStones": -150,
+              "lifespan": 5
+            }
+          }
+        ]
+      },
+      {
+        "text": "再看看",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你說再看看。丹師說前輩慢慢看，他明年再來。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jindan_retreat_001",
+    "type": "anecdote",
+    "title": "出關三十年",
+    "text": "你一次閉關三十年，出關時山下的人家換了兩代。新來的那戶不認得你，仍舊在門口放了一碗水。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan",
+      "ageMin": 250
+    }
+  },
+  {
+    "id": "jindan_country_001",
+    "type": "anecdote",
+    "highlight": 1,
+    "title": "禮單漸短",
+    "text": "{country}的君主換了三任，每一任都派使者送禮，禮單一任比一任短。你倒覺得這樣比較實在。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    }
+  },
+  {
+    "id": "jindan_bottleneck_001",
+    "type": "anecdote",
+    "highlight": 1,
+    "title": "窗前",
+    "text": "修為已滿，關隘紋絲不動。你在窗前坐了半日，想起練氣時也曾這樣坐過，只是那時的關隘近得多。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan",
+      "bottleneck": true
+    }
+  },
+  {
+    "id": "jindan_funeral_001",
+    "type": "choice",
+    "title": "訃告",
+    "text": "一位相識多年的築基修士壽元已盡，家人遞來訃告。你與他並無深交，只是他是少數還認得你的人。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan",
+      "ageMin": 200
+    },
+    "choices": [
+      {
+        "text": "前往送行",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在靈前站了一炷香。他的後人看你的眼神帶著敬畏，你不知該如何讓他們別這樣。",
+            "effects": {
+              "attributes": {
+                "mind": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "text": "託人帶話",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你託人帶了一句話。話很短，是你想了一夜的。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jindan_tea_001",
+    "type": "anecdote",
+    "title": "茶攤孩童",
+    "text": "茶攤掌櫃的孫子仰頭問你，是不是真的活了三百歲。你說算不清了，這不是謙虛，只是懶得算。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan",
+      "ageMin": 120
+    }
+  },
+  {
+    "id": "jindan_sword_001",
+    "type": "anecdote",
+    "title": "劍光",
+    "text": "一道劍光從頭頂掠過，你沒有抬頭。你只是記得，當年為了這樣一道光，羨慕了整整一天。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    }
+  },
+  {
+    "id": "jindan_dispute_001",
+    "type": "choice",
+    "title": "礦苗之爭",
+    "text": "兩名散修為了一處零星礦苗吵得面紅耳赤，聽說你路過，請你評理。他們都說自己先到，礦苗不發表意見。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    },
+    "choices": [
+      {
+        "text": "對半均分",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "兩人都不滿意，卻都收下了。走時互相瞪著，倒像日後還會一起來。",
+            "effects": {
+              "attributes": {
+                "fortune": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "text": "判給先到者",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "先到的那位千恩萬謝，後到的悶聲不響。你不確定誰先到，但裁決總得有人下。",
+            "effects": {
+              "attributes": {
+                "mind": 1
+              }
+            }
+          },
+          {
+            "weight": 50,
+            "text": "先到的那位其實是後到的，你過了三年才聽說。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "不插手",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你說這種事不該由外人斷。兩人悻悻而去，礦苗仍在原處。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jindan_offering_001",
+    "type": "choice",
+    "title": "年年供品",
+    "text": "山下一個小門派年年派人送來供品，說是孝敬前輩。你從未答應過收，他們也從未停過。",
+    "weight": 5,
+    "tone": "good",
+    "conditions": {
+      "realmMin": "jindan"
+    },
+    "choices": [
+      {
+        "text": "收下",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "供品是些山貨與幾塊零星靈石。你收下之後，他們第二年又多送了一份。",
+            "effects": {
+              "spiritStones": 12
+            }
+          }
+        ]
+      },
+      {
+        "text": "退回",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你讓來人把東西帶回去。他們鞠了躬，明年照樣來。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
   }
 ]

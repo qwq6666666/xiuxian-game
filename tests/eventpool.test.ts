@@ -134,3 +134,41 @@ describe("新事件的獎懲幅度", () => {
     }
   });
 });
+
+describe("金丹期事件", () => {
+  const jindan = data.events.filter((e) => e.id.startsWith("jindan_"));
+
+  it("至少十五個，築基以前不出現，金丹之後才進池子", () => {
+    expect(jindan.length).toBeGreaterThanOrEqual(15);
+    for (const e of jindan) {
+      expect(e.conditions.realmMin, e.id).toBe("jindan");
+      expect(eventAvailable(at(150, { realmId: "zhuji" }), e) && e.conditions.bottleneck !== true, e.id).toBe(false);
+    }
+    const plain = jindan.filter((e) => e.conditions.bottleneck !== true && e.conditions.ageMin === undefined);
+    for (const e of plain) expect(eventAvailable(at(300, { realmId: "jindan" }), e), e.id).toBe(true);
+  });
+
+  it("瓶頸事件只在卡瓶頸時出現", () => {
+    const e = ev("jindan_bottleneck_001");
+    expect(e.conditions.bottleneck).toBe(true);
+  });
+
+  it("有想像得到的幅度：不放大修為，不寫出元嬰以上或天梯的字眼，不寫死參考名", () => {
+    const banned = ["元嬰", "化神", "天光", "梯", "太衡宗", "通濟行", "野渡", "垣下", "渡頭集", "青垣山"];
+    for (const e of jindan) {
+      const text = textsOf(e).join("");
+      for (const w of banned) expect(text.includes(w), `${e.id} 含「${w}」`).toBe(false);
+      for (const x of effectsOf(e)) {
+        expect(x.cultivation ?? 0, e.id).toBeLessThanOrEqual(0.04);
+        expect(x.death ?? false, e.id).toBe(false);
+        expect(x.fragment, e.id).toBeUndefined();
+      }
+    }
+  });
+
+  it("每段文字不超過三句", () => {
+    for (const e of jindan) {
+      for (const t of textsOf(e)) expect((t.match(/[。！？]/g) ?? []).length, `${e.id}：${t}`).toBeLessThanOrEqual(3);
+    }
+  });
+});
