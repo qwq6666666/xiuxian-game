@@ -5,7 +5,7 @@ import { attemptBreakthrough } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
 import { applyOffline } from "./core/offline";
 import { createInitialState, newLife, reroll, startLife } from "./core/life";
-import { deserialize, serialize } from "./core/save";
+import { deserialize, importSave, serialize } from "./core/save";
 import type { GameState } from "./core/state";
 import { tick } from "./core/tick";
 import { gameData as data } from "./data/load";
@@ -77,6 +77,23 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onBreakthrough: (usePill) => update(attemptBreakthrough(state, usePill, data)),
   onUseItem: (id) => update(useItem(state, id, data)),
   onBuyItem: (id) => update(buyItem(state, id, data)),
+  onExport() {
+    const text = serialize(state);
+    navigator.clipboard.writeText(text).then(
+      () => ui.notice("存檔已複製到剪貼簿，貼到安全的地方即可。"),
+      // 剪貼簿不可用（權限或非安全網址）時退回手動複製
+      () => prompt("請自行複製以下存檔文字：", text),
+    );
+  },
+  onImport(text) {
+    try {
+      const imported = importSave(text, data);
+      ui.notice("存檔已匯入。");
+      update(imported);
+    } catch (e) {
+      ui.notice(`存檔無法匯入，目前的進度沒有動。（${(e as Error).message}）`);
+    }
+  },
   onReset() {
     try {
       localStorage.removeItem(SAVE_KEY);

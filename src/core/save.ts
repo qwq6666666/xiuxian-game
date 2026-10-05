@@ -22,6 +22,11 @@ export function serialize(state: GameState): string {
   return JSON.stringify(state);
 }
 
+/** 匯入玩家貼上的存檔文字：容忍頭尾空白與換行，格式錯誤時丟出指出欄位的錯誤 */
+export function importSave(text: string, data: GameData = gameData): GameState {
+  return deserialize(text.replace(/^﻿/, "").trim(), data);
+}
+
 /** 舊版存檔遷移。key 是來源版本，函式把它升到下一版。 */
 const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   // v1 只有年齡，沒有角色資料：保留亂數種子與速度，重新開局擲骰

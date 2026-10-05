@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState, startLife } from "../src/core/life";
-import { deserialize, serialize } from "../src/core/save";
+import { deserialize, importSave, serialize } from "../src/core/save";
 import { SAVE_VERSION } from "../src/core/state";
 import { tick } from "../src/core/tick";
 
@@ -115,5 +115,14 @@ describe("save", () => {
     expect(() => deserialize(JSON.stringify({ ...good, log: badLog }))).toThrow("log[0].eventId");
     const noId = [{ month: 1, kind: "event", realmId: "mortal", stage: 0 }];
     expect(() => deserialize(JSON.stringify({ ...good, log: noId }))).toThrow("eventId");
+  });
+
+  it("匯入：容忍頭尾空白與 BOM，內容壞掉時丟出錯誤", () => {
+    const s = tick({ ...startLife(createInitialState(5)), autoChoice: true }, 120);
+    expect(importSave(`﻿  
+${serialize(s)}
+ `)).toEqual(s);
+    expect(() => importSave("不是存檔")).toThrow("JSON");
+    expect(() => importSave(JSON.stringify({ ...JSON.parse(serialize(s)), phase: "zzz" }))).toThrow("phase");
   });
 });

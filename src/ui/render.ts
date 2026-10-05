@@ -29,6 +29,8 @@ export interface UiHandlers {
   onChoose(choiceIndex: number): void;
   onSpeed(speed: number): void;
   onReset(): void;
+  onExport(): void;
+  onImport(text: string): void;
   onReroll(): void;
   onRename(name: string): void;
   onStart(): void;
@@ -49,6 +51,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     <header class="bar">
       <span class="speeds"></span>
       <label class="auto"><input type="checkbox" id="auto" /> 自動抉擇</label>
+      <button id="export" type="button">匯出存檔</button>
+      <button id="import" type="button">匯入存檔</button>
       <button id="reset" type="button">重新開始</button>
     </header>
     <p id="notice" hidden></p>
@@ -68,6 +72,12 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   });
   const autoEl = root.querySelector<HTMLInputElement>("#auto")!;
   autoEl.addEventListener("change", () => handlers.onAutoChoice(autoEl.checked));
+  root.querySelector("#export")!.addEventListener("click", () => handlers.onExport());
+  root.querySelector("#import")!.addEventListener("click", () => {
+    const text = prompt("請貼上先前匯出的存檔文字：");
+    if (text === null || text.trim() === "") return;
+    if (confirm("匯入會覆蓋目前的存檔，確定嗎？")) handlers.onImport(text);
+  });
   root.querySelector("#reset")!.addEventListener("click", () => {
     if (confirm("確定要清除存檔並重新開始嗎？道韻與輪迴天賦也會一併清除。")) handlers.onReset();
   });
