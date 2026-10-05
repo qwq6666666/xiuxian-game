@@ -50,6 +50,8 @@ export function describeTalent(talent: TalentDef, level: number): string {
       return `保留上一世 ${pct(talent.perLevel)} 的靈石`;
     case "failLoss":
       return `突破失敗的修為損失 −${pct(talent.perLevel)}`;
+    case "breakthroughAid":
+      return `結嬰之時用得上，等級愈高愈有把握（${level} 級）`;
   }
 }
 
@@ -62,7 +64,9 @@ export function talentSummary(talents: Record<string, number>, data: GameData): 
 
 /** 一生回顧的標題 */
 export function reviewTitle(review: LifeReview | null): string {
-  return review?.cause === "cleared" ? "金丹大成" : "此生已盡";
+  if (review?.cause === "cleared") return "金丹大成";
+  if (review?.cause === "yuanying") return "元嬰大成";
+  return "此生已盡";
 }
 
 /** 「享年一百一十九歲，終身練氣六層。臨終之際……」 */
@@ -207,16 +211,25 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
 
 export interface CollectionSummary {
   total: number;
-  rows: { id: string; name: string; desc: string; count: number }[];
+  /** 元嬰總次數 */
+  yuanyingTotal: number;
+  rows: { id: string; name: string; desc: string; count: number; yuanying: number }[];
   /** 每種出身都至少通關一次 */
   allCleared: boolean;
 }
 
 /** 通關收藏的摘要：總次數與各出身的次數，出身名單讀資料檔 */
 export function collectionSummary(meta: Meta, data: GameData): CollectionSummary {
-  const rows = data.origins.map((o) => ({ id: o.id, name: o.name, desc: o.desc, count: meta.clears[o.id] ?? 0 }));
+  const rows = data.origins.map((o) => ({
+    id: o.id,
+    name: o.name,
+    desc: o.desc,
+    count: meta.clears[o.id] ?? 0,
+    yuanying: meta.yuanying[o.id] ?? 0,
+  }));
   return {
     total: rows.reduce((sum, r) => sum + r.count, 0),
+    yuanyingTotal: rows.reduce((sum, r) => sum + r.yuanying, 0),
     rows,
     allCleared: rows.every((r) => r.count > 0),
   };

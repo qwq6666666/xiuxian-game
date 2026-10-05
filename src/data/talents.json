@@ -43,5 +43,14 @@
     "effect": "failLoss",
     "perLevel": 0.05,
     "cost": { "base": 12, "growth": 2 }
+  },
+  {
+    "id": "shenguang",
+    "name": "神光",
+    "desc": "道韻積得深了，神魂深處似乎有什麼在亮。",
+    "maxLevel": 6,
+    "effect": "breakthroughAid",
+    "perLevel": 1,
+    "cost": { "base": 300, "growth": 1.5 }
   }
 ]

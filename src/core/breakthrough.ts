@@ -20,10 +20,18 @@ export function currentFailLoss(state: GameState, data: GameData = gameData): nu
   );
 }
 
-/** 修行中、卡在瓶頸，且有下一個境界可進 */
+/** 突破還缺的天賦等級（目前等級不足門檻時回傳門檻），沒有缺則回傳 null */
+export function missingTalent(state: GameState, data: GameData = gameData): { id: string; level: number } | null {
+  const need = breakthroughRuleOf(state, data)?.requiresTalent;
+  if (!need) return null;
+  return (state.meta.talents[need.id] ?? 0) >= need.level ? null : need;
+}
+
+/** 修行中、卡在瓶頸，有下一個境界可進，且滿足天賦門檻 */
 export function canBreakthrough(state: GameState, data: GameData = gameData): boolean {
   if (state.phase !== "living" || !atBottleneck(state, data)) return false;
-  return breakthroughRuleOf(state, data) !== undefined && nextRealm(realmOf(state, data), data) !== undefined;
+  if (breakthroughRuleOf(state, data) === undefined || nextRealm(realmOf(state, data), data) === undefined) return false;
+  return missingTalent(state, data) === null;
 }
 
 /** 手上有這次突破可用的丹藥 */
@@ -36,7 +44,7 @@ export function pillAvailable(state: GameState, data: GameData = gameData): bool
 export function currentBreakthroughRate(state: GameState, usePill: boolean, data: GameData = gameData): number {
   const rule = breakthroughRuleOf(state, data);
   if (!rule) return 0;
-  return breakthroughRate(rule, state.attributes.insight, usePill && pillAvailable(state, data));
+  return breakthroughRate(rule, state.attributes.insight, usePill && pillAvailable(state, data), state.meta.talents);
 }
 
 /**
@@ -49,7 +57,7 @@ export function attemptBreakthrough(state: GameState, usePill: boolean, data: Ga
   const next = nextRealm(realm, data)!;
   const rule = realm.breakthroughRule!;
   const pill = usePill && pillAvailable(state, data);
-  const rate = breakthroughRate(rule, state.attributes.insight, pill);
+  const rate = breakthroughRate(rule, state.attributes.insight, pill, state.meta.talents);
 
   let s: GameState = state;
   if (pill) {
@@ -66,7 +74,7 @@ export function attemptBreakthrough(state: GameState, usePill: boolean, data: Ga
       limit,
     );
     if (next.endsLife === "never") return won;
-    if (endsLifeOnEntry(next, state)) return endLife(won, "cleared", data);
+    if (endsLifeOnEntry(next, state)) return endLife(won, next.ending, data);
     // 通關過的存檔：記一次通關，這一世繼續
     const cont = applyClear(won);
     return { ...cont, flags: cont.flags.includes(CLEARED_FLAG) ? cont.flags : [...cont.flags, CLEARED_FLAG] };

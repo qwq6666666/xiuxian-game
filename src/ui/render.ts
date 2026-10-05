@@ -3,6 +3,7 @@ import {
   breakthroughRuleOf,
   canBreakthrough,
   currentBreakthroughRate,
+  missingTalent,
   currentFailLoss,
   pillAvailable,
 } from "../core/breakthrough";
@@ -237,7 +238,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const head = document.createElement("div");
     head.className = "codex-head";
     const title = document.createElement("h2");
-    title.textContent = `收藏　通關 ${sum.total} 次`;
+    title.textContent = `收藏　通關 ${sum.total} 次${sum.yuanyingTotal > 0 ? `　元嬰 ${sum.yuanyingTotal} 次` : ""}`;
     const close = document.createElement("button");
     close.type = "button";
     close.textContent = "關閉";
@@ -254,7 +255,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       name.textContent = row.name;
       const count = document.createElement("small");
       count.className = "changes";
-      count.textContent = row.count > 0 ? `通關 ${row.count} 次` : `（${data.text.collection.empty}）`;
+      count.textContent =
+        (row.count > 0 ? `通關 ${row.count} 次` : `（${data.text.collection.empty}）`) +
+        (row.yuanying > 0 ? `　元嬰 ${row.yuanying} 次` : "");
       const desc = document.createElement("p");
       desc.className = "fragment-text";
       desc.textContent = row.desc;
@@ -510,6 +513,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const rate = Math.round(currentBreakthroughRate(state, e.pill.checked, data) * 100);
       const loss = Math.round(currentFailLoss(state, data) * 100);
       e.btInfo.textContent = `成功率 ${rate}%，失敗將損失 ${loss}% 修為。`;
+    } else if (atBottleneck(state, data) && missingTalent(state, data) !== null) {
+      e.btInfo.textContent = data.text.breakthroughGate;
     } else {
       e.btInfo.textContent = "修為圓滿，遇上瓶頸時方可突破。";
     }

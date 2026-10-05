@@ -1,4 +1,4 @@
-// 一生的結束：回顧、道韻結算。死亡與通關的每個出口都從 endLife 進來，確保只結算一次。
+// 一生的結束：回顧、道韻結算。死亡、通關與元嬰大成的每個出口都從 endLife 進來，確保只結算一次。
 import { gameData } from "../data/load";
 import type { GameData, RealmDef, ReviewCause } from "../data/types";
 import { CLEAR_FRAGMENT_ID, grantFragment } from "./fragments";
@@ -128,9 +128,14 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
   };
   // 通關：記一次通關，首次得到最後一份殘卷
   const earned = cause === "cleared" ? applyClear(state) : state;
+  // 元嬰大成：記一次元嬰，不另算通關
+  const yuanying =
+    cause === "yuanying"
+      ? { ...state.meta.yuanying, [state.originId]: (state.meta.yuanying[state.originId] ?? 0) + 1 }
+      : state.meta.yuanying;
   return {
     ...state,
-    phase: cause === "cleared" ? "cleared" : "dead",
+    phase: cause === "cleared" || cause === "yuanying" ? "cleared" : "dead",
     pendingEvent: null,
     review,
     meta: {
@@ -140,6 +145,7 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       lives: state.meta.lives + 1,
       fragments: earned.meta.fragments,
       clears: earned.meta.clears,
+      yuanying,
     },
   };
 }

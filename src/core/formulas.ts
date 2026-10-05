@@ -71,9 +71,17 @@ export function lifespanMonths(realm: RealmDef, bonusYears = 0): number {
   return (realm.lifespan + bonusYears) * 12;
 }
 
-/** 大境界突破成功率 = 基礎 + 悟性 × 每點加成 + 丹藥加成，限制在 0–100% */
-export function breakthroughRate(rule: BreakthroughRule, insight: number, usePill: boolean): number {
-  const rate = rule.baseRate + insight * rule.insightBonus + (usePill ? (rule.pillBonus ?? 0) : 0);
+/** 大境界突破成功率 = 基礎 + 悟性 × 每點加成 + 丹藥加成 + 天賦超過門檻的加成，限制在 0–100% */
+export function breakthroughRate(
+  rule: BreakthroughRule,
+  insight: number,
+  usePill: boolean,
+  talentLevels: Record<string, number> = {},
+): number {
+  const aid = rule.talentRate
+    ? Math.max(0, (talentLevels[rule.talentRate.id] ?? 0) - rule.talentRate.from) * rule.talentRate.perLevel
+    : 0;
+  const rate = rule.baseRate + insight * rule.insightBonus + (usePill ? (rule.pillBonus ?? 0) : 0) + aid;
   return Math.min(1, Math.max(0, rate));
 }
 

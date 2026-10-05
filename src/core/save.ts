@@ -76,6 +76,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   7: (d) => ({ ...d, version: 8, worldSeed: deriveSeed(Number(d.rngSeed) >>> 0, 1) }),
   // v8 沒有通關收藏：補上空的紀錄（舊存檔沒記下過去通關的出身，無從回推）
   8: (d) => ({ ...d, version: 9, meta: { ...obj(d.meta, "meta"), clears: {} } }),
+  // v9 沒有元嬰紀錄：補上空的紀錄
+  9: (d) => ({ ...d, version: 10, meta: { ...obj(d.meta, "meta"), yuanying: {} } }),
 };
 
 function fail(field: string, msg: string): never {
@@ -181,14 +183,18 @@ function parseMeta(v: unknown, data: GameData): Meta {
     return id;
   });
   if (new Set(fragments).size !== fragments.length) fail("meta.fragments", "有重複的殘卷");
-  const clears = intRecord(o, "clears", "meta.clears");
-  for (const [id, n] of Object.entries(clears)) {
-    if (!data.origins.some((x) => x.id === id)) fail(`meta.clears.${id}`, `找不到出身 ${id}`);
-    if (n < 1) fail(`meta.clears.${id}`, `必須是正整數，目前為 ${n}`);
-  }
+  const originCounts = (key: "clears" | "yuanying"): Record<string, number> => {
+    const counts = intRecord(o, key, `meta.${key}`);
+    for (const [id, n] of Object.entries(counts)) {
+      if (!data.origins.some((x) => x.id === id)) fail(`meta.${key}.${id}`, `找不到出身 ${id}`);
+      if (n < 1) fail(`meta.${key}.${id}`, `必須是正整數，目前為 ${n}`);
+    }
+    return counts;
+  };
   return {
     fragments,
-    clears,
+    clears: originCounts("clears"),
+    yuanying: originCounts("yuanying"),
     daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
     talents,
     reached: o.reached as string[],

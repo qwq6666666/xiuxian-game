@@ -111,7 +111,7 @@ function singleLives(): void {
   const reached = new Map<string, number>();
   const eventTotals = new Map<string, number>();
   const choiceCounts: number[] = [];
-  const causes = { lifespan: 0, event: 0, adventure: 0, cleared: 0 };
+  const causes = { lifespan: 0, event: 0, adventure: 0, cleared: 0, yuanying: 0 };
   let totalMonths = 0;
   let totalProgress = 0;
 

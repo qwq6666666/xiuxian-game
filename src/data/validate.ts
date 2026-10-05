@@ -2,7 +2,9 @@ import { SLOT_NAMES, slotProblems } from "./slots";
 import {
   ATTRIBUTE_KEYS,
   type AttributeKey,
+  ENDING_CAUSES,
   ENDS_LIFE,
+  type EndingCause,
   type EndsLife,
   REVIEW_CAUSES,
   type BreakthroughRule,
@@ -179,10 +181,28 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
         breakthroughRule.pillId = str(r, "pillId", rw);
         breakthroughRule.pillBonus = num(r, "pillBonus", rw, { min: 0 });
       }
+      if (r.requiresTalent !== undefined) {
+        const tw = `${rw}.requiresTalent`;
+        const q = obj(r.requiresTalent, tw);
+        breakthroughRule.requiresTalent = { id: str(q, "id", tw), level: num(q, "level", tw, { gt: 0, integer: true }) };
+      }
+      if (r.talentRate !== undefined) {
+        const tw = `${rw}.talentRate`;
+        const q = obj(r.talentRate, tw);
+        breakthroughRule.talentRate = {
+          id: str(q, "id", tw),
+          from: num(q, "from", tw, { min: 0, integer: true }),
+          perLevel: num(q, "perLevel", tw, { gt: 0 }),
+        };
+      }
     }
     const endsLife = o.endsLife === undefined ? "never" : o.endsLife;
     if (!(ENDS_LIFE as readonly unknown[]).includes(endsLife)) {
       fail(where, "endsLife", `必須是 ${ENDS_LIFE.map((v) => `"${v}"`).join("、")} 其中之一，目前為 ${JSON.stringify(endsLife)}`);
+    }
+    const ending = o.ending === undefined ? "cleared" : o.ending;
+    if (!(ENDING_CAUSES as readonly unknown[]).includes(ending)) {
+      fail(where, "ending", `必須是 ${ENDING_CAUSES.map((v) => `"${v}"`).join("、")} 其中之一，目前為 ${JSON.stringify(ending)}`);
     }
     return {
       id,
@@ -196,12 +216,16 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
       },
       breakthrough,
       endsLife: endsLife as EndsLife,
+      ending: ending as EndingCause,
       daoYun: num(o, "daoYun", where, { min: 0, integer: true }),
       ...(breakthroughRule ? { breakthroughRule } : {}),
     };
   });
   uniqueIds(realms, file);
-  if (!realms.some((r) => r.endsLife !== "never")) fail(file, "endsLife", "至少要有一個境界會結束這一世（通關），否則遊戲沒有終點");
+  const last = realms[realms.length - 1];
+  if (last && last.endsLife !== "always") {
+    fail(`${file} 第 ${realms.length} 筆（${last.id}）`, "endsLife", `最後一個境界必須是 "always"，目前為 ${JSON.stringify(last.endsLife)}`);
+  }
   return realms;
 }
 
@@ -448,9 +472,10 @@ export function validateTalents(raw: unknown, file = "talents.json"): TalentDef[
       effect !== "rerolls" &&
       effect !== "fortune" &&
       effect !== "stoneCarry" &&
-      effect !== "failLoss"
+      effect !== "failLoss" &&
+      effect !== "breakthroughAid"
     ) {
-      fail(where, "effect", `必須是 cultivation、rerolls、fortune、stoneCarry 或 failLoss，目前為 ${JSON.stringify(effect)}`);
+      fail(where, "effect", `必須是 cultivation、rerolls、fortune、stoneCarry、failLoss 或 breakthroughAid，目前為 ${JSON.stringify(effect)}`);
     }
     const cost = obj(o.cost, `${where} 欄位 cost`);
     return {
@@ -554,6 +579,7 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       transition: str(era, "transition", `${file} 欄位 era`),
       born: str(era, "born", `${file} 欄位 era`),
     },
+    breakthroughGate: str(o, "breakthroughGate", file),
     review,
     collection: {
       note: str(collection, "note", `${file} 欄位 collection`),
@@ -904,6 +930,16 @@ export function validateGameData(data: GameData): GameData {
       }
     }
     if (realm.breakthroughRule?.pillId) has(itemIds, realm.breakthroughRule.pillId, `${where} 的 pillId`, "items.json");
+    const rule = realm.breakthroughRule;
+    for (const [key, ref] of [["requiresTalent", rule?.requiresTalent], ["talentRate", rule?.talentRate]] as const) {
+      if (!ref) continue;
+      const talent = data.talents.find((x) => x.id === ref.id);
+      if (!talent) throw new Error(`${where} 的 breakthroughRule.${key}：${ref.id} 不是 talents.json 裡的 id`);
+      const level = "level" in ref ? ref.level : ref.from;
+      if (level > talent.maxLevel) {
+        throw new Error(`${where} 的 breakthroughRule.${key}：${ref.id} 的等級 ${level} 超過天賦上限 ${talent.maxLevel}`);
+      }
+    }
   });
   data.schedules.forEach((s, i) => {
     for (const f of s.finds) has(itemIds, f.itemId, `schedules.json 第 ${i + 1} 筆（${s.id}）的 finds`, "items.json");

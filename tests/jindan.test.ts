@@ -98,9 +98,9 @@ describe("endsLife：資料檢查", () => {
     expect(() => validateRealms(bad)).toThrow("jindan");
   });
 
-  it("沒寫就是 never；全部都 never 則沒有終點，報錯", () => {
+  it("沒寫就是 never；最後一個境界不是 always 則沒有終點，報錯", () => {
     const none = base.map((r: { endsLife?: string }) => ({ ...r, endsLife: undefined }));
-    expect(() => validateRealms(none)).toThrow("至少要有一個境界");
+    expect(() => validateRealms(none)).toThrow("最後一個境界必須是");
     expect(validateRealms(base)[1].endsLife).toBe("never");
     expect(validateRealms(base)[3].endsLife).toBe("untilCleared");
   });

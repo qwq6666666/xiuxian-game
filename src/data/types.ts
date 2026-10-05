@@ -49,6 +49,10 @@ export interface BreakthroughRule {
   /** 可加成的丹藥，突破時消耗 */
   pillId?: string;
   pillBonus?: number;
+  /** 要先有這個天賦的等級才能嘗試突破 */
+  requiresTalent?: { id: string; level: number };
+  /** 天賦等級超過 from 之後，每級增加的成功率 */
+  talentRate?: { id: string; from: number; perLevel: number };
 }
 
 export type EndsLife = "always" | "untilCleared" | "never";
@@ -73,6 +77,8 @@ export interface RealmDef {
    * always 一律結束；untilCleared 沒通關過才結束，通關過就繼續活；never（預設）不結束。
    */
   endsLife: EndsLife;
+  /** 結束這一世時的結束方式，預設 cleared */
+  ending: EndingCause;
   /** 手動突破到下一境界的規則（最後一個境界不需要） */
   breakthroughRule?: BreakthroughRule;
 }
@@ -190,7 +196,8 @@ export interface OriginDef {
   attributes: Partial<Record<AttributeKey, number>>;
 }
 
-export type TalentEffect = "cultivation" | "rerolls" | "fortune" | "stoneCarry" | "failLoss";
+/** breakthroughAid（神光）本身不加數值，只被 breakthroughRule 的 requiresTalent、talentRate 引用 */
+export type TalentEffect = "cultivation" | "rerolls" | "fortune" | "stoneCarry" | "failLoss" | "breakthroughAid";
 
 /** 輪迴天賦：每級效果 = perLevel，第 n 級的價格 = ceil(base × growth^(目前等級)) */
 export interface TalentDef {
@@ -203,8 +210,11 @@ export interface TalentDef {
   cost: { base: number; growth: number };
 }
 
-export type ReviewCause = "lifespan" | "adventure" | "event" | "cleared";
-export const REVIEW_CAUSES: readonly ReviewCause[] = ["lifespan", "adventure", "event", "cleared"];
+export type ReviewCause = "lifespan" | "adventure" | "event" | "cleared" | "yuanying";
+export const REVIEW_CAUSES: readonly ReviewCause[] = ["lifespan", "adventure", "event", "cleared", "yuanying"];
+/** 境界結束這一世時可用的結束方式 */
+export type EndingCause = "cleared" | "yuanying";
+export const ENDING_CAUSES: readonly EndingCause[] = ["cleared", "yuanying"];
 
 /** 一生回顧的收尾句；有 ifItem 的只在持有該物品（未用完）時使用 */
 export interface ClosingVariant {
@@ -234,6 +244,8 @@ export interface TextData {
   };
   /** 年號相關文字：開場日誌（依世數挑）、換世句、回顧的出生句 */
   era: { opening: string[]; transition: string; born: string };
+  /** 金丹卡瓶頸但缺少突破所需的天賦時顯示 */
+  breakthroughGate: string;
   /** 收藏畫面的文字 */
   collection: { note: string; empty: string; allCleared: string };
   /** 一生回顧的收尾句，依結束方式分類 */

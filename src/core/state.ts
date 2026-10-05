@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 
 /** 跨世保留的資料 */
 export interface Meta {
@@ -16,10 +16,12 @@ export interface Meta {
   fragments: string[];
   /** 各出身通關的次數（出身 id → 次數），只收藏，不影響任何數值 */
   clears: Record<string, number>;
+  /** 各出身結成元嬰的次數（出身 id → 次數），只收藏，不影響任何數值 */
+  yuanying: Record<string, number>;
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {} };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {} };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
@@ -43,7 +45,7 @@ export interface LifeReview {
   highlights: LogEntry[];
 }
 
-/** cleared：突破到金丹，第一版通關 */
+/** cleared：這一世以通關或元嬰大成結束（死亡為 dead） */
 export type Phase = "rolling" | "living" | "dead" | "cleared";
 
 export type Attributes = Record<AttributeKey, number>;

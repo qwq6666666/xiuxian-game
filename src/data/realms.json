@@ -40,6 +40,24 @@
     "need": { "base": 60000, "growth": 1.8 },
     "breakthrough": "manual",
     "endsLife": "untilCleared",
-    "daoYun": 250
+    "daoYun": 250,
+    "breakthroughRule": {
+      "baseRate": 0.05,
+      "insightBonus": 0.02,
+      "requiresTalent": { "id": "shenguang", "level": 4 },
+      "talentRate": { "id": "shenguang", "from": 4, "perLevel": 0.08 }
+    }
+  },
+  {
+    "id": "yuanying",
+    "name": "元嬰",
+    "lifespan": 1000,
+    "cultivationMult": 6,
+    "stageNames": [""],
+    "need": { "base": 1, "growth": 1 },
+    "breakthrough": "manual",
+    "endsLife": "always",
+    "ending": "yuanying",
+    "daoYun": 800
   }
 ]
