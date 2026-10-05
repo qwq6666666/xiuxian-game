@@ -83,7 +83,7 @@ docs/
 完成一個里程碑或階段、commit 之後，**要** push 到 `origin`。但必須先符合下面全部前提，任何一項不成立就不要 push，先處理並回報原因：
 
 1. 要推的內容都已 commit，且是一個完整的單位（一個里程碑、階段或功能），不推做到一半的東西。
-2. `npx tsc --noEmit` 沒有錯誤，`npm run test` 全過，`npm run build` 成功。
+2. `npx tsc --noEmit` 沒有錯誤，`npm run test` 全過，`npm run build` 成功；以上三項加上建置檔大小檢查可用 `npm run verify` 一次跑完。
 3. 動過數值、事件或間隔的，`npm run sim` 的檢查已照「調數值後的模擬檢查」跑過且全部 ✓；改了存檔結構的，遷移函式與測試都在。
 4. 工作區沒有不是自己改的未提交變更。多個助手並行時，`git status` 看到別人的檔案就不要動它們，只 push 自己的 commit；無法分辨誰改的，先問使用者。
 5. push 前先 `git fetch`。若遠端有新 commit，先 rebase（或 merge）並重跑第 2 點，再 push。
@@ -99,6 +99,15 @@ docs/
 - 換行符號統一用 LF（見 `.gitattributes`）。在 Windows 用 Python 讀寫檔案時要用 `open(..., newline='')`；改完用 `git diff --stat` 檢查行數是否合理，整檔重寫代表換行被改了。
 - 沒有瀏覽器預覽工具的助手，驗收時用 `npm run dev` 自己開頁面操作，或請人看。
 - 驗證時若要手動改 localStorage 的存檔（`xiuxian-save`），頁面卸載會用目前狀態覆蓋它；改用遊戲內的「匯入存檔」。
+
+## 多助手的整合與部署
+
+- 各助手做完一小段就 `git push origin <自己的分支>`（`ai/claude`、`ai/chatgpt`），不要只留在本機；推分支不會部署，GitHub 會自動跑 `verify`。
+- 整合者（使用者指定一位，預設是 Claude Code）負責合併進 `master`：`git fetch --all`、`git log master..origin/<分支>` 看新內容、合併、解衝突、跑 `npm run verify`，通過後**一次**推上 `master`。其他助手不直接推 `master`。
+- 部署只由 `master` 的推送觸發。連續推 `master` 會讓排隊中的部署被後一次取代，整合完再推一次即可。
+- 開工前先在 `docs/TODO.md` 預約下一個里程碑編號與章節編號（寫上助手名），避免兩邊撞號。
+- `docs/GDD.md`、`docs/TODO.md` 最容易衝突：只在自己的章節新增內容，不整檔改寫、不改換行符號。
+- 新增圖片要壓縮（JPEG／WebP，寬度不超過實際顯示的兩倍）；圖會被內嵌進單一 `index.html`，`verify` 在超過 1500 KB 時會失敗。
 
 ## 並行作業流程（git worktree）
 

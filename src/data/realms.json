@@ -53,12 +53,13 @@
     "id": "yuanying",
     "name": "元嬰",
     "lifespan": 1000,
-    "cultivationMult": 6,
-    "stageNames": [""],
-    "need": { "base": 1, "growth": 1 },
+    "cultivationMult": 12,
+    "stageNames": ["初期", "中期", "後期"],
+    "need": { "base": 32000, "growth": 1.8 },
     "breakthrough": "manual",
-    "endsLife": "always",
+    "endsLife": "untilYuanying",
     "ending": "yuanying",
-    "daoYun": 800
+    "daoYun": 800,
+    "zuohua": { "daoYunPerYear": 0.3 }
   }
 ]

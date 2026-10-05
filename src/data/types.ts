@@ -57,8 +57,8 @@ export interface BreakthroughRule {
   talentRate?: { id: string; from: number; perLevel: number };
 }
 
-export type EndsLife = "always" | "untilCleared" | "never";
-export const ENDS_LIFE: readonly EndsLife[] = ["always", "untilCleared", "never"];
+export type EndsLife = "always" | "untilCleared" | "untilYuanying" | "never";
+export const ENDS_LIFE: readonly EndsLife[] = ["always", "untilCleared", "untilYuanying", "never"];
 
 export interface RealmDef {
   id: string;
@@ -76,7 +76,8 @@ export interface RealmDef {
   daoYun: number;
   /**
    * 進入這個境界時是否結束這一世（通關）：
-   * always 一律結束；untilCleared 沒通關過才結束，通關過就繼續活；never（預設）不結束。
+   * always 一律結束；untilCleared 沒通關過才結束，通關過就繼續活；
+   * untilYuanying 沒元嬰過才結束，元嬰過就繼續活；never（預設）不結束。
    */
   endsLife: EndsLife;
   /** 結束這一世時的結束方式，預設 cleared */

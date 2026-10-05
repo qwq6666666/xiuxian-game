@@ -3,7 +3,7 @@
 .map-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr); gap: var(--sp-4); align-items: start; }
 .map-pane, .map-side { min-width: 0; }
 .map-side { max-height: 76vh; overflow-y: auto; }
-.map-svg { display: block; width: 100%; max-width: 600px; max-height: 76vh; max-height: 76dvh; margin: var(--sp-2) auto; color: var(--muted); touch-action: manipulation; background: url('../jiudu-map.png') center / 100% 100% no-repeat; border: 1px solid var(--line); border-radius: var(--r-md); }
+.map-svg { display: block; width: 100%; max-width: 600px; max-height: 76vh; max-height: 76dvh; margin: var(--sp-2) auto; color: var(--muted); touch-action: manipulation; background: url('../jiudu-map.jpg') center / 100% 100% no-repeat; border: 1px solid var(--line); border-radius: var(--r-md); }
 .map-region { cursor: pointer; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; fill-opacity: 0.1; }
 .map-region:hover { fill-opacity: 0.3; }
 .map-region-void { fill: var(--map-void); }
