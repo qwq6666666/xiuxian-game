@@ -8,8 +8,10 @@ import {
 } from "../core/breakthrough";
 import { eventOf } from "../core/events";
 import { CLEAR_FRAGMENT_ID } from "../core/fragments";
-import { worldFor, worldSlots } from "../core/world";
+import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
+import type { MapTarget } from "./mapinfo";
+import { buildWorldMap, mapStamp } from "./worldmap";
 import { splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
@@ -55,6 +57,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       <span class="speeds"></span>
       <label class="auto"><input type="checkbox" id="auto" /> 自動抉擇</label>
       <button id="codex-open" type="button"></button>
+      <button id="map-open" type="button"></button>
       <button id="export" type="button">匯出存檔</button>
       <button id="import" type="button">匯入存檔</button>
       <button id="reset" type="button">重新開始</button>
@@ -62,6 +65,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     <p id="notice" hidden></p>
     <div id="stage"></div>
     <div class="modal codex" id="codex" hidden><div class="card review" id="codex-card"></div></div>
+    <div class="modal codex" id="map" hidden><div class="card review" id="map-card"></div></div>
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
   const noticeEl = root.querySelector<HTMLElement>("#notice")!;
@@ -158,8 +162,65 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     codexCard.replaceChildren(box);
   }
 
+  // ---- 天下圖 ----
+  const MAP_SEEN_KEY = "xiuxian-map-seen";
+  const readMapSeen = (): string => {
+    try {
+      return localStorage.getItem(MAP_SEEN_KEY) ?? "";
+    } catch {
+      return "";
+    }
+  };
+  const writeMapSeen = (stamp: string): void => {
+    try {
+      localStorage.setItem(MAP_SEEN_KEY, stamp);
+    } catch {
+      // 無法記住也沒關係，只是標記會一直亮著
+    }
+  };
+  const mapEl = root.querySelector<HTMLElement>("#map")!;
+  const mapCard = root.querySelector<HTMLElement>("#map-card")!;
+  const mapBtn = root.querySelector<HTMLButtonElement>("#map-open")!;
+  let mapSelected: MapTarget | null = null;
+
+  function updateMapButton(state: GameState): void {
+    // 擲骰時不提示：重擲會一直換世界，提示只會吵
+    const fresh = state.phase !== "rolling" && mapStamp(state, data) !== readMapSeen();
+    mapBtn.textContent = `天下圖${fresh ? " ●" : ""}`;
+  }
+
+  function buildMap(state: GameState): void {
+    mapCard.replaceChildren(
+      buildWorldMap(state, data, mapSelected, {
+        onSelect(target) {
+          mapSelected = target;
+          if (lastState) buildMap(lastState);
+        },
+        onClose: closeMap,
+      }),
+    );
+  }
+
+  function openMap(): void {
+    if (!lastState) return;
+    closeCodex();
+    mapSelected = null;
+    buildMap(lastState);
+    mapEl.hidden = false;
+    writeMapSeen(mapStamp(lastState, data));
+    updateMapButton(lastState);
+  }
+  function closeMap(): void {
+    mapEl.hidden = true;
+  }
+  mapBtn.addEventListener("click", openMap);
+  mapEl.addEventListener("click", (ev) => {
+    if (ev.target === mapEl) closeMap();
+  });
+
   function openCodex(): void {
     if (!lastState) return;
+    closeMap();
     buildCodex(lastState);
     codexEl.hidden = false;
     writeSeen(lastState.meta.fragments);
@@ -174,6 +235,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   });
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && !codexEl.hidden) closeCodex();
+    if (ev.key === "Escape" && !mapEl.hidden) closeMap();
   });
 
   /** 當世的名稱欄位值，用來填入事件、殘卷、日誌裡的名稱 */
@@ -195,13 +257,22 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       <p class="desc">${origin?.desc ?? ""}</p>`;
   };
 
+  /** 擲骰畫面的出生地：國家與村名，讓玩家看見每次重擲世界都不一樣 */
+  const birthHtml = (state: GameState): string => {
+    const world = worldFor(state.worldSeed, data);
+    const slots = worldSlots(world);
+    const polity = world.polities.find((p) => p.id === world.owners[world.birth.region])!;
+    const region = data.map.regions.find((r) => r.id === world.birth.region)!;
+    return `<p><span class="tag">出生地</span>${polityLabel(polity)}・${slots.village}（${region.name}）</p>`;
+  };
+
   // ---- 擲骰畫面 ----
   let built: "roll" | "life" | null = null;
   let rollKey = "";
   let currentName = "";
 
   function renderRoll(state: GameState): void {
-    const key = `${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
+    const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
     if (built === "roll" && key === rollKey) return;
     built = "roll";
     rollKey = key;
@@ -215,6 +286,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
         ${statsHtml(state)}
         ${identityHtml(state)}
+        ${birthHtml(state)}
         <div class="actions">
           <button id="reroll" type="button" ${state.rerolls > 0 ? "" : "disabled"}>重擲（剩 ${state.rerolls} 次）</button>
           <button id="start" type="button" class="primary">開始修行</button>
@@ -589,7 +661,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     render(state) {
       lastState = state;
       updateCodexButton(state);
+      updateMapButton(state);
       if (!codexEl.hidden) buildCodex(state);
+      if (!mapEl.hidden) buildMap(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.disabled = s === state.speed;
       if (state.phase === "rolling") renderRoll(state);

@@ -1,4 +1,4 @@
-import { slotProblems } from "./slots";
+import { SLOT_NAMES, slotProblems } from "./slots";
 import {
   ATTRIBUTE_KEYS,
   type AttributeKey,
@@ -559,6 +559,9 @@ export function validateFragments(raw: unknown, file = "fragments.json"): Fragme
   return { topics, stances, items };
 }
 
+/** 地圖簡介模板可用的欄位：名稱欄位，加上標記自己的名字、地域、所屬國與都城 */
+const BLURB_TOKENS = ["name", "region", "country", "capital", ...SLOT_NAMES];
+
 const NAME_MIN: Record<keyof WorldNames, number> = {
   countries: 10,
   capitals: 10,
@@ -666,7 +669,36 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     y: num(st, "y", `${file} 欄位 stairs`, { min: 0 }),
     text: str(st, "text", `${file} 欄位 stairs`),
   };
-  return { viewBox: box, palette, regions, adjacency, stairs };
+
+  const bo = obj(o.blurbs, `${file} 欄位 blurbs`);
+  const bw = `${file} 欄位 blurbs`;
+  const blurb = (v: unknown, key: string): string => {
+    const text = typeof v === "string" && v !== "" ? v : fail(bw, key, "必須是非空字串");
+    // 每則簡介不超過兩句，模板欄位必須認得
+    if ((text.match(/[。！？]/g) ?? []).length > 2) fail(bw, key, `不可超過兩句，目前為「${text}」`);
+    for (const m of text.matchAll(/\{([^}]*)\}/g)) {
+      if (!BLURB_TOKENS.includes(m[1])) fail(bw, key, `出現不認得的欄位 {${m[1]}}，可用：${BLURB_TOKENS.map((t) => `{${t}}`).join("、")}`);
+    }
+    return text;
+  };
+  const group = (key: string, names: string[]): Record<string, string> => {
+    const g = obj(bo[key], `${bw}.${key}`);
+    return Object.fromEntries(names.map((n) => [n, blurb(g[n], `${key}.${n}`)]));
+  };
+  const blurbs = {
+    sect: group("sect", ["guard", "great", "school"]),
+    state: group("state", [...SECT_STATES]),
+    polity: blurb(bo.polity, "polity"),
+    tribal: blurb(bo.tribal, "tribal"),
+    ferry: blurb(bo.ferry, "ferry"),
+    ferryBroken: blurb(bo.ferryBroken, "ferryBroken"),
+    merchantHq: blurb(bo.merchantHq, "merchantHq"),
+    merchantBranch: blurb(bo.merchantBranch, "merchantBranch"),
+    village: blurb(bo.village, "village"),
+    market: blurb(bo.market, "market"),
+    mountain: blurb(bo.mountain, "mountain"),
+  } as MapData["blurbs"];
+  return { viewBox: box, palette, regions, adjacency, stairs, blurbs };
 }
 
 /** 世局候選池各種類允許的目標、欄位與模板欄位 */

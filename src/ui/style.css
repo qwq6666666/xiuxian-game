@@ -121,3 +121,39 @@ label { display: block; margin: 6px 0; font-size: 0.9em; }
 .fragment-text { margin: 0; white-space: pre-line; line-height: 1.7; }
 blockquote.fragment-text { margin: 10px 0; padding: 6px 12px; border-left: 2px solid var(--accent); color: var(--muted); }
 blockquote.fragment-text small { display: block; margin-top: 4px; }
+
+.map-svg { display: block; width: 100%; max-width: 440px; margin: 8px auto; color: var(--muted); touch-action: manipulation; }
+.map-region { cursor: pointer; }
+.map-region:hover { fill-opacity: 0.55; }
+.map-hit { cursor: pointer; }
+.map-hit.selected { stroke: var(--accent); stroke-width: 2; }
+.map-region.selected { stroke-opacity: 1; }
+.map-label { font-size: 14px; fill: var(--text); fill-opacity: 0.85; pointer-events: none; }
+.map-small { font-size: 10.5px; fill: var(--text); fill-opacity: 0.8; pointer-events: none; }
+.map-capital { fill: var(--text); fill-opacity: 0.7; pointer-events: none; }
+.map-stairs { fill: #8a8f97; stroke: var(--line); }
+.map-ferry { fill: #6b9ac4; }
+.map-ferry-broken { stroke: #c0715a; stroke-width: 2; fill: none; }
+.map-merchant, .map-merchant-hq { fill: #c9a64e; stroke: var(--bg); }
+.map-mountain { fill: #6f7a6a; }
+.map-sect-dot { stroke: var(--text); stroke-width: 1.6; }
+.map-sect-solid .map-sect-dot { fill: var(--accent); }
+.map-sect-hollow .map-sect-dot { fill: var(--bg); }
+.map-sect-dashed .map-sect-dot { fill: var(--bg); stroke-dasharray: 2 2; }
+.map-sect-gray .map-sect-dot { fill: #6a6f77; }
+.map-sect-fallen .map-sect-dot { fill: none; stroke: #777; }
+.map-sect-x { stroke: #c0715a; stroke-width: 1.6; fill: none; }
+.map-sect-ring { fill: none; stroke: var(--accent); stroke-width: 1; }
+.map-you-dot { fill: var(--accent); }
+.map-you-ring { fill: none; stroke: var(--accent); stroke-width: 1.5; animation: map-pulse 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.map-you-label { font-size: 11px; fill: var(--accent); font-weight: bold; pointer-events: none; }
+@keyframes map-pulse { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.35; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) { .map-you-ring { animation: none; } }
+.map-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0; }
+.map-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.9em; }
+.map-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+.map-symbols { font-size: 0.85em; margin: 4px 0 10px; }
+.map-notes h3 { margin: 10px 0 4px; }
+.map-notes p { margin: 2px 0; }
+.map-info { margin-top: 12px; padding: 8px 12px; border-left: 2px solid var(--accent); min-height: 3.4em; }
+.map-info p { margin: 4px 0 0; }

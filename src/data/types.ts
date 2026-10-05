@@ -288,6 +288,24 @@ export interface MapData {
   regions: MapRegion[];
   adjacency: Record<string, string[]>;
   stairs: { x: number; y: number; text: string };
+  /** 點開地圖標記時的簡介模板，內含 {name}、{region} 等欄位 */
+  blurbs: MapBlurbs;
+}
+
+export interface MapBlurbs {
+  /** 依守梯大宗、大宗、門派 */
+  sect: { guard: string; great: string; school: string };
+  /** 依宗門狀態接在後面的一句 */
+  state: Record<"prosper" | "stable" | "decline" | "closed" | "fallen", string>;
+  polity: string;
+  tribal: string;
+  ferry: string;
+  ferryBroken: string;
+  merchantHq: string;
+  merchantBranch: string;
+  village: string;
+  market: string;
+  mountain: string;
 }
 
 export const SECT_STATES = ["prosper", "stable", "decline", "closed", "fallen"] as const;

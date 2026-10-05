@@ -9,7 +9,7 @@
       "aura": "天脈所在，外圍稀薄",
       "desc": "荒原深處無人居住。巡守的人說，那裡風大。",
       "path": "M70,12 L330,12 L355,92 L45,92 Z",
-      "label": [200, 70]
+      "label": [200, 82]
     },
     {
       "id": "north",
@@ -35,7 +35,7 @@
       "capital": [100, 262],
       "sites": [[72, 236], [122, 244], [70, 322], [118, 340], [102, 300]],
       "ferries": [[62, 350]],
-      "birth": { "village": [124, 290], "mountain": [72, 276] }
+      "birth": { "village": [132, 298], "mountain": [66, 272] }
     },
     {
       "id": "center",
@@ -84,5 +84,28 @@
     "east": ["north", "center", "south"],
     "south": ["west", "center", "east"]
   },
-  "stairs": { "x": 200, "y": 40, "text": "階上有東西。去過的人都說沒有。" }
+  "stairs": { "x": 200, "y": 40, "text": "階上有東西。去過的人都說沒有。" },
+  "blurbs": {
+    "sect": {
+      "guard": "{name}，坐鎮{region}的守梯大宗，自稱奉天命。",
+      "great": "{name}，{country}境內的大宗，守梯紀的舊事無人細說。",
+      "school": "{name}，{country}境內的門派。"
+    },
+    "state": {
+      "prosper": "近來聲勢正盛。",
+      "stable": "不好不壞，勉強度日。",
+      "decline": "人才凋零，山門冷清。",
+      "closed": "山門緊閉，謝絕來客。",
+      "fallen": "已經覆滅，只剩一處荒廢的遺址。"
+    },
+    "polity": "{name}，{region}一帶的國度。都城{capital}。",
+    "tribal": "{name}諸部，{region}一帶尚未立國的部族，各自為政。",
+    "ferry": "{wanderers}照看的古渡口，在{region}。",
+    "ferryBroken": "{wanderers}照看的古渡口，在{region}，如今已毀，無人擺渡。",
+    "merchantHq": "{merchant}的總號，什麼都賣，包括消息。",
+    "merchantBranch": "{merchant}在{region}的分號，生意做得比誰都勤。",
+    "village": "{village}，{country}境內的村落，你出生的地方。",
+    "market": "{market}，渡口邊的坊市，{merchant}在此設有分號。",
+    "mountain": "{mountain}，修行者日常出入的山野，荒廢的洞府比住人的屋子還多。"
+  }
 }
