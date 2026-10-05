@@ -40,8 +40,8 @@ function pending(id: string, patch: Partial<GameState> = {}): GameState {
 }
 
 describe("事件資料", () => {
-  it("M6 目標：40 個事件、至少 8 個抉擇、2 組連鎖", () => {
-    expect(gameData.events).toHaveLength(40);
+  it("事件池：至少 70 個事件、至少 8 個抉擇、2 組連鎖", () => {
+    expect(gameData.events.length).toBeGreaterThanOrEqual(70);
     expect(gameData.events.filter((e) => e.type === "choice").length).toBeGreaterThanOrEqual(8);
     // 連鎖：後段事件要求前段事件設定的旗標
     expect(ev("cave_002").conditions.flags).toEqual(["cave_001_marked"]);

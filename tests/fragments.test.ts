@@ -81,7 +81,7 @@ describe("殘卷資料", () => {
 
 describe("事件擴充", () => {
   it("事件數 40 個，至少 10 個的某個結果會給殘卷，且每份殘卷都有取得的途徑", () => {
-    expect(gameData.events).toHaveLength(40);
+    expect(gameData.events.length).toBeGreaterThanOrEqual(70);
     const effectsOf = (e: EventDef): Effects[] => [
       ...(e.effects ? [e.effects] : []),
       ...(e.choices ?? []).flatMap((c) => c.outcomes.map((o) => o.effects)),
