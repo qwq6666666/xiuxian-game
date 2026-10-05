@@ -1,5 +1,5 @@
 import type { OfflineSummary } from "../core/offline";
-import type { Changes, LifeReview, LogEntry } from "../core/state";
+import type { Changes, LifeReview, LogEntry, Meta } from "../core/state";
 import { DEFAULT_SLOTS, fillSlots, type SlotValues } from "../data/slots";
 import { ATTRIBUTE_KEYS, type AttributeKey, type GameData, type RealmDef, type TalentDef } from "../data/types";
 
@@ -187,6 +187,23 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
   const body = fill(template, vars);
   // 死亡文字自帶「享年」，不再加年齡前綴
   return entry.kind === "death" || entry.kind === "adventureDeath" ? body : `${formatAgeZh(entry.month)}，${body}`;
+}
+
+export interface CollectionSummary {
+  total: number;
+  rows: { id: string; name: string; desc: string; count: number }[];
+  /** 每種出身都至少通關一次 */
+  allCleared: boolean;
+}
+
+/** 通關收藏的摘要：總次數與各出身的次數，出身名單讀資料檔 */
+export function collectionSummary(meta: Meta, data: GameData): CollectionSummary {
+  const rows = data.origins.map((o) => ({ id: o.id, name: o.name, desc: o.desc, count: meta.clears[o.id] ?? 0 }));
+  return {
+    total: rows.reduce((sum, r) => sum + r.count, 0),
+    rows,
+    allCleared: rows.every((r) => r.count > 0),
+  };
 }
 
 /** 離線回歸提示，例如「閉關 3 年 2 個月，修為增加 360。」；沒有閉關則回傳空字串 */

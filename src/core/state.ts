@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 
 /** 跨世保留的資料 */
 export interface Meta {
@@ -14,10 +14,12 @@ export interface Meta {
   lives: number;
   /** 已得的殘卷 id，依取得順序 */
   fragments: string[];
+  /** 各出身通關的次數（出身 id → 次數），只收藏，不影響任何數值 */
+  clears: Record<string, number>;
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [] };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {} };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */

@@ -224,6 +224,8 @@ export interface TextData {
       stop: { bottleneck: string[]; lifespan: string[] };
     };
   };
+  /** 收藏畫面的文字 */
+  collection: { note: string; empty: string; allCleared: string };
   /** 一生回顧的收尾句，依結束方式分類 */
   review: Record<ReviewCause, ClosingVariant[]>;
 }

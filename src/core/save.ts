@@ -74,6 +74,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   6: (d) => ({ ...d, version: 7, meta: { ...obj(d.meta, "meta"), fragments: [] } }),
   // v7 沒有世界：用既有的亂數種子雜湊出世界種子，不動存檔裡的種子
   7: (d) => ({ ...d, version: 8, worldSeed: deriveSeed(Number(d.rngSeed) >>> 0, 1) }),
+  // v8 沒有通關收藏：補上空的紀錄（舊存檔沒記下過去通關的出身，無從回推）
+  8: (d) => ({ ...d, version: 9, meta: { ...obj(d.meta, "meta"), clears: {} } }),
 };
 
 function fail(field: string, msg: string): never {
@@ -177,8 +179,14 @@ function parseMeta(v: unknown, data: GameData): Meta {
     return id;
   });
   if (new Set(fragments).size !== fragments.length) fail("meta.fragments", "有重複的殘卷");
+  const clears = intRecord(o, "clears", "meta.clears");
+  for (const [id, n] of Object.entries(clears)) {
+    if (!data.origins.some((x) => x.id === id)) fail(`meta.clears.${id}`, `找不到出身 ${id}`);
+    if (n < 1) fail(`meta.clears.${id}`, `必須是正整數，目前為 ${n}`);
+  }
   return {
     fragments,
+    clears,
     daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
     talents,
     reached: o.reached as string[],

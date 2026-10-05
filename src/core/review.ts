@@ -113,6 +113,10 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       reached: [...state.meta.reached, ...newlyReached],
       lives: state.meta.lives + 1,
       fragments: earned.meta.fragments,
+      clears:
+        cause === "cleared"
+          ? { ...state.meta.clears, [state.originId]: (state.meta.clears[state.originId] ?? 0) + 1 }
+          : state.meta.clears,
     },
   };
 }

@@ -516,6 +516,9 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
     for (const k of Object.keys(raw)) out[k] = str(raw, k, `${where}.${key}`);
     return out;
   };
+  // 先檢查 review，缺欄位時錯誤訊息的順序才穩定
+  const review = parseReview(o.review, `${file} 欄位 review`);
+  const collection = obj(o.collection, `${file} 欄位 collection`);
   return {
     log: {
       stageUp: strList(log, "stageUp", where),
@@ -537,7 +540,12 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
         },
       },
     },
-    review: parseReview(o.review, `${file} 欄位 review`),
+    review,
+    collection: {
+      note: str(collection, "note", `${file} 欄位 collection`),
+      empty: str(collection, "empty", `${file} 欄位 collection`),
+      allCleared: str(collection, "allCleared", `${file} 欄位 collection`),
+    },
   };
 }
 

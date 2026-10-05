@@ -20,6 +20,7 @@ import {
   ATTR_LABEL,
   choiceBlockReason,
   describeTalent,
+  collectionSummary,
   formatChanges,
   formatLogEntry,
   formatReviewSummary,
@@ -58,6 +59,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       <label class="auto"><input type="checkbox" id="auto" /> 自動抉擇</label>
       <button id="codex-open" type="button"></button>
       <button id="map-open" type="button"></button>
+      <button id="collection-open" type="button">收藏</button>
       <button id="export" type="button">匯出存檔</button>
       <button id="import" type="button">匯入存檔</button>
       <button id="reset" type="button">重新開始</button>
@@ -66,6 +68,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     <div id="stage"></div>
     <div class="modal codex" id="codex" hidden><div class="card review" id="codex-card"></div></div>
     <div class="modal codex" id="map" hidden><div class="card review" id="map-card"></div></div>
+    <div class="modal codex" id="collection" hidden><div class="card review" id="collection-card"></div></div>
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
   const noticeEl = root.querySelector<HTMLElement>("#notice")!;
@@ -204,6 +207,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   function openMap(): void {
     if (!lastState) return;
     closeCodex();
+    closeCollection();
     mapSelected = null;
     buildMap(lastState);
     mapEl.hidden = false;
@@ -218,9 +222,68 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     if (ev.target === mapEl) closeMap();
   });
 
+  // ---- 通關收藏 ----
+  const collectionEl = root.querySelector<HTMLElement>("#collection")!;
+  const collectionCard = root.querySelector<HTMLElement>("#collection-card")!;
+  const collectionBtn = root.querySelector<HTMLButtonElement>("#collection-open")!;
+
+  function buildCollection(state: GameState): void {
+    const sum = collectionSummary(state.meta, data);
+    const box = document.createDocumentFragment();
+    const head = document.createElement("div");
+    head.className = "codex-head";
+    const title = document.createElement("h2");
+    title.textContent = `收藏　通關 ${sum.total} 次`;
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "關閉";
+    close.addEventListener("click", closeCollection);
+    head.append(title, close);
+    const note = document.createElement("p");
+    note.className = "desc";
+    note.textContent = data.text.collection.note;
+    box.append(head, note);
+    for (const row of sum.rows) {
+      const art = document.createElement("article");
+      art.className = row.count > 0 ? "fragment" : "fragment missing";
+      const name = document.createElement("strong");
+      name.textContent = row.name;
+      const count = document.createElement("small");
+      count.className = "changes";
+      count.textContent = row.count > 0 ? `通關 ${row.count} 次` : `（${data.text.collection.empty}）`;
+      const desc = document.createElement("p");
+      desc.className = "fragment-text";
+      desc.textContent = row.desc;
+      art.append(name, count, desc);
+      box.append(art);
+    }
+    if (sum.allCleared) {
+      const done = document.createElement("p");
+      done.className = "desc";
+      done.textContent = data.text.collection.allCleared;
+      box.append(done);
+    }
+    collectionCard.replaceChildren(box);
+  }
+  function openCollection(): void {
+    if (!lastState) return;
+    closeCodex();
+    closeMap();
+    buildCollection(lastState);
+    collectionEl.hidden = false;
+  }
+  function closeCollection(): void {
+    collectionEl.hidden = true;
+  }
+  collectionBtn.addEventListener("click", openCollection);
+  collectionEl.addEventListener("click", (ev) => {
+    if (ev.target === collectionEl) closeCollection();
+  });
+
   function openCodex(): void {
     if (!lastState) return;
     closeMap();
+    closeCollection();
     buildCodex(lastState);
     codexEl.hidden = false;
     writeSeen(lastState.meta.fragments);
@@ -236,6 +299,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && !codexEl.hidden) closeCodex();
     if (ev.key === "Escape" && !mapEl.hidden) closeMap();
+    if (ev.key === "Escape" && !collectionEl.hidden) closeCollection();
   });
 
   /** 當世的名稱欄位值，用來填入事件、殘卷、日誌裡的名稱 */
@@ -663,6 +727,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       updateCodexButton(state);
       updateMapButton(state);
       if (!codexEl.hidden) buildCodex(state);
+      if (!collectionEl.hidden) buildCollection(state);
       if (!mapEl.hidden) buildMap(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.disabled = s === state.speed;
