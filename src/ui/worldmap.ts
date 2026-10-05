@@ -73,8 +73,8 @@ export function buildWorldMap(
     const p = region.land ? polityOf(region) : undefined;
     const path = svg("path", {
       d: region.path,
-      class: "map-region",
-      fill: p ? p.color : "#7a7f87",
+      class: p ? "map-region" : "map-region map-region-void",
+      ...(p ? { fill: p.color } : {}),
       "fill-opacity": p ? 0.4 : 0.22,
       stroke: "currentColor",
       "stroke-opacity": 0.45,

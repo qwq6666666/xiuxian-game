@@ -1,0 +1,38 @@
+/* 天下圖：SVG 標記的顏色全走 token；國家顏色由資料（map.json 的 palette）決定 */
+.map-svg { display: block; width: 100%; max-width: 440px; max-height: 55vh; max-height: 55dvh; margin: var(--sp-2) auto; color: var(--muted); touch-action: manipulation; }
+.map-region { cursor: pointer; }
+.map-region:hover { fill-opacity: 0.55; }
+.map-region-void { fill: var(--map-void); }
+.map-hit { cursor: pointer; }
+.map-hit.selected { stroke: var(--accent); stroke-width: 2; }
+.map-region.selected { stroke-opacity: 1; }
+.map-label { font-size: 14px; fill: var(--text); fill-opacity: 0.85; pointer-events: none; }
+.map-small { font-size: 10.5px; fill: var(--text); fill-opacity: 0.8; pointer-events: none; }
+.map-capital { fill: var(--text); fill-opacity: 0.7; pointer-events: none; }
+.map-stairs { fill: var(--map-stairs); stroke: var(--line); }
+.map-ferry { fill: var(--map-ferry); }
+.map-ferry-broken { stroke: var(--map-broken); stroke-width: 2; fill: none; }
+.map-merchant, .map-merchant-hq { fill: var(--map-merchant); stroke: var(--bg); }
+.map-mountain { fill: var(--map-mountain); }
+.map-sect-dot { stroke: var(--text); stroke-width: 1.6; }
+.map-sect-solid .map-sect-dot { fill: var(--accent); }
+.map-sect-hollow .map-sect-dot { fill: var(--bg); }
+.map-sect-dashed .map-sect-dot { fill: var(--bg); stroke-dasharray: 2 2; }
+.map-sect-gray .map-sect-dot { fill: var(--map-gray); }
+.map-sect-fallen .map-sect-dot { fill: none; stroke: var(--map-fallen); }
+.map-sect-x { stroke: var(--map-broken); stroke-width: 1.6; fill: none; }
+.map-sect-ring { fill: none; stroke: var(--accent); stroke-width: 1; }
+.map-you-dot { fill: var(--accent); }
+.map-you-ring { fill: none; stroke: var(--accent); stroke-width: 1.5; animation: map-pulse 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.map-you-label { font-size: 11px; fill: var(--accent); font-weight: bold; pointer-events: none; }
+@keyframes map-pulse { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.35; transform: scale(1.35); } }
+
+.map-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0; }
+.map-chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-md); }
+.map-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+.map-symbols { font-size: var(--fs-sm); margin: var(--sp-1) 0 10px; }
+.map-notes h3 { margin: 10px 0 var(--sp-1); }
+.map-notes p { margin: 2px 0; }
+/* 簡介固定在彈窗底部，手機點選標記後不必捲動找 */
+.map-info { position: sticky; bottom: -14px; margin-top: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--accent); background: var(--panel); min-height: 3.4em; box-shadow: 0 -8px 8px -4px var(--panel); }
+.map-info p { margin: var(--sp-1) 0 0; }

@@ -1,0 +1,59 @@
+/* 元件：擲骰畫面、屬性、選項、物品列、彈窗、回顧、殘卷 */
+.roll { max-width: 480px; margin: 32px auto; }
+.roll h1 { margin: 0; letter-spacing: 0.2em; }
+.sub { color: var(--muted); margin: var(--sp-1) 0 var(--sp-4); }
+.namebox { display: block; margin: var(--sp-2) 0; }
+.namebox input { width: 8em; margin-left: 6px; padding: 2px 6px; background: transparent; color: inherit; border: 1px solid var(--muted); border-radius: var(--r-sm); font: inherit; }
+.perks { list-style: none; margin: 0 0 var(--sp-3); padding: 0; color: var(--accent); font-size: var(--fs-md); }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-2); margin: 0 0 var(--sp-3); }
+.stats div { text-align: center; border: 1px solid var(--line); border-radius: var(--r-sm); padding: var(--sp-1) 0; }
+.stats dt { color: var(--muted); font-size: var(--fs-sm); }
+.stats dd { margin: 0; font-size: var(--fs-xl); }
+
+.choices { display: flex; flex-direction: column; gap: 6px; }
+.choices button { text-align: left; display: flex; flex-direction: column; flex-shrink: 0; }
+.choices button.active { border-color: var(--accent); color: var(--accent); }
+.choices button.active strong::before { content: "✓ "; }
+
+.items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+.items li { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); }
+.items li > div { flex: 1; }
+.items li > button, .talents button { align-self: center; }
+.price { color: var(--accent); font-size: var(--fs-sm); }
+.price-up { color: var(--bad); }
+.price-down { color: var(--good); }
+.owned { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; }
+.market-note { margin: 0.4em 0 0; font-size: var(--fs-sm); color: var(--muted); }
+#pillRow { display: flex; gap: 6px; align-items: center; min-height: var(--control); }
+
+/* 彈窗：遮罩蓋住整個畫面，卡片在內部捲動，不會超出視窗 */
+.modal { position: fixed; inset: 0; z-index: var(--z-modal); padding: var(--sp-4); background: var(--overlay); display: flex; align-items: center; justify-content: center; }
+.modal .card { min-width: 280px; }
+.modal .card:focus { outline: none; }
+.codex { z-index: var(--z-modal-top); }
+.event { width: 100%; max-width: 440px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.event h2 { color: var(--accent); font-size: 1.1em; }
+.event .choices button:disabled small { color: var(--warn); }
+.review { max-width: 520px; width: 100%; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+.review h3 { margin: 14px 0 6px; font-size: 0.95em; color: var(--muted); font-weight: normal; }
+.summary { margin: var(--sp-2) 0 var(--sp-3); }
+.facts { display: flex; flex-wrap: wrap; gap: var(--sp-1) 20px; margin: 0; font-size: var(--fs-md); }
+.facts div { display: flex; gap: 6px; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.highlights { list-style: none; margin: 0; padding: 0; }
+.highlights li { padding: var(--sp-1) 0; border-bottom: 1px dashed var(--line); }
+.highlights li:last-child { border-bottom: 0; }
+.daoyun { color: var(--accent); margin-top: var(--sp-3); }
+.talents li { align-items: flex-start; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+.talents button { white-space: nowrap; }
+
+.codex-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); }
+.codex-head h2 { margin: 0; }
+.fragment { margin: 10px 0; padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--line); }
+.fragment.missing { color: var(--muted); }
+.fragment small { display: block; margin: 2px 0 6px; }
+.fragment-text { margin: 0; white-space: pre-line; line-height: var(--leading); }
+blockquote.fragment-text { margin: 10px 0; padding: 6px var(--sp-3); border-left: 2px solid var(--accent); color: var(--muted); }
+blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }

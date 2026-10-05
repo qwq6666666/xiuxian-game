@@ -1,0 +1,36 @@
+/* 版面：工具列、狀態卡、主體兩欄（手機改單欄的部分在 responsive.css） */
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-3); }
+.bar-left, .bar-right { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.bar button { white-space: nowrap; }
+.speeds { display: flex; gap: 6px; }
+.speeds button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: bold; }
+.speeds button[aria-pressed="true"]::before { content: "✓ "; }
+.auto { display: flex; align-items: center; gap: var(--sp-1); margin: 0; white-space: nowrap; min-height: var(--control); }
+
+.menu { position: relative; }
+.menu summary { list-style: none; cursor: pointer; padding: var(--sp-1) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); display: flex; align-items: center; }
+.menu summary::-webkit-details-marker { display: none; }
+.menu summary::after { content: " ▾"; }
+.menu[open] summary::after { content: " ▴"; }
+.menu-list { position: absolute; right: 0; top: calc(100% + var(--sp-1)); z-index: var(--z-menu); display: flex; flex-direction: column; gap: 6px; min-width: 9em; padding: var(--sp-2); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); }
+.menu-list button { text-align: left; white-space: nowrap; }
+
+#notice { color: var(--accent); margin: 0 0 var(--sp-3); }
+
+.status { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); }
+.line { display: flex; flex-wrap: wrap; gap: var(--sp-1) 20px; align-items: baseline; }
+.line strong { font-size: var(--fs-lg); color: var(--accent); }
+.pace { margin: 6px 0 0; font-size: var(--fs-md); color: var(--muted); }
+.todo { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); margin-top: var(--sp-2); padding: 6px 10px; border-left: 3px solid var(--accent); background: var(--sunken); }
+.todo::before { content: "待辦"; font-size: var(--fs-xs); border: 1px solid var(--accent); border-radius: 3px; padding: 0 6px; color: var(--accent); }
+
+.progress { position: relative; height: 22px; margin-top: var(--sp-2); background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; }
+#fill { height: 100%; background: var(--accent-dim); width: 0; }
+#barText { position: absolute; inset: 0; text-align: center; font-size: var(--fs-sm); line-height: 22px; }
+
+.cols { display: grid; grid-template-columns: 1fr var(--side-w); gap: var(--sp-3); margin-top: var(--sp-3); }
+.log, .side { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); align-self: start; }
+.log ul { list-style: none; margin: 0; padding: 0; max-height: 60vh; overflow-y: auto; }
+.log li { padding: var(--sp-1) 0; border-bottom: 1px dashed var(--line); }
+.log li:last-child { border-bottom: 0; }
+.side > * + * { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }

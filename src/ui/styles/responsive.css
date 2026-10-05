@@ -1,0 +1,20 @@
+/* 手機（≤640px）：單欄，側欄拆成獨立區塊重排：安排、突破、坐化、日誌，其餘收合區塊在後 */
+@media (max-width: 640px) {
+  #app { padding: var(--sp-3); }
+  button, summary, input, select { min-height: var(--tap); }
+  input[type="checkbox"] { min-height: 0; }
+  .auto, #pillRow { min-height: var(--tap); }
+  .bar { margin-bottom: var(--sp-2); }
+  .bar-right { gap: 6px; }
+  .bar-right button, .menu summary { padding: var(--sp-1) var(--sp-2); }
+  .status { padding: 10px var(--sp-3); }
+  .cols { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .side { display: contents; }
+  .side > * { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin: 0; }
+  .s-sched { order: 1; } .s-bt { order: 2; } .s-zuohua { order: 3; }
+  .log { order: 4; } .s-role { order: 5; } .s-bag { order: 6; } .s-market { order: 7; }
+  .log ul { max-height: 50vh; max-height: 50dvh; }
+  .items li { flex-wrap: wrap; }
+  .modal { padding: var(--sp-2); }
+  .card { padding: 14px var(--sp-4); }
+}

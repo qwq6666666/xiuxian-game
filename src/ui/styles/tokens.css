@@ -1,0 +1,62 @@
+/* 設計 token：所有色彩、間距、圓角、字級、層級都從這裡取，其他檔案不得寫死色碼。
+   視覺語言：深墨底、舊金強調、朱砂只用在危險與警示；不用漸層、發光與圖示字型。
+   文字色與底色的對比由 tests/style.test.ts 守住（一般文字 ≥ 4.5:1）。 */
+:root {
+  /* 底色：頁面底、面板、凹陷處（進度條槽、待辦列） */
+  --bg: #14161a;
+  --panel: #1d2026;
+  --sunken: #14161a;
+  --line: #2f343c;
+  --overlay: rgba(0, 0, 0, 0.6);
+
+  /* 文字與強調 */
+  --text: #d9d6cc;
+  --muted: #9c998e;
+  --accent: #c9a45c;
+  --accent-dim: #5a4a26;
+  --warn: #d9a77c;
+  --bad: #d8725f;
+  --good: #6fb88a;
+
+  /* 地圖用色（國家顏色由資料決定，這裡只放標記與底色） */
+  --map-void: #7a7f87;
+  --map-stairs: #8a8f97;
+  --map-ferry: #6b9ac4;
+  --map-broken: #c0715a;
+  --map-merchant: #c9a64e;
+  --map-mountain: #6f7a6a;
+  --map-fallen: #777777;
+  --map-gray: #6a6f77;
+
+  /* 間距（4px 基準） */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+
+  /* 圓角 */
+  --r-sm: 4px;
+  --r-md: 6px;
+
+  /* 字級：用 em，隨所在處縮放，維持原本的閱讀大小 */
+  --fs-xs: 0.8em;
+  --fs-sm: 0.85em;
+  --fs-md: 0.9em;
+  --fs-lg: 1.2em;
+  --fs-xl: 1.3em;
+
+  --font: "Noto Serif TC", "PMingLiU", "Songti TC", serif;
+  --leading: 1.7;
+
+  /* 觸控與寬度 */
+  --tap: 44px;
+  --control: 36px;
+  --page-max: 960px;
+  --side-w: 260px;
+
+  /* 層級 */
+  --z-menu: 5;
+  --z-modal: 20;
+  --z-modal-top: 30;
+}

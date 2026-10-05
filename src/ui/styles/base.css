@@ -1,0 +1,55 @@
+/* 基礎：重設、字體、按鈕、焦點、共用小件 */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: var(--leading);
+}
+
+#app { max-width: var(--page-max); margin: 0 auto; padding: var(--sp-4); }
+
+p { margin: var(--sp-1) 0; }
+h2 { margin: 0 0 var(--sp-2); font-size: 1em; color: var(--muted); font-weight: normal; }
+small { display: block; color: var(--muted); font-size: var(--fs-sm); line-height: 1.4; }
+label { display: block; margin: 6px 0; font-size: var(--fs-md); }
+[hidden] { display: none !important; }
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: var(--sp-1) var(--sp-3);
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--muted); }
+button:disabled { color: var(--muted); border-style: dashed; background: transparent; cursor: default; }
+button.primary { border-color: var(--accent); color: var(--accent); }
+button.danger { color: var(--bad); }
+button, summary, input, select { min-height: var(--control); }
+input[type="checkbox"] { min-height: 0; width: 1.1em; height: 1.1em; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.muted { color: var(--muted); }
+.desc { color: var(--muted); font-size: var(--fs-md); }
+.tag { color: var(--muted); margin-right: var(--sp-2); }
+.changes { color: var(--accent); margin-top: 2px; }
+.actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-4); }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-4) 20px; }
+
+/* 可收合區塊的標題列：用文字符號表示開合，不只靠顏色 */
+.fold > summary { cursor: pointer; list-style: none; color: var(--muted); display: flex; align-items: center; min-height: 32px; }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::before { content: "▸ "; white-space: pre; }
+.fold[open] > summary::before { content: "▾ "; }
+.fold > summary + * { margin-top: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
