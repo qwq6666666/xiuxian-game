@@ -4,8 +4,11 @@
   button, summary, input, select { min-height: var(--tap); }
   input[type="checkbox"] { min-height: 0; }
   .auto, #pillRow { min-height: var(--tap); }
-  .bar { margin-bottom: var(--sp-2); }
+  .bar { flex-wrap: nowrap; gap: 6px; margin-bottom: var(--sp-2); }
+  .bar-left, .bar-right { flex-wrap: nowrap; min-width: 0; }
   .bar-right { gap: 6px; }
+  #codex-open, #map-open, #collection-open { display: none; }
+  .menu-mobile-only { display: block; }
   .bar-right button, .menu summary { padding: var(--sp-1) var(--sp-2); }
   .status { padding: 10px var(--sp-3); }
   .cols { display: flex; flex-direction: column; gap: var(--sp-3); }

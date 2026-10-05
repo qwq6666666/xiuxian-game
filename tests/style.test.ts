@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 
 const UI = join(__dirname, "..", "src", "ui");
 const tokensText = readFileSync(join(UI, "styles", "tokens.css"), "utf8");
+const responsiveText = readFileSync(join(UI, "styles", "responsive.css"), "utf8");
+const renderText = readFileSync(join(UI, "render.ts"), "utf8");
 
 /** 讀出 tokens.css 裡 --name: #rrggbb 的色票 */
 function colorTokens(): Record<string, string> {
@@ -60,6 +62,16 @@ describe("樣式 token", () => {
       for (const m of readFileSync(f, "utf8").matchAll(/var\(--([a-z0-9-]+)/g)) {
         expect(defined.has(m[1]), `${f} 用了未定義的 --${m[1]}`).toBe(true);
       }
+    }
+  });
+});
+
+describe("手機工具列", () => {
+  it("維持單列，並把次要入口收進更多選單", () => {
+    expect(responsiveText).toMatch(/\.bar\s*\{[^}]*flex-wrap:\s*nowrap/);
+    expect(responsiveText).toContain("#codex-open, #map-open, #collection-open { display: none; }");
+    for (const id of ["mobile-codex-open", "mobile-map-open", "mobile-collection-open"]) {
+      expect(renderText).toContain(`id="${id}"`);
     }
   });
 });
