@@ -1,13 +1,17 @@
 /* 天下圖：SVG 標記的顏色全走 token；國家顏色由資料（map.json 的 palette）決定 */
-.map-svg { display: block; width: 100%; max-width: 440px; max-height: 55vh; max-height: 55dvh; margin: var(--sp-2) auto; color: var(--muted); touch-action: manipulation; }
-.map-region { cursor: pointer; }
-.map-region:hover { fill-opacity: 0.55; }
+.map-card { max-width: 1040px; }
+.map-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr); gap: var(--sp-4); align-items: start; }
+.map-pane, .map-side { min-width: 0; }
+.map-side { max-height: 76vh; overflow-y: auto; }
+.map-svg { display: block; width: 100%; max-width: 600px; max-height: 76vh; max-height: 76dvh; margin: var(--sp-2) auto; color: var(--muted); touch-action: manipulation; background: url('../jiudu-map.png') center / 100% 100% no-repeat; border: 1px solid var(--line); border-radius: var(--r-md); }
+.map-region { cursor: pointer; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; fill-opacity: 0.1; }
+.map-region:hover { fill-opacity: 0.3; }
 .map-region-void { fill: var(--map-void); }
 .map-hit { cursor: pointer; }
 .map-hit.selected { stroke: var(--accent); stroke-width: 2; }
-.map-region.selected { stroke-opacity: 1; }
-.map-label { font-size: 14px; fill: var(--text); fill-opacity: 0.85; pointer-events: none; }
-.map-small { font-size: 10.5px; fill: var(--text); fill-opacity: 0.8; pointer-events: none; }
+.map-region.selected { stroke-opacity: 1; fill-opacity: 0.28; }
+.map-label { font-size: 14px; fill: var(--text); stroke: var(--panel); stroke-width: 2.5px; paint-order: stroke; pointer-events: none; }
+.map-small { font-size: 10.5px; fill: var(--text); stroke: var(--panel); stroke-width: 2px; paint-order: stroke; pointer-events: none; }
 .map-capital { fill: var(--text); fill-opacity: 0.7; pointer-events: none; }
 .map-stairs { fill: var(--map-stairs); stroke: var(--line); }
 .map-ferry { fill: var(--map-ferry); }
@@ -22,9 +26,19 @@
 .map-sect-fallen .map-sect-dot { fill: none; stroke: var(--map-fallen); }
 .map-sect-x { stroke: var(--map-broken); stroke-width: 1.6; fill: none; }
 .map-sect-ring { fill: none; stroke: var(--accent); stroke-width: 1; }
-.map-you-dot { fill: var(--accent); }
-.map-you-ring { fill: none; stroke: var(--accent); stroke-width: 1.5; animation: map-pulse 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.map-you-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2.5; }
+.map-you-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; animation: map-pulse 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .map-you-label { font-size: 11px; fill: var(--accent); font-weight: bold; pointer-events: none; }
+.map-village-dot { fill: var(--text); stroke: var(--panel); stroke-width: 2; }
+.map-route { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 2 6; pointer-events: none; }
+.map-route.active { stroke-width: 4; stroke-dasharray: 6 5; }
+.map-visited { fill: none; stroke: var(--good); stroke-width: 3; stroke-opacity: 0.9; pointer-events: none; }
+.map-travel { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--sunken); }
+.map-travel h3 { margin-top: 0; }
+.map-travel-status { color: var(--accent); }
+.map-trail-text { font-size: var(--fs-sm); color: var(--muted); }
+.map-destination-label { display: block; margin: var(--sp-2) 0; color: var(--muted); }
+.map-destination { display: block; width: 100%; margin-top: var(--sp-1); padding: var(--sp-2); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); font: inherit; }
 @keyframes map-pulse { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.35; transform: scale(1.35); } }
 
 .map-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0; }
@@ -41,3 +55,9 @@
 .map-effect.related { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
 .map-effect-line { color: var(--accent); }
 .map-info p { margin: var(--sp-1) 0 0; }
+@media (max-width: 760px) {
+  .map-layout { display: block; }
+  .map-side { max-height: none; overflow: visible; }
+  .map-svg { max-height: 58vh; max-height: 58dvh; }
+  .map-info { position: static; }
+}

@@ -8,6 +8,7 @@ import {
   pillAvailable,
 } from "../core/breakthrough";
 import { eventOf } from "../core/events";
+import { placesAt } from "../core/travel";
 import { CLEAR_FRAGMENT_ID } from "../core/fragments";
 import { activeWorldEffects, itemPrice } from "../core/worldeffects";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
@@ -55,6 +56,7 @@ export interface UiHandlers {
   onUseItem(itemId: string): void;
   onBuyItem(itemId: string): void;
   onZuohua(): void;
+  onTravel(targetId: string): void;
 }
 
 export interface Ui {
@@ -86,7 +88,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     <div id="notice" role="status" hidden><span id="noticeText"></span><button id="noticeGo" type="button" hidden></button><button id="noticeClose" type="button" aria-label="關閉提示">關閉</button></div>
     <div id="stage"></div>
     <div class="modal codex" id="codex" role="dialog" aria-modal="true" aria-label="殘卷錄" hidden><div class="card review" id="codex-card"></div></div>
-    <div class="modal codex" id="map" role="dialog" aria-modal="true" aria-label="天下圖" hidden><div class="card review" id="map-card"></div></div>
+    <div class="modal codex" id="map" role="dialog" aria-modal="true" aria-label="天下圖" hidden><div class="card review map-card" id="map-card"></div></div>
     <div class="modal codex" id="collection" role="dialog" aria-modal="true" aria-label="收藏" hidden><div class="card review" id="collection-card"></div></div>
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
@@ -282,12 +284,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   }
 
   function buildMap(state: GameState): void {
+    const focusedOnDestination = document.activeElement?.classList.contains("map-destination") ?? false;
     const content = buildWorldMap(state, data, mapSelected, {
         onSelect(target) {
           mapSelected = target;
           if (lastState) buildMap(lastState);
         },
         onClose: closeMap,
+        onTravel(targetId) { handlers.onTravel(targetId); },
       });
     const marketLink = document.createElement("button");
     marketLink.type = "button";
@@ -295,6 +299,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     marketLink.addEventListener("click", () => { closeMap(); requestAnimationFrame(() => jumpTo("market")); });
     if (state.phase !== "rolling") content.append(marketLink);
     mapCard.replaceChildren(content);
+    if (focusedOnDestination) mapCard.querySelector<HTMLSelectElement>(".map-destination")?.focus({ preventScroll: true });
   }
 
   function openMap(): void {
@@ -532,6 +537,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     barText: HTMLElement;
     progress: HTMLElement;
     sched: HTMLElement;
+    travelOpen: HTMLButtonElement;
     pace: HTMLElement;
     todo: HTMLElement;
     todoText: HTMLElement;
@@ -580,7 +586,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const wide = window.matchMedia("(min-width: 641px)").matches;
     stageEl.innerHTML = `
       <section class="status" aria-label="狀態">
-        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><span id="life" class="muted"></span></div>
+        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
         <p id="pace" class="pace"></p>
         <div id="todo" class="todo" hidden><span id="todoText"></span><button id="todoGo" type="button" class="primary">前往突破</button></div>
@@ -656,6 +662,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       barText: q("#barText"),
       progress: q("#progress"),
       sched: q("#sched"),
+      travelOpen: q<HTMLButtonElement>("#travelOpen"),
       pace: q("#pace"),
       todo: q("#todo"),
       todoText: q("#todoText"),
@@ -690,6 +697,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     };
     els.btButton.addEventListener("click", () => handlers.onBreakthrough(els!.pill.checked));
     els.marketLink.addEventListener("click", openMap);
+    els.travelOpen.addEventListener("click", openMap);
     els.goalGo.addEventListener("click", () => {
       const target = els!.goalGo.dataset.target;
       if (target === "codex") openCodex();
@@ -770,6 +778,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespan}（餘 ${left} 年）`;
     e.stones.textContent = `靈石 ${state.spiritStones}`;
     e.sched.textContent = `安排：${data.schedules.find((s) => s.id === state.schedule)?.name ?? ""}`;
+    const travelTarget = state.travel.targetId ? placesAt(state, data).find((place) => place.id === state.travel.targetId) : null;
+    e.travelOpen.hidden = travelTarget === null;
+    if (travelTarget) e.travelOpen.textContent = `行至${travelTarget.name}・餘 ${state.travel.remainingMonths} 月`;
     e.fill.style.width = `${Math.min(100, (state.cultivation / need) * 100)}%`;
     const cultivation = Math.floor(state.cultivation);
     const stuck = atBottleneck(state, data);
@@ -1087,16 +1098,23 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
   return {
     render(state) {
+      const arrivedAt = lastState?.travel.targetId && !state.travel.targetId && state.travel.locationId === lastState.travel.targetId
+        ? placesAt(state, data).find((place) => place.id === state.travel.locationId)?.name : null;
       lastState = state;
       updateCodexButton(state);
       updateMapButton(state);
       if (!codexEl.hidden) buildCodex(state);
       if (!collectionEl.hidden) buildCollection(state);
-      if (!mapEl.hidden) buildMap(state);
+      if (!mapEl.hidden && !document.activeElement?.classList.contains("map-destination")) buildMap(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));
       if (state.phase === "rolling") renderRoll(state);
       else renderLife(state);
+      if (arrivedAt) {
+        noticeText.textContent = `已抵達${arrivedAt}。此處的風物，總算不只在圖上。`;
+        noticeGo.hidden = true;
+        noticeEl.hidden = false;
+      }
       if (!noticeEl.hidden && noticeText.textContent.startsWith("閉關 ")) {
         let target: "breakthrough" | "bag" | "schedules" | null = null;
         if (state.phase === "living" && atBottleneck(state, data) && canBreakthrough(state, data)) target = "breakthrough";

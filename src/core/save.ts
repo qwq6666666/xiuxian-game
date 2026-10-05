@@ -3,6 +3,7 @@ import { ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "
 import { pickGoals } from "./goals";
 import { createInitialState } from "./life";
 import { deriveSeed, nextInt } from "./rng";
+import { placesAt } from "./travel";
 import {
   emptyMeta,
   LOG_KINDS,
@@ -98,6 +99,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
       review,
     };
   },
+  // v12 的天下圖只供觀看：舊檔從出生村開始，未曾旅行。
+  12: (d) => ({ ...d, version: 13, travel: { locationId: "village", targetId: null, totalMonths: 0, remainingMonths: 0, trail: ["village"] } }),
 };
 
 function fail(field: string, msg: string): never {
@@ -345,12 +348,24 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   }
   if (typeof o.autoChoice !== "boolean") fail("autoChoice", `必須是 true 或 false，目前為 ${JSON.stringify(o.autoChoice)}`);
 
-  return {
+  const travelRaw = obj(o.travel, "travel");
+  const locationId = str(travelRaw, "locationId", "travel.locationId");
+  const targetId = travelRaw.targetId === null ? null : str(travelRaw, "targetId", "travel.targetId");
+  const totalMonths = num(travelRaw, "totalMonths", { integer: true, min: 0 }, "travel.totalMonths");
+  const remainingMonths = num(travelRaw, "remainingMonths", { integer: true, min: 0 }, "travel.remainingMonths");
+  if (remainingMonths > totalMonths) fail("travel.remainingMonths", "不可超過總行程月數");
+  if ((targetId === null) !== (remainingMonths === 0)) fail("travel.targetId", "與剩餘月數不一致");
+  if (!Array.isArray(travelRaw.trail) || !travelRaw.trail.every((id) => typeof id === "string") || travelRaw.trail.length === 0) {
+    fail("travel.trail", "必須是非空的地點 id 陣列");
+  }
+
+  const state: GameState = {
     version,
     rngSeed: num(o, "rngSeed", { integer: true }),
     name,
     nameCustom: o.nameCustom,
     worldSeed: num(o, "worldSeed", { integer: true, min: 0 }),
+    travel: { locationId, targetId, totalMonths, remainingMonths, trail: travelRaw.trail as string[] },
     speed: num(o, "speed", { min: 0 }),
     phase: phase as Phase,
     ageMonths: num(o, "ageMonths", { integer: true, min: 0 }),
@@ -383,4 +398,9 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     review: parseReview(o.review, data),
     log,
   };
+  const known = new Set(placesAt(state, data).map((place) => place.id));
+  if (!known.has(locationId)) fail("travel.locationId", `找不到地點 ${locationId}`);
+  if (targetId !== null && !known.has(targetId)) fail("travel.targetId", `找不到地點 ${targetId}`);
+  for (const [i, id] of state.travel.trail.entries()) if (!known.has(id)) fail(`travel.trail[${i}]`, `找不到地點 ${id}`);
+  return state;
 }
