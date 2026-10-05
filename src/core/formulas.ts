@@ -1,5 +1,5 @@
 // 數值公式集中處。倍率、機率等參數放在 src/data/，這裡只放算式。
-import type { GameConfig, RealmDef } from "../data/types";
+import type { BreakthroughRule, GameConfig, RealmDef } from "../data/types";
 
 /** 現實經過的毫秒數換算成遊戲月數（含小數） */
 export function msToMonths(ms: number, speed: number, msPerMonth: number): number {
@@ -42,7 +42,18 @@ export function stageNeed(realm: RealmDef, stage: number): number {
   return Math.round(realm.need.base * realm.need.growth ** stage);
 }
 
-/** 境界的壽元上限，以月計 */
-export function lifespanMonths(realm: RealmDef): number {
-  return realm.lifespan * 12;
+/** 境界的壽元上限，以月計；bonusYears 是延壽丹累積的年數 */
+export function lifespanMonths(realm: RealmDef, bonusYears = 0): number {
+  return (realm.lifespan + bonusYears) * 12;
+}
+
+/** 大境界突破成功率 = 基礎 + 悟性 × 每點加成 + 丹藥加成，限制在 0–100% */
+export function breakthroughRate(rule: BreakthroughRule, insight: number, usePill: boolean): number {
+  const rate = rule.baseRate + insight * rule.insightBonus + (usePill ? (rule.pillBonus ?? 0) : 0);
+  return Math.min(1, Math.max(0, rate));
+}
+
+/** 突破失敗損失的修為比例 = 基礎損失 − 心性 × 每點減免，最低 0 */
+export function breakthroughFailLoss(config: GameConfig, mind: number): number {
+  return Math.max(0, config.breakthroughFailLoss - mind * config.mindLossReduction);
 }

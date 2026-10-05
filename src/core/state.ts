@@ -1,12 +1,24 @@
 import type { AttributeKey } from "../data/types";
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
-export type Phase = "rolling" | "living" | "dead";
+/** cleared：突破到金丹，第一版通關 */
+export type Phase = "rolling" | "living" | "dead" | "cleared";
 
 export type Attributes = Record<AttributeKey, number>;
 
-export type LogKind = "stageUp" | "realmUp" | "bottleneck" | "death";
+export const LOG_KINDS = [
+  "stageUp",
+  "realmUp",
+  "bottleneck",
+  "death",
+  "breakthroughSuccess",
+  "breakthroughFail",
+  "buy",
+  "find",
+  "adventureDeath",
+] as const;
+export type LogKind = (typeof LOG_KINDS)[number];
 
 /** 日誌只存事件類型，文字由介面依資料檔組出 */
 export interface LogEntry {
@@ -15,6 +27,8 @@ export interface LogEntry {
   kind: LogKind;
   realmId: string;
   stage: number;
+  /** 購買、拾得的物品 */
+  itemId?: string;
 }
 
 export interface GameState {
@@ -33,9 +47,17 @@ export interface GameState {
   cultivationBonus: number;
   spiritStones: number;
   items: Record<string, number>;
+  /** 本世各物品已服用的次數 */
+  itemsUsed: Record<string, number>;
+  /** 延壽丹累積的壽元上限（年） */
+  lifespanBonus: number;
+  /** 目前的日常安排 */
+  schedule: string;
   realmId: string;
   /** 小階段，從 0 起算 */
   stage: number;
   cultivation: number;
+  /** 本世成功突破大境界的次數 */
+  breakthroughs: number;
   log: LogEntry[];
 }

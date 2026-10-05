@@ -15,6 +15,26 @@
     "cultivationMult": 1,
     "stageNames": ["一層", "二層", "三層", "四層", "五層", "六層", "七層", "八層", "九層"],
     "need": { "base": 100, "growth": 1.5 },
+    "breakthrough": "manual",
+    "breakthroughRule": { "baseRate": 0.3, "insightBonus": 0.02, "pillId": "zhuji_dan", "pillBonus": 0.2 }
+  },
+  {
+    "id": "zhuji",
+    "name": "築基",
+    "lifespan": 200,
+    "cultivationMult": 3,
+    "stageNames": ["初期", "中期", "後期"],
+    "need": { "base": 5000, "growth": 2 },
+    "breakthrough": "manual",
+    "breakthroughRule": { "baseRate": 0.15, "insightBonus": 0.02 }
+  },
+  {
+    "id": "jindan",
+    "name": "金丹",
+    "lifespan": 500,
+    "cultivationMult": 3,
+    "stageNames": [""],
+    "need": { "base": 1, "growth": 1 },
     "breakthrough": "manual"
   }
 ]

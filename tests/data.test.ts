@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   validateConfig,
+  validateGameData,
+  validateItems,
   validateOrigins,
   validateRealms,
+  validateSchedules,
   validateSpiritRoots,
   validateText,
 } from "../src/data/validate";
@@ -34,7 +37,41 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
   });
 
   it("text", () => {
-    expect(() => validateText({ log: { stageUp: [], realmUp: {}, bottleneck: "a", death: "b" } })).toThrow("stageUp");
+    const t = gameData.text;
+    expect(() => validateText({ ...t, log: { ...t.log, stageUp: [] } })).toThrow("stageUp");
+    expect(() => validateText({ ...t, log: { ...t.log, buy: [] } })).toThrow("buy");
+    expect(() => validateText({ log: t.log })).toThrow("cleared");
+  });
+
+  it("schedules", () => {
+    const s = gameData.schedules[1];
+    expect(() => validateSchedules([{ ...s, stones: { chance: 2, min: 1, max: 3 } }])).toThrow("chance");
+    expect(() => validateSchedules([{ ...s, stones: { chance: 1, min: 3, max: 1 } }])).toThrow("max");
+    expect(() => validateSchedules([{ ...s, deathChance: -1 }])).toThrow("deathChance");
+    expect(() => validateSchedules([{ ...s, finds: [{ itemId: "a", chance: 5 }] }])).toThrow("finds[0]");
+  });
+
+  it("items", () => {
+    const i = gameData.items[0];
+    expect(() => validateItems([{ ...i, price: 0 }])).toThrow("第 1 筆（juqi_dan）：欄位 price");
+    expect(() => validateItems([{ ...i, effect: { kind: "boom" } }])).toThrow("kind");
+    expect(() => validateItems([{ ...i, effect: { kind: "lifespan", years: 10 } }])).toThrow("maxPerLife");
+  });
+
+  it("跨檔案檢查：引用不存在的物品或境界", () => {
+    const bad = (patch: Partial<typeof gameData>) => () => validateGameData({ ...gameData, ...patch });
+    expect(bad({ schedules: [{ ...gameData.schedules[1], finds: [{ itemId: "ghost", chance: 0.1 }] }] })).toThrow(
+      "ghost",
+    );
+    expect(bad({ origins: [{ ...gameData.origins[0], items: { ghost: 1 } }] })).toThrow("ghost");
+    const realms = gameData.realms.map((r, i) =>
+      i === 1 ? { ...r, breakthroughRule: { ...r.breakthroughRule!, pillId: "ghost" } } : r,
+    );
+    expect(bad({ realms })).toThrow("ghost");
+    const noRule = gameData.realms.map((r, i) => (i === 1 ? { ...r, breakthroughRule: undefined } : r));
+    expect(bad({ realms: noRule })).toThrow("breakthroughRule");
+    const text = { ...gameData.text, log: { ...gameData.text.log, breakthroughSuccess: {} } };
+    expect(bad({ text })).toThrow("breakthroughSuccess");
   });
 
   it("實際資料檔皆通過檢查", () => {

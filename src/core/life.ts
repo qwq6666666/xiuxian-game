@@ -48,9 +48,13 @@ export function createInitialState(seed: number, data: GameData = gameData): Gam
       cultivationBonus: 0,
       spiritStones: 0,
       items: {},
+      itemsUsed: {},
+      lifespanBonus: 0,
+      schedule: data.schedules[0].id,
       realmId: data.realms[0].id,
       stage: 0,
       cultivation: 0,
+      breakthroughs: 0,
       log: [],
     },
     data,
@@ -69,8 +73,8 @@ export function startLife(state: GameState): GameState {
   return { ...state, phase: "living" };
 }
 
-/** 死亡後轉世，進入下一世的擲骰階段（道韻與天賦是 M4 的事） */
+/** 死亡或通關後轉世，進入下一世的擲骰階段（道韻與天賦是 M4 的事） */
 export function newLife(state: GameState, data: GameData = gameData): GameState {
-  if (state.phase !== "dead") return state;
+  if (state.phase !== "dead" && state.phase !== "cleared") return state;
   return { ...createInitialState(state.rngSeed, data), speed: state.speed };
 }

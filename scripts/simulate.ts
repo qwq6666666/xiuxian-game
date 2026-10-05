@@ -1,7 +1,9 @@
 // 無介面模擬：跑 N 世，印出享年與最高境界的統計。用法：npm run sim -- [局數] [種子]
+// 玩家策略很簡單：一直閉關，卡在瓶頸就突破（有築基丹就吃）。
+import { attemptBreakthrough, canBreakthrough } from "../src/core/breakthrough";
 import { createInitialState, startLife } from "../src/core/life";
 import { nextRandom } from "../src/core/rng";
-import { tick } from "../src/core/tick";
+import { atBottleneck, tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { realmLabel } from "../src/ui/format";
 
@@ -16,10 +18,17 @@ for (let i = 0; i < runs; i++) {
   seed = s;
   let state = startLife(createInitialState(Math.floor(v * 2 ** 32), gameData));
   const start = state.ageMonths;
-  while (state.phase === "living") state = tick(state, 12, gameData);
+  while (state.phase === "living") {
+    state = tick(state, 1, gameData);
+    // 卡在瓶頸時反覆嘗試突破，直到成功或老死
+    while (state.phase === "living" && atBottleneck(state, gameData) && canBreakthrough(state, gameData)) {
+      state = attemptBreakthrough(state, true, gameData);
+      if (atBottleneck(state, gameData)) break;
+    }
+  }
   totalMonths += state.ageMonths - start;
   const realm = gameData.realms.find((r) => r.id === state.realmId)!;
-  const label = realmLabel(realm, state.stage);
+  const label = state.phase === "cleared" ? "通關" : realmLabel(realm, state.stage);
   reached.set(label, (reached.get(label) ?? 0) + 1);
 }
 

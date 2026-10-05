@@ -167,4 +167,24 @@ describe("整世與轉世", () => {
     expect(next.log).toEqual([]);
     expect(newLife(next)).toBe(next);
   });
+
+  it("通關後也能轉世，且新的一世不帶上一世的丹藥與壽元加成", () => {
+    const cleared = living(9, {
+      phase: "cleared",
+      realmId: "jindan",
+      items: { zhuji_dan: 3 },
+      itemsUsed: { yanshou_dan: 3 },
+      lifespanBonus: 30,
+      schedule: "herb",
+      breakthroughs: 2,
+    });
+    const next = newLife(cleared);
+    expect(next.phase).toBe("rolling");
+    expect(next.realmId).toBe("mortal");
+    expect(next.itemsUsed).toEqual({});
+    expect(next.lifespanBonus).toBe(0);
+    expect(next.schedule).toBe("retreat");
+    expect(next.breakthroughs).toBe(0);
+    expect(next.items.zhuji_dan).toBeUndefined();
+  });
 });

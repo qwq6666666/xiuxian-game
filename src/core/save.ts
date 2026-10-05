@@ -1,7 +1,15 @@
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
 import { createInitialState } from "./life";
-import { SAVE_VERSION, type Attributes, type GameState, type LogEntry, type Phase } from "./state";
+import {
+  LOG_KINDS,
+  SAVE_VERSION,
+  type Attributes,
+  type GameState,
+  type LogEntry,
+  type LogKind,
+  type Phase,
+} from "./state";
 
 type Obj = Record<string, unknown>;
 
@@ -15,6 +23,15 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   1: (d, gd) => ({
     ...createInitialState(Number(d.rngSeed) || 0, gd),
     speed: typeof d.speed === "number" ? d.speed : 1,
+  }),
+  // v2 沒有日常安排、丹藥使用紀錄與突破次數：補上預設值
+  2: (d, gd) => ({
+    ...d,
+    version: 3,
+    schedule: gd.schedules[0].id,
+    itemsUsed: {},
+    lifespanBonus: 0,
+    breakthroughs: 0,
   }),
 };
 
@@ -41,6 +58,13 @@ function obj(v: unknown, path: string): Obj {
   return v as Obj;
 }
 
+function intRecord(o: Obj, key: string): Record<string, number> {
+  const raw = obj(o[key], key);
+  const out: Record<string, number> = {};
+  for (const k of Object.keys(raw)) out[k] = num(raw, k, { integer: true, min: 0 }, `${key}.${k}`);
+  return out;
+}
+
 /** 讀取存檔，格式錯誤時丟出指出欄位的錯誤 */
 export function deserialize(text: string, data: GameData = gameData): GameState {
   let raw: unknown;
@@ -62,8 +86,8 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   }
 
   const phase = str(o, "phase");
-  if (phase !== "rolling" && phase !== "living" && phase !== "dead") {
-    fail("phase", `必須是 rolling、living 或 dead，目前為 ${JSON.stringify(phase)}`);
+  if (phase !== "rolling" && phase !== "living" && phase !== "dead" && phase !== "cleared") {
+    fail("phase", `必須是 rolling、living、dead 或 cleared，目前為 ${JSON.stringify(phase)}`);
   }
 
   const attrRaw = obj(o.attributes, "attributes");
@@ -80,25 +104,23 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   if (!data.spiritRoots.some((r) => r.id === spiritRootId)) fail("spiritRootId", `找不到靈根 ${spiritRootId}`);
   const originId = str(o, "originId");
   if (!data.origins.some((r) => r.id === originId)) fail("originId", `找不到出身 ${originId}`);
-
-  const itemsRaw = obj(o.items, "items");
-  const items: Record<string, number> = {};
-  for (const k of Object.keys(itemsRaw)) items[k] = num(itemsRaw, k, { integer: true, min: 0 }, `items.${k}`);
+  const schedule = str(o, "schedule");
+  if (!data.schedules.some((s) => s.id === schedule)) fail("schedule", `找不到日常安排 ${schedule}`);
 
   if (!Array.isArray(o.log)) fail("log", "必須是陣列");
   const log = o.log.map((e, i): LogEntry => {
     const p = `log[${i}]`;
     const eo = obj(e, p);
     const kind = str(eo, "kind", `${p}.kind`);
-    if (kind !== "stageUp" && kind !== "realmUp" && kind !== "bottleneck" && kind !== "death") {
-      fail(`${p}.kind`, `不是合法的日誌類型：${kind}`);
-    }
-    return {
+    if (!(LOG_KINDS as readonly string[]).includes(kind)) fail(`${p}.kind`, `不是合法的日誌類型：${kind}`);
+    const entry: LogEntry = {
       month: num(eo, "month", { integer: true, min: 0 }, `${p}.month`),
-      kind,
+      kind: kind as LogKind,
       realmId: str(eo, "realmId", `${p}.realmId`),
       stage: num(eo, "stage", { integer: true, min: 0 }, `${p}.stage`),
     };
+    if (eo.itemId !== undefined) entry.itemId = str(eo, "itemId", `${p}.itemId`);
+    return entry;
   });
 
   return {
@@ -113,10 +135,14 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     originId,
     cultivationBonus: num(o, "cultivationBonus", { min: 0 }),
     spiritStones: num(o, "spiritStones", { integer: true, min: 0 }),
-    items,
+    items: intRecord(o, "items"),
+    itemsUsed: intRecord(o, "itemsUsed"),
+    lifespanBonus: num(o, "lifespanBonus", { integer: true, min: 0 }),
+    schedule,
     realmId,
     stage,
     cultivation: num(o, "cultivation", { min: 0 }),
+    breakthroughs: num(o, "breakthroughs", { integer: true, min: 0 }),
     log,
   };
 }

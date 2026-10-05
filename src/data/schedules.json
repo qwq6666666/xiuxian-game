@@ -1,0 +1,32 @@
+[
+  {
+    "id": "retreat",
+    "name": "閉關修煉",
+    "desc": "專心吐納，外界諸事少來打擾。",
+    "cultivationMult": 1,
+    "eventRateMult": 0.5,
+    "stones": { "chance": 0, "min": 0, "max": 0 },
+    "finds": [],
+    "deathChance": 0
+  },
+  {
+    "id": "adventure",
+    "name": "外出歷練",
+    "desc": "見識風霜，或有機緣，亦有兇險。",
+    "cultivationMult": 0.3,
+    "eventRateMult": 2,
+    "stones": { "chance": 0.4, "min": 1, "max": 3 },
+    "finds": [{ "itemId": "juqi_dan", "chance": 0.01 }],
+    "deathChance": 0.00003
+  },
+  {
+    "id": "herb",
+    "name": "採藥營生",
+    "desc": "入山採藥，換取靈石，修行稍緩。",
+    "cultivationMult": 0.2,
+    "eventRateMult": 1,
+    "stones": { "chance": 1, "min": 3, "max": 3 },
+    "finds": [],
+    "deathChance": 0
+  }
+]

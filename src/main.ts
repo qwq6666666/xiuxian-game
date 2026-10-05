@@ -1,5 +1,7 @@
 import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
+import { buyItem, setSchedule, useItem } from "./core/actions";
+import { attemptBreakthrough } from "./core/breakthrough";
 import { createInitialState, newLife, reroll, startLife } from "./core/life";
 import { deserialize, serialize } from "./core/save";
 import type { GameState } from "./core/state";
@@ -46,6 +48,10 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onReroll: () => update(reroll(state, data)),
   onStart: () => update(startLife(state)),
   onNewLife: () => update(newLife(state, data)),
+  onSchedule: (id) => update(setSchedule(state, id, data)),
+  onBreakthrough: (usePill) => update(attemptBreakthrough(state, usePill, data)),
+  onUseItem: (id) => update(useItem(state, id, data)),
+  onBuyItem: (id) => update(buyItem(state, id, data)),
   onReset() {
     try {
       localStorage.removeItem(SAVE_KEY);

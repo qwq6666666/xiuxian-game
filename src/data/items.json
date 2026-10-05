@@ -1,0 +1,23 @@
+[
+  {
+    "id": "juqi_dan",
+    "name": "聚氣丹",
+    "desc": "服之可立得一筆修為，約當前階段所需的四分之一。",
+    "price": 20,
+    "effect": { "kind": "cultivationFraction", "value": 0.25 }
+  },
+  {
+    "id": "zhuji_dan",
+    "name": "築基丹",
+    "desc": "衝擊築基時服用，可添幾分把握。丹藥於突破時消耗。",
+    "price": 500,
+    "effect": { "kind": "breakthrough" }
+  },
+  {
+    "id": "yanshou_dan",
+    "name": "延壽丹",
+    "desc": "壽元上限延長十年，每世至多服三顆。",
+    "price": 300,
+    "effect": { "kind": "lifespan", "years": 10, "maxPerLife": 3 }
+  }
+]

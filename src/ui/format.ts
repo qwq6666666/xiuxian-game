@@ -44,11 +44,13 @@ export function formatLogEntry(entry: LogEntry, data: GameData): string {
   const vars = {
     realm: realmLabel(realm, entry.stage),
     years: `${toChineseNumber(Math.floor(entry.month / 12))}歲`,
+    item: data.items.find((i) => i.id === entry.itemId)?.name ?? entry.itemId ?? "",
   };
+  const pick = (list: string[]) => list[entry.month % list.length];
   let template: string;
   switch (entry.kind) {
     case "stageUp":
-      template = log.stageUp[entry.month % log.stageUp.length];
+      template = pick(log.stageUp);
       break;
     case "realmUp":
       template = log.realmUp[entry.realmId] ?? log.stageUp[0];
@@ -59,8 +61,23 @@ export function formatLogEntry(entry: LogEntry, data: GameData): string {
     case "death":
       template = log.death;
       break;
+    case "breakthroughSuccess":
+      template = log.breakthroughSuccess[entry.realmId] ?? log.stageUp[0];
+      break;
+    case "breakthroughFail":
+      template = pick(log.breakthroughFail);
+      break;
+    case "buy":
+      template = pick(log.buy);
+      break;
+    case "find":
+      template = pick(log.find);
+      break;
+    case "adventureDeath":
+      template = log.adventureDeath;
+      break;
   }
   const body = fill(template, vars);
   // 死亡文字自帶「享年」，不再加年齡前綴
-  return entry.kind === "death" ? body : `${formatAgeZh(entry.month)}，${body}`;
+  return entry.kind === "death" || entry.kind === "adventureDeath" ? body : `${formatAgeZh(entry.month)}，${body}`;
 }

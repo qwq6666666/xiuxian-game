@@ -1,10 +1,14 @@
 import {
   ATTRIBUTE_KEYS,
   type AttributeKey,
+  type BreakthroughRule,
   type GameConfig,
   type GameData,
+  type ItemDef,
+  type ItemEffect,
   type OriginDef,
   type RealmDef,
+  type ScheduleDef,
   type SpiritRootDef,
   type TextData,
 } from "./types";
@@ -103,6 +107,8 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     attributeMax: num(o, "attributeMax", file, { min: attributeMin, integer: true }),
     startRerolls: num(o, "startRerolls", file, { min: 0, integer: true }),
     logLimit: num(o, "logLimit", file, { gt: 0, integer: true }),
+    breakthroughFailLoss: num(o, "breakthroughFailLoss", file, { min: 0 }),
+    mindLossReduction: num(o, "mindLossReduction", file, { min: 0 }),
   };
 }
 
@@ -116,6 +122,19 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
     if (breakthrough !== "auto" && breakthrough !== "manual") {
       fail(where, "breakthrough", `必須是 "auto" 或 "manual"，目前為 ${JSON.stringify(breakthrough)}`);
     }
+    let breakthroughRule: BreakthroughRule | undefined;
+    if (o.breakthroughRule !== undefined) {
+      const rw = `${where} 欄位 breakthroughRule`;
+      const r = obj(o.breakthroughRule, rw);
+      breakthroughRule = {
+        baseRate: num(r, "baseRate", rw, { min: 0 }),
+        insightBonus: num(r, "insightBonus", rw, { min: 0 }),
+      };
+      if (r.pillId !== undefined) {
+        breakthroughRule.pillId = str(r, "pillId", rw);
+        breakthroughRule.pillBonus = num(r, "pillBonus", rw, { min: 0 });
+      }
+    }
     return {
       id,
       name: str(o, "name", where),
@@ -127,10 +146,80 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
         growth: num(need, "growth", `${where} 欄位 need`, { gt: 0 }),
       },
       breakthrough,
+      ...(breakthroughRule ? { breakthroughRule } : {}),
     };
   });
   uniqueIds(realms, file);
   return realms;
+}
+
+export function validateSchedules(raw: unknown, file = "schedules.json"): ScheduleDef[] {
+  const schedules = list(raw, file).map((r, i): ScheduleDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const where = `${file} 第 ${i + 1} 筆（${id}）`;
+    const stones = obj(o.stones, `${where} 欄位 stones`);
+    const sw = `${where} 欄位 stones`;
+    const min = num(stones, "min", sw, { min: 0, integer: true });
+    const chance = num(stones, "chance", sw, { min: 0 });
+    if (chance > 1) fail(sw, "chance", `必須 ≤ 1，目前為 ${chance}`);
+    if (!Array.isArray(o.finds)) fail(where, "finds", "必須是陣列");
+    const finds = o.finds.map((f, j) => {
+      const fw = `${where} 欄位 finds[${j}]`;
+      const fo = obj(f, fw);
+      const c = num(fo, "chance", fw, { min: 0 });
+      if (c > 1) fail(fw, "chance", `必須 ≤ 1，目前為 ${c}`);
+      return { itemId: str(fo, "itemId", fw), chance: c };
+    });
+    const deathChance = num(o, "deathChance", where, { min: 0 });
+    if (deathChance > 1) fail(where, "deathChance", `必須 ≤ 1，目前為 ${deathChance}`);
+    return {
+      id,
+      name: str(o, "name", where),
+      desc: str(o, "desc", where),
+      cultivationMult: num(o, "cultivationMult", where, { min: 0 }),
+      eventRateMult: num(o, "eventRateMult", where, { min: 0 }),
+      stones: { chance, min, max: num(stones, "max", sw, { min, integer: true }) },
+      finds,
+      deathChance,
+    };
+  });
+  uniqueIds(schedules, file);
+  return schedules;
+}
+
+export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
+  const items = list(raw, file).map((r, i): ItemDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const where = `${file} 第 ${i + 1} 筆（${id}）`;
+    const ew = `${where} 欄位 effect`;
+    const e = obj(o.effect, ew);
+    const kind = e.kind;
+    let effect: ItemEffect;
+    if (kind === "cultivationFraction") {
+      effect = { kind, value: num(e, "value", ew, { gt: 0 }) };
+    } else if (kind === "lifespan") {
+      effect = {
+        kind,
+        years: num(e, "years", ew, { gt: 0, integer: true }),
+        maxPerLife: num(e, "maxPerLife", ew, { gt: 0, integer: true }),
+      };
+    } else if (kind === "breakthrough") {
+      effect = { kind };
+    } else {
+      return fail(ew, "kind", `必須是 cultivationFraction、lifespan 或 breakthrough，目前為 ${JSON.stringify(kind)}`);
+    }
+    return {
+      id,
+      name: str(o, "name", where),
+      desc: str(o, "desc", where),
+      price: num(o, "price", where, { gt: 0, integer: true }),
+      effect,
+    };
+  });
+  uniqueIds(items, file);
+  return items;
 }
 
 export function validateSpiritRoots(raw: unknown, file = "spiritRoots.json"): SpiritRootDef[] {
@@ -179,24 +268,56 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
   const o = obj(raw, file);
   const log = obj(o.log, `${file} 欄位 log`);
   const where = `${file} 欄位 log`;
-  const realmUpRaw = obj(log.realmUp, `${where}.realmUp`);
-  const realmUp: Record<string, string> = {};
-  for (const k of Object.keys(realmUpRaw)) realmUp[k] = str(realmUpRaw, k, `${where}.realmUp`);
+  const strRecord = (key: string): Record<string, string> => {
+    const raw = obj(log[key], `${where}.${key}`);
+    const out: Record<string, string> = {};
+    for (const k of Object.keys(raw)) out[k] = str(raw, k, `${where}.${key}`);
+    return out;
+  };
   return {
     log: {
       stageUp: strList(log, "stageUp", where),
-      realmUp,
+      realmUp: strRecord("realmUp"),
       bottleneck: str(log, "bottleneck", where),
       death: str(log, "death", where),
+      breakthroughSuccess: strRecord("breakthroughSuccess"),
+      breakthroughFail: strList(log, "breakthroughFail", where),
+      buy: strList(log, "buy", where),
+      find: strList(log, "find", where),
+      adventureDeath: str(log, "adventureDeath", where),
     },
+    cleared: str(o, "cleared", file),
   };
 }
 
 /** 檢查各檔案之間的對應關係 */
 export function validateGameData(data: GameData): GameData {
   const realmIds = new Set(data.realms.map((r) => r.id));
-  for (const k of Object.keys(data.text.log.realmUp)) {
-    if (!realmIds.has(k)) throw new Error(`text.json：log.realmUp 的 ${k} 不是 realms.json 裡的境界 id`);
+  const itemIds = new Set(data.items.map((i) => i.id));
+  const has = (set: Set<string>, id: string, from: string, what: string) => {
+    if (!set.has(id)) throw new Error(`${from}：${id} 不是 ${what} 裡的 id`);
+  };
+  for (const k of Object.keys(data.text.log.realmUp)) has(realmIds, k, "text.json 的 log.realmUp", "realms.json");
+  for (const k of Object.keys(data.text.log.breakthroughSuccess)) {
+    has(realmIds, k, "text.json 的 log.breakthroughSuccess", "realms.json");
   }
+  data.realms.forEach((realm, i) => {
+    const where = `realms.json 第 ${i + 1} 筆（${realm.id}）`;
+    const isLast = i === data.realms.length - 1;
+    if (realm.breakthrough === "manual" && !isLast) {
+      if (!realm.breakthroughRule) throw new Error(`${where}：欄位 breakthroughRule 手動突破的境界必須提供`);
+      const next = data.realms[i + 1];
+      if (!data.text.log.breakthroughSuccess[next.id]) {
+        throw new Error(`text.json：log.breakthroughSuccess 缺少突破後境界 ${next.id} 的文字`);
+      }
+    }
+    if (realm.breakthroughRule?.pillId) has(itemIds, realm.breakthroughRule.pillId, `${where} 的 pillId`, "items.json");
+  });
+  data.schedules.forEach((s, i) => {
+    for (const f of s.finds) has(itemIds, f.itemId, `schedules.json 第 ${i + 1} 筆（${s.id}）的 finds`, "items.json");
+  });
+  data.origins.forEach((o, i) => {
+    for (const id of Object.keys(o.items)) has(itemIds, id, `origins.json 第 ${i + 1} 筆（${o.id}）的 items`, "items.json");
+  });
   return data;
 }

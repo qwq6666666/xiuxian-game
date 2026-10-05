@@ -8,5 +8,7 @@
   "attributeMin": 1,
   "attributeMax": 10,
   "startRerolls": 1,
-  "logLimit": 100
+  "logLimit": 100,
+  "breakthroughFailLoss": 0.3,
+  "mindLossReduction": 0.02
 }
