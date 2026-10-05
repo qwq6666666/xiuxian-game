@@ -57,3 +57,56 @@ describe("主畫面衍生顯示", () => {
     expect(yearsLeft(130 * 12, 120)).toBe(0);
   });
 });
+
+import { generateWorld, worldAt } from "../src/core/world";
+import { worldSlots } from "../src/core/world";
+import { attributeGuide, scheduleFactLines, scheduleFacts, scheduleHints } from "../src/ui/derived";
+
+describe("安排的效率數字", () => {
+  const sched = (id: string) => gameData.schedules.find((x) => x.id === id)!;
+
+  it("採藥：靈石期望值與攢一顆參考物品的年數由資料算出", () => {
+    const s = living(1, { realmId: "lianqi", stage: 1 });
+    const f = scheduleFacts(s, sched("herb"), gameData);
+    expect(f.stonesPerMonth).toBe(3);
+    expect(f.refYears).toBeCloseTo(f.refPrice / 3 / 12);
+    expect(f.cultivationPct).toBe(20);
+    expect(f.perMonth).toBeCloseTo(monthlyGain(s, sched("herb"), gameData));
+  });
+
+  it("事件頻率倍率越高，遇事間隔越短；閉關沒有靈石收入", () => {
+    const s = living(1, { realmId: "lianqi", stage: 1 });
+    const retreat = scheduleFacts(s, sched("retreat"), gameData);
+    const adventure = scheduleFacts(s, sched("adventure"), gameData);
+    expect(adventure.eventEveryYears).toBeLessThan(retreat.eventEveryYears);
+    expect(retreat.refYears).toBeNull();
+    expect(scheduleFactLines(retreat).some((l) => l.includes("靈石"))).toBe(false);
+    expect(scheduleFactLines(adventure).some((l) => l.includes("性命"))).toBe(true);
+  });
+
+  it("走訪渡口的提示隨世局出現，且已填入名稱欄位", () => {
+    let shown = 0;
+    let hidden = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      for (const age of [20, 60, 100]) {
+        const s = living(seed, { worldSeed: seed, ageMonths: age * 12, realmId: "lianqi" });
+        const hints = scheduleHints(s, sched("wander"), worldSlots(generateWorld(seed, gameData)), gameData);
+        for (const h of hints) expect(h).not.toMatch(/[{}]/);
+        if (hints.length > 0) shown++;
+        else hidden++;
+      }
+    }
+    expect(shown).toBeGreaterThan(0);
+    expect(hidden).toBeGreaterThan(0);
+    // 其他安排沒有提示
+    expect(scheduleHints(living(1), sched("retreat"), worldSlots(generateWorld(1, gameData)), gameData)).toEqual([]);
+    void worldAt;
+  });
+
+  it("屬性說明的百分比取自 config", () => {
+    const g = attributeGuide(gameData);
+    expect(g.attributes.bone.text).toContain(`${Math.round(gameData.config.bonePerPoint * 100)}%`);
+    expect(g.attributes.mind.text).toContain(`${Math.round(gameData.config.mindLossReduction * 100)}%`);
+    for (const k of ["bone", "insight", "fortune", "mind"] as const) expect(g.attributes[k].text).not.toContain("#");
+  });
+});

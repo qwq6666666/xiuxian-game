@@ -20,6 +20,8 @@ export interface GameConfig {
   breakthroughFailLoss: number;
   /** 每點心性減少的損失比例 */
   mindLossReduction: number;
+  /** 安排資訊面拿來換算「攢多久買得起」的參考物品 id */
+  priceRefItemId: string;
   /** 事件觸發的基礎間隔（月），再除以日常安排的事件頻率倍率 */
   eventIntervalMin: number;
   eventIntervalMax: number;
@@ -100,6 +102,8 @@ export interface ScheduleDef {
   deathChance: number;
   /** 達到這個境界才開放（預設一開始就能選） */
   realmMin?: string;
+  /** 世局符合條件時，在這個安排旁顯示的提示，可用名稱欄位 */
+  worldHints?: { when: WorldWhen; text: string }[];
 }
 
 export type ItemEffect =
@@ -264,6 +268,8 @@ export interface TextData {
   era: { opening: string[]; transition: string; born: string };
   /** 金丹卡瓶頸但缺少突破所需的天賦時顯示 */
   breakthroughGate: string;
+  /** 擲骰畫面與角色區的說明；# 由介面依 config 填入百分比 */
+  guide: { bone: string; insight: string; fortune: string; mind: string; spiritRoot: string };
   /** 收藏畫面的文字 */
   collection: { note: string; empty: string; allCleared: string };
   /** 一生回顧的收尾句，依結束方式分類 */
@@ -393,21 +399,30 @@ export interface WorldEventDef {
   note: string;
 }
 
+/** 世局條件：全部成立才算符合 */
+export interface WorldWhen {
+  /** 守梯宗門目前的狀態 */
+  guardState?: SectState[];
+  /** 商行已設分號的地域數下限 */
+  merchantBranchesMin?: number;
+  /** 毀去的渡口數下限 */
+  ferriesBrokenMin?: number;
+}
+
+/** 世局效果在天下圖上對應的標記類別 */
+export const MAP_REFS = ["guard", "ferry", "merchant"] as const;
+export type MapRef = (typeof MAP_REFS)[number];
+
 /** 世局效果（M17）：當下世局符合 when 的全部條件時，坊市價格乘上 market 的倍率，事件條件可用它的 id */
 export interface WorldEffectDef {
   id: string;
-  when: {
-    /** 守梯宗門目前的狀態 */
-    guardState?: SectState[];
-    /** 商行已設分號的地域數下限 */
-    merchantBranchesMin?: number;
-    /** 毀去的渡口數下限 */
-    ferriesBrokenMin?: number;
-  };
+  when: WorldWhen;
   /** 物品 id → 價格倍率 */
   market: Record<string, number>;
   /** 坊市旁顯示的原因，可用名稱欄位 */
   reason: string;
+  /** 天下圖上點選這類標記時，一併標出這條效果 */
+  mapRef?: MapRef;
 }
 
 export interface GameData {

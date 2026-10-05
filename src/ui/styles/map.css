@@ -35,4 +35,9 @@
 .map-notes p { margin: 2px 0; }
 /* 簡介固定在彈窗底部，手機點選標記後不必捲動找 */
 .map-info { position: sticky; bottom: -14px; margin-top: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--accent); background: var(--panel); min-height: 3.4em; box-shadow: 0 -8px 8px -4px var(--panel); }
+.map-effects h3 { margin: 10px 0 var(--sp-1); }
+.map-effects p { margin: 2px 0; }
+.map-effects small { color: var(--muted); }
+.map-effect.related { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
+.map-effect-line { color: var(--accent); }
 .map-info p { margin: var(--sp-1) 0 0; }

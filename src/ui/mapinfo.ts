@@ -1,7 +1,9 @@
 // 天下圖的純邏輯：點選某個標記時顯示什麼、標記該畫成什麼樣子。不碰 DOM，方便測試。
 import type { World, WorldSect, WorldSnapshot } from "../core/world";
 import { polityLabel, worldSlots } from "../core/world";
-import type { GameData } from "../data/types";
+import { fillSlots } from "../data/slots";
+import type { GameData, MapRef, WorldEffectDef } from "../data/types";
+import { effectApplies } from "../core/worldeffects";
 
 export type MapTarget =
   | { kind: "region"; id: string }
@@ -95,6 +97,41 @@ export function describeTarget(target: MapTarget, world: World, snap: WorldSnaps
       return { title: target.kind === "village" ? `${name}（你在這裡）` : name, lines: [text] };
     }
   }
+}
+
+/** 世局效果的一行說明：原因加上影響的物價 */
+export function describeEffect(effect: WorldEffectDef, world: World, data: GameData): { reason: string; impact: string } {
+  const impact = Object.entries(effect.market)
+    .map(([id, mult]) => `${data.items.find((i) => i.id === id)?.name ?? id}價格 ×${mult}`)
+    .join("、");
+  return { reason: fillSlots(effect.reason, worldSlots(world)), impact };
+}
+
+/** 目前生效的世局效果 */
+export function activeEffectsAt(snap: WorldSnapshot, data: GameData): WorldEffectDef[] {
+  return data.worldEffects.filter((e) => effectApplies(snap, e));
+}
+
+/** 點選的標記對應哪一類世局效果；沒有對應時回 null */
+export function mapRefOf(target: MapTarget, snap: WorldSnapshot): MapRef | null {
+  switch (target.kind) {
+    case "sect":
+      return snap.sects.find((s) => s.id === target.id)?.kind === "guard" ? "guard" : null;
+    case "ferry":
+    case "market":
+      return "ferry";
+    case "branch":
+    case "merchantHq":
+      return "merchant";
+    default:
+      return null;
+  }
+}
+
+/** 點選某個標記時，要一併標出的世局效果 */
+export function effectsForTarget(target: MapTarget, snap: WorldSnapshot, data: GameData): WorldEffectDef[] {
+  const ref = mapRefOf(target, snap);
+  return ref === null ? [] : activeEffectsAt(snap, data).filter((e) => e.mapRef === ref);
 }
 
 /** 圖例：目前存在的國家，依顏色 */

@@ -3,7 +3,11 @@ import { stageNeed } from "../core/formulas";
 import { atBottleneck, realmOf, scheduleOf } from "../core/progress";
 import type { GameState } from "../core/state";
 import { monthlyGain } from "../core/tick";
-import type { GameData } from "../data/types";
+import type { GameData, ScheduleDef } from "../data/types";
+import { fillSlots, type SlotValues } from "../data/slots";
+import { itemPrice, snapshotOf, whenApplies } from "../core/worldeffects";
+import { ATTRIBUTE_KEYS, type AttributeKey } from "../data/types";
+import { ATTR_LABEL } from "./format";
 
 export interface PaceHint {
   /** eta：可估算距下一階段的時間；bottleneck：已卡瓶頸，不給倒數；none：無法估算 */
@@ -47,4 +51,77 @@ export function formatDuration(seconds: number): string {
 /** 壽元剩餘的整年數（至少 0） */
 export function yearsLeft(ageMonths: number, lifespanYears: number): number {
   return Math.max(0, Math.ceil(lifespanYears - ageMonths / 12));
+}
+
+export interface ScheduleFacts {
+  /** 每月修為增量 */
+  perMonth: number;
+  /** 修煉倍率（%），閉關為 100 */
+  cultivationPct: number;
+  /** 平均多少年遇到一件事（事件間隔取中位，除以頻率倍率） */
+  eventEveryYears: number;
+  /** 每月靈石期望值 */
+  stonesPerMonth: number;
+  /** 以此安排攢到一顆參考物品要幾年；沒有靈石收入時為 null */
+  refYears: number | null;
+  refName: string;
+  refPrice: number;
+  /** 每月身亡機率不為零時才有，供顯示「兇險」 */
+  risky: boolean;
+}
+
+/** 一個日常安排的效率數字：全由目前狀態與資料算出，只供顯示 */
+export function scheduleFacts(state: GameState, sched: ScheduleDef, data: GameData): ScheduleFacts {
+  const { eventIntervalMin, eventIntervalMax, priceRefItemId } = data.config;
+  const eventEveryYears = (eventIntervalMin + eventIntervalMax) / 2 / sched.eventRateMult / 12;
+  const stonesPerMonth = sched.stones.chance * ((sched.stones.min + sched.stones.max) / 2);
+  const refPrice = itemPrice(state, priceRefItemId, data);
+  return {
+    perMonth: monthlyGain(state, sched, data),
+    cultivationPct: Math.round(sched.cultivationMult * 100),
+    eventEveryYears,
+    stonesPerMonth,
+    refYears: stonesPerMonth > 0 ? refPrice / stonesPerMonth / 12 : null,
+    refName: data.items.find((i) => i.id === priceRefItemId)?.name ?? priceRefItemId,
+    refPrice,
+    risky: sched.deathChance > 0,
+  };
+}
+
+/** 安排按鈕上的效率說明，一行一項 */
+export function scheduleFactLines(f: ScheduleFacts): string[] {
+  const lines = [`修為 ${formatGain(f.perMonth)}／月（修煉 ${f.cultivationPct}%）`];
+  lines.push(`約每 ${f.eventEveryYears.toFixed(1)} 年遇一件事`);
+  if (f.stonesPerMonth > 0) {
+    lines.push(`靈石約 ${f.stonesPerMonth.toFixed(1)}／月，攢一顆${f.refName}（${f.refPrice}）約 ${Math.ceil(f.refYears!)} 年`);
+  }
+  if (f.risky) lines.push("有性命之憂");
+  return lines;
+}
+
+/** 目前世局下，這個安排旁該顯示的提示 */
+export function scheduleHints(state: GameState, sched: ScheduleDef, slots: SlotValues, data: GameData): string[] {
+  if (!sched.worldHints?.length) return [];
+  const snap = snapshotOf(state, data);
+  return sched.worldHints.filter((h) => whenApplies(snap, h.when)).map((h) => fillSlots(h.text, slots));
+}
+
+export interface AttrGuide {
+  label: string;
+  text: string;
+}
+
+/** 四個屬性與靈根各自影響什麼；百分比由 config 算出，不寫死在文字裡 */
+export function attributeGuide(data: GameData): { attributes: Record<AttributeKey, AttrGuide>; spiritRoot: string } {
+  const g = data.text.guide;
+  const pct = (x: number): string => String(Math.round(x * 1000) / 10);
+  const raw: Record<AttributeKey, string> = {
+    bone: g.bone.replace("#", pct(data.config.bonePerPoint)),
+    insight: g.insight,
+    fortune: g.fortune.replace("#", pct(data.config.fortuneGoodWeight)),
+    mind: g.mind.replace("#", pct(data.config.mindLossReduction)),
+  };
+  const attributes = {} as Record<AttributeKey, AttrGuide>;
+  for (const k of ATTRIBUTE_KEYS) attributes[k] = { label: ATTR_LABEL[k], text: raw[k] };
+  return { attributes, spiritRoot: g.spiritRoot };
 }

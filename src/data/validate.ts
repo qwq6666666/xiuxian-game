@@ -22,6 +22,9 @@ import {
   type Point,
   SECT_STATES,
   type SectState,
+  MAP_REFS,
+  type MapRef,
+  type WorldWhen,
   type WorldEffectDef,
   type WorldEventDef,
   WORLD_EVENT_KINDS,
@@ -148,6 +151,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     logLimit: num(o, "logLimit", file, { gt: 0, integer: true }),
     breakthroughFailLoss: num(o, "breakthroughFailLoss", file, { min: 0 }),
     mindLossReduction: num(o, "mindLossReduction", file, { min: 0 }),
+    priceRefItemId: str(o, "priceRefItemId", file),
     eventIntervalMin: eventMin,
     eventIntervalMax: num(o, "eventIntervalMax", file, { min: eventMin, integer: true }),
     fortuneGoodWeight: num(o, "fortuneGoodWeight", file, { min: 0 }),
@@ -264,6 +268,15 @@ export function validateSchedules(raw: unknown, file = "schedules.json"): Schedu
       finds,
       deathChance,
       ...(o.realmMin !== undefined ? { realmMin: str(o, "realmMin", where) } : {}),
+      ...(o.worldHints !== undefined
+        ? {
+            worldHints: (Array.isArray(o.worldHints) ? o.worldHints : fail(where, "worldHints", "必須是陣列")).map((h: unknown, j: number) => {
+              const hw = `${where} 欄位 worldHints[${j}]`;
+              const ho = obj(h, hw);
+              return { when: validateWhen(ho.when, hw), text: str(ho, "text", hw) };
+            }),
+          }
+        : {}),
     };
   });
   uniqueIds(schedules, file);
@@ -601,6 +614,11 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       born: str(era, "born", `${file} 欄位 era`),
     },
     breakthroughGate: str(o, "breakthroughGate", file),
+    guide: (() => {
+      const g = obj(o.guide, `${file} 欄位 guide`);
+      const w = `${file} 欄位 guide`;
+      return { bone: str(g, "bone", w), insight: str(g, "insight", w), fortune: str(g, "fortune", w), mind: str(g, "mind", w), spiritRoot: str(g, "spiritRoot", w) };
+    })(),
     review,
     collection: {
       note: str(collection, "note", `${file} 欄位 collection`),
@@ -805,6 +823,23 @@ const WORLD_EVENT_RULES: Record<WorldEventKind, { targets: string[]; tokens: str
   ferry: { targets: ["ferry"], tokens: ["region"], to: ["broken", "rebuilt"] },
 };
 
+/** 世局條件的格式檢查，世局效果與安排提示共用 */
+function validateWhen(raw: unknown, where: string): WorldWhen {
+  const wo = obj(raw, `${where} 欄位 when`);
+  const when: WorldWhen = {};
+  if (wo.guardState !== undefined) {
+    const states = strList(wo, "guardState", `${where} 欄位 when`);
+    for (const s of states) {
+      if (!(SECT_STATES as readonly string[]).includes(s)) fail(where, "when.guardState", `${s} 不是合法的宗門狀態`);
+    }
+    when.guardState = states as SectState[];
+  }
+  if (wo.merchantBranchesMin !== undefined) when.merchantBranchesMin = num(wo, "merchantBranchesMin", `${where} 欄位 when`, { min: 1, integer: true });
+  if (wo.ferriesBrokenMin !== undefined) when.ferriesBrokenMin = num(wo, "ferriesBrokenMin", `${where} 欄位 when`, { min: 1, integer: true });
+  if (Object.keys(when).length === 0) fail(where, "when", "至少要有一個條件");
+  return when;
+}
+
 export function validateWorldEffects(raw: unknown, file = "worldEffects.json"): WorldEffectDef[] {
   const ids = new Set<string>();
   return list(raw, file).map((r, i): WorldEffectDef => {
@@ -813,23 +848,15 @@ export function validateWorldEffects(raw: unknown, file = "worldEffects.json"): 
     const w = `${file} 第 ${i + 1} 筆（${id}）`;
     if (ids.has(id)) fail(w, "id", "重複");
     ids.add(id);
-    const wo = obj(o.when, `${w} 欄位 when`);
-    const when: WorldEffectDef["when"] = {};
-    if (wo.guardState !== undefined) {
-      const states = strList(wo, "guardState", `${w} 欄位 when`);
-      for (const s of states) {
-        if (!(SECT_STATES as readonly string[]).includes(s)) fail(w, "when.guardState", `${s} 不是合法的宗門狀態`);
-      }
-      when.guardState = states as SectState[];
-    }
-    if (wo.merchantBranchesMin !== undefined) when.merchantBranchesMin = num(wo, "merchantBranchesMin", `${w} 欄位 when`, { min: 1, integer: true });
-    if (wo.ferriesBrokenMin !== undefined) when.ferriesBrokenMin = num(wo, "ferriesBrokenMin", `${w} 欄位 when`, { min: 1, integer: true });
-    if (Object.keys(when).length === 0) fail(w, "when", "至少要有一個條件");
+    const when = validateWhen(o.when, w);
     const mo = obj(o.market, `${w} 欄位 market`);
     const market: Record<string, number> = {};
     for (const k of Object.keys(mo)) market[k] = num(mo, k, `${w} 欄位 market`, { gt: 0 });
     if (Object.keys(market).length === 0) fail(w, "market", "至少要有一個物品");
-    return { id, when, market, reason: str(o, "reason", w) };
+    if (o.mapRef !== undefined && !(MAP_REFS as readonly string[]).includes(str(o, "mapRef", w))) {
+      fail(w, "mapRef", `必須是 ${MAP_REFS.join("、")} 之一，目前為 ${String(o.mapRef)}`);
+    }
+    return { id, when, market, reason: str(o, "reason", w), ...(o.mapRef !== undefined ? { mapRef: o.mapRef as MapRef } : {}) };
   });
 }
 
@@ -945,7 +972,11 @@ function checkSlotRules(data: GameData): void {
   check("fragments.json 欄位 stances", data.fragments.stances, true);
   check("fragments.json 欄位 topics", data.fragments.topics, true);
   data.items.forEach((x, i) => check(`items.json 第 ${i + 1} 筆（${x.id}）`, x, false));
-  data.schedules.forEach((x, i) => check(`schedules.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.schedules.forEach((x, i) => {
+    const { worldHints, ...rest } = x;
+    check(`schedules.json 第 ${i + 1} 筆（${x.id}）`, rest, false);
+    check(`schedules.json 第 ${i + 1} 筆（${x.id}）`, { worldHints: (worldHints ?? []).map((h) => h.text) }, true);
+  });
   data.origins.forEach((x, i) => check(`origins.json 第 ${i + 1} 筆（${x.id}）`, x, false));
   data.talents.forEach((x, i) => check(`talents.json 第 ${i + 1} 筆（${x.id}）`, x, false));
   data.spiritRoots.forEach((x, i) => check(`spiritRoots.json 第 ${i + 1} 筆（${x.id}）`, x, false));
@@ -992,6 +1023,7 @@ export function validateGameData(data: GameData): GameData {
     }
   });
   const effectIds = new Set(data.worldEffects.map((x) => x.id));
+  has(itemIds, data.config.priceRefItemId, "config.json 的 priceRefItemId", "items.json");
   data.worldEffects.forEach((x, i) => {
     for (const id of Object.keys(x.market)) has(itemIds, id, `worldEffects.json 第 ${i + 1} 筆（${x.id}）的 market`, "items.json");
   });

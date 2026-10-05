@@ -122,3 +122,30 @@ describe("天下圖：簡介模板格式", () => {
     expect(bad((m) => (m.blurbs.sect.great = ""))).toThrow("great");
   });
 });
+
+import { activeEffectsAt, describeEffect, effectsForTarget } from "../src/ui/mapinfo";
+
+describe("天下圖：世局影響", () => {
+  it("每條生效效果都有 mapRef，點對應標記時會標出，點不相干的標記不會", () => {
+    let withEffects = 0;
+    for (let seed = 1; seed <= 150; seed++) {
+      const world = generateWorld(seed * 31, data);
+      for (const age of [10, 50, 90]) {
+        const snap = worldAt(world, age);
+        const active = activeEffectsAt(snap, data);
+        if (active.length > 0) withEffects++;
+        for (const e of active) {
+          const d = describeEffect(e, world, data);
+          expect(d.reason).not.toMatch(/[{}]/);
+          expect(d.impact).toContain("價格 ×");
+        }
+        expect(effectsForTarget({ kind: "stairs" }, snap, data)).toEqual([]);
+        for (const e of effectsForTarget({ kind: "market" }, snap, data)) expect(e.mapRef).toBe("ferry");
+        const guard = snap.sects.find((s) => s.kind === "guard")!;
+        const onGuard = effectsForTarget({ kind: "sect", id: guard.id }, snap, data);
+        expect(onGuard.map((e) => e.id).sort()).toEqual(active.filter((e) => e.mapRef === "guard").map((e) => e.id).sort());
+      }
+    }
+    expect(withEffects).toBeGreaterThan(0);
+  });
+});

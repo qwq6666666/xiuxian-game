@@ -174,3 +174,16 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(gameData.origins.map((o) => o.id)).toEqual(["farmer", "merchant", "noble", "orphan"]);
   });
 });
+
+describe("階段 3 資料格式", () => {
+  it("安排提示、效果 mapRef 與參考物品的錯誤訊息指出位置", async () => {
+    const { validateSchedules, validateWorldEffects } = await import("../src/data/validate");
+    const sched = JSON.parse(JSON.stringify(gameData.schedules));
+    sched[3].worldHints[0].when = {};
+    expect(() => validateSchedules(sched)).toThrow("worldHints[0]");
+    const eff = JSON.parse(JSON.stringify(gameData.worldEffects));
+    eff[0].mapRef = "sky";
+    expect(() => validateWorldEffects(eff)).toThrow("mapRef");
+    expect(() => validateConfig({ ...gameData.config, priceRefItemId: undefined })).toThrow("priceRefItemId");
+  });
+});

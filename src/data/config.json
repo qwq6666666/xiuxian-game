@@ -11,6 +11,7 @@
   "logLimit": 100,
   "breakthroughFailLoss": 0.3,
   "mindLossReduction": 0.02,
+  "priceRefItemId": "zhuji_dan",
   "eventIntervalMin": 16,
   "eventIntervalMax": 48,
   "fortuneGoodWeight": 0.05,

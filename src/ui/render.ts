@@ -12,7 +12,7 @@ import { CLEAR_FRAGMENT_ID } from "../core/fragments";
 import { activeWorldEffects, itemPrice } from "../core/worldeffects";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
-import { formatDuration, formatGain, paceHint, yearsLeft } from "./derived";
+import { attributeGuide, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
 import type { MapTarget } from "./mapinfo";
 import { buildWorldMap, mapStamp } from "./worldmap";
 import { eraName, lifeIndex } from "../core/era";
@@ -398,6 +398,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       (k) => `<div><dt>${ATTR_LABEL[k]}</dt><dd>${state.attributes[k]}</dd></div>`,
     ).join("")}</dl>`;
 
+  /** 屬性與靈根各自影響什麼，收在可展開的說明裡 */
+  const guideHtml = (): string => {
+    const g = attributeGuide(data);
+    return `<details class="guide"><summary>屬性與靈根有什麼用</summary><ul>${ATTRIBUTE_KEYS.map(
+      (k) => `<li><strong>${g.attributes[k].label}</strong>　${g.attributes[k].text}</li>`,
+    ).join("")}<li><strong>靈根</strong>　${g.spiritRoot}</li></ul></details>`;
+  };
+
   const identityHtml = (state: GameState): string => {
     const spiritRoot = data.spiritRoots.find((r) => r.id === state.spiritRootId);
     const origin = data.origins.find((o) => o.id === state.originId);
@@ -436,6 +444,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         <label class="namebox">姓名 <input id="name" type="text" maxlength="${data.config.nameMaxLength}" /></label>
         ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
         ${statsHtml(state)}
+        ${guideHtml()}
         ${identityHtml(state)}
         ${birthHtml(state)}
         <div class="actions">
@@ -477,7 +486,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     life: HTMLElement;
     modal: HTMLElement;
     modalBody: HTMLElement;
-    schedules: { id: string; b: HTMLButtonElement }[];
+    schedules: { id: string; b: HTMLButtonElement; facts: HTMLElement; hint: HTMLElement }[];
     zuohuaBox: HTMLElement;
     zuohuaInfo: HTMLElement;
     btSection: HTMLElement;
@@ -526,7 +535,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <p id="zuohuaInfo" class="desc"></p>
             <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
-          <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}${identityHtml(state)}</details>
+          <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}${guideHtml()}${identityHtml(state)}</details>
           <details class="fold s-bag"${wide ? " open" : ""}><summary>背包</summary><ul id="bag" class="items"></ul></details>
           <details class="fold s-market"${wide ? " open" : ""}><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p></details>
         </aside>
@@ -550,10 +559,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const b = document.createElement("button");
       b.type = "button";
       b.setAttribute("aria-pressed", "false");
-      b.innerHTML = `<strong>${s.name}</strong><small>${s.desc}</small>`;
+      b.innerHTML = `<strong>${s.name}</strong><small>${s.desc}</small><small class="sched-facts"></small><small class="sched-hint"></small>`;
       b.addEventListener("click", () => handlers.onSchedule(s.id));
       schedBox.appendChild(b);
-      return { id: s.id, b };
+      return { id: s.id, b, facts: b.querySelector<HTMLElement>(".sched-facts")!, hint: b.querySelector<HTMLElement>(".sched-hint")! };
     });
 
     const marketBox = q("#market");
@@ -714,10 +723,15 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     e.todo.hidden = e.todoText.textContent === "";
     e.todoGo.hidden = !(canBt && stuck);
 
-    for (const { id, b } of e.schedules) {
+    for (const { id, b, facts, hint } of e.schedules) {
+      const sched = data.schedules.find((s) => s.id === id)!;
       b.classList.toggle("active", id === state.schedule);
       b.setAttribute("aria-pressed", String(id === state.schedule));
-      b.hidden = !scheduleOpen(state, data.schedules.find((s) => s.id === id)!, data);
+      b.hidden = !scheduleOpen(state, sched, data);
+      if (b.hidden) continue;
+      facts.textContent = scheduleFactLines(scheduleFacts(state, sched, data)).join("　｜　");
+      hint.textContent = scheduleHints(state, sched, slotsOf(state), data).join("　");
+      hint.hidden = hint.textContent === "";
     }
     e.zuohuaBox.hidden = !canZuohua(state, data);
     if (!e.zuohuaBox.hidden) {

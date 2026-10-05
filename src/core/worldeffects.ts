@@ -1,13 +1,17 @@
 // 世局效果（M17）：世局隨年齡變化，坊市價格與部分事件的條件跟著變。
 // 全由世界種子與年齡算出，不進存檔、不動亂數。
 import { gameData } from "../data/load";
-import type { GameData, WorldEffectDef } from "../data/types";
+import type { GameData, WorldEffectDef, WorldWhen } from "../data/types";
 import type { GameState } from "./state";
 import { worldAt, worldFor, type WorldSnapshot } from "./world";
 
 /** 世局是否符合效果的全部條件 */
 export function effectApplies(snap: WorldSnapshot, effect: WorldEffectDef): boolean {
-  const w = effect.when;
+  return whenApplies(snap, effect.when);
+}
+
+/** 世局是否符合一組條件（世局效果與安排提示共用） */
+export function whenApplies(snap: WorldSnapshot, w: WorldWhen): boolean {
   if (w.guardState) {
     const guard = snap.sects.find((s) => s.kind === "guard");
     if (!guard || !w.guardState.includes(guard.state)) return false;
@@ -17,17 +21,25 @@ export function effectApplies(snap: WorldSnapshot, effect: WorldEffectDef): bool
   return true;
 }
 
-let memo: { seed: number; age: number; data: GameData; effects: WorldEffectDef[] } | null = null;
+let memo: { seed: number; age: number; data: GameData; snap: WorldSnapshot; effects: WorldEffectDef[] } | null = null;
+
+function memoOf(state: GameState, data: GameData): NonNullable<typeof memo> {
+  const age = Math.floor(state.ageMonths / 12);
+  if (memo && memo.seed === state.worldSeed && memo.age === age && memo.data === data) return memo;
+  const snap = worldAt(worldFor(state.worldSeed, data), age);
+  memo = { seed: state.worldSeed, age, data, snap, effects: data.worldEffects.filter((e) => effectApplies(snap, e)) };
+  return memo;
+}
+
+/** 這個狀態此刻的世局快照（同一世同一歲只算一次） */
+export function snapshotOf(state: GameState, data: GameData = gameData): WorldSnapshot {
+  return memoOf(state, data).snap;
+}
 
 /** 這個狀態此刻生效的世局效果（同一世同一歲只算一次，買丹與抽事件每月都會問） */
 export function activeWorldEffects(state: GameState, data: GameData = gameData): WorldEffectDef[] {
   if (data.worldEffects.length === 0) return [];
-  const age = Math.floor(state.ageMonths / 12);
-  if (memo && memo.seed === state.worldSeed && memo.age === age && memo.data === data) return memo.effects;
-  const snap = worldAt(worldFor(state.worldSeed, data), age);
-  const effects = data.worldEffects.filter((e) => effectApplies(snap, e));
-  memo = { seed: state.worldSeed, age, data, effects };
-  return effects;
+  return memoOf(state, data).effects;
 }
 
 /** 事件條件 world / worldNot 用的旗標：就是生效中的效果 id */

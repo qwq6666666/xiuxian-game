@@ -33,6 +33,11 @@
     "id": "wander",
     "name": "走訪渡口",
     "desc": "在渡口與茶棚之間走動，聽人閒話。修行稍緩。",
+    "worldHints": [
+      { "when": { "ferriesBrokenMin": 2 }, "text": "渡口毀了好幾處，往來的人少，閒話也少了。" },
+      { "when": { "guardState": ["closed", "fallen"] }, "text": "{guard}不再開山門，茶棚裡少了說嘴的人。" },
+      { "when": { "merchantBranchesMin": 3 }, "text": "{merchant}的分號到處都是，渡口邊來往的客商多，消息也靈通。" }
+    ],
     "realmMin": "lianqi",
     "cultivationMult": 0.3,
     "eventRateMult": 1.5,

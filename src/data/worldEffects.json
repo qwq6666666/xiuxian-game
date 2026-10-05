@@ -9,7 +9,8 @@
     "market": {
       "zhuji_dan": 1.6
     },
-    "reason": "{guard}封了山門，築基丹的貨源吃緊，價錢跟著漲。"
+    "reason": "{guard}封了山門，築基丹的貨源吃緊，價錢跟著漲。",
+    "mapRef": "guard"
   },
   {
     "id": "guard_prosper",
@@ -21,7 +22,8 @@
     "market": {
       "zhuji_dan": 0.9
     },
-    "reason": "{guard}門庭興旺，築基丹的貨源寬裕了些。"
+    "reason": "{guard}門庭興旺，築基丹的貨源寬裕了些。",
+    "mapRef": "guard"
   },
   {
     "id": "merchant_wide",
@@ -32,7 +34,8 @@
       "juqi_dan": 0.8,
       "zhuji_dan": 0.9
     },
-    "reason": "{merchant}的分號開得到處都是，貨走得順，價錢也壓得下來。"
+    "reason": "{merchant}的分號開得到處都是，貨走得順，價錢也壓得下來。",
+    "mapRef": "merchant"
   },
   {
     "id": "ferries_broken",
@@ -42,6 +45,7 @@
     "market": {
       "yanshou_dan": 1.3
     },
-    "reason": "渡口毀了好幾處，遠道的藥材運不進來，延壽丹跟著漲價。"
+    "reason": "渡口毀了好幾處，遠道的藥材運不進來，延壽丹跟著漲價。",
+    "mapRef": "ferry"
   }
 ]

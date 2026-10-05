@@ -57,3 +57,11 @@
 .fragment-text { margin: 0; white-space: pre-line; line-height: var(--leading); }
 blockquote.fragment-text { margin: 10px 0; padding: 6px var(--sp-3); border-left: 2px solid var(--accent); color: var(--muted); }
 blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }
+
+/* 安排的效率數字與世局提示、屬性說明 */
+.sched-facts { color: var(--text); margin-top: var(--sp-1); }
+.sched-hint { color: var(--warn); }
+.guide { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); color: var(--muted); }
+.guide summary { cursor: pointer; }
+.guide ul { margin: var(--sp-1) 0 0; padding-left: 1.2em; }
+.guide strong { color: var(--text); font-weight: normal; }

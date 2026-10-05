@@ -2,7 +2,7 @@
 import type { GameState } from "../core/state";
 import { polityLabel, worldAt, worldFor } from "../core/world";
 import type { GameData, MapRegion } from "../data/types";
-import { describeTarget, legendOf, mapAgeYears, sectMarker, type MapTarget } from "./mapinfo";
+import { activeEffectsAt, describeEffect, describeTarget, effectsForTarget, legendOf, mapAgeYears, sectMarker, type MapTarget } from "./mapinfo";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -192,12 +192,30 @@ export function buildWorldMap(
   for (const n of snap.notes) notes.append(html("p", undefined, n));
   frag.append(notes);
 
+  // 世局影響：生效中的效果，原因加上影響的物價；點選相關標記時標出
+  const related = new Set((selected ? effectsForTarget(selected, snap, data) : []).map((e) => e.id));
+  const effects = html("div", "map-effects");
+  effects.append(html("h3", undefined, "世局影響"));
+  const active = activeEffectsAt(snap, data);
+  if (active.length === 0) effects.append(html("p", "desc", "眼下世局平靜，坊市物價照舊。"));
+  for (const e of active) {
+    const d = describeEffect(e, world, data);
+    const p = html("p", related.has(e.id) ? "map-effect related" : "map-effect");
+    p.append(document.createTextNode(d.reason), html("small", undefined, `　${d.impact}`));
+    effects.append(p);
+  }
+  frag.append(effects);
+
   // 簡介
   const info = html("div", "map-info");
   if (selected) {
     const d = describeTarget(selected, world, snap, data);
     info.append(html("strong", undefined, d.title));
     for (const line of d.lines) info.append(html("p", undefined, line));
+    for (const e of effectsForTarget(selected, snap, data)) {
+      const x = describeEffect(e, world, data);
+      info.append(html("p", "map-effect-line", `${x.reason}（${x.impact}）`));
+    }
   } else {
     info.append(html("p", "desc", "點選地域、宗門、渡口，看一看。"));
   }
