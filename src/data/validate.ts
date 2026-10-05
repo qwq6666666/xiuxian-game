@@ -12,6 +12,14 @@ import {
   type FragmentDef,
   type GameConfig,
   type GameData,
+  type MapData,
+  type MapRegion,
+  type Point,
+  SECT_STATES,
+  type WorldEventDef,
+  WORLD_EVENT_KINDS,
+  type WorldEventKind,
+  type WorldNames,
   type ItemDef,
   type ItemEffect,
   type OriginDef,
@@ -545,6 +553,180 @@ export function validateFragments(raw: unknown, file = "fragments.json"): Fragme
   });
   uniqueIds(items, file);
   return { topics, stances, items };
+}
+
+const NAME_MIN: Record<keyof WorldNames, number> = {
+  countries: 10,
+  capitals: 10,
+  guards: 6,
+  greatSects: 6,
+  schools: 14,
+  merchants: 6,
+  wanderers: 6,
+  villages: 10,
+  markets: 10,
+  mountains: 10,
+};
+
+export function validateWorldNames(raw: unknown, file = "worldNames.json"): WorldNames {
+  const o = obj(raw, file);
+  const out = {} as WorldNames;
+  const seen = new Map<string, string>();
+  for (const key of Object.keys(NAME_MIN) as (keyof WorldNames)[]) {
+    const names = strList(o, key, file);
+    if (names.length < NAME_MIN[key]) fail(file, key, `至少需要 ${NAME_MIN[key]} 個名字，目前只有 ${names.length} 個`);
+    names.forEach((n, i) => {
+      // 名字之間不可重複，同欄位內與不同欄位之間都一樣
+      const prev = seen.get(n);
+      if (prev !== undefined) fail(file, `${key}[${i}]`, `「${n}」與 ${prev} 重複`);
+      seen.set(n, `${key}[${i}]`);
+    });
+    out[key] = names;
+  }
+  for (const k of Object.keys(o)) if (!(k in NAME_MIN)) fail(file, k, "不是合法的名庫欄位");
+  return out;
+}
+
+function point(raw: unknown, where: string, field: string, box: [number, number]): Point {
+  if (!Array.isArray(raw) || raw.length !== 2 || !raw.every((n) => typeof n === "number" && Number.isFinite(n))) {
+    fail(where, field, "必須是 [x, y] 兩個數字");
+  }
+  const [x, y] = raw as number[];
+  if (x < 0 || y < 0 || x > box[0] || y > box[1]) fail(where, field, `座標 (${x}, ${y}) 超出畫布 ${box[0]}×${box[1]}`);
+  return [x, y];
+}
+
+export function validateMap(raw: unknown, file = "map.json"): MapData {
+  const o = obj(raw, file);
+  const vb = list(o.viewBox, `${file} 欄位 viewBox`);
+  if (vb.length !== 2 || !vb.every((n) => typeof n === "number" && n > 0)) fail(file, "viewBox", "必須是 [寬, 高] 兩個正數");
+  const box = vb as [number, number];
+  const palette = list(o.palette, `${file} 欄位 palette`).map((c, i) => {
+    if (typeof c !== "string" || !/^#[0-9a-fA-F]{6}$/.test(c)) fail(file, `palette[${i}]`, "必須是 #rrggbb 色碼");
+    return c as string;
+  });
+  if (palette.length < 6) fail(file, "palette", `至少需要 6 種顏色，目前 ${palette.length} 種`);
+
+  const regions = list(o.regions, `${file} 欄位 regions`).map((r, i): MapRegion => {
+    const where = `${file} 第 ${i + 1} 筆地域`;
+    const ro = obj(r, where);
+    const id = str(ro, "id", where);
+    const w = `${file} 地域 ${id}`;
+    if (typeof ro.land !== "boolean") fail(w, "land", "必須是 true 或 false");
+    const region: MapRegion = {
+      id,
+      name: str(ro, "name", w),
+      land: ro.land,
+      aura: str(ro, "aura", w),
+      desc: str(ro, "desc", w),
+      path: str(ro, "path", w),
+      label: point(ro.label, w, "label", box),
+    };
+    if (ro.land) {
+      region.capital = point(ro.capital, w, "capital", box);
+      const sites = list(ro.sites, `${w} 欄位 sites`);
+      if (sites.length < 5) fail(w, "sites", `至少需要 5 個宗門位置，目前 ${sites.length} 個`);
+      region.sites = sites.map((p, j) => point(p, w, `sites[${j}]`, box));
+      region.ferries = list(ro.ferries, `${w} 欄位 ferries`).map((p, j) => point(p, w, `ferries[${j}]`, box));
+      const b = obj(ro.birth, `${w} 欄位 birth`);
+      region.birth = { village: point(b.village, w, "birth.village", box), mountain: point(b.mountain, w, "birth.mountain", box) };
+    } else if (ro.ferries !== undefined || ro.sites !== undefined) {
+      fail(w, "land", "非陸地的地域不能有 sites 或 ferries");
+    }
+    return region;
+  });
+  uniqueIds(regions, file);
+  const lands = regions.filter((r) => r.land).map((r) => r.id);
+  for (const need of ["north", "center"]) {
+    if (!lands.includes(need)) fail(file, "regions", `必須有 id 為 ${need} 的陸地地域（守梯大宗與商行總號的所在）`);
+  }
+  if (lands.length < 3) fail(file, "regions", "至少需要 3 處陸地");
+  if (regions.reduce((n, r) => n + (r.ferries?.length ?? 0), 0) < 1) fail(file, "ferries", "至少需要 1 處渡口");
+
+  const adj = obj(o.adjacency, `${file} 欄位 adjacency`);
+  const adjacency: Record<string, string[]> = {};
+  for (const id of lands) {
+    adjacency[id] = strList(adj, id, `${file} 欄位 adjacency`);
+    for (const n of adjacency[id]) {
+      if (!lands.includes(n)) fail(`${file} 欄位 adjacency`, id, `鄰接的 ${n} 不是陸地地域`);
+    }
+  }
+  for (const id of lands) {
+    for (const n of adjacency[id]) {
+      if (!adjacency[n].includes(id)) fail(`${file} 欄位 adjacency`, id, `${id} 鄰接 ${n}，但 ${n} 沒有鄰接 ${id}`);
+    }
+  }
+  const st = obj(o.stairs, `${file} 欄位 stairs`);
+  const stairs = {
+    x: num(st, "x", `${file} 欄位 stairs`, { min: 0 }),
+    y: num(st, "y", `${file} 欄位 stairs`, { min: 0 }),
+    text: str(st, "text", `${file} 欄位 stairs`),
+  };
+  return { viewBox: box, palette, regions, adjacency, stairs };
+}
+
+/** 世局候選池各種類允許的目標、欄位與模板欄位 */
+const WORLD_EVENT_RULES: Record<WorldEventKind, { targets: string[]; tokens: string[]; to?: string[] }> = {
+  merchant: { targets: ["merchant"], tokens: ["target", "region"], to: ["expand"] },
+  sectState: { targets: ["guard", "greatSect0", "greatSect1", "school"], tokens: ["target"], to: [...SECT_STATES] },
+  sectRank: { targets: ["greatSect0", "greatSect1", "school"], tokens: ["target"], to: ["great", "school"] },
+  sectNew: { targets: ["none"], tokens: ["target", "region"] },
+  merge: { targets: ["country"], tokens: ["target", "other"] },
+  split: { targets: ["country"], tokens: ["target", "new"] },
+  owner: { targets: ["country"], tokens: ["target", "other"] },
+  polityNew: { targets: ["tribal"], tokens: ["target"] },
+  rename: { targets: ["country"], tokens: ["old", "new"] },
+  capital: { targets: ["country"], tokens: ["target", "new"] },
+  ferry: { targets: ["ferry"], tokens: ["region"], to: ["broken", "rebuilt"] },
+};
+
+export function validateWorldEvents(raw: unknown, file = "worldEvents.json"): WorldEventDef[] {
+  const events = list(raw, file).map((r, i): WorldEventDef => {
+    const where = `${file} 第 ${i + 1} 筆`;
+    const o = obj(r, where);
+    const id = str(o, "id", where);
+    const w = `${file} 第 ${i + 1} 筆（${id}）`;
+    const kind = str(o, "kind", w);
+    if (!(WORLD_EVENT_KINDS as readonly string[]).includes(kind)) {
+      fail(w, "kind", `必須是 ${WORLD_EVENT_KINDS.join("、")} 之一，目前為 ${kind}`);
+    }
+    const rule = WORLD_EVENT_RULES[kind as WorldEventKind];
+    const target = str(o, "target", w);
+    if (!rule.targets.includes(target)) fail(w, "target", `${kind} 的目標必須是 ${rule.targets.join("、")} 之一，目前為 ${target}`);
+    const ev: WorldEventDef = {
+      id,
+      kind: kind as WorldEventKind,
+      target,
+      ageMin: num(o, "ageMin", w, { min: 0 }),
+      ageMax: num(o, "ageMax", w, { min: 0 }),
+      weight: num(o, "weight", w, { gt: 0 }),
+      group: str(o, "group", w),
+      note: str(o, "note", w),
+    };
+    if (ev.ageMax < ev.ageMin) fail(w, "ageMax", `不可小於 ageMin（${ev.ageMin}），目前為 ${ev.ageMax}`);
+    if (rule.to) {
+      const to = str(o, "to", w);
+      if (!rule.to.includes(to)) fail(w, "to", `${kind} 的 to 必須是 ${rule.to.join("、")} 之一，目前為 ${to}`);
+      ev.to = to;
+    } else if (o.to !== undefined) fail(w, "to", `${kind} 不需要 to`);
+    if (o.from !== undefined) {
+      if (kind !== "sectState" && kind !== "sectRank") fail(w, "from", `${kind} 不需要 from`);
+      const from = strList(o, "from", w);
+      for (const s of from) {
+        if (!(SECT_STATES as readonly string[]).includes(s)) fail(w, "from", `${s} 不是合法的宗門狀態`);
+      }
+      ev.from = from;
+    }
+    for (const m of ev.note.matchAll(/\{([^}]*)\}/g)) {
+      if (!rule.tokens.includes(m[1])) {
+        fail(w, "note", `${kind} 的模板只能用 ${rule.tokens.map((t) => `{${t}}`).join("、")}，出現了 {${m[1]}}`);
+      }
+    }
+    if (!ev.note.includes("{")) fail(w, "note", "至少要有一個名稱欄位，否則看不出是誰的事");
+    return ev;
+  });
+  uniqueIds(events, file);
+  return events;
 }
 
 export function validateNames(raw: unknown, file = "names.json"): NameData {

@@ -31,3 +31,14 @@ export function pickWeighted(
   }
   return [items.length - 1, s];
 }
+
+/**
+ * 由種子與編號雜湊出另一個種子，不消耗也不改變原本的亂數序列。
+ * 世界生成靠它取得自己的種子，才不會讓既有的模擬結果位移。
+ */
+export function deriveSeed(seed: number, salt: number): number {
+  let h = (seed ^ Math.imul(salt + 1, 0x9e3779b1)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return (h ^ (h >>> 16)) >>> 0;
+}

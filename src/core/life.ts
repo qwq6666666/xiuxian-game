@@ -2,7 +2,7 @@
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
 import { talentBonus } from "./formulas";
-import { nextInt, pickWeighted } from "./rng";
+import { deriveSeed, nextInt, pickWeighted } from "./rng";
 import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type Meta } from "./state";
 
 /** 重新擲出屬性、靈根、出身，並套用出身效果 */
@@ -33,6 +33,8 @@ export function rollLife(state: GameState, data: GameData = gameData): GameState
   return {
     ...state,
     rngSeed: seed2,
+    // 世界種子由最後的亂數狀態雜湊而來，不消耗亂數；重擲會得到另一個世界
+    worldSeed: deriveSeed(seed2, 1),
     name,
     attributes,
     spiritRootId: data.spiritRoots[rootIdx].id,
@@ -67,6 +69,7 @@ export function createInitialState(
       rerolls: data.config.startRerolls + Math.round(talentBonus(meta, data.talents, "rerolls")),
       name: "",
       nameCustom: false,
+      worldSeed: 0,
       attributes: zero,
       spiritRootId: "",
       originId: "",

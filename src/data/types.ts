@@ -248,6 +248,82 @@ export interface NameData {
   given: string[];
 }
 
+/** 每世重抽的名字：每個欄位一個名庫 */
+export interface WorldNames {
+  countries: string[];
+  capitals: string[];
+  guards: string[];
+  greatSects: string[];
+  schools: string[];
+  merchants: string[];
+  wanderers: string[];
+  villages: string[];
+  markets: string[];
+  mountains: string[];
+}
+
+export type Point = [number, number];
+
+/** 地圖的一處地域；land 為 false 的（極北荒原）不屬於任何國家 */
+export interface MapRegion {
+  id: string;
+  name: string;
+  land: boolean;
+  aura: string;
+  desc: string;
+  path: string;
+  label: Point;
+  capital?: Point;
+  /** 宗門標記可用的位置 */
+  sites?: Point[];
+  ferries?: Point[];
+  birth?: { village: Point; mountain: Point };
+}
+
+/** 世界骨架：每世都一樣 */
+export interface MapData {
+  viewBox: [number, number];
+  /** 國家顏色，依序分配 */
+  palette: string[];
+  regions: MapRegion[];
+  adjacency: Record<string, string[]>;
+  stairs: { x: number; y: number; text: string };
+}
+
+export const SECT_STATES = ["prosper", "stable", "decline", "closed", "fallen"] as const;
+export type SectState = (typeof SECT_STATES)[number];
+
+export const WORLD_EVENT_KINDS = [
+  "merchant",
+  "sectState",
+  "sectRank",
+  "sectNew",
+  "merge",
+  "split",
+  "owner",
+  "polityNew",
+  "rename",
+  "capital",
+  "ferry",
+] as const;
+export type WorldEventKind = (typeof WORLD_EVENT_KINDS)[number];
+
+/** 世局候選池的一條：生成世界時按權重抽出，並綁定到具體對象 */
+export interface WorldEventDef {
+  id: string;
+  kind: WorldEventKind;
+  target: string;
+  to?: string;
+  /** 目標目前的狀態必須在其中，否則這一條在這個世界裡不成立 */
+  from?: string[];
+  ageMin: number;
+  ageMax: number;
+  weight: number;
+  /** 互斥群，同群至多抽一條 */
+  group: string;
+  note: string;
+}
+
 export interface GameData {
   config: GameConfig;
   realms: RealmDef[];
@@ -260,4 +336,7 @@ export interface GameData {
   text: TextData;
   names: NameData;
   fragments: FragmentData;
+  worldNames: WorldNames;
+  map: MapData;
+  worldEvents: WorldEventDef[];
 }

@@ -9,6 +9,9 @@ import schedulesJson from "./schedules.json";
 import spiritRootsJson from "./spiritRoots.json";
 import talentsJson from "./talents.json";
 import textJson from "./text.json";
+import mapJson from "./map.json";
+import worldEventsJson from "./worldEvents.json";
+import worldNamesJson from "./worldNames.json";
 import type { GameData } from "./types";
 import {
   validateConfig,
@@ -22,7 +25,10 @@ import {
   validateSchedules,
   validateSpiritRoots,
   validateTalents,
+  validateMap,
   validateText,
+  validateWorldEvents,
+  validateWorldNames,
 } from "./validate";
 
 export const gameData: GameData = validateGameData({
@@ -37,6 +43,9 @@ export const gameData: GameData = validateGameData({
   text: validateText(textJson),
   names: validateNames(namesJson),
   fragments: validateFragments(fragmentsJson),
+  worldNames: validateWorldNames(worldNamesJson),
+  map: validateMap(mapJson),
+  worldEvents: validateWorldEvents(worldEventsJson),
 });
 
 export const config = gameData.config;

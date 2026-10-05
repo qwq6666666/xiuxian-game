@@ -1,0 +1,389 @@
+[
+  {
+    "id": "merchant_branch_a",
+    "kind": "merchant",
+    "target": "merchant",
+    "to": "expand",
+    "ageMin": 20,
+    "ageMax": 80,
+    "weight": 4,
+    "group": "merchant_a",
+    "note": "{target}在{region}增設分號，生意做得比誰都勤。"
+  },
+  {
+    "id": "merchant_branch_b",
+    "kind": "merchant",
+    "target": "merchant",
+    "to": "expand",
+    "ageMin": 70,
+    "ageMax": 140,
+    "weight": 4,
+    "group": "merchant_b",
+    "note": "{target}的分號又添了{region}一處，帳房說這是順路。"
+  },
+  {
+    "id": "merchant_branch_c",
+    "kind": "merchant",
+    "target": "merchant",
+    "to": "expand",
+    "ageMin": 110,
+    "ageMax": 200,
+    "weight": 3,
+    "group": "merchant_c",
+    "note": "{target}在{region}落了腳，至此各國皆有它的招牌。"
+  },
+  {
+    "id": "great0_fall",
+    "kind": "sectState",
+    "target": "greatSect0",
+    "to": "fallen",
+    "ageMin": 40,
+    "ageMax": 150,
+    "weight": 3,
+    "group": "gs0",
+    "note": "{target}覆滅，山門荒廢，無人過問。"
+  },
+  {
+    "id": "great0_down",
+    "kind": "sectRank",
+    "target": "greatSect0",
+    "to": "school",
+    "ageMin": 50,
+    "ageMax": 160,
+    "weight": 2,
+    "group": "gs0",
+    "note": "{target}降為門派，說是量力而行。"
+  },
+  {
+    "id": "great1_fall",
+    "kind": "sectState",
+    "target": "greatSect1",
+    "to": "fallen",
+    "ageMin": 80,
+    "ageMax": 190,
+    "weight": 3,
+    "group": "gs1",
+    "note": "{target}覆滅，最後一任掌門的名字也沒留下。"
+  },
+  {
+    "id": "great1_close",
+    "kind": "sectState",
+    "target": "greatSect1",
+    "to": "closed",
+    "ageMin": 30,
+    "ageMax": 110,
+    "weight": 2,
+    "group": "gs1",
+    "note": "{target}閉山，山門外的石階長滿了草。"
+  },
+  {
+    "id": "great0_close",
+    "kind": "sectState",
+    "target": "greatSect0",
+    "to": "closed",
+    "ageMin": 30,
+    "ageMax": 100,
+    "weight": 2,
+    "group": "gs0b",
+    "note": "{target}閉山謝客，對外只說在整頓。"
+  },
+  {
+    "id": "guard_close",
+    "kind": "sectState",
+    "target": "guard",
+    "to": "closed",
+    "ageMin": 40,
+    "ageMax": 120,
+    "weight": 3,
+    "group": "guard_a",
+    "note": "{target}山門緊閉，山下的人說這回關得比往常久。"
+  },
+  {
+    "id": "guard_open",
+    "kind": "sectState",
+    "target": "guard",
+    "to": "prosper",
+    "from": [
+      "closed"
+    ],
+    "ageMin": 90,
+    "ageMax": 190,
+    "weight": 3,
+    "group": "guard_b",
+    "note": "{target}重開山門，山道上的外門弟子又多了起來。"
+  },
+  {
+    "id": "guard_ease",
+    "kind": "sectState",
+    "target": "guard",
+    "to": "stable",
+    "from": [
+      "prosper"
+    ],
+    "ageMin": 60,
+    "ageMax": 170,
+    "weight": 2,
+    "group": "guard_c",
+    "note": "{target}聲勢稍減，仍是一方大宗。"
+  },
+  {
+    "id": "school_rise_a",
+    "kind": "sectState",
+    "target": "school",
+    "to": "prosper",
+    "from": [
+      "stable"
+    ],
+    "ageMin": 30,
+    "ageMax": 110,
+    "weight": 3,
+    "group": "school_rise_a",
+    "note": "{target}漸漸興盛，山門添了不少新面孔。"
+  },
+  {
+    "id": "school_rise_b",
+    "kind": "sectState",
+    "target": "school",
+    "to": "prosper",
+    "from": [
+      "stable",
+      "decline"
+    ],
+    "ageMin": 90,
+    "ageMax": 180,
+    "weight": 3,
+    "group": "school_rise_b",
+    "note": "{target}聲勢日隆，鄰近的門派開始客氣起來。"
+  },
+  {
+    "id": "school_decline_a",
+    "kind": "sectState",
+    "target": "school",
+    "to": "decline",
+    "from": [
+      "prosper",
+      "stable"
+    ],
+    "ageMin": 40,
+    "ageMax": 130,
+    "weight": 3,
+    "group": "school_dec_a",
+    "note": "{target}人才凋零，山門冷清。"
+  },
+  {
+    "id": "school_decline_b",
+    "kind": "sectState",
+    "target": "school",
+    "to": "decline",
+    "from": [
+      "prosper",
+      "stable"
+    ],
+    "ageMin": 100,
+    "ageMax": 190,
+    "weight": 3,
+    "group": "school_dec_b",
+    "note": "{target}日漸衰微，掌門說這是天意。"
+  },
+  {
+    "id": "school_close",
+    "kind": "sectState",
+    "target": "school",
+    "to": "closed",
+    "from": [
+      "stable",
+      "decline"
+    ],
+    "ageMin": 50,
+    "ageMax": 160,
+    "weight": 2,
+    "group": "school_close",
+    "note": "{target}閉山，一時不見開門的日子。"
+  },
+  {
+    "id": "school_reopen",
+    "kind": "sectState",
+    "target": "school",
+    "to": "stable",
+    "from": [
+      "closed"
+    ],
+    "ageMin": 100,
+    "ageMax": 200,
+    "weight": 2,
+    "group": "school_reopen",
+    "note": "{target}重開山門，附近的坊市鬆了口氣。"
+  },
+  {
+    "id": "school_fall",
+    "kind": "sectState",
+    "target": "school",
+    "to": "fallen",
+    "from": [
+      "decline",
+      "closed"
+    ],
+    "ageMin": 110,
+    "ageMax": 200,
+    "weight": 2,
+    "group": "school_fall",
+    "note": "{target}覆滅，傳承就此斷絕。"
+  },
+  {
+    "id": "school_great",
+    "kind": "sectRank",
+    "target": "school",
+    "to": "great",
+    "from": [
+      "prosper"
+    ],
+    "ageMin": 120,
+    "ageMax": 200,
+    "weight": 2,
+    "group": "school_great",
+    "note": "{target}升為大宗，連鄰國都派人道賀。"
+  },
+  {
+    "id": "sect_new_a",
+    "kind": "sectNew",
+    "target": "none",
+    "ageMin": 40,
+    "ageMax": 140,
+    "weight": 3,
+    "group": "sect_new_a",
+    "note": "{region}新立一家門派，名為{target}。"
+  },
+  {
+    "id": "sect_new_b",
+    "kind": "sectNew",
+    "target": "none",
+    "ageMin": 110,
+    "ageMax": 200,
+    "weight": 2,
+    "group": "sect_new_b",
+    "note": "{region}又添一家門派，名為{target}，據說門人不多。"
+  },
+  {
+    "id": "merge_a",
+    "kind": "merge",
+    "target": "country",
+    "ageMin": 60,
+    "ageMax": 160,
+    "weight": 3,
+    "group": "merge_a",
+    "note": "{target}為{other}所併，國號從此不存。"
+  },
+  {
+    "id": "merge_b",
+    "kind": "merge",
+    "target": "country",
+    "ageMin": 120,
+    "ageMax": 200,
+    "weight": 2,
+    "group": "merge_b",
+    "note": "{target}併入{other}，朝廷換了牌匾，百姓沒換日子。"
+  },
+  {
+    "id": "split_a",
+    "kind": "split",
+    "target": "country",
+    "ageMin": 70,
+    "ageMax": 190,
+    "weight": 2,
+    "group": "split_a",
+    "note": "{target}分裂，一部自立為{new}。"
+  },
+  {
+    "id": "owner_a",
+    "kind": "owner",
+    "target": "country",
+    "ageMin": 50,
+    "ageMax": 170,
+    "weight": 3,
+    "group": "owner_a",
+    "note": "{target}割地於{other}，邊界重新畫過。"
+  },
+  {
+    "id": "rename_a",
+    "kind": "rename",
+    "target": "country",
+    "ageMin": 40,
+    "ageMax": 140,
+    "weight": 3,
+    "group": "rename_a",
+    "note": "{old}改國號為{new}，據說是為了應天命。"
+  },
+  {
+    "id": "rename_b",
+    "kind": "rename",
+    "target": "country",
+    "ageMin": 110,
+    "ageMax": 200,
+    "weight": 2,
+    "group": "rename_b",
+    "note": "{old}易名{new}，街上的舊招牌一時換不完。"
+  },
+  {
+    "id": "capital_a",
+    "kind": "capital",
+    "target": "country",
+    "ageMin": 50,
+    "ageMax": 160,
+    "weight": 3,
+    "group": "capital_a",
+    "note": "{target}遷都{new}，舊都冷清了許多。"
+  },
+  {
+    "id": "capital_b",
+    "kind": "capital",
+    "target": "country",
+    "ageMin": 120,
+    "ageMax": 200,
+    "weight": 2,
+    "group": "capital_b",
+    "note": "{target}再度遷都{new}，朝臣怨聲載道。"
+  },
+  {
+    "id": "tribal_up",
+    "kind": "polityNew",
+    "target": "tribal",
+    "ageMin": 50,
+    "ageMax": 170,
+    "weight": 4,
+    "group": "tribal_up",
+    "note": "{target}諸部結盟立國，自此有了國號。"
+  },
+  {
+    "id": "ferry_broken_a",
+    "kind": "ferry",
+    "target": "ferry",
+    "to": "broken",
+    "ageMin": 30,
+    "ageMax": 130,
+    "weight": 3,
+    "group": "ferry_a",
+    "note": "{region}一處渡口毀於水患，往來多有不便。"
+  },
+  {
+    "id": "ferry_broken_b",
+    "kind": "ferry",
+    "target": "ferry",
+    "to": "broken",
+    "ageMin": 100,
+    "ageMax": 200,
+    "weight": 2,
+    "group": "ferry_b",
+    "note": "{region}又有一處渡口被洪水沖毀。"
+  },
+  {
+    "id": "ferry_rebuilt",
+    "kind": "ferry",
+    "target": "ferry",
+    "to": "rebuilt",
+    "ageMin": 90,
+    "ageMax": 200,
+    "weight": 3,
+    "group": "ferry_c",
+    "note": "{region}毀壞的渡口重新修起，船夫比去年多了一倍。"
+  }
+]

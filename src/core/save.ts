@@ -1,7 +1,7 @@
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "../data/types";
 import { createInitialState } from "./life";
-import { nextInt } from "./rng";
+import { deriveSeed, nextInt } from "./rng";
 import {
   emptyMeta,
   LOG_KINDS,
@@ -70,6 +70,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   },
   // v6 沒有殘卷：跨世資料補上空清單
   6: (d) => ({ ...d, version: 7, meta: { ...obj(d.meta, "meta"), fragments: [] } }),
+  // v7 沒有世界：用既有的亂數種子雜湊出世界種子，不動存檔裡的種子
+  7: (d) => ({ ...d, version: 8, worldSeed: deriveSeed(Number(d.rngSeed) >>> 0, 1) }),
 };
 
 function fail(field: string, msg: string): never {
@@ -263,6 +265,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     rngSeed: num(o, "rngSeed", { integer: true }),
     name,
     nameCustom: o.nameCustom,
+    worldSeed: num(o, "worldSeed", { integer: true, min: 0 }),
     speed: num(o, "speed", { min: 0 }),
     phase: phase as Phase,
     ageMonths: num(o, "ageMonths", { integer: true, min: 0 }),
