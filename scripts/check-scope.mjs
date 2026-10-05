@@ -18,6 +18,17 @@ if (!scope) {
 
 const base = process.env.SCOPE_BASE || "origin/master";
 const files = run(`git diff --name-only ${base}...HEAD`).split("\n").filter(Boolean);
+// 作者標記：所有助手共用同一個 git 使用者，靠 Co-Authored-By 辨識是誰寫的（不受 [scope-ok] 豁免）
+const unsigned = run(`git log ${base}..HEAD --no-merges --format=%H`)
+  .split("\n")
+  .filter(Boolean)
+  .filter((h) => !/Co-Authored-By:\s*ChatGPT/i.test(run(`git log -1 --format=%B ${h}`)))
+  .map((h) => h.slice(0, 7));
+if (unsigned.length > 0) {
+  console.error(`分支 ${branch} 有 commit 缺少「Co-Authored-By: ChatGPT <noreply@openai.com>」：${unsigned.join(", ")}`);
+  process.exit(1);
+}
+
 const messages = run(`git log ${base}..HEAD --format=%B`);
 if (messages.includes("[scope-ok]")) {
   console.log("commit 訊息有 [scope-ok]，略過範圍檢查（整合者要人工審）。");

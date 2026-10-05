@@ -75,7 +75,7 @@ docs/
 動任何數值、事件、間隔之後：
 
 1. `npm run sim -- 300 1 1|16 simple`，再跑 `mixed`，再跑 `... 40 post`（約 30 秒），第 13 節對照全部 ✓ 才算通過。
-2. `herb`（永遠採藥吃丹）與 `wander`（永遠走訪渡口）是回歸檢查：第一世止步不得高於 `simple`（練氣約 3–4 層）。它們的第 13 節對照顯示 ✗ 是預期。
+2. `herb`（永遠採藥吃丹）與 `wander`（永遠走訪渡口）是回歸檢查：第一世止步不得高於 `simple`（`simple` 約 6.5 層，這兩者實測約 3–4 層）。它們的第 13 節對照顯示 ✗ 是預期。
 3. 指標貼著區間邊緣，要特別留意：首次金丹中位數 8–10 世、通關時間、集滿 14 份殘卷、每世抉擇事件（`mixed` 約 14.0，上限 15）、`post` 的首次元嬰累計約 11 小時（上限 12）。
 
 ## 推送到 GitHub（origin）
@@ -106,10 +106,16 @@ docs/
 - 整合者（使用者指定一位，預設是 Claude Code）負責合併進 `master`：`git fetch --all`、`git log master..origin/<分支>` 看新內容、合併、解衝突、跑 `npm run verify`，通過後**一次**推上 `master`。其他助手不直接推 `master`。
 - 部署只由 `master` 的推送觸發。連續推 `master` 會讓排隊中的部署被後一次取代，整合完再推一次即可。
 - 開工前先在 `docs/TODO.md` 預約下一個里程碑編號與章節編號（寫上助手名），避免兩邊撞號。
-- 範圍由 CI 檢查（`scripts/check-scope.mjs`）：`ai/chatgpt` 不得動 `src/core/`、`src/data/`、`scripts/`、`.github/`、`package.json`、`AGENTS.md`、`tests/save-shape.json`；確實需要時在 commit 訊息加 `[scope-ok]` 並由整合者審。
+- 範圍由 CI 檢查（`scripts/check-scope.mjs`）：`ai/chatgpt` 不得動 `src/core/`、`src/data/`、`scripts/`、`.github/`、`package.json`、`AGENTS.md`、`tests/save-shape.json`；確實需要時，先在 `docs/TODO.md` 或對話提出計畫並經整合者同意，再於 commit 訊息加 `[scope-ok]`。
 - 架構規則由 `tests/architecture.test.ts` 守住：`core/` 不得使用 `Math.random`、`Date.now`、DOM、不得 import `ui/`；改存檔欄位必須升 `SAVE_VERSION`、寫遷移函式並更新 `tests/save-shape.json`。
 - `docs/GDD.md`、`docs/TODO.md` 最容易衝突：只在自己的章節新增內容，不整檔改寫、不改換行符號。
 - 新增圖片要壓縮（JPEG／WebP，寬度不超過實際顯示的兩倍）；圖會被內嵌進單一 `index.html`，`verify` 在超過 1500 KB 時會失敗。
+
+## 識別與整合紀錄
+
+- 所有助手的 commit 作者可能都是同一個 git 使用者，因此每個 commit 訊息結尾必須有 `Co-Authored-By` 標記：Claude 依系統提示加；ChatGPT 加 `Co-Authored-By: ChatGPT <noreply@openai.com>`。`check-scope.mjs` 會檢查 `ai/chatgpt` 的 commit。
+- 開工前先 `git fetch && git rebase origin/master`；`.gitattributes` 已強制 LF，不要手動改行尾。
+- 合併者要確認分支內沒有 `live.html` 這類建置產物或暫存檔。
 
 ## 並行作業流程（git worktree）
 
@@ -120,7 +126,7 @@ git worktree add ../xiuxian-claude -b ai/claude
 git worktree add ../xiuxian-chatgpt -b ai/chatgpt
 ```
 
-- 各助手只在自己的 worktree 裡改檔、commit；主資料夾 `xiuxian-game` 留給使用者看與合併，助手不直接改。
+- 各助手在自己的 worktree 裡改檔、commit（Claude：`ai/claude`、ChatGPT：`ai/chatgpt`）。主資料夾 `xiuxian-game` 的 `master` 只由**整合者**（預設 Claude）操作：合併、文件與流程維護、小修；整合者做功能開發請用 `ai/claude`。其他助手不直接改主資料夾。
 - 每個 worktree 第一次要 `npm install`。
 - 開工前先 `git fetch && git rebase origin/master`；每完成一個小單位就 commit 並再同步一次，不要讓分支放太久。
 - 合併進 `master` 前跑「推送到 GitHub」那節的前提 2、3；合併由使用者或使用者指定的一個助手負責，不要兩邊同時往 `master` 推。
