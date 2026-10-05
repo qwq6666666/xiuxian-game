@@ -8,6 +8,7 @@
     "test": "vitest run",
     "sim": "tsx scripts/simulate.ts",
     "build": "tsc --noEmit && vite build",
+    "verify": "npm run test && npm run build && node scripts/check-size.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {
