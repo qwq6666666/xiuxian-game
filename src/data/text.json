@@ -73,6 +73,14 @@
     "transition": "{prev}年間之後，隔了不知多少年，如今是{era}年間。",
     "born": "生於{era}年間"
   },
+  "talentAdvice": {
+    "gate": "已走到{realm}，再進一步需{talent} {n} 級，還差 {k} 級。",
+    "preview": "升到 {n} 級：{effect}",
+    "shortfall": "道韻尚差 {k}",
+    "total": "升到滿級共需 {k} 道韻",
+    "thresholdMet": "已達門檻，往後每級讓成功率更高。",
+    "threshold": "門檻 {n} 級，達到之前無法嘗試。"
+  },
   "versus": {
     "ageMore": "比上一世多活了 {n} 年。",
     "ageLess": "比上一世少活了 {n} 年。",

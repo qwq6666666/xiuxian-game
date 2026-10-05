@@ -6,7 +6,14 @@
     "maxLevel": 30,
     "effect": "cultivation",
     "perLevel": 0.12,
-    "cost": { "base": 2, "growth": 1.25 }
+    "cost": {
+      "base": 2,
+      "growth": 1.25
+    },
+    "advice": {
+      "upTo": 8,
+      "reason": "每一世都用得上，是最穩的起手。"
+    }
   },
   {
     "id": "tianjuan",
@@ -15,7 +22,14 @@
     "maxLevel": 5,
     "effect": "rerolls",
     "perLevel": 1,
-    "cost": { "base": 8, "growth": 2 }
+    "cost": {
+      "base": 8,
+      "growth": 2
+    },
+    "advice": {
+      "upTo": 2,
+      "reason": "多一次重擲，少賭一點開局的運氣。"
+    }
   },
   {
     "id": "fuyuan",
@@ -24,7 +38,10 @@
     "maxLevel": 3,
     "effect": "fortune",
     "perLevel": 1,
-    "cost": { "base": 10, "growth": 2.2 }
+    "cost": {
+      "base": 10,
+      "growth": 2.2
+    }
   },
   {
     "id": "yize",
@@ -33,7 +50,10 @@
     "maxLevel": 5,
     "effect": "stoneCarry",
     "perLevel": 0.1,
-    "cost": { "base": 6, "growth": 1.8 }
+    "cost": {
+      "base": 6,
+      "growth": 1.8
+    }
   },
   {
     "id": "daoxin",
@@ -42,7 +62,14 @@
     "maxLevel": 4,
     "effect": "failLoss",
     "perLevel": 0.05,
-    "cost": { "base": 12, "growth": 2 }
+    "cost": {
+      "base": 12,
+      "growth": 2
+    },
+    "advice": {
+      "upTo": 2,
+      "reason": "衝關失敗時少折損一些，築基丹的錢才不白花。"
+    }
   },
   {
     "id": "shenguang",
@@ -51,6 +78,9 @@
     "maxLevel": 6,
     "effect": "breakthroughAid",
     "perLevel": 1,
-    "cost": { "base": 250, "growth": 1.5 }
+    "cost": {
+      "base": 250,
+      "growth": 1.5
+    }
   }
 ]

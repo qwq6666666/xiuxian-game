@@ -110,3 +110,48 @@ describe("安排的效率數字", () => {
     for (const k of ["bone", "insight", "fortune", "mind"] as const) expect(g.attributes[k].text).not.toContain("#");
   });
 });
+
+import { emptyMeta } from "../src/core/state";
+import { recommendTalent, talentPreview } from "../src/ui/derived";
+
+describe("天賦頁的推薦與預覽", () => {
+  const talent = (id: string) => gameData.talents.find((t) => t.id === id)!;
+
+  it("新玩家被推薦第一個有 advice 的天賦，等級夠了就換下一個", () => {
+    expect(recommendTalent(emptyMeta(), gameData)?.talentId).toBe("suhui");
+    const upTo = talent("suhui").advice!.upTo;
+    expect(recommendTalent({ ...emptyMeta(), talents: { suhui: upTo } }, gameData)?.talentId).toBe("tianjuan");
+  });
+
+  it("走到金丹卻缺神光時，優先推薦神光並說出還差幾級；夠了就不再優先", () => {
+    const reached = { ...emptyMeta(), reached: ["lianqi:0", "jindan:0"] };
+    const r = recommendTalent(reached, gameData)!;
+    expect(r.talentId).toBe("shenguang");
+    expect(r.reason).toContain("4");
+    expect(r.reason).not.toMatch(/[{}]/);
+    const done = { ...reached, talents: { shenguang: 4 } };
+    expect(recommendTalent(done, gameData)?.talentId).not.toBe("shenguang");
+  });
+
+  it("全部都達標時沒有推薦", () => {
+    const talents = Object.fromEntries(gameData.talents.map((t) => [t.id, t.advice?.upTo ?? 0]));
+    expect(recommendTalent({ ...emptyMeta(), talents }, gameData)).toBeNull();
+  });
+
+  it("預覽：升級後效果、道韻缺口、滿級總價；已滿級沒有預覽", () => {
+    const s = talent("suhui");
+    const lines = talentPreview(s, 0, 0, gameData);
+    expect(lines[0]).toContain("1 級");
+    expect(lines.some((l) => l.includes("尚差 2"))).toBe(true);
+    expect(lines.some((l) => l.startsWith("升到滿級"))).toBe(true);
+    expect(talentPreview(s, 0, 999, gameData).some((l) => l.includes("尚差"))).toBe(false);
+    expect(talentPreview(s, s.maxLevel, 0, gameData)).toEqual([]);
+    for (const l of lines) expect(l).not.toMatch(/[{}]/);
+  });
+
+  it("神光的預覽說明結嬰門檻，到門檻前後文字不同", () => {
+    const sg = talent("shenguang");
+    expect(talentPreview(sg, 0, 0, gameData).some((l) => l.includes("門檻 4 級"))).toBe(true);
+    expect(talentPreview(sg, 3, 0, gameData).some((l) => l.includes("已達門檻"))).toBe(true);
+  });
+});

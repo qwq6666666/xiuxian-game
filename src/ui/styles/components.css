@@ -72,3 +72,8 @@ blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }
 .goals li.done { color: var(--accent); }
 .goals-box h3 { margin: var(--sp-3) 0 var(--sp-1); font-size: 0.95em; color: var(--muted); font-weight: normal; }
 .versus { margin: 2px 0; }
+
+/* 天賦頁：推薦與升級預覽 */
+.talents li.recommended { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
+.talents .advice { color: var(--accent); }
+.talents .preview { color: var(--muted); }

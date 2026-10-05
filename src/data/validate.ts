@@ -524,6 +524,12 @@ export function validateTalents(raw: unknown, file = "talents.json"): TalentDef[
         base: num(cost, "base", `${where} 欄位 cost`, { gt: 0 }),
         growth: num(cost, "growth", `${where} 欄位 cost`, { gt: 0 }),
       },
+      ...(o.advice !== undefined
+        ? (() => {
+            const a = obj(o.advice, `${where} 欄位 advice`);
+            return { advice: { upTo: num(a, "upTo", `${where} 欄位 advice`, { gt: 0, integer: true }), reason: str(a, "reason", `${where} 欄位 advice`) } };
+          })()
+        : {}),
     };
   });
   uniqueIds(talents, file);
@@ -616,6 +622,18 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       born: str(era, "born", `${file} 欄位 era`),
     },
     breakthroughGate: str(o, "breakthroughGate", file),
+    talentAdvice: (() => {
+      const g = obj(o.talentAdvice, `${file} 欄位 talentAdvice`);
+      const w = `${file} 欄位 talentAdvice`;
+      return {
+        gate: str(g, "gate", w),
+        preview: str(g, "preview", w),
+        shortfall: str(g, "shortfall", w),
+        total: str(g, "total", w),
+        thresholdMet: str(g, "thresholdMet", w),
+        threshold: str(g, "threshold", w),
+      };
+    })(),
     versus: (() => {
       const g = obj(o.versus, `${file} 欄位 versus`);
       const w = `${file} 欄位 versus`;

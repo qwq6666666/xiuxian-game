@@ -228,6 +228,8 @@ export interface TalentDef {
   effect: TalentEffect;
   perLevel: number;
   cost: { base: number; growth: number };
+  /** 推薦：依資料順序，第一個等級還低於 upTo 的天賦會被標為推薦，reason 是推薦的理由 */
+  advice?: { upTo: number; reason: string };
 }
 
 export type ReviewCause = "lifespan" | "adventure" | "event" | "cleared" | "yuanying" | "zuohua";
@@ -270,6 +272,8 @@ export interface TextData {
   breakthroughGate: string;
   /** 擲骰畫面與角色區的說明；# 由介面依 config 填入百分比 */
   guide: { bone: string; insight: string; fortune: string; mind: string; spiritRoot: string };
+  /** 天賦頁的推薦與預覽文字；{talent}、{n}、{k}、{realm}、{effect} 由介面填入 */
+  talentAdvice: { gate: string; preview: string; shortfall: string; total: string; thresholdMet: string; threshold: string };
   /** 一生回顧「與上一世的差別」的句子；{n} 為數字，{from}、{to} 為進度名稱 */
   versus: {
     ageMore: string;

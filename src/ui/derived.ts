@@ -7,7 +7,10 @@ import type { GameData, ScheduleDef } from "../data/types";
 import { fillSlots, type SlotValues } from "../data/slots";
 import { itemPrice, snapshotOf, whenApplies } from "../core/worldeffects";
 import { ATTRIBUTE_KEYS, type AttributeKey } from "../data/types";
-import { ATTR_LABEL } from "./format";
+import { talentCost } from "../core/formulas";
+import type { Meta } from "../core/state";
+import type { TalentDef } from "../data/types";
+import { ATTR_LABEL, describeTalent } from "./format";
 
 export interface PaceHint {
   /** eta：可估算距下一階段的時間；bottleneck：已卡瓶頸，不給倒數；none：無法估算 */
@@ -124,4 +127,57 @@ export function attributeGuide(data: GameData): { attributes: Record<AttributeKe
   const attributes = {} as Record<AttributeKey, AttrGuide>;
   for (const k of ATTRIBUTE_KEYS) attributes[k] = { label: ATTR_LABEL[k], text: raw[k] };
   return { attributes, spiritRoot: g.spiritRoot };
+}
+
+export interface TalentAdvice {
+  talentId: string;
+  reason: string;
+}
+
+const fillText = (t: string, vars: Record<string, string | number>): string => t.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? `{${k}}`));
+
+/** 這個天賦被哪個境界的突破門檻要求；沒有則為 null */
+function gateOf(talent: TalentDef, data: GameData): { realmName: string; level: number } | null {
+  for (const r of data.realms) {
+    const need = r.breakthroughRule?.requiresTalent;
+    if (need && need.id === talent.id) return { realmName: r.name, level: need.level };
+  }
+  return null;
+}
+
+/**
+ * 天賦頁的推薦：先看有沒有已走到、卻被天賦門檻擋住的境界（例如金丹之後要神光才能結嬰），
+ * 否則依資料順序取第一個等級還低於 advice.upTo 的天賦。沒有可推薦的回傳 null。
+ */
+export function recommendTalent(meta: Meta, data: GameData): TalentAdvice | null {
+  for (const r of data.realms) {
+    const need = r.breakthroughRule?.requiresTalent;
+    if (!need || !meta.reached.some((k) => k.startsWith(`${r.id}:`))) continue;
+    const level = meta.talents[need.id] ?? 0;
+    const talent = data.talents.find((t) => t.id === need.id);
+    if (talent && level < need.level) {
+      return { talentId: talent.id, reason: fillText(data.text.talentAdvice.gate, { realm: r.name, talent: talent.name, n: need.level, k: need.level - level }) };
+    }
+  }
+  for (const t of data.talents) {
+    if (t.advice && (meta.talents[t.id] ?? 0) < t.advice.upTo && (meta.talents[t.id] ?? 0) < t.maxLevel) return { talentId: t.id, reason: t.advice.reason };
+  }
+  return null;
+}
+
+/** 升一級的預覽：升級後的效果、道韻缺口、升到滿級的總價、突破門檻說明；已滿級回傳空陣列 */
+export function talentPreview(talent: TalentDef, level: number, daoYun: number, data: GameData): string[] {
+  if (level >= talent.maxLevel) return [];
+  const t = data.text.talentAdvice;
+  const cost = talentCost(talent, level);
+  const lines = [fillText(t.preview, { n: level + 1, effect: describeTalent(talent, level + 1) })];
+  const gate = gateOf(talent, data);
+  if (gate) lines.push(level + 1 >= gate.level ? t.thresholdMet : fillText(t.threshold, { n: gate.level }));
+  if (daoYun < cost) lines.push(fillText(t.shortfall, { k: cost - daoYun }));
+  if (talent.maxLevel - level > 1) {
+    let total = 0;
+    for (let l = level; l < talent.maxLevel; l++) total += talentCost(talent, l);
+    lines.push(fillText(t.total, { k: total }));
+  }
+  return lines;
 }
