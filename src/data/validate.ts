@@ -1,3 +1,4 @@
+import { slotProblems } from "./slots";
 import {
   ATTRIBUTE_KEYS,
   type AttributeKey,
@@ -32,6 +33,9 @@ import {
 } from "./types";
 
 type Obj = Record<string, unknown>;
+
+/** worldEvents 的 note 有自己的模板欄位，檢查參考名時先拿掉 */
+const SLOT_PATTERN_FOR_NOTE = /\{[^}]*\}/g;
 
 function fail(where: string, field: string, msg: string): never {
   throw new Error(`${where}：欄位 ${field} ${msg}`);
@@ -755,8 +759,45 @@ function parseReview(raw: unknown, where: string): TextData["review"] {
   return out;
 }
 
+/** 遞迴掃過資料裡的每個字串 */
+function scanStrings(value: unknown, path: string, visit: (text: string, path: string) => void): void {
+  if (typeof value === "string") visit(value, path);
+  else if (Array.isArray(value)) value.forEach((v, i) => scanStrings(v, `${path}[${i}]`, visit));
+  else if (typeof value === "object" && value !== null) {
+    for (const [k, v] of Object.entries(value)) scanStrings(v, path === "" ? k : `${path}.${k}`, visit);
+  }
+}
+
+/**
+ * 玩家看得到的文字不得寫死參考名（太衡宗等），一律用名稱欄位。
+ * 事件與殘卷可以用欄位，其餘資料檔連欄位都不該用。錯誤訊息指出是哪一筆的哪個欄位。
+ */
+function checkSlotRules(data: GameData): void {
+  const check = (where: string, value: unknown, allowSlots: boolean): void => {
+    scanStrings(value, "", (text, path) => {
+      const problems = slotProblems(text, allowSlots);
+      if (problems.length > 0) throw new Error(`${where}：欄位 ${path} ${problems[0]}`);
+    });
+  };
+  data.events.forEach((e, i) => check(`events.json 第 ${i + 1} 筆（${e.id}）`, e, true));
+  data.fragments.items.forEach((f, i) => check(`fragments.json 第 ${i + 1} 筆（${f.id}）`, f, true));
+  check("fragments.json 欄位 stances", data.fragments.stances, true);
+  check("fragments.json 欄位 topics", data.fragments.topics, true);
+  data.items.forEach((x, i) => check(`items.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.schedules.forEach((x, i) => check(`schedules.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.origins.forEach((x, i) => check(`origins.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.talents.forEach((x, i) => check(`talents.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.spiritRoots.forEach((x, i) => check(`spiritRoots.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.realms.forEach((x, i) => check(`realms.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.worldEvents.forEach((x, i) => check(`worldEvents.json 第 ${i + 1} 筆（${x.id}）`, { note: x.note.replace(SLOT_PATTERN_FOR_NOTE, "") }, false));
+  check("map.json", data.map, false);
+  // text.json 的日誌模板用自己的 {realm}、{item} 等，只檢查參考名
+  check("text.json", data.text, false);
+}
+
 /** 檢查各檔案之間的對應關係 */
 export function validateGameData(data: GameData): GameData {
+  checkSlotRules(data);
   const realmIds = new Set(data.realms.map((r) => r.id));
   const itemIds = new Set(data.items.map((i) => i.id));
   const has = (set: Set<string>, id: string, from: string, what: string) => {

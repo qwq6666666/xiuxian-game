@@ -8,6 +8,8 @@ import {
 } from "../core/breakthrough";
 import { eventOf } from "../core/events";
 import { CLEAR_FRAGMENT_ID } from "../core/fragments";
+import { worldFor, worldSlots } from "../core/world";
+import { fillSlots, type SlotValues } from "../data/slots";
 import { splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
@@ -114,6 +116,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   }
 
   function buildCodex(state: GameState): void {
+    const slots = slotsOf(state);
     const held = new Set(state.meta.fragments);
     const box = document.createDocumentFragment();
     const head = document.createElement("div");
@@ -138,13 +141,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         art.className = held.has(f.id) ? "fragment" : "fragment missing";
         if (held.has(f.id)) {
           const t = document.createElement("strong");
-          t.textContent = f.title;
+          t.textContent = fillSlots(f.title, slots);
           const meta = document.createElement("small");
           meta.className = "changes";
-          meta.textContent = `${f.source}｜${data.fragments.stances[f.stance] ?? f.stance}｜${f.era}`;
+          meta.textContent = `${f.source}｜${fillSlots(data.fragments.stances[f.stance] ?? f.stance, slots)}｜${f.era}`;
           const body = document.createElement("p");
           body.className = "fragment-text";
-          body.textContent = f.text;
+          body.textContent = fillSlots(f.text, slots);
           art.append(t, meta, body);
         } else {
           art.textContent = "（未得）";
@@ -172,6 +175,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && !codexEl.hidden) closeCodex();
   });
+
+  /** 當世的名稱欄位值，用來填入事件、殘卷、日誌裡的名稱 */
+  const slotsOf = (state: GameState): SlotValues => worldSlots(worldFor(state.worldSeed, data));
 
   const itemName = (id: string) => data.items.find((i) => i.id === id)?.name ?? id;
 
@@ -427,8 +433,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       e.log.innerHTML = "";
       for (const entry of [...state.log].reverse()) {
         const li = document.createElement("li");
-        li.textContent = formatLogEntry(entry, data, state.name);
-        const changes = formatChanges(entry.changes, data);
+        li.textContent = formatLogEntry(entry, data, state.name, slotsOf(state));
+        const changes = formatChanges(entry.changes, data, slotsOf(state));
         if (changes.length > 0) {
           const small = document.createElement("small");
           small.className = "changes";
@@ -447,15 +453,16 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       e.eventChoices.innerHTML = "";
       if (state.pendingEvent !== null) {
         const ev = eventOf(state.pendingEvent, data);
-        e.eventTitle.textContent = ev.title;
-        e.eventText.textContent = ev.text;
+        const slots = slotsOf(state);
+        e.eventTitle.textContent = fillSlots(ev.title, slots);
+        e.eventText.textContent = fillSlots(ev.text, slots);
         (ev.choices ?? []).forEach((choice, i) => {
           const reason = choiceBlockReason(choice.requires, state, data);
           const b = document.createElement("button");
           b.type = "button";
           b.disabled = reason !== null;
           b.innerHTML = `<strong></strong>${reason ? "<small></small>" : ""}`;
-          b.querySelector("strong")!.textContent = choice.text;
+          b.querySelector("strong")!.textContent = fillSlots(choice.text, slots);
           if (reason) b.querySelector("small")!.textContent = reason;
           b.addEventListener("click", () => handlers.onChoose(i));
           e.eventChoices.appendChild(b);
@@ -503,8 +510,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       // 通關時固定得到的殘卷，直接讀給玩家
       const clearFragment = review.cause === "cleared" ? data.fragments.items.find((f) => f.id === CLEAR_FRAGMENT_ID) : undefined;
       if (clearFragment && state.meta.fragments.includes(clearFragment.id)) {
-        const quote = el("blockquote", "fragment-text", clearFragment.text);
-        quote.append(el("small", "changes", `《${clearFragment.title}》`));
+        const quote = el("blockquote", "fragment-text", fillSlots(clearFragment.text, slotsOf(state)));
+        quote.append(el("small", "changes", `《${fillSlots(clearFragment.title, slotsOf(state))}》`));
         box.append(quote);
       }
       const origin = data.origins.find((o) => o.id === review.originId);
@@ -523,8 +530,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const ul = el("ul", "highlights");
       if (review.highlights.length === 0) ul.append(el("li", "desc", "平平淡淡，無甚可記。"));
       for (const entry of review.highlights) {
-        const li = el("li", undefined, formatLogEntry(entry, data, state.name));
-        const changes = formatChanges(entry.changes, data);
+        const li = el("li", undefined, formatLogEntry(entry, data, state.name, slotsOf(state)));
+        const changes = formatChanges(entry.changes, data, slotsOf(state));
         if (changes.length > 0) li.append(el("small", "changes", changes.join("　")));
         ul.append(li);
       }

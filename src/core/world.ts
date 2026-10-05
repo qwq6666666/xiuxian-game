@@ -1,6 +1,7 @@
 // 世界生成與快照：每一世由世界種子生成一份世界，一世之內隨年齡推進而變化。
 // 全是純函式，不讀時間、不碰 state 的亂數；世界本身不進存檔，由種子重算。
 import { gameData } from "../data/load";
+import type { SlotValues } from "../data/slots";
 import type { GameData, SectState, WorldEventDef } from "../data/types";
 import { deriveSeed, nextRandom } from "./rng";
 
@@ -50,16 +51,8 @@ export type WorldChange = { age: number; note: string } & (
   | { kind: "merchant"; region: string }
 );
 
-/** 地圖、文字與擲骰畫面用到的當世名稱 */
-export interface WorldSlots {
-  guard: string;
-  merchant: string;
-  wanderers: string;
-  village: string;
-  market: string;
-  mountain: string;
-  country: string;
-}
+/** 地圖、文字與擲骰畫面用到的當世名稱（就是名稱欄位的值） */
+export type WorldSlots = SlotValues;
 
 export interface World {
   seed: number;
@@ -500,6 +493,16 @@ export function worldAt(world: World, ageYears: number): WorldSnapshot {
 /** 兩個年齡之間發生的變化（不含 fromAge，含 toAge） */
 export function changesBetween(world: World, fromAge: number, toAge: number): WorldChange[] {
   return world.changes.filter((c) => c.age > fromAge && c.age <= toAge);
+}
+
+let cached: { seed: number; data: GameData; world: World } | null = null;
+
+/** 同一個種子重複取用時不必重新生成（介面每次重繪都會用到） */
+export function worldFor(seed: number, data: GameData = gameData): World {
+  if (cached && cached.seed === seed && cached.data === data) return cached.world;
+  const world = generateWorld(seed, data);
+  cached = { seed, data, world };
+  return world;
 }
 
 /** 填入名稱欄位用的當世名稱。國名取出生時的名字，讓同一世的文字前後一致。 */

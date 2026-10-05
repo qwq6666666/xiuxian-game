@@ -4,9 +4,9 @@
     "sanjie": "三界與九境"
   },
   "stances": {
-    "taiheng": "太衡宗",
-    "yedu": "野渡",
-    "tongji": "通濟行",
+    "taiheng": "{guard}",
+    "yedu": "{wanderers}",
+    "tongji": "{merchant}",
     "youming": "輪迴司",
     "shangjie": "上界",
     "nameless": "□□",
@@ -15,7 +15,7 @@
   "items": [
     {
       "id": "f01",
-      "title": "太衡宗誌・卷三",
+      "title": "{guard}誌・卷三",
       "topic": "juetong",
       "source": "宗誌",
       "stance": "taiheng",
@@ -25,7 +25,7 @@
     },
     {
       "id": "f02",
-      "title": "野渡口訣",
+      "title": "{wanderers}口訣",
       "topic": "juetong",
       "source": "口訣",
       "stance": "yedu",
@@ -65,17 +65,17 @@
     },
     {
       "id": "f06",
-      "title": "通濟行舊帳・供奉冊",
+      "title": "{merchant}舊帳・供奉冊",
       "topic": "juetong",
       "source": "帳本",
       "stance": "tongji",
       "era": "絕通前三十年起",
       "tier": 2,
-      "text": "絕通前三十年，代太衡宗解送上界供奉，靈石八萬。回執：無。\n絕通前二十九年，同上，靈石九萬。回執：無。\n抄者按：以下二十八年皆同，不錄。"
+      "text": "絕通前三十年，代{guard}解送上界供奉，靈石八萬。回執：無。\n絕通前二十九年，同上，靈石九萬。回執：無。\n抄者按：以下二十八年皆同，不錄。"
     },
     {
       "id": "f07",
-      "title": "通濟行舊帳・名額冊",
+      "title": "{merchant}舊帳・名額冊",
       "topic": "juetong",
       "source": "帳本",
       "stance": "tongji",
@@ -85,7 +85,7 @@
     },
     {
       "id": "f08",
-      "title": "太衡宗起居注・某年",
+      "title": "{guard}起居注・某年",
       "topic": "juetong",
       "source": "起居注",
       "stance": "taiheng",
@@ -95,7 +95,7 @@
     },
     {
       "id": "f09",
-      "title": "野渡某人日記",
+      "title": "{wanderers}某人日記",
       "topic": "juetong",
       "source": "日記",
       "stance": "yedu",
