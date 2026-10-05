@@ -608,5 +608,608 @@
     "tone": "neutral",
     "maxPerLife": 3,
     "conditions": { "bottleneck": true }
+  },
+  {
+    "id": "bookstall_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "舊書攤",
+    "text": "渡頭集的一處地攤上，堆著半人高的舊紙，攤主說論斤賣，不論內容。",
+    "weight": 9,
+    "tone": "neutral",
+    "conditions": { "ageMin": 14, "fragmentAvailable": 3 },
+    "choices": [
+      {
+        "text": "蹲下細翻",
+        "outcomes": [
+          {
+            "weight": 30,
+            "text": "你翻了半個時辰，從一堆黃曆與藥方中抽出一份殘缺的文書。攤主瞥了一眼，說這份算添頭。",
+            "effects": { "fragment": { "maxTier": 3 } }
+          },
+          {
+            "weight": 70,
+            "text": "翻來翻去，盡是黃曆與藥方，指尖倒沾了一層灰。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "買下一捆",
+        "requires": { "spiritStones": 8 },
+        "outcomes": [
+          {
+            "weight": 45,
+            "text": "你買下一捆，回去拆開細看，竟夾著一份殘卷。",
+            "effects": { "spiritStones": -8, "fragment": { "maxTier": 3 } }
+          },
+          {
+            "weight": 55,
+            "text": "拆開一看，全是作廢的當票。",
+            "effects": { "spiritStones": -8 }
+          }
+        ]
+      },
+      {
+        "text": "不看了",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你搖搖頭走開，攤主連頭都沒抬。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "abandoned_cave_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "荒廢洞府",
+    "text": "青垣山深處，一處荒廢的洞府半掩在荒草之間。石門早已碎裂，門楣上的字跡只剩一半。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "realmMin": "lianqi", "fragmentAvailable": 3 },
+    "scheduleWeights": { "adventure": 2 },
+    "choices": [
+      {
+        "text": "入內搜尋",
+        "outcomes": [
+          {
+            "weight": 25,
+            "text": "石室角落有一隻朽爛的木匣，匣底壓著一份尚未風化的文書。你小心取出，紙邊一碰即碎。",
+            "effects": { "fragment": { "maxTier": 3 } }
+          },
+          {
+            "weight": 40,
+            "text": "牆縫裡摳出幾枚靈石，成色尚可。",
+            "effects": { "spiritStones": 15 }
+          },
+          {
+            "weight": 35,
+            "text": "早被前人搜刮得乾乾淨淨，連蛛網都像是新織的。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "在洞口歇腳",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在洞口歇了半日，一無所獲，倒也睡得安穩。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tongji_clearance_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "通濟行清倉",
+    "text": "渡頭集的通濟行門口，夥計正把一批陳年舊物搬出來清倉，高聲叫賣：「舊帳舊冊，一律從簡！」",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "ageMin": 16, "fragmentAvailable": 3 },
+    "choices": [
+      {
+        "text": "挑一份舊冊",
+        "requires": { "spiritStones": 5 },
+        "outcomes": [
+          {
+            "weight": 45,
+            "text": "夥計收了錢，頭也不抬地遞來一份。「東西是真的，」他說，「就是沒人想看。」",
+            "effects": { "spiritStones": -5, "fragment": { "maxTier": 3 } }
+          },
+          {
+            "weight": 55,
+            "text": "你拿到的是一冊舊年的米價，倒也算是行情。",
+            "effects": { "spiritStones": -5 }
+          }
+        ]
+      },
+      {
+        "text": "站著聽叫賣",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你聽了一刻，夥計問你買不買，你說再看看。他的笑容當場收了。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "yedu_guest_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "野渡行腳客",
+    "text": "一名行腳客借宿你處，自稱出身野渡，夜裡與你聊到三更。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "ageMin": 16, "fragmentAvailable": 3 },
+    "choices": [
+      {
+        "text": "備酒款待",
+        "requires": { "spiritStones": 5 },
+        "outcomes": [
+          {
+            "weight": 70,
+            "text": "他喝得盡興，臨走時從行囊裡翻出一份舊文書，說是路上看膩了，送你解悶。",
+            "effects": { "spiritStones": -5, "fragment": { "id": "f02" } }
+          },
+          {
+            "weight": 30,
+            "text": "他喝完就睡，天亮人已不見，酒壺倒是擺得整整齊齊。",
+            "effects": { "spiritStones": -5 }
+          }
+        ]
+      },
+      {
+        "text": "只備茶水",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "他念了一段口訣，你聽得入神，他便順手替你抄了一份。",
+            "effects": { "fragment": { "id": "f02" } }
+          },
+          {
+            "weight": 50,
+            "text": "他說野渡的人沒有姓名，只有口訣，隨後念了一段。你沒記住，他也沒再念第二遍。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "taiheng_disciple_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "遺落的文書",
+    "text": "山道上，一名身著太衡宗外門服飾的弟子行色匆匆，包袱鬆了口，掉出一份文書。他渾然不覺，已走遠了。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "lianqi", "fragmentAvailable": 3 },
+    "choices": [
+      {
+        "text": "追上去還給他",
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "他接過文書，千恩萬謝，又從包袱底抽出一份舊紙，說這是同門不要的。",
+            "effects": { "fragment": { "id": "f01" } }
+          },
+          {
+            "weight": 40,
+            "text": "他道了聲謝，轉身就走，連名字都沒留。",
+            "effects": { "attributes": { "fortune": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "撿起來看看",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "你展開讀了兩行，便知不該看。但已讀到的，總不能退回去。",
+            "effects": { "fragment": { "id": "f01" } }
+          },
+          {
+            "weight": 50,
+            "text": "紙上全是外門的值日表，哪一階由誰來掃，寫得清清楚楚。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "old_house_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "老宅木匣",
+    "text": "垣下一處老宅久無人住，屋樑下垂著一隻舊木匣，匣鎖已銹。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "fragmentAvailable": 3 },
+    "choices": [
+      {
+        "text": "撬開木匣",
+        "outcomes": [
+          {
+            "weight": 25,
+            "text": "匣底壓著一份發黃的文書，邊角被蟲蛀去一塊。",
+            "effects": { "fragment": { "maxTier": 3 } }
+          },
+          {
+            "weight": 40,
+            "text": "匣中只有一把算盤珠子，數來數去，少了兩顆。",
+            "effects": {}
+          },
+          {
+            "weight": 35,
+            "text": "匣裡有幾枚舊錢，已不能通用，只好當作紀念。",
+            "effects": { "spiritStones": 6 }
+          }
+        ]
+      },
+      {
+        "text": "不動它",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你替它掩上門，木匣繼續掛在樑下，大約還能再掛幾十年。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ferry_001",
+    "type": "choice",
+    "title": "渡口漲價",
+    "text": "渡頭集的渡口，船夫說今日水大，要加價。",
+    "weight": 7,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "ageMin": 12 },
+    "choices": [
+      {
+        "text": "照價付錢",
+        "requires": { "spiritStones": 3 },
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "船夫收了錢，穩穩送你過河。水其實不大。",
+            "effects": { "spiritStones": -3 }
+          }
+        ]
+      },
+      {
+        "text": "涉水而過",
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "你踩著激流過河，衣衫盡濕，心神卻因此清醒了些。",
+            "effects": { "cultivation": 0.05 }
+          },
+          {
+            "weight": 40,
+            "text": "水比看上去深，你被沖出老遠，爬上岸時只剩一隻鞋。",
+            "effects": { "lifespan": -1 }
+          }
+        ]
+      },
+      {
+        "text": "在岸邊等水退",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你等了半日，水沒退，船夫的價錢倒是漲了。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "herb_cliff_001",
+    "type": "choice",
+    "title": "崖邊藥草",
+    "text": "你在青垣山的背陰處發現一叢藥草，品相極佳，只是長在斷崖邊上。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "realmMin": "lianqi" },
+    "scheduleWeights": { "adventure": 1.5, "herb": 2 },
+    "choices": [
+      {
+        "text": "冒險採摘",
+        "outcomes": [
+          {
+            "weight": 68,
+            "text": "你攀著岩縫採得整叢藥草，換得不少靈石，指尖被割了數道口子。",
+            "effects": { "spiritStones": 30 }
+          },
+          {
+            "weight": 29,
+            "text": "腳下一滑，你抓住藤蔓才沒摔下去，藥草卻落入深谷。",
+            "effects": { "lifespan": -1 }
+          },
+          {
+            "weight": 3,
+            "text": "一聲驚呼之後，山谷重歸寂靜。",
+            "effects": { "death": true }
+          }
+        ]
+      },
+      {
+        "text": "取一半，留一半",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你只採外圍的一半，留了根。山裡的藥草，來年還會再長。",
+            "effects": { "spiritStones": 12 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "teahouse_001",
+    "type": "choice",
+    "title": "茶攤傳聞",
+    "text": "渡頭集的茶攤上，幾名散修正在高談闊論，從太衡宗的新丹方，說到通濟行的新價錢。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "ageMin": 14 },
+    "choices": [
+      {
+        "text": "坐下旁聽",
+        "requires": { "spiritStones": 2 },
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "你聽出了些門道，起身時只覺得這杯茶沒白喝。",
+            "effects": { "spiritStones": -2, "attributes": { "insight": 1 } }
+          },
+          {
+            "weight": 50,
+            "text": "你聽了一下午，帶回三條消息，其中兩條互相矛盾，第三條是茶錢。",
+            "effects": { "spiritStones": -2 }
+          }
+        ]
+      },
+      {
+        "text": "不湊熱鬧",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你繞開茶攤，身後的爭論聲一直追到巷口。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "qi_disorder_001",
+    "type": "choice",
+    "title": "氣息紊亂",
+    "text": "運功至緊要處，丹田忽然一陣刺痛，氣息不聽使喚。",
+    "weight": 6,
+    "tone": "bad",
+    "maxPerLife": 2,
+    "conditions": { "realmMin": "lianqi" },
+    "choices": [
+      {
+        "text": "強行運轉",
+        "outcomes": [
+          {
+            "weight": 45,
+            "text": "氣機衝撞經脈，你悶哼一聲，修為折損了一截。",
+            "effects": { "cultivation": -0.12 }
+          },
+          {
+            "weight": 55,
+            "text": "你咬牙撐過，氣息漸漸歸順，心性也沉穩了些。",
+            "effects": { "attributes": { "mind": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "收功調息",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你收功調息三日，損失不大，只是白耽誤了幾日工夫。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lost_child_001",
+    "type": "choice",
+    "title": "迷路孩童",
+    "text": "垣下的孩子在山腳下迷了路，哭得鼻涕直流。",
+    "weight": 7,
+    "tone": "good",
+    "maxPerLife": 2,
+    "conditions": {},
+    "choices": [
+      {
+        "text": "送他回家",
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "孩子的娘塞給你一籃野果，你吃了三天。",
+            "effects": { "attributes": { "fortune": 1 } }
+          },
+          {
+            "weight": 40,
+            "text": "孩子的爹誤當你是拐子，追了你半條街。說清楚後，他請你喝了一碗粥。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "替他指個方向",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你指了個方向，不知他走對了沒有。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "pill_dealer_001",
+    "type": "choice",
+    "title": "坊市賤賣",
+    "text": "渡頭集上有人兜售成色可疑的聚氣丹，價錢只要市價的一半。",
+    "weight": 7,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "realmMin": "lianqi" },
+    "choices": [
+      {
+        "text": "買一顆試試",
+        "requires": { "spiritStones": 10 },
+        "outcomes": [
+          {
+            "weight": 45,
+            "text": "丹藥入口微苦，靈氣倒是真的，只是少了幾分火候。",
+            "effects": { "spiritStones": -10, "cultivation": 0.12 }
+          },
+          {
+            "weight": 55,
+            "text": "咬開一看，是麵糰裹了藥渣。",
+            "effects": { "spiritStones": -10 }
+          }
+        ]
+      },
+      {
+        "text": "當面揭穿他",
+        "outcomes": [
+          {
+            "weight": 40,
+            "text": "攤主面色一變，收攤便走。圍觀的人群裡有人向你點頭致意。",
+            "effects": { "attributes": { "fortune": 1 } }
+          },
+          {
+            "weight": 60,
+            "text": "攤主指著你嚷嚷，說你壞他生意，人群起鬨，你只得悻悻離開。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "路過",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你從攤前走過，沒有回頭。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "windblown_page_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "風中殘頁",
+    "text": "一陣山風捲來一張殘頁，正好貼在你臉上。紙已發黃，字跡尚可辨認。",
+    "weight": 4,
+    "tone": "good",
+    "conditions": { "fragmentAvailable": 3 },
+    "effects": { "fragment": { "maxTier": 3, "chance": 0.3 } }
+  },
+  {
+    "id": "wall_writing_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "牆上舊字",
+    "text": "荒屋斷牆上，殘留著前人以炭寫下的幾行字。你湊近讀了一遍，抄在隨身的紙上。",
+    "weight": 4,
+    "tone": "neutral",
+    "conditions": { "realmMin": "lianqi", "fragmentAvailable": 3 },
+    "effects": { "fragment": { "maxTier": 3, "chance": 0.3 } }
+  },
+  {
+    "id": "pawnshop_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "當鋪舊物",
+    "text": "渡頭集的當鋪櫃檯下壓著一疊無人贖回的舊物，掌櫃隨手抽出一份塞給你，說抵你方才多問的那句話。",
+    "weight": 4,
+    "tone": "neutral",
+    "conditions": { "ageMin": 16, "fragmentAvailable": 3 },
+    "effects": { "fragment": { "maxTier": 3, "chance": 0.3 } }
+  },
+  {
+    "id": "herb_paper_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "包藥的紙",
+    "text": "藥鋪夥計用一張舊紙替你包藥。你拆開時，發現紙上的字比藥方有意思得多。",
+    "weight": 4,
+    "tone": "neutral",
+    "conditions": { "realmMin": "lianqi", "fragmentAvailable": 3 },
+    "effects": { "fragment": { "maxTier": 3, "chance": 0.3 } }
+  },
+  {
+    "id": "children_song_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "孩子的歌謠",
+    "text": "垣下的孩子們唱著一支你沒聽過的歌謠，你湊近聽了兩遍，順手抄了下來。",
+    "weight": 4,
+    "tone": "neutral",
+    "conditions": { "ageMin": 12, "fragmentAvailable": 3 },
+    "effects": { "fragment": { "maxTier": 3, "chance": 0.3 } }
+  },
+  {
+    "id": "cold_tea_001",
+    "type": "anecdote",
+    "title": "涼茶",
+    "text": "你泡的茶涼了三回，才想起忘了喝。靈氣倒是走了三個周天。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "realmMin": "lianqi" }
+  },
+  {
+    "id": "stone_bridge_001",
+    "type": "anecdote",
+    "title": "石橋",
+    "text": "垣下村口的石橋又被山水沖掉一塊，村人說這是第三回，下回準備改用木板。",
+    "weight": 7,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": {}
+  },
+  {
+    "id": "crow_001",
+    "type": "anecdote",
+    "title": "烏鴉",
+    "text": "一隻烏鴉停在窗沿，歪頭看了你半晌，又飛走了。你不確定自己被評判了什麼。",
+    "weight": 7,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": {}
   }
 ]

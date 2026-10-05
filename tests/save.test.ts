@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState, startLife } from "../src/core/life";
 import { deserialize, importSave, serialize } from "../src/core/save";
+import { gameData } from "../src/data/load";
 import { SAVE_VERSION } from "../src/core/state";
 import { tick } from "../src/core/tick";
 
@@ -86,7 +87,7 @@ describe("save", () => {
     expect(s.eventCounts).toEqual({});
     expect(s.pendingEvent).toBeNull();
     expect(s.autoChoice).toBe(false);
-    expect(s.eventThreshold).toBe(24);
+    expect(s.eventThreshold).toBe(Math.round((gameData.config.eventIntervalMin + gameData.config.eventIntervalMax) / 2));
     expect(s.ageMonths).toBe(current.ageMonths);
     expect(s.cultivation).toBe(current.cultivation);
     expect(s.attributes).toEqual(current.attributes);
@@ -101,7 +102,7 @@ describe("save", () => {
     const s = deserialize(JSON.stringify(rest));
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.rngSeed).toBe(current.rngSeed);
-    expect(s.eventThreshold).toBe(24);
+    expect(s.eventThreshold).toBe(Math.round((gameData.config.eventIntervalMin + gameData.config.eventIntervalMax) / 2));
     expect(s.flags).toEqual([]);
   });
 

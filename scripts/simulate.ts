@@ -33,7 +33,8 @@ function randomChoice(pendingId: string, state: GameState): number {
 /** 混合策略的每月操作：換安排、買丹藥、吃丹藥 */
 function mixedActions(state: GameState): GameState {
   let s = state;
-  const lianqiEarly = s.realmId === "lianqi" && s.stage < 3;
+  // 練氣前期靈石不足時外出歷練賺錢，攢夠了就回去閉關
+  const lianqiEarly = s.realmId === "lianqi" && s.stage < 3 && s.spiritStones < 40;
   s = setSchedule(s, lianqiEarly ? "adventure" : "retreat", gameData);
   if (s.realmId === "lianqi" && s.stage >= 6 && (s.items.zhuji_dan ?? 0) === 0) s = buyItem(s, "zhuji_dan", gameData);
   if (canBuyItem(s, "yanshou_dan", gameData) && s.realmId !== "mortal") s = buyItem(s, "yanshou_dan", gameData);
@@ -183,17 +184,33 @@ function campaigns(): void {
   const zhujiLives: number[] = [];
   const clearLives: number[] = [];
   const clearMinutes: number[] = [];
+  /** 殘卷指標：前五世每世新得數、f01 與 f02 都到手的世數、集滿的世數 */
+  let earlyFragments = 0;
+  const bothLives: number[] = [];
+  const allLives: number[] = [];
 
   for (let c = 0; c < runs; c++) {
     let state = createInitialState(freshSeed(), gameData);
     let gotZhuji = false;
     let gotClear = false;
     let months = 0;
+    let gotBoth = false;
+    let gotAll = false;
     for (let k = 0; k < lives; k++) {
+      const fragmentsBefore = state.meta.fragments.length;
       const row = perLife[k];
       row.suhui += state.meta.talents.suhui ?? 0;
       const start = state.ageMonths;
       state = playLife(state);
+      if (k < 5) earlyFragments += state.meta.fragments.length - fragmentsBefore;
+      if (!gotBoth && state.meta.fragments.includes("f01") && state.meta.fragments.includes("f02")) {
+        gotBoth = true;
+        bothLives.push(k + 1);
+      }
+      if (!gotAll && state.meta.fragments.length >= gameData.fragments.items.length) {
+        gotAll = true;
+        allLives.push(k + 1);
+      }
       row.progress += progressOf(state);
       row.years += (state.ageMonths - start) / 12;
       months += state.ageMonths - start;
@@ -263,5 +280,12 @@ function campaigns(): void {
   console.log(`  ${ok(zMed >= zLo && zMed <= zHi)} 首次築基：中位數第 ${zMed} 世（目標第 ${zLo}–${zHi} 世）`);
   console.log(`  ${ok(cMed >= cLo && cMed <= cHi)} 首次金丹：中位數第 ${cMed} 世（目標第 ${cLo}–${cHi} 世）`);
   console.log(`  ${ok(hours >= 4 && hours <= 6)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（目標 4–6 小時，僅計已通關者）`);
+  const fragPerLife = earlyFragments / runs / Math.min(5, lives);
+  const bothMed = median(bothLives);
+  const allMed = median(allLives);
+  console.log("對照第 18.7 節（殘卷）：");
+  console.log(`  ${ok(fragPerLife >= 1 && fragPerLife <= 2)} 前五世每世新得殘卷：平均 ${fragPerLife.toFixed(2)} 份（目標 1–2）`);
+  console.log(`  ${ok(bothMed <= 3)} f01 與 f02 都到手：中位數第 ${bothMed} 世（目標第 3 世結束前），第 3 世前已到手 ${((bothLives.filter((l) => l <= 3).length / runs) * 100).toFixed(0)}%`);
+  console.log(`  ${ok(allMed >= 10 && allMed <= 14)} 集滿 ${gameData.fragments.items.length} 份：中位數第 ${allMed} 世（目標第 10–14 世）`);
   console.log(`  ${lives} 世內已築基 ${((zhujiLives.length / runs) * 100).toFixed(0)}%、已通關 ${((clearLives.length / runs) * 100).toFixed(0)}%`);
 }

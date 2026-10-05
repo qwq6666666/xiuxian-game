@@ -26,7 +26,7 @@
     "lifespan": 200,
     "cultivationMult": 3,
     "stageNames": ["初期", "中期", "後期"],
-    "need": { "base": 4200, "growth": 1.8 },
+    "need": { "base": 4500, "growth": 1.8 },
     "breakthrough": "manual",
     "daoYun": 50,
     "breakthroughRule": { "baseRate": 0.15, "insightBonus": 0.02 }

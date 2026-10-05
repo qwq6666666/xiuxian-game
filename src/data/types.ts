@@ -104,8 +104,8 @@ export interface Effects {
   items?: Record<string, number>;
   flags?: string[];
   death?: boolean;
-  /** 給殘卷：指定一份，或從未持有、已解鎖、非 fixed 且層級不超過 maxTier 的殘卷中抽一份 */
-  fragment?: { id: string } | { maxTier: number };
+  /** 給殘卷：指定一份，或從未持有、已解鎖、非 fixed 且層級不超過 maxTier 的殘卷中抽一份（chance 為觸發機率，預設 1） */
+  fragment?: { id: string } | { maxTier: number; chance?: number };
 }
 
 export interface EventConditions {

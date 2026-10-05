@@ -5,7 +5,7 @@ import { availableFragments, drawFragment, grantFragment } from "./fragments";
 import { eventWeight, outcomeWeight, stageNeed } from "./formulas";
 import { addLog, atBottleneck, eventOf, realmOf, resolveStages, scheduleOf } from "./progress";
 import { endLife } from "./review";
-import { nextInt, pickWeighted } from "./rng";
+import { nextInt, nextRandom, pickWeighted } from "./rng";
 import type { Attributes, Changes, GameState } from "./state";
 
 // 其他模組從這裡取用 eventOf，維持原本的匯入路徑
@@ -121,8 +121,20 @@ function applyEffects(
     let id: string | null;
     if ("id" in effects.fragment) id = effects.fragment.id;
     else {
-      const [drawn, seed] = drawFragment(s, effects.fragment.maxTier, data);
-      id = drawn;
+      const chance = effects.fragment.chance ?? 1;
+      let seed = s.rngSeed;
+      let hit = true;
+      if (chance < 1) {
+        const [v, next] = nextRandom(seed);
+        seed = next;
+        hit = v < chance;
+      }
+      id = null;
+      if (hit) {
+        const [drawn, next] = drawFragment({ ...s, rngSeed: seed }, effects.fragment.maxTier, data);
+        id = drawn;
+        seed = next;
+      }
       s = { ...s, rngSeed: seed };
     }
     // 已持有就不重複給，也不記變化

@@ -40,8 +40,8 @@ function pending(id: string, patch: Partial<GameState> = {}): GameState {
 }
 
 describe("事件資料", () => {
-  it("第一版目標：20 個事件、至少 8 個抉擇、2 組連鎖", () => {
-    expect(gameData.events).toHaveLength(20);
+  it("M6 目標：40 個事件、至少 8 個抉擇、2 組連鎖", () => {
+    expect(gameData.events).toHaveLength(40);
     expect(gameData.events.filter((e) => e.type === "choice").length).toBeGreaterThanOrEqual(8);
     // 連鎖：後段事件要求前段事件設定的旗標
     expect(ev("cave_002").conditions.flags).toEqual(["cave_001_marked"]);
@@ -202,11 +202,11 @@ describe("計時與觸發", () => {
     expect(s.log.some((e) => e.kind === "event")).toBe(true);
   });
 
-  it("觸發後重抽門檻（12–36）並重置計時，事件次數 +1", () => {
+  it("觸發後重抽門檻（設定檔的區間）並重置計時，事件次數 +1", () => {
     const s = tick(living(1, { eventThreshold: 12, schedule: "herb" }), 12, only);
     expect(s.eventClock).toBe(0);
-    expect(s.eventThreshold).toBeGreaterThanOrEqual(12);
-    expect(s.eventThreshold).toBeLessThanOrEqual(36);
+    expect(s.eventThreshold).toBeGreaterThanOrEqual(gameData.config.eventIntervalMin);
+    expect(s.eventThreshold).toBeLessThanOrEqual(gameData.config.eventIntervalMax);
     expect(s.eventCounts.a).toBe(1);
   });
 

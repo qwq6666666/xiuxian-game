@@ -288,10 +288,12 @@ function parseEffects(raw: unknown, where: string): Effects {
     const fw = `${where} 欄位 fragment`;
     const f = obj(o.fragment, fw);
     if ((f.id === undefined) === (f.maxTier === undefined)) fail(fw, "id/maxTier", "必須擇一提供");
-    if (f.id !== undefined) e.fragment = { id: str(f, "id", fw) };
-    else {
+    if (f.id !== undefined) {
+      if (f.chance !== undefined) fail(fw, "chance", "只能搭配 maxTier 使用");
+      e.fragment = { id: str(f, "id", fw) };
+    } else {
       const maxTier = num(f, "maxTier", fw, { min: 1, max: 3, integer: true });
-      e.fragment = { maxTier };
+      e.fragment = f.chance === undefined ? { maxTier } : { maxTier, chance: num(f, "chance", fw, { gt: 0, max: 1 }) };
     }
   }
   for (const k of Object.keys(o)) {

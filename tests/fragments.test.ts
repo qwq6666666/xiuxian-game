@@ -79,6 +79,52 @@ describe("殘卷資料", () => {
   });
 });
 
+describe("事件擴充", () => {
+  it("事件數 40 個，至少 10 個的某個結果會給殘卷，且每份殘卷都有取得的途徑", () => {
+    expect(gameData.events).toHaveLength(40);
+    const effectsOf = (e: EventDef): Effects[] => [
+      ...(e.effects ? [e.effects] : []),
+      ...(e.choices ?? []).flatMap((c) => c.outcomes.map((o) => o.effects)),
+    ];
+    const giving = gameData.events.filter((e) => effectsOf(e).some((x) => x.fragment));
+    expect(giving.length).toBeGreaterThanOrEqual(10);
+    // 指定 id 的殘卷固定可得；其餘靠 maxTier 抽取，只要有任何事件可抽三層就能涵蓋所有非 fixed 的殘卷
+    const draws = giving.some((e) => effectsOf(e).some((x) => x.fragment && "maxTier" in x.fragment && x.fragment.maxTier === 3));
+    expect(draws).toBe(true);
+    // 給殘卷的事件都帶 fragmentAvailable，抽完之後不會再出現而白白占掉一次機會
+    for (const e of giving.filter((x) => effectsOf(x).some((f) => f.fragment && "maxTier" in f.fragment))) {
+      expect(e.conditions.fragmentAvailable, e.id).toBeDefined();
+    }
+  });
+
+  it("chance：機率為 1 以下時只在亂數命中才給", () => {
+    const rolls = (chance: number) => {
+      const data = dataWith([fixedEvent({ fragment: { maxTier: 1, chance } })]);
+      let hits = 0;
+      for (let seed = 1; seed <= 400; seed++) {
+        const t = chooseEvent({ ...pendingFx({ rngSeed: seed }) }, 0, data);
+        if (t.meta.fragments.length > 0) hits++;
+      }
+      return hits / 400;
+    };
+    expect(rolls(0.25)).toBeGreaterThan(0.18);
+    expect(rolls(0.25)).toBeLessThan(0.32);
+    expect(rolls(1)).toBe(1);
+  });
+
+  it("chance 格式：必須在 0 到 1 之間，且不能搭配指定 id", () => {
+    const withEffect = (fragment: unknown) => {
+      const e = JSON.parse(JSON.stringify(gameData.events.find((x) => x.type === "choice")));
+      e.choices[0].outcomes[0].effects.fragment = fragment;
+      return e;
+    };
+    expect(() => validateEvents([withEffect({ maxTier: 1, chance: 0 })])).toThrow("chance");
+    expect(() => validateEvents([withEffect({ maxTier: 1, chance: 1.5 })])).toThrow("chance");
+    expect(() => validateEvents([withEffect({ id: "f01", chance: 0.5 })])).toThrow("chance");
+    expect(validateEvents([withEffect({ maxTier: 1, chance: 0.5 })])).toHaveLength(1);
+  });
+});
+
 describe("解鎖與抽取", () => {
   it("一層隨時可得；二層需築基，三層需築基後期（本世進度也算）", () => {
     const s = living(1);
