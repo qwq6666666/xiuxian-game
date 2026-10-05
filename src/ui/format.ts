@@ -121,7 +121,7 @@ function fill(template: string, vars: Record<string, string>): string {
 }
 
 /** 把日誌事件組成一行文字 */
-export function formatLogEntry(entry: LogEntry, data: GameData): string {
+export function formatLogEntry(entry: LogEntry, data: GameData, name = "你"): string {
   const realm = data.realms.find((r) => r.id === entry.realmId);
   if (!realm) throw new Error(`日誌：找不到境界 ${entry.realmId}`);
   const log = data.text.log;
@@ -129,6 +129,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData): string {
     realm: realmLabel(realm, entry.stage),
     years: `${toChineseNumber(Math.floor(entry.month / 12))}歲`,
     item: data.items.find((i) => i.id === entry.itemId)?.name ?? entry.itemId ?? "",
+    name,
   };
   const pick = (list: string[]) => list[entry.month % list.length];
   let template: string;

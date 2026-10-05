@@ -17,6 +17,7 @@ import {
   type ScheduleDef,
   type SpiritRootDef,
   type TalentDef,
+  type NameData,
   type TextData,
 } from "./types";
 
@@ -123,6 +124,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     eventIntervalMax: num(o, "eventIntervalMax", file, { min: eventMin, integer: true }),
     fortuneGoodWeight: num(o, "fortuneGoodWeight", file, { min: 0 }),
     daoYunFirstTimeMult: num(o, "daoYunFirstTimeMult", file, { min: 1 }),
+    nameMaxLength: num(o, "nameMaxLength", file, { gt: 0, integer: true }),
     offlineMaxHours: num(o, "offlineMaxHours", file, { gt: 0 }),
     offlineMaxYears: num(o, "offlineMaxYears", file, { gt: 0 }),
     offlineMinSeconds: num(o, "offlineMinSeconds", file, { min: 0 }),
@@ -488,6 +490,11 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
     },
     review: parseReview(o.review, `${file} 欄位 review`),
   };
+}
+
+export function validateNames(raw: unknown, file = "names.json"): NameData {
+  const o = obj(raw, file);
+  return { surnames: strList(o, "surnames", file), given: strList(o, "given", file) };
 }
 
 function parseReview(raw: unknown, where: string): TextData["review"] {

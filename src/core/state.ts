@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** 跨世保留的資料 */
 export interface Meta {
@@ -94,6 +94,9 @@ export interface GameState {
   ageMonths: number;
   /** 開局剩餘重擲次數 */
   rerolls: number;
+  /** 主角姓名；玩家改過名之後擲骰不再更換 */
+  name: string;
+  nameCustom: boolean;
   attributes: Attributes;
   spiritRootId: string;
   originId: string;

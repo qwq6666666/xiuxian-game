@@ -1,6 +1,7 @@
 import configJson from "./config.json";
 import eventsJson from "./events.json";
 import itemsJson from "./items.json";
+import namesJson from "./names.json";
 import originsJson from "./origins.json";
 import realmsJson from "./realms.json";
 import schedulesJson from "./schedules.json";
@@ -13,6 +14,7 @@ import {
   validateEvents,
   validateGameData,
   validateItems,
+  validateNames,
   validateOrigins,
   validateRealms,
   validateSchedules,
@@ -31,6 +33,7 @@ export const gameData: GameData = validateGameData({
   spiritRoots: validateSpiritRoots(spiritRootsJson),
   origins: validateOrigins(originsJson),
   text: validateText(textJson),
+  names: validateNames(namesJson),
 });
 
 export const config = gameData.config;

@@ -27,6 +27,8 @@ export interface GameConfig {
   fortuneGoodWeight: number;
   /** 首次達成某階段時，該階段道韻的倍率（2 = 加倍） */
   daoYunFirstTimeMult: number;
+  /** 主角姓名的最大字數 */
+  nameMaxLength: number;
   /** 離線進度最多計算的現實小時數 */
   offlineMaxHours: number;
   /** 離線一次最多閉關幾年（遊戲內），避免回來時壽元耗掉大半 */
@@ -213,6 +215,12 @@ export interface TextData {
   review: Record<ReviewCause, ClosingVariant[]>;
 }
 
+/** 隨機姓名：姓 + 名 */
+export interface NameData {
+  surnames: string[];
+  given: string[];
+}
+
 export interface GameData {
   config: GameConfig;
   realms: RealmDef[];
@@ -223,4 +231,5 @@ export interface GameData {
   spiritRoots: SpiritRootDef[];
   origins: OriginDef[];
   text: TextData;
+  names: NameData;
 }

@@ -10,6 +10,15 @@ export function setSchedule(state: GameState, scheduleId: string, data: GameData
   return { ...state, schedule: scheduleId };
 }
 
+/** 擲骰階段改名：去掉頭尾空白，長度 1 到上限（以字元計）。不合格就原樣回傳。 */
+export function renameCharacter(state: GameState, input: string, data: GameData = gameData): GameState {
+  if (state.phase !== "rolling") return state;
+  const name = input.trim();
+  const length = [...name].length;
+  if (length < 1 || length > data.config.nameMaxLength) return state;
+  return { ...state, name, nameCustom: true };
+}
+
 export function canBuyItem(state: GameState, itemId: string, data: GameData = gameData): boolean {
   const item = data.items.find((i) => i.id === itemId);
   if (!item || state.phase !== "living" || state.spiritStones < item.price) return false;

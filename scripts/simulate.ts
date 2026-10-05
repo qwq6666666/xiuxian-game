@@ -44,7 +44,7 @@ function mixedActions(state: GameState): GameState {
 }
 
 /** 混合策略的天賦購買：依目標等級均衡，永遠買「等級/目標」最低且買得起的 */
-const TALENT_TARGETS: Record<string, number> = { suhui: 12, daoxin: 3, tianjuan: 2, fuyuan: 2, yize: 2 };
+const TALENT_TARGETS: Record<string, number> = { suhui: 18, daoxin: 3, tianjuan: 2, fuyuan: 2, yize: 2 };
 function buyTalentsBalanced(state: GameState): GameState {
   let s = state;
   for (;;) {

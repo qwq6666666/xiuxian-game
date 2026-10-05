@@ -17,13 +17,23 @@ export function rollLife(state: GameState, data: GameData = gameData): GameState
   }
   const [rootIdx, s1] = pickWeighted(seed, data.spiritRoots);
   const [originIdx, s2] = pickWeighted(s1, data.origins);
+  let seed2 = s2;
   const origin = data.origins[originIdx];
   for (const key of ATTRIBUTE_KEYS) attributes[key] += origin.attributes[key] ?? 0;
+  // 姓名：玩家沒改過就跟著命盤重新抽
+  let name = state.name;
+  if (!state.nameCustom) {
+    const [si, s3] = nextInt(s2, 0, data.names.surnames.length - 1);
+    const [gi, s4] = nextInt(s3, 0, data.names.given.length - 1);
+    name = data.names.surnames[si] + data.names.given[gi];
+    seed2 = s4;
+  }
   // 福緣天賦：氣運加成
   attributes.fortune += talentBonus(state.meta, data.talents, "fortune");
   return {
     ...state,
-    rngSeed: s2,
+    rngSeed: seed2,
+    name,
     attributes,
     spiritRootId: data.spiritRoots[rootIdx].id,
     originId: origin.id,
@@ -55,6 +65,8 @@ export function createInitialState(
       ageMonths: data.config.startAgeYears * 12,
       // 天眷天賦：開局重擲次數
       rerolls: data.config.startRerolls + Math.round(talentBonus(meta, data.talents, "rerolls")),
+      name: "",
+      nameCustom: false,
       attributes: zero,
       spiritRootId: "",
       originId: "",

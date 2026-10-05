@@ -1,6 +1,7 @@
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "../data/types";
 import { createInitialState } from "./life";
+import { nextInt } from "./rng";
 import {
   emptyMeta,
   LOG_KINDS,
@@ -56,6 +57,12 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
     meta: emptyMeta(),
     review: null,
   }),
+  // v5 沒有姓名：用既有的亂數種子抽一個，不動存檔裡的種子
+  5: (d, gd) => {
+    const [si, s1] = nextInt(Number(d.rngSeed) >>> 0, 0, gd.names.surnames.length - 1);
+    const [gi] = nextInt(s1, 0, gd.names.given.length - 1);
+    return { ...d, version: 6, name: gd.names.surnames[si] + gd.names.given[gi], nameCustom: false };
+  },
 };
 
 function fail(field: string, msg: string): never {
@@ -207,6 +214,10 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   const attributes = {} as Attributes;
   for (const k of ATTRIBUTE_KEYS) attributes[k] = num(attrRaw, k, { integer: true }, `attributes.${k}`);
 
+  const name = str(o, "name");
+  if (name === "") fail("name", "不可為空");
+  if (typeof o.nameCustom !== "boolean") fail("nameCustom", `必須是 true 或 false，目前為 ${JSON.stringify(o.nameCustom)}`);
+
   const realmId = str(o, "realmId");
   const realm = data.realms.find((r) => r.id === realmId);
   if (!realm) fail("realmId", `找不到境界 ${realmId}`);
@@ -234,6 +245,8 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   return {
     version,
     rngSeed: num(o, "rngSeed", { integer: true }),
+    name,
+    nameCustom: o.nameCustom,
     speed: num(o, "speed", { min: 0 }),
     phase: phase as Phase,
     ageMonths: num(o, "ageMonths", { integer: true, min: 0 }),

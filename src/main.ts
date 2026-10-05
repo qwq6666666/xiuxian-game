@@ -1,6 +1,6 @@
 import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
-import { buyItem, buyTalent, setSchedule, useItem } from "./core/actions";
+import { buyItem, renameCharacter, buyTalent, setSchedule, useItem } from "./core/actions";
 import { attemptBreakthrough } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
 import { applyOffline } from "./core/offline";
@@ -67,6 +67,7 @@ function update(next: GameState): void {
 const ui = mountUi(document.getElementById("app")!, data, {
   onSpeed: (speed) => update({ ...state, speed }),
   onReroll: () => update(reroll(state, data)),
+  onRename: (name) => update(renameCharacter(state, name, data)),
   onStart: () => update(startLife(state, data)),
   onAutoChoice: (enabled) => update(setAutoChoice(state, enabled, data)),
   onChoose: (i) => update(chooseEvent(state, i, data)),

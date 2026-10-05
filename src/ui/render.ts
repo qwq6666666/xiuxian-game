@@ -30,6 +30,7 @@ export interface UiHandlers {
   onSpeed(speed: number): void;
   onReset(): void;
   onReroll(): void;
+  onRename(name: string): void;
   onStart(): void;
   onNewLife(): void;
   onSchedule(scheduleId: string): void;
@@ -90,17 +91,20 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   // ---- 擲骰畫面 ----
   let built: "roll" | "life" | null = null;
   let rollKey = "";
+  let currentName = "";
 
   function renderRoll(state: GameState): void {
-    const key = `${JSON.stringify(state.attributes)}|${state.rerolls}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
+    const key = `${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
     if (built === "roll" && key === rollKey) return;
     built = "roll";
     rollKey = key;
+    currentName = state.name;
     const perks = talentSummary(state.meta.talents, data);
     stageEl.innerHTML = `
       <main class="card roll">
         <h1>一念輪迴</h1>
         <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲，是好是壞，且看天意。</p>
+        <label class="namebox">姓名 <input id="name" type="text" maxlength="${data.config.nameMaxLength}" /></label>
         ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
         ${statsHtml(state)}
         ${identityHtml(state)}
@@ -109,12 +113,20 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           <button id="start" type="button" class="primary">開始修行</button>
         </div>
       </main>`;
+    const nameInput = stageEl.querySelector<HTMLInputElement>("#name")!;
+    nameInput.value = state.name;
+    // 改完（按 Enter 或離開欄位）才送出；不合格時由狀態還原欄位內容
+    nameInput.addEventListener("change", () => {
+      handlers.onRename(nameInput.value);
+      nameInput.value = currentName;
+    });
     stageEl.querySelector("#reroll")!.addEventListener("click", () => handlers.onReroll());
     stageEl.querySelector("#start")!.addEventListener("click", () => handlers.onStart());
   }
 
   // ---- 修行畫面（含死亡與通關彈窗）----
   interface LifeEls {
+    name: HTMLElement;
     realm: HTMLElement;
     age: HTMLElement;
     stones: HTMLElement;
@@ -151,7 +163,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     eventKey = "";
     stageEl.innerHTML = `
       <section class="status">
-        <div class="line"><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="life" class="muted"></span></div>
+        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="life" class="muted"></span></div>
         <div class="progress"><div id="fill"></div><span id="barText"></span></div>
       </section>
       <div class="cols">
@@ -207,6 +219,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
     els = {
       realm: q("#realm"),
+      name: q("#name"),
       age: q("#age"),
       stones: q("#stones"),
       fill: q("#fill"),
@@ -289,6 +302,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const need = stageNeed(realm, state.stage);
     const [years, months] = splitAge(state.ageMonths);
     e.realm.textContent = realmLabel(realm, state.stage);
+    e.name.textContent = state.name;
     e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespanYears(state, data)}`;
     e.stones.textContent = `靈石 ${state.spiritStones}`;
     e.fill.style.width = `${Math.min(100, (state.cultivation / need) * 100)}%`;
@@ -312,7 +326,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       e.log.innerHTML = "";
       for (const entry of [...state.log].reverse()) {
         const li = document.createElement("li");
-        li.textContent = formatLogEntry(entry, data);
+        li.textContent = formatLogEntry(entry, data, state.name);
         const changes = formatChanges(entry.changes, data);
         if (changes.length > 0) {
           const small = document.createElement("small");
@@ -401,7 +415,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const ul = el("ul", "highlights");
       if (review.highlights.length === 0) ul.append(el("li", "desc", "平平淡淡，無甚可記。"));
       for (const entry of review.highlights) {
-        const li = el("li", undefined, formatLogEntry(entry, data));
+        const li = el("li", undefined, formatLogEntry(entry, data, state.name));
         const changes = formatChanges(entry.changes, data);
         if (changes.length > 0) li.append(el("small", "changes", changes.join("　")));
         ul.append(li);
