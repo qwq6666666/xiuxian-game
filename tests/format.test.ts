@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LOG_KINDS } from "../src/core/state";
 import { gameData } from "../src/data/load";
-import { formatAgeZh, formatLogEntry, toChineseNumber } from "../src/ui/format";
+import { choiceBlockReason, formatAgeZh, formatChanges, formatLogEntry, toChineseNumber } from "../src/ui/format";
 
 describe("format", () => {
   it("中文數字", () => {
@@ -35,6 +35,44 @@ describe("format", () => {
     expect(text).toContain("丹田之中靈氣如潮，百脈俱震。一炷香後，天地復歸寂靜。你已築基。");
   });
 
+  it("事件日誌：見聞用事件文字，抉擇用所選結果的文字，並帶標題", () => {
+    const anec = formatLogEntry({ month: 450, kind: "event", realmId: "lianqi", stage: 0, eventId: "mountain_001" }, gameData);
+    expect(anec).toBe("三十七歲秋，【山澗靜坐】你於山澗旁靜坐三日，忽有所悟。起身時方知，所悟者不過是腿麻了。");
+    const choice = formatLogEntry(
+      { month: 450, kind: "event", realmId: "lianqi", stage: 0, eventId: "cave_001", choice: 1, outcome: 0 },
+      gameData,
+    );
+    expect(choice).toBe("三十七歲秋，【山中古洞】你在洞外的山石上刻下記號。");
+    expect(() => formatLogEntry({ month: 1, kind: "event", realmId: "lianqi", stage: 0, eventId: "ghost" }, gameData)).toThrow("ghost");
+  });
+
+  it("數值變化另外顯示，不寫進敘述", () => {
+    expect(formatChanges(undefined, gameData)).toEqual([]);
+    expect(
+      formatChanges(
+        {
+          cultivation: 45,
+          spiritStones: -30,
+          lifespan: -5,
+          attributes: { mind: 1, bone: -1 },
+          items: { juqi_dan: 2 },
+        },
+        gameData,
+      ),
+    ).toEqual(["修為 +45", "靈石 −30", "壽元上限 −5 年", "根骨 −1", "心性 +1", "聚氣丹 +2"]);
+    expect(formatChanges({ spiritStones: 0 }, gameData)).toEqual([]);
+  });
+
+  it("選項前提不足時說明缺什麼", () => {
+    const state = { spiritStones: 10, items: { juqi_dan: 1 } };
+    expect(choiceBlockReason(undefined, state, gameData)).toBeNull();
+    expect(choiceBlockReason({ spiritStones: 10 }, state, gameData)).toBeNull();
+    expect(choiceBlockReason({ spiritStones: 30 }, state, gameData)).toBe("需要 30 靈石");
+    expect(choiceBlockReason({ spiritStones: 30, items: { zhuji_dan: 1 } }, state, gameData)).toBe(
+      "需要 30 靈石、築基丹 ×1",
+    );
+  });
+
   it("購買與拾得會帶入物品名稱", () => {
     const buy = formatLogEntry({ month: 500, kind: "buy", realmId: "mortal", stage: 0, itemId: "juqi_dan" }, gameData);
     expect(buy).toContain("聚氣丹");
@@ -47,7 +85,7 @@ describe("format", () => {
     for (const kind of kinds) {
       for (let month = 0; month < 8; month++) {
         const text = formatLogEntry(
-          { month: 1200 + month, kind, realmId: "lianqi", stage: 1, itemId: "juqi_dan" },
+          { month: 1200 + month, kind, realmId: "lianqi", stage: 1, itemId: "juqi_dan", eventId: "mountain_001" },
           gameData,
         );
         expect(text).not.toMatch(/[{}]/);

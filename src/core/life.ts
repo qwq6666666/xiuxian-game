@@ -55,6 +55,12 @@ export function createInitialState(seed: number, data: GameData = gameData): Gam
       stage: 0,
       cultivation: 0,
       breakthroughs: 0,
+      flags: [],
+      eventCounts: {},
+      eventClock: 0,
+      eventThreshold: 0,
+      pendingEvent: null,
+      autoChoice: false,
       log: [],
     },
     data,
@@ -67,14 +73,15 @@ export function reroll(state: GameState, data: GameData = gameData): GameState {
   return { ...rollLife(state, data), rerolls: state.rerolls - 1 };
 }
 
-/** 確定命盤，開始修行 */
-export function startLife(state: GameState): GameState {
+/** 確定命盤，開始修行，並抽出第一次事件的門檻 */
+export function startLife(state: GameState, data: GameData = gameData): GameState {
   if (state.phase !== "rolling") return state;
-  return { ...state, phase: "living" };
+  const [eventThreshold, rngSeed] = nextInt(state.rngSeed, data.config.eventIntervalMin, data.config.eventIntervalMax);
+  return { ...state, phase: "living", eventThreshold, eventClock: 0, rngSeed };
 }
 
 /** 死亡或通關後轉世，進入下一世的擲骰階段（道韻與天賦是 M4 的事） */
 export function newLife(state: GameState, data: GameData = gameData): GameState {
   if (state.phase !== "dead" && state.phase !== "cleared") return state;
-  return { ...createInitialState(state.rngSeed, data), speed: state.speed };
+  return { ...createInitialState(state.rngSeed, data), speed: state.speed, autoChoice: state.autoChoice };
 }

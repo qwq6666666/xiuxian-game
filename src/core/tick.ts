@@ -1,74 +1,13 @@
 import { gameData } from "../data/load";
-import type { GameData, RealmDef, ScheduleDef } from "../data/types";
-import { cultivationPerMonth, lifespanMonths, stageNeed } from "./formulas";
+import type { GameData, ScheduleDef } from "../data/types";
+import { advanceEvents } from "./events";
+import { cultivationPerMonth, lifespanMonths } from "./formulas";
+import { addLog, atBottleneck, realmOf, resolveStages, scheduleOf } from "./progress";
 import { nextInt, nextRandom } from "./rng";
-import type { GameState, LogEntry } from "./state";
+import type { GameState } from "./state";
 
-export function realmOf(state: GameState, data: GameData = gameData): RealmDef {
-  const realm = data.realms.find((r) => r.id === state.realmId);
-  if (!realm) throw new Error(`狀態：找不到境界 ${state.realmId}`);
-  return realm;
-}
-
-export function scheduleOf(state: GameState, data: GameData = gameData): ScheduleDef {
-  const sched = data.schedules.find((s) => s.id === state.schedule);
-  if (!sched) throw new Error(`狀態：找不到日常安排 ${state.schedule}`);
-  return sched;
-}
-
-export function nextRealm(realm: RealmDef, data: GameData = gameData): RealmDef | undefined {
-  return data.realms[data.realms.findIndex((r) => r.id === realm.id) + 1];
-}
-
-/** 目前的壽元上限（年），含延壽丹 */
-export function lifespanYears(state: GameState, data: GameData = gameData): number {
-  return lifespanMonths(realmOf(state, data), state.lifespanBonus) / 12;
-}
-
-/** 修為已滿、卡在最後一階段的瓶頸（需要手動突破，或後面沒有境界可進） */
-export function atBottleneck(state: GameState, data: GameData = gameData): boolean {
-  const realm = realmOf(state, data);
-  if (state.stage !== realm.stageNames.length - 1) return false;
-  if (state.cultivation < stageNeed(realm, state.stage)) return false;
-  return realm.breakthrough === "manual" || nextRealm(realm, data) === undefined;
-}
-
-export function addLog(state: GameState, entry: LogEntry, limit: number): GameState {
-  return { ...state, log: [...state.log, entry].slice(-limit) };
-}
-
-/** 修為滿了就升級，直到修為不足或卡在瓶頸 */
-export function resolveStages(state: GameState, month: number, data: GameData = gameData): GameState {
-  let s = state;
-  for (;;) {
-    const realm = realmOf(s, data);
-    const need = stageNeed(realm, s.stage);
-    if (s.cultivation < need) return s;
-    if (s.stage < realm.stageNames.length - 1) {
-      s = addLog(
-        { ...s, cultivation: s.cultivation - need, stage: s.stage + 1 },
-        { month, kind: "stageUp", realmId: s.realmId, stage: s.stage + 1 },
-        data.config.logLimit,
-      );
-      continue;
-    }
-    const next = nextRealm(realm, data);
-    if (realm.breakthrough === "auto" && next) {
-      s = addLog(
-        { ...s, cultivation: s.cultivation - need, realmId: next.id, stage: 0 },
-        { month, kind: "realmUp", realmId: next.id, stage: 0 },
-        data.config.logLimit,
-      );
-      continue;
-    }
-    // 瓶頸：修為停在上限，等玩家手動突破
-    return addLog(
-      { ...s, cultivation: need },
-      { month, kind: "bottleneck", realmId: s.realmId, stage: s.stage },
-      data.config.logLimit,
-    );
-  }
-}
+// 其他模組一直從 tick 取用這些函式，維持原本的匯入路徑
+export { addLog, atBottleneck, lifespanYears, nextRealm, realmOf, resolveStages, scheduleOf } from "./progress";
 
 /** 日常安排的每月收穫與風險：靈石、拾得物品、歷練身亡 */
 function applySchedule(state: GameState, sched: ScheduleDef, month: number, data: GameData): GameState {
@@ -139,17 +78,20 @@ function stepMonth(state: GameState, data: GameData): GameState {
   s = applySchedule(s, sched, month, data);
   if (s.phase !== "living") return s;
   if (month >= lifespanMonths(realmOf(s, data), s.lifespanBonus)) {
-    s = addLog({ ...s, phase: "dead" }, { month, kind: "death", realmId: s.realmId, stage: s.stage }, data.config.logLimit);
+    return addLog({ ...s, phase: "dead" }, { month, kind: "death", realmId: s.realmId, stage: s.stage }, data.config.logLimit);
   }
-  return s;
+  return advanceEvents(s, month, data);
 }
 
-/** 推進 months 個月，回傳新狀態，不修改輸入。只有修行中才會推進，死亡時停止。 */
+/**
+ * 推進 months 個月，回傳新狀態，不修改輸入。
+ * 只有修行中才會推進；死亡或等待抉擇時停止。
+ */
 export function tick(state: GameState, months = 1, data: GameData = gameData): GameState {
   if (!Number.isInteger(months) || months < 0) {
     throw new Error(`tick：months 必須是非負整數，目前為 ${months}`);
   }
   let s = state;
-  for (let i = 0; i < months && s.phase === "living"; i++) s = stepMonth(s, data);
+  for (let i = 0; i < months && s.phase === "living" && s.pendingEvent === null; i++) s = stepMonth(s, data);
   return s;
 }

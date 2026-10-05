@@ -4,10 +4,7 @@ import type { GameState } from "../src/core/state";
 import { atBottleneck, tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { ATTRIBUTE_KEYS } from "../src/data/types";
-
-function living(seed = 1, patch: Partial<GameState> = {}): GameState {
-  return { ...startLife(createInitialState(seed)), ...patch };
-}
+import { living } from "./helpers";
 
 describe("開局擲骰", () => {
   it("同種子結果相同，起始年齡 10 歲、停在擲骰階段", () => {

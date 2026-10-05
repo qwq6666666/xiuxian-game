@@ -1,0 +1,605 @@
+[
+  {
+    "id": "cave_001",
+    "type": "choice",
+    "title": "山中古洞",
+    "text": "你在採藥途中發現一處被藤蔓遮蔽的洞口，洞內隱隱有靈氣流出。",
+    "weight": 10,
+    "tone": "good",
+    "conditions": { "realmMin": "lianqi", "ageMin": 16, "flagsNot": ["cave_001_done"] },
+    "choices": [
+      {
+        "text": "入洞一探",
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "石台上置一玉瓶，瓶身古篆斑駁。你屏息啟封，內有丹藥一顆，另附字條：「存放三百年，藥效自負。」",
+            "effects": { "items": { "juqi_dan": 1 }, "flags": ["cave_001_done"] }
+          },
+          {
+            "weight": 30,
+            "text": "洞內空無一物，只餘蛛網與積塵。白走一趟，倒也落得清靜。",
+            "effects": { "flags": ["cave_001_done"] }
+          },
+          {
+            "weight": 10,
+            "text": "洞中妖獸暴起，你重傷而逃。",
+            "effects": { "lifespan": -5, "flags": ["cave_001_done"] }
+          }
+        ]
+      },
+      {
+        "text": "記下位置，日後再來",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在洞外的山石上刻下記號。",
+            "effects": { "flags": ["cave_001_marked"] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cave_002",
+    "type": "choice",
+    "title": "重返古洞",
+    "text": "你循著記號重返古洞。這一次，洞深處有微光閃動，似是一處久封的洞府。",
+    "weight": 15,
+    "tone": "good",
+    "conditions": { "realmMin": "lianqi", "flags": ["cave_001_marked"] },
+    "choices": [
+      {
+        "text": "深入洞府",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "石室之中，前人留有一卷殘篇與幾枚靈石。你參悟數日，修為大進。",
+            "effects": { "cultivation": 0.35, "spiritStones": 40 }
+          },
+          {
+            "weight": 20,
+            "text": "石室禁制猶在，靈光一閃，你被震出洞外，修為受損。",
+            "effects": { "cultivation": -0.15 }
+          },
+          {
+            "weight": 10,
+            "text": "石壁暗格之中，靜靜躺著一枚丹藥，靈氣內斂，色澤溫潤。",
+            "effects": { "items": { "zhuji_dan": 1 } }
+          },
+          {
+            "weight": 20,
+            "text": "石室中空空如也，唯壁上刻著一行小字：「道在腳下。」你默然良久，退出洞外。",
+            "effects": { "attributes": { "mind": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "封洞離去",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你將洞口重新掩好，轉身離去。此洞留給後來人罷。",
+            "effects": { "attributes": { "fortune": 1 } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "senior_001",
+    "type": "choice",
+    "title": "路遇老者",
+    "text": "山道旁，一位白髮老者拄杖而立，自稱乾糧遺失，想向你討口吃食。",
+    "weight": 8,
+    "tone": "good",
+    "conditions": { "ageMin": 14 },
+    "choices": [
+      {
+        "text": "分他乾糧",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "老者接過乾糧，連聲道謝，臨走前多看了你兩眼。",
+            "effects": { "flags": ["senior_helped"] }
+          }
+        ]
+      },
+      {
+        "text": "贈他靈石",
+        "requires": { "spiritStones": 10 },
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "老者推辭再三，終究收下。他望著你，目光裡有幾分你看不懂的東西。",
+            "effects": { "spiritStones": -10, "attributes": { "fortune": 1 }, "flags": ["senior_helped"] }
+          }
+        ]
+      },
+      {
+        "text": "視而不見",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你繞道而行，身後傳來幾聲輕嘆，大約是風。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "senior_002",
+    "type": "choice",
+    "title": "老者回贈",
+    "text": "多年之後，你在市集上遇見當年那位老者。他衣衫依舊樸素，氣度卻已大不相同。",
+    "weight": 15,
+    "tone": "good",
+    "conditions": { "ageMin": 20, "flags": ["senior_helped"] },
+    "choices": [
+      {
+        "text": "上前行禮",
+        "outcomes": [
+          {
+            "weight": 55,
+            "text": "老者含笑點頭，指點了你幾句吐納之法。你依言而行，只覺氣機通暢許多。",
+            "effects": { "cultivation": 0.3, "attributes": { "insight": 1 } }
+          },
+          {
+            "weight": 30,
+            "text": "老者從袖中取出幾枚丹藥，道是當年一飯之謝。",
+            "effects": { "items": { "juqi_dan": 2 } }
+          },
+          {
+            "weight": 15,
+            "text": "老者贈你一枚金紋丹藥，道是延年之物，請你珍重。",
+            "effects": { "items": { "yanshou_dan": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "裝作未見",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你低頭疾行，與老者擦肩而過。背後無人喚你。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "market_001",
+    "type": "choice",
+    "title": "坊市異販",
+    "text": "坊市角落，一名攤主壓低聲音，說他手中有一枚祖傳的玉符，只賣有緣人。",
+    "weight": 10,
+    "tone": "neutral",
+    "conditions": { "ageMin": 14 },
+    "choices": [
+      {
+        "text": "買下玉符",
+        "requires": { "spiritStones": 30 },
+        "outcomes": [
+          {
+            "weight": 40,
+            "text": "玉符入手溫潤，內蘊一縷靈氣，確非凡品。",
+            "effects": { "spiritStones": -30, "cultivation": 0.2 }
+          },
+          {
+            "weight": 60,
+            "text": "回去細看，玉符原是尋常頑石，打磨得頗為光亮。攤主說的有緣人，大約指的就是你。",
+            "effects": { "spiritStones": -30 }
+          }
+        ]
+      },
+      {
+        "text": "一笑置之",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你拱手謝過，轉身離去。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "beast_001",
+    "type": "choice",
+    "title": "山道遇獸",
+    "text": "山道轉角處，一頭灰狼低伏於草叢，目光冷冷地盯著你。",
+    "weight": 8,
+    "tone": "bad",
+    "maxPerLife": 2,
+    "conditions": { "realmMin": "lianqi" },
+    "scheduleWeights": { "adventure": 3 },
+    "choices": [
+      {
+        "text": "拔足便逃",
+        "outcomes": [
+          {
+            "weight": 70,
+            "text": "你一路狂奔，終於甩開了追蹤。回頭一看，那頭狼站在原處，連追的意思都沒有。",
+            "effects": {}
+          },
+          {
+            "weight": 30,
+            "text": "你被追上，肩頭添了一道傷痕，休養許久才好。",
+            "effects": { "lifespan": -2 }
+          }
+        ]
+      },
+      {
+        "text": "與之周旋",
+        "outcomes": [
+          {
+            "weight": 52,
+            "text": "你屏息斂神，與灰狼對峙良久，終使其退去。經此一役，心境略有長進。",
+            "effects": { "attributes": { "mind": 1 } }
+          },
+          {
+            "weight": 45,
+            "text": "纏鬥之中你負傷不輕，所幸保住性命。",
+            "effects": { "lifespan": -4 }
+          },
+          {
+            "weight": 3,
+            "text": "利爪掠過咽喉，一切歸於黑暗。",
+            "effects": { "death": true }
+          }
+        ]
+      },
+      {
+        "text": "繞路而行",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你悄悄退出數十步，另覓小徑，一路平安。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "demon_001",
+    "type": "choice",
+    "title": "心魔擾神",
+    "text": "靜坐之際，眼前忽現舊日景象，耳邊低語不絕，似有人在勸你放下。",
+    "weight": 6,
+    "tone": "bad",
+    "conditions": { "realmMin": "lianqi", "ageMin": 20 },
+    "choices": [
+      {
+        "text": "守住靈台",
+        "outcomes": [
+          {
+            "weight": 20,
+            "weightPerAttribute": { "mind": 8 },
+            "text": "你默誦清心訣，心頭漸靜，低語如潮水般退去。",
+            "effects": { "cultivation": 0.1 }
+          },
+          {
+            "weight": 60,
+            "text": "心魔入侵，氣血逆行，你嘔出一口血來，修為受損。",
+            "effects": { "cultivation": -0.2 }
+          }
+        ]
+      },
+      {
+        "text": "順其自然",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你任由景象流轉，睜眼時天已大亮，人無大礙，只是平白耗去一夜。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "village_001",
+    "type": "choice",
+    "title": "山村求助",
+    "text": "山村裡的老人攔住你，說村口古井近日冒出黑水，牲畜病死不少，求你看看。",
+    "weight": 9,
+    "tone": "good",
+    "maxPerLife": 2,
+    "conditions": {},
+    "choices": [
+      {
+        "text": "查看古井",
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "你在井底摸出一塊沁了陰氣的黑石，取出後井水轉清。村人感念，湊了幾枚靈石相贈。",
+            "effects": { "spiritStones": 15 }
+          },
+          {
+            "weight": 30,
+            "text": "井下有物，你一時不察，被陰氣所侵，病了數月。",
+            "effects": { "lifespan": -2 }
+          },
+          {
+            "weight": 10,
+            "text": "井中並無異狀，不過是上游落了死鼠。你說完，村人的臉色比井水還黑。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "出錢請人清井",
+        "requires": { "spiritStones": 20 },
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你出錢請村人清井，事畢村中老幼皆來道謝。",
+            "effects": { "spiritStones": -20, "attributes": { "fortune": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "婉言謝絕",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你推說另有要事，離開了山村。身後的炊煙看起來有些冷清。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "fortune_001",
+    "type": "choice",
+    "title": "道旁算命",
+    "text": "道旁一名盲眼卜者朝你招手，說你印堂有光，願為你算上一卦。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "ageMin": 14 },
+    "choices": [
+      {
+        "text": "請他算一卦",
+        "requires": { "spiritStones": 15 },
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "卜者掐指良久，說你近年有貴人相助。你將信將疑，倒也安心了幾分。",
+            "effects": { "spiritStones": -15, "attributes": { "fortune": 1 } }
+          },
+          {
+            "weight": 30,
+            "text": "卜者說你命格奇特，卻不肯多言，只收了錢。",
+            "effects": { "spiritStones": -15 }
+          },
+          {
+            "weight": 20,
+            "text": "他說你命中有劫，須破財消災，於是又收了你一份。",
+            "effects": { "spiritStones": -25 }
+          }
+        ]
+      },
+      {
+        "text": "婉言拒絕",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你笑著擺手，從他身旁走過。他在身後輕輕嘆了口氣。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "elder_001",
+    "type": "choice",
+    "title": "前輩坐化",
+    "text": "荒崖石窟之中，一具枯骨盤膝而坐，指間仍扣著一隻儲物袋。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": { "realmMin": "lianqi" },
+    "scheduleWeights": { "adventure": 2.5 },
+    "choices": [
+      {
+        "text": "取走儲物袋",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "袋中有數枚靈石與一瓶丹藥，想來前輩不會介意。",
+            "effects": { "spiritStones": 30, "items": { "juqi_dan": 1 } }
+          },
+          {
+            "weight": 30,
+            "text": "袋口一開，殘餘禁制反噬，你被震得氣血翻湧。",
+            "effects": { "cultivation": -0.1 }
+          },
+          {
+            "weight": 20,
+            "text": "袋中別無他物，只有一張字條：「莫貪。」",
+            "effects": { "attributes": { "mind": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "就地掩埋",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你將枯骨安葬，默誦一遍往生咒。山風過處，似有誰輕輕道了聲謝。",
+            "effects": { "attributes": { "fortune": 1 } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "alchemist_001",
+    "type": "choice",
+    "title": "丹師求藥",
+    "text": "路旁一位丹師愁眉不展，說爐火正旺，卻缺一味尋常藥材，問你可否割愛。",
+    "weight": 8,
+    "tone": "good",
+    "conditions": { "realmMin": "lianqi" },
+    "choices": [
+      {
+        "text": "取出藥材相贈",
+        "outcomes": [
+          {
+            "weight": 70,
+            "text": "丹師大喜，以一枚丹藥相酬，說是物盡其用。",
+            "effects": { "items": { "juqi_dan": 1 } }
+          },
+          {
+            "weight": 30,
+            "text": "丹師收下藥材，匆匆趕回丹爐，連那句多謝都是邊跑邊喊的。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "婉言推辭",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你只說藥材另有用處，丹師點點頭，轉身走了。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rival_001",
+    "type": "choice",
+    "title": "散修爭奪",
+    "text": "崖邊一株靈草初熟，一名散修也看中了它。兩人隔著數步，誰也沒有先動。",
+    "weight": 8,
+    "tone": "bad",
+    "maxPerLife": 2,
+    "conditions": { "realmMin": "lianqi" },
+    "scheduleWeights": { "adventure": 2 },
+    "choices": [
+      {
+        "text": "搶先出手",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "你搶先一步將靈草收入囊中，對方悻悻而去。",
+            "effects": { "cultivation": 0.15 }
+          },
+          {
+            "weight": 50,
+            "text": "對方出手更快，你只搶到半截草葉，還順帶挨了一掌。",
+            "effects": { "lifespan": -1 }
+          }
+        ]
+      },
+      {
+        "text": "提議分食",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你提議對半分，對方略一思索便應了。兩人各取一半，相視一笑，各自走遠。",
+            "effects": { "cultivation": 0.08 }
+          }
+        ]
+      },
+      {
+        "text": "讓給對方",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你拱手相讓。對方道了聲謝，轉身走得比來時快多了。",
+            "effects": { "attributes": { "fortune": 1 } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mountain_001",
+    "type": "anecdote",
+    "title": "山澗靜坐",
+    "text": "你於山澗旁靜坐三日，忽有所悟。起身時方知，所悟者不過是腿麻了。",
+    "weight": 10,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "ageMin": 14 }
+  },
+  {
+    "id": "rain_001",
+    "type": "anecdote",
+    "title": "夜雨",
+    "text": "夜雨敲窗，你盤膝聽了一宿。天明雨歇，只覺胸中一片澄明。",
+    "weight": 8,
+    "tone": "good",
+    "maxPerLife": 3,
+    "conditions": { "realmMin": "lianqi" },
+    "effects": { "cultivation": 0.03 }
+  },
+  {
+    "id": "sword_001",
+    "type": "anecdote",
+    "title": "劍光掠空",
+    "text": "一道劍光自天際掠過，轉瞬不見。你立在原地望了許久，頸子都酸了。",
+    "weight": 6,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": {}
+  },
+  {
+    "id": "wedding_001",
+    "type": "anecdote",
+    "title": "鄉里嫁娶",
+    "text": "鄉里有戶人家嫁女，鑼鼓喧天，你被拉去喝了一杯喜酒。酒是濁的，人情卻是熱的。",
+    "weight": 10,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "realmMax": "mortal", "ageMin": 12 }
+  },
+  {
+    "id": "furnace_001",
+    "type": "anecdote",
+    "title": "丹爐失火",
+    "text": "路過一處丹房，忽聽轟然一響，濃煙自窗中冒出。丹師滿臉烏黑地衝出來，手裡還緊攥著一株藥草。",
+    "weight": 6,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "realmMin": "lianqi" }
+  },
+  {
+    "id": "aging_001",
+    "type": "anecdote",
+    "title": "年歲",
+    "text": "銅鏡之中，鬢邊不知何時添了幾縷白髮。你怔了片刻，將鏡子扣回案上。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "ageMin": 60 }
+  },
+  {
+    "id": "dream_001",
+    "type": "anecdote",
+    "title": "夢中舊事",
+    "text": "夜裡你夢見一座從未到過的古寺，鐘聲悠遠。醒來時，枕邊濕了一小片。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": { "ageMin": 20 }
+  },
+  {
+    "id": "bottleneck_001",
+    "type": "anecdote",
+    "title": "瓶頸之嘆",
+    "text": "你立於關隘之前，靈氣盈滿卻無處可去。這一步看似只差一線，卻比千里更遠。",
+    "weight": 20,
+    "tone": "neutral",
+    "maxPerLife": 3,
+    "conditions": { "bottleneck": true }
+  }
+]

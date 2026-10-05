@@ -6,8 +6,10 @@ import { tick } from "../src/core/tick";
 
 describe("save", () => {
   it("序列化後再讀取結果相同（含日誌）", () => {
-    const s = tick(startLife(createInitialState(99)), 600);
+    // 開啟自動抉擇，tick 才不會停在等待抉擇
+    const s = tick({ ...startLife(createInitialState(99)), autoChoice: true }, 600);
     expect(s.log.length).toBeGreaterThan(0);
+    expect(s.log.some((e) => e.kind === "event")).toBe(true);
     expect(deserialize(serialize(s))).toEqual(s);
   });
 
@@ -33,7 +35,9 @@ describe("save", () => {
   it("新欄位錯誤時指出欄位", () => {
     const good = JSON.parse(serialize(createInitialState(1)));
     expect(() => deserialize(JSON.stringify({ ...good, schedule: "nope" }))).toThrow("schedule");
-    expect(() => deserialize(JSON.stringify({ ...good, lifespanBonus: -1 }))).toThrow("lifespanBonus");
+    expect(() => deserialize(JSON.stringify({ ...good, lifespanBonus: 1.5 }))).toThrow("lifespanBonus");
+    // 事件可能減少壽元上限，所以負數是合法的
+    expect(deserialize(JSON.stringify({ ...good, lifespanBonus: -5 })).lifespanBonus).toBe(-5);
     expect(() => deserialize(JSON.stringify({ ...good, itemsUsed: { yanshou_dan: "x" } }))).toThrow(
       "itemsUsed.yanshou_dan",
     );
@@ -62,17 +66,54 @@ describe("save", () => {
     expect(s.ageMonths).toBe(120);
   });
 
-  it("v2 存檔遷移：補上安排、丹藥紀錄、突破次數，其餘原樣保留", () => {
-    const current = tick(startLife(createInitialState(8)), 300);
-    const { schedule, itemsUsed, lifespanBonus, breakthroughs, ...rest } = current;
-    void schedule, itemsUsed, lifespanBonus, breakthroughs;
-    const v2 = JSON.stringify({ ...rest, version: 2 });
-    const s = deserialize(v2);
+  it("v2 存檔遷移：補上安排、丹藥紀錄、突破次數與事件欄位，其餘原樣保留", () => {
+    const current = tick({ ...startLife(createInitialState(8)), autoChoice: true }, 300);
+    const added = [
+      "schedule", "itemsUsed", "lifespanBonus", "breakthroughs",
+      "flags", "eventCounts", "eventClock", "eventThreshold", "pendingEvent", "autoChoice",
+    ] as const;
+    const rest: Record<string, unknown> = { ...current, version: 2 };
+    for (const k of added) delete rest[k];
+    // v2 沒有事件日誌，舊日誌只含升級類型
+    rest.log = current.log.filter((e) => e.kind !== "event");
+    const s = deserialize(JSON.stringify(rest));
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.schedule).toBe("retreat");
     expect(s.itemsUsed).toEqual({});
     expect(s.lifespanBonus).toBe(0);
     expect(s.breakthroughs).toBe(0);
-    expect(s).toEqual(current);
+    expect(s.flags).toEqual([]);
+    expect(s.eventCounts).toEqual({});
+    expect(s.pendingEvent).toBeNull();
+    expect(s.autoChoice).toBe(false);
+    expect(s.eventThreshold).toBe(24);
+    expect(s.ageMonths).toBe(current.ageMonths);
+    expect(s.cultivation).toBe(current.cultivation);
+    expect(s.attributes).toEqual(current.attributes);
+  });
+
+  it("v3 存檔遷移：事件計時用區間中點，不動亂數種子", () => {
+    const current = startLife(createInitialState(4));
+    const rest: Record<string, unknown> = { ...current, version: 3 };
+    for (const k of ["flags", "eventCounts", "eventClock", "eventThreshold", "pendingEvent", "autoChoice"]) {
+      delete rest[k];
+    }
+    const s = deserialize(JSON.stringify(rest));
+    expect(s.version).toBe(SAVE_VERSION);
+    expect(s.rngSeed).toBe(current.rngSeed);
+    expect(s.eventThreshold).toBe(24);
+    expect(s.flags).toEqual([]);
+  });
+
+  it("事件欄位錯誤時指出欄位", () => {
+    const good = JSON.parse(serialize(createInitialState(1)));
+    expect(() => deserialize(JSON.stringify({ ...good, pendingEvent: "ghost" }))).toThrow("pendingEvent");
+    expect(() => deserialize(JSON.stringify({ ...good, autoChoice: "yes" }))).toThrow("autoChoice");
+    expect(() => deserialize(JSON.stringify({ ...good, flags: [1] }))).toThrow("flags");
+    expect(() => deserialize(JSON.stringify({ ...good, eventCounts: { a: -1 } }))).toThrow("eventCounts.a");
+    const badLog = [{ month: 1, kind: "event", realmId: "mortal", stage: 0, eventId: "ghost" }];
+    expect(() => deserialize(JSON.stringify({ ...good, log: badLog }))).toThrow("log[0].eventId");
+    const noId = [{ month: 1, kind: "event", realmId: "mortal", stage: 0 }];
+    expect(() => deserialize(JSON.stringify({ ...good, log: noId }))).toThrow("eventId");
   });
 });

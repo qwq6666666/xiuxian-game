@@ -10,5 +10,8 @@
   "startRerolls": 1,
   "logLimit": 100,
   "breakthroughFailLoss": 0.3,
-  "mindLossReduction": 0.02
+  "mindLossReduction": 0.02,
+  "eventIntervalMin": 12,
+  "eventIntervalMax": 36,
+  "fortuneGoodWeight": 0.05
 }

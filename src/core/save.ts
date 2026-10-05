@@ -5,6 +5,7 @@ import {
   LOG_KINDS,
   SAVE_VERSION,
   type Attributes,
+  type Changes,
   type GameState,
   type LogEntry,
   type LogKind,
@@ -32,6 +33,17 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
     itemsUsed: {},
     lifespanBonus: 0,
     breakthroughs: 0,
+  }),
+  // v3 沒有事件系統：補上事件計時（門檻取區間中點，不動亂數）與空的旗標
+  3: (d, gd) => ({
+    ...d,
+    version: 4,
+    flags: [],
+    eventCounts: {},
+    eventClock: 0,
+    eventThreshold: Math.round((gd.config.eventIntervalMin + gd.config.eventIntervalMax) / 2),
+    pendingEvent: null,
+    autoChoice: false,
   }),
 };
 
@@ -63,6 +75,27 @@ function intRecord(o: Obj, key: string): Record<string, number> {
   const out: Record<string, number> = {};
   for (const k of Object.keys(raw)) out[k] = num(raw, k, { integer: true, min: 0 }, `${key}.${k}`);
   return out;
+}
+
+function parseChanges(v: unknown, path: string): Changes {
+  const o = obj(v, path);
+  const c: Changes = {};
+  for (const k of ["cultivation", "spiritStones", "lifespan"] as const) {
+    if (o[k] !== undefined) c[k] = num(o, k, {}, `${path}.${k}`);
+  }
+  if (o.attributes !== undefined) {
+    const a = obj(o.attributes, `${path}.attributes`);
+    c.attributes = {};
+    for (const k of ATTRIBUTE_KEYS) {
+      if (a[k] !== undefined) c.attributes[k] = num(a, k, { integer: true }, `${path}.attributes.${k}`);
+    }
+  }
+  if (o.items !== undefined) {
+    const it = obj(o.items, `${path}.items`);
+    c.items = {};
+    for (const k of Object.keys(it)) c.items[k] = num(it, k, { integer: true }, `${path}.items.${k}`);
+  }
+  return c;
 }
 
 /** 讀取存檔，格式錯誤時丟出指出欄位的錯誤 */
@@ -120,8 +153,24 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
       stage: num(eo, "stage", { integer: true, min: 0 }, `${p}.stage`),
     };
     if (eo.itemId !== undefined) entry.itemId = str(eo, "itemId", `${p}.itemId`);
+    if (eo.eventId !== undefined) {
+      entry.eventId = str(eo, "eventId", `${p}.eventId`);
+      if (!data.events.some((e) => e.id === entry.eventId)) fail(`${p}.eventId`, `找不到事件 ${entry.eventId}`);
+    }
+    if (eo.choice !== undefined) entry.choice = num(eo, "choice", { integer: true, min: 0 }, `${p}.choice`);
+    if (eo.outcome !== undefined) entry.outcome = num(eo, "outcome", { integer: true, min: 0 }, `${p}.outcome`);
+    if (eo.changes !== undefined) entry.changes = parseChanges(eo.changes, `${p}.changes`);
+    if (kind === "event" && entry.eventId === undefined) fail(`${p}.eventId`, "事件日誌必須有 eventId");
     return entry;
   });
+
+  if (!Array.isArray(o.flags) || !o.flags.every((f) => typeof f === "string")) fail("flags", "必須是字串陣列");
+  const pendingEvent = o.pendingEvent;
+  if (pendingEvent !== null) {
+    if (typeof pendingEvent !== "string") fail("pendingEvent", `必須是字串或 null，目前為 ${JSON.stringify(pendingEvent)}`);
+    if (!data.events.some((e) => e.id === pendingEvent)) fail("pendingEvent", `找不到事件 ${pendingEvent}`);
+  }
+  if (typeof o.autoChoice !== "boolean") fail("autoChoice", `必須是 true 或 false，目前為 ${JSON.stringify(o.autoChoice)}`);
 
   return {
     version,
@@ -137,12 +186,18 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     spiritStones: num(o, "spiritStones", { integer: true, min: 0 }),
     items: intRecord(o, "items"),
     itemsUsed: intRecord(o, "itemsUsed"),
-    lifespanBonus: num(o, "lifespanBonus", { integer: true, min: 0 }),
+    lifespanBonus: num(o, "lifespanBonus", { integer: true }),
     schedule,
     realmId,
     stage,
     cultivation: num(o, "cultivation", { min: 0 }),
     breakthroughs: num(o, "breakthroughs", { integer: true, min: 0 }),
+    flags: o.flags as string[],
+    eventCounts: intRecord(o, "eventCounts"),
+    eventClock: num(o, "eventClock", { min: 0 }),
+    eventThreshold: num(o, "eventThreshold", { min: 0 }),
+    pendingEvent: pendingEvent as string | null,
+    autoChoice: o.autoChoice,
     log,
   };
 }

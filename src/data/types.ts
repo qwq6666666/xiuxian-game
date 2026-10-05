@@ -20,6 +20,11 @@ export interface GameConfig {
   breakthroughFailLoss: number;
   /** 每點心性減少的損失比例 */
   mindLossReduction: number;
+  /** 事件觸發的基礎間隔（月），再除以日常安排的事件頻率倍率 */
+  eventIntervalMin: number;
+  eventIntervalMax: number;
+  /** 好事件的權重 ×(1 + 氣運 × 此值) */
+  fortuneGoodWeight: number;
 }
 
 /** 大境界手動突破的成功率規則 */
@@ -76,6 +81,66 @@ export interface ItemDef {
   effect: ItemEffect;
 }
 
+/** 事件結果的效果。cultivation 是當前階段所需修為的比例（0.2 = +20%）；lifespan 增減壽元上限（年） */
+export interface Effects {
+  cultivation?: number;
+  spiritStones?: number;
+  lifespan?: number;
+  attributes?: Partial<Record<AttributeKey, number>>;
+  items?: Record<string, number>;
+  flags?: string[];
+  death?: boolean;
+}
+
+export interface EventConditions {
+  realmMin?: string;
+  realmMax?: string;
+  /** 年齡（歲） */
+  ageMin?: number;
+  ageMax?: number;
+  /** 需要全部具備的旗標 */
+  flags?: string[];
+  /** 不能具備任一旗標 */
+  flagsNot?: string[];
+  /** 限定的日常安排 */
+  schedules?: string[];
+  /** true 表示只在卡在瓶頸時出現 */
+  bottleneck?: boolean;
+}
+
+export interface OutcomeDef {
+  weight: number;
+  text: string;
+  effects: Effects;
+  /** 每點屬性額外增加的權重 */
+  weightPerAttribute?: Partial<Record<AttributeKey, number>>;
+}
+
+export interface ChoiceDef {
+  text: string;
+  /** 選項的前提，不足時無法選擇 */
+  requires?: { spiritStones?: number; items?: Record<string, number> };
+  outcomes: OutcomeDef[];
+}
+
+export interface EventDef {
+  id: string;
+  /** anecdote 見聞（無選項）／choice 抉擇 */
+  type: "anecdote" | "choice";
+  title: string;
+  text: string;
+  weight: number;
+  tone: "good" | "bad" | "neutral";
+  /** 每世最多出現幾次 */
+  maxPerLife: number;
+  conditions: EventConditions;
+  /** 依日常安排調整權重的倍率 */
+  scheduleWeights?: Record<string, number>;
+  /** 見聞的效果 */
+  effects?: Effects;
+  choices?: ChoiceDef[];
+}
+
 export interface SpiritRootDef {
   id: string;
   name: string;
@@ -117,6 +182,7 @@ export interface GameData {
   realms: RealmDef[];
   schedules: ScheduleDef[];
   items: ItemDef[];
+  events: EventDef[];
   spiritRoots: SpiritRootDef[];
   origins: OriginDef[];
   text: TextData;

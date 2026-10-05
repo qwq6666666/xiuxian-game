@@ -31,7 +31,7 @@ button {
 button:disabled { opacity: 0.45; cursor: default; }
 button.primary { border-color: var(--accent); color: var(--accent); }
 
-.bar { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
 .speeds { display: flex; gap: 6px; }
 
 #notice { color: var(--accent); margin: 0 0 12px; }
@@ -79,6 +79,12 @@ small { display: block; color: var(--muted); font-size: 0.8em; line-height: 1.4;
 .owned { color: var(--muted); font-size: 0.8em; white-space: nowrap; }
 label { display: block; margin: 6px 0; font-size: 0.9em; }
 [hidden] { display: none !important; }
+.auto { display: flex; align-items: center; gap: 4px; margin: 0; white-space: nowrap; }
+.bar button { white-space: nowrap; }
+.changes { color: var(--accent); margin-top: 2px; }
+.event { max-width: 440px; margin: 0 16px; }
+.event h2 { color: var(--accent); font-size: 1.1em; }
+.event .choices button:disabled small { color: #a65; }
 
 .modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; }
 .modal[hidden] { display: none; }

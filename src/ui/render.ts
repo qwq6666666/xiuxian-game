@@ -8,10 +8,13 @@ import {
 import { breakthroughFailLoss, splitAge, stageNeed } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
-import { ATTRIBUTE_KEYS, type AttributeKey, type GameData } from "../data/types";
-import { formatLogEntry, realmLabel } from "./format";
+import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
+import { eventOf } from "../core/events";
+import { ATTR_LABEL, choiceBlockReason, formatChanges, formatLogEntry, realmLabel } from "./format";
 
 export interface UiHandlers {
+  onAutoChoice(enabled: boolean): void;
+  onChoose(choiceIndex: number): void;
   onSpeed(speed: number): void;
   onReset(): void;
   onReroll(): void;
@@ -28,17 +31,11 @@ export interface Ui {
   notice(message: string): void;
 }
 
-const ATTR_LABEL: Record<AttributeKey, string> = {
-  bone: "根骨",
-  insight: "悟性",
-  fortune: "氣運",
-  mind: "心性",
-};
-
 export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers): Ui {
   root.innerHTML = `
     <header class="bar">
       <span class="speeds"></span>
+      <label class="auto"><input type="checkbox" id="auto" /> 自動抉擇</label>
       <button id="reset" type="button">重新開始</button>
     </header>
     <p id="notice" hidden></p>
@@ -56,6 +53,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     speedBox.appendChild(b);
     return { s, b };
   });
+  const autoEl = root.querySelector<HTMLInputElement>("#auto")!;
+  autoEl.addEventListener("change", () => handlers.onAutoChoice(autoEl.checked));
   root.querySelector("#reset")!.addEventListener("click", () => {
     if (confirm("確定要清除存檔並重新開始嗎？")) handlers.onReset();
   });
@@ -108,6 +107,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     fill: HTMLElement;
     barText: HTMLElement;
     log: HTMLElement;
+    eventModal: HTMLElement;
+    eventTitle: HTMLElement;
+    eventText: HTMLElement;
+    eventChoices: HTMLElement;
     modal: HTMLElement;
     modalTitle: HTMLElement;
     summary: HTMLElement;
@@ -125,11 +128,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   let lastState: GameState | null = null;
   let logKey = "";
   let bagKey = "";
+  let eventKey = "";
 
   function buildLife(state: GameState): void {
     built = "life";
     logKey = "";
     bagKey = "";
+    eventKey = "";
     stageEl.innerHTML = `
       <section class="status">
         <div class="line"><strong id="realm"></strong><span id="age"></span><span id="stones"></span></div>
@@ -148,6 +153,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           <section><h2>背包</h2><ul id="bag" class="items"></ul></section>
           <section><h2>坊市</h2><ul id="market" class="items"></ul></section>
         </aside>
+      </div>
+      <div class="modal" id="eventModal" hidden>
+        <div class="card event">
+          <h2 id="eventTitle"></h2>
+          <p id="eventText"></p>
+          <div id="eventChoices" class="choices"></div>
+        </div>
       </div>
       <div class="modal" id="modal" hidden>
         <div class="card">
@@ -190,6 +202,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       fill: q("#fill"),
       barText: q("#barText"),
       log: q("#log"),
+      eventModal: q("#eventModal"),
+      eventTitle: q("#eventTitle"),
+      eventText: q("#eventText"),
+      eventChoices: q("#eventChoices"),
       modal: q("#modal"),
       modalTitle: q("#modalTitle"),
       summary: q("#summary"),
@@ -288,7 +304,38 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       for (const entry of [...state.log].reverse()) {
         const li = document.createElement("li");
         li.textContent = formatLogEntry(entry, data);
+        const changes = formatChanges(entry.changes, data);
+        if (changes.length > 0) {
+          const small = document.createElement("small");
+          small.className = "changes";
+          small.textContent = changes.join("　");
+          li.appendChild(small);
+        }
         e.log.appendChild(li);
+      }
+    }
+
+    // 抉擇事件：時間暫停，等玩家選擇
+    const pendingKey = state.pendingEvent === null ? "" : `${state.pendingEvent}|${state.spiritStones}|${JSON.stringify(state.items)}`;
+    if (pendingKey !== eventKey) {
+      eventKey = pendingKey;
+      e.eventModal.hidden = state.pendingEvent === null;
+      e.eventChoices.innerHTML = "";
+      if (state.pendingEvent !== null) {
+        const ev = eventOf(state.pendingEvent, data);
+        e.eventTitle.textContent = ev.title;
+        e.eventText.textContent = ev.text;
+        (ev.choices ?? []).forEach((choice, i) => {
+          const reason = choiceBlockReason(choice.requires, state, data);
+          const b = document.createElement("button");
+          b.type = "button";
+          b.disabled = reason !== null;
+          b.innerHTML = `<strong></strong>${reason ? "<small></small>" : ""}`;
+          b.querySelector("strong")!.textContent = choice.text;
+          if (reason) b.querySelector("small")!.textContent = reason;
+          b.addEventListener("click", () => handlers.onChoose(i));
+          e.eventChoices.appendChild(b);
+        });
       }
     }
 
@@ -306,6 +353,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   return {
     render(state) {
       lastState = state;
+      autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.disabled = s === state.speed;
       if (state.phase === "rolling") renderRoll(state);
       else renderLife(state);

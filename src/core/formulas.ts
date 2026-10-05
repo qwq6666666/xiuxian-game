@@ -1,5 +1,5 @@
 // 數值公式集中處。倍率、機率等參數放在 src/data/，這裡只放算式。
-import type { BreakthroughRule, GameConfig, RealmDef } from "../data/types";
+import type { AttributeKey, BreakthroughRule, GameConfig, RealmDef } from "../data/types";
 
 /** 現實經過的毫秒數換算成遊戲月數（含小數） */
 export function msToMonths(ms: number, speed: number, msPerMonth: number): number {
@@ -40,6 +40,29 @@ export function cultivationPerMonth(p: CultivationParams): number {
 /** 某境界第 stage 階段（從 0 起算）升級所需修為，四捨五入取整 */
 export function stageNeed(realm: RealmDef, stage: number): number {
   return Math.round(realm.need.base * realm.need.growth ** stage);
+}
+
+/** 事件的抽取權重：基礎 × 日常安排倍率 ×（好事件再乘以 1 + 氣運 × 係數） */
+export function eventWeight(
+  baseWeight: number,
+  tone: "good" | "bad" | "neutral",
+  fortune: number,
+  scheduleMult: number,
+  config: GameConfig,
+): number {
+  const luck = tone === "good" ? 1 + fortune * config.fortuneGoodWeight : 1;
+  return baseWeight * scheduleMult * luck;
+}
+
+/** 結果的抽取權重：基礎加上各屬性每點的加成，最低 0 */
+export function outcomeWeight(
+  baseWeight: number,
+  perAttribute: Partial<Record<AttributeKey, number>> | undefined,
+  attributes: Record<AttributeKey, number>,
+): number {
+  let w = baseWeight;
+  for (const [k, per] of Object.entries(perAttribute ?? {})) w += attributes[k as AttributeKey] * per;
+  return Math.max(0, w);
 }
 
 /** 境界的壽元上限，以月計；bonusYears 是延壽丹累積的年數 */

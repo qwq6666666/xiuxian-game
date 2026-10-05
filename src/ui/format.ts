@@ -1,5 +1,50 @@
-import type { LogEntry } from "../core/state";
-import type { GameData, RealmDef } from "../data/types";
+import type { Changes, LogEntry } from "../core/state";
+import { ATTRIBUTE_KEYS, type AttributeKey, type GameData, type RealmDef } from "../data/types";
+
+export const ATTR_LABEL: Record<AttributeKey, string> = {
+  bone: "根骨",
+  insight: "悟性",
+  fortune: "氣運",
+  mind: "心性",
+};
+
+function signed(n: number): string {
+  return `${n > 0 ? "+" : "−"}${Math.abs(n)}`;
+}
+
+/** 事件造成的數值變化，由介面另外顯示，不寫進敘述文字 */
+export function formatChanges(changes: Changes | undefined, data: GameData): string[] {
+  if (!changes) return [];
+  const out: string[] = [];
+  if (changes.cultivation) out.push(`修為 ${signed(changes.cultivation)}`);
+  if (changes.spiritStones) out.push(`靈石 ${signed(changes.spiritStones)}`);
+  if (changes.lifespan) out.push(`壽元上限 ${signed(changes.lifespan)} 年`);
+  for (const k of ATTRIBUTE_KEYS) {
+    const d = changes.attributes?.[k];
+    if (d) out.push(`${ATTR_LABEL[k]} ${signed(d)}`);
+  }
+  for (const [id, n] of Object.entries(changes.items ?? {})) {
+    if (n) out.push(`${data.items.find((i) => i.id === id)?.name ?? id} ${signed(n)}`);
+  }
+  return out;
+}
+
+/** 選項無法選擇的原因，可以選則回傳 null */
+export function choiceBlockReason(
+  requires: { spiritStones?: number; items?: Record<string, number> } | undefined,
+  state: { spiritStones: number; items: Record<string, number> },
+  data: GameData,
+): string | null {
+  if (!requires) return null;
+  const lacks: string[] = [];
+  if (requires.spiritStones !== undefined && state.spiritStones < requires.spiritStones) {
+    lacks.push(`${requires.spiritStones} 靈石`);
+  }
+  for (const [id, n] of Object.entries(requires.items ?? {})) {
+    if ((state.items[id] ?? 0) < n) lacks.push(`${data.items.find((i) => i.id === id)?.name ?? id} ×${n}`);
+  }
+  return lacks.length > 0 ? `需要 ${lacks.join("、")}` : null;
+}
 
 const DIGITS = "零一二三四五六七八九";
 
@@ -76,6 +121,13 @@ export function formatLogEntry(entry: LogEntry, data: GameData): string {
     case "adventureDeath":
       template = log.adventureDeath;
       break;
+    case "event": {
+      const ev = data.events.find((e) => e.id === entry.eventId);
+      if (!ev) throw new Error(`日誌：找不到事件 ${entry.eventId}`);
+      const outcome = entry.choice === undefined ? undefined : ev.choices?.[entry.choice]?.outcomes[entry.outcome ?? 0];
+      template = `【${ev.title}】${outcome ? outcome.text : ev.text}`;
+      break;
+    }
   }
   const body = fill(template, vars);
   // 死亡文字自帶「享年」，不再加年齡前綴

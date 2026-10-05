@@ -2,6 +2,7 @@ import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
 import { buyItem, setSchedule, useItem } from "./core/actions";
 import { attemptBreakthrough } from "./core/breakthrough";
+import { chooseEvent, setAutoChoice } from "./core/events";
 import { createInitialState, newLife, reroll, startLife } from "./core/life";
 import { deserialize, serialize } from "./core/save";
 import type { GameState } from "./core/state";
@@ -46,7 +47,9 @@ function update(next: GameState): void {
 const ui = mountUi(document.getElementById("app")!, data, {
   onSpeed: (speed) => update({ ...state, speed }),
   onReroll: () => update(reroll(state, data)),
-  onStart: () => update(startLife(state)),
+  onStart: () => update(startLife(state, data)),
+  onAutoChoice: (enabled) => update(setAutoChoice(state, enabled, data)),
+  onChoose: (i) => update(chooseEvent(state, i, data)),
   onNewLife: () => update(newLife(state, data)),
   onSchedule: (id) => update(setSchedule(state, id, data)),
   onBreakthrough: (usePill) => update(attemptBreakthrough(state, usePill, data)),
@@ -71,7 +74,8 @@ let acc = 0;
 function frame(now: number): void {
   const dt = now - last;
   last = now;
-  if (state.phase === "living") {
+  // 等待抉擇時時間暫停
+  if (state.phase === "living" && state.pendingEvent === null) {
     acc += msToMonths(dt, state.speed, data.config.msPerMonth);
     const months = Math.min(Math.floor(acc), data.config.maxCatchUpMonths);
     if (months > 0) {

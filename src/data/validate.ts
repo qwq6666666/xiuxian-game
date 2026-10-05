@@ -2,6 +2,10 @@ import {
   ATTRIBUTE_KEYS,
   type AttributeKey,
   type BreakthroughRule,
+  type ChoiceDef,
+  type Effects,
+  type EventConditions,
+  type EventDef,
   type GameConfig,
   type GameData,
   type ItemDef,
@@ -96,6 +100,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     fail(file, "speeds", "必須是非空的正數陣列");
   }
   const attributeMin = num(o, "attributeMin", file, { min: 1, integer: true });
+  const eventMin = num(o, "eventIntervalMin", file, { gt: 0, integer: true });
   return {
     msPerMonth,
     speeds: speeds as number[],
@@ -109,6 +114,9 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     logLimit: num(o, "logLimit", file, { gt: 0, integer: true }),
     breakthroughFailLoss: num(o, "breakthroughFailLoss", file, { min: 0 }),
     mindLossReduction: num(o, "mindLossReduction", file, { min: 0 }),
+    eventIntervalMin: eventMin,
+    eventIntervalMax: num(o, "eventIntervalMax", file, { min: eventMin, integer: true }),
+    fortuneGoodWeight: num(o, "fortuneGoodWeight", file, { min: 0 }),
   };
 }
 
@@ -222,6 +230,153 @@ export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
   return items;
 }
 
+function optStrList(o: Obj, key: string, where: string): string[] | undefined {
+  if (o[key] === undefined) return undefined;
+  const v = o[key];
+  if (!Array.isArray(v) || !v.every((s) => typeof s === "string" && s !== "")) {
+    fail(where, key, "必須是字串陣列");
+  }
+  return v as string[];
+}
+
+function intRecord(o: Obj, key: string, where: string, min?: number): Record<string, number> {
+  const r = obj(o[key], `${where} 欄位 ${key}`);
+  const out: Record<string, number> = {};
+  for (const k of Object.keys(r)) out[k] = num(r, k, `${where} 欄位 ${key}`, { integer: true, min });
+  return out;
+}
+
+function attrRecord(o: Obj, key: string, where: string): Partial<Record<AttributeKey, number>> {
+  const r = intRecord(o, key, where);
+  for (const k of Object.keys(r)) {
+    if (!(ATTRIBUTE_KEYS as readonly string[]).includes(k)) {
+      fail(where, `${key}.${k}`, `不是合法的屬性，可用：${ATTRIBUTE_KEYS.join("、")}`);
+    }
+  }
+  return r as Partial<Record<AttributeKey, number>>;
+}
+
+function parseEffects(raw: unknown, where: string): Effects {
+  const o = obj(raw, where);
+  const e: Effects = {};
+  if (o.cultivation !== undefined) e.cultivation = num(o, "cultivation", where);
+  if (o.spiritStones !== undefined) e.spiritStones = num(o, "spiritStones", where, { integer: true });
+  if (o.lifespan !== undefined) e.lifespan = num(o, "lifespan", where, { integer: true });
+  if (o.attributes !== undefined) e.attributes = attrRecord(o, "attributes", where);
+  if (o.items !== undefined) e.items = intRecord(o, "items", where);
+  if (o.flags !== undefined) e.flags = optStrList(o, "flags", where);
+  if (o.death !== undefined) {
+    if (typeof o.death !== "boolean") fail(where, "death", "必須是 true 或 false");
+    e.death = o.death;
+  }
+  for (const k of Object.keys(o)) {
+    if (!["cultivation", "spiritStones", "lifespan", "attributes", "items", "flags", "death"].includes(k)) {
+      fail(where, k, "不是合法的效果");
+    }
+  }
+  return e;
+}
+
+function parseConditions(raw: unknown, where: string): EventConditions {
+  const o = raw === undefined ? {} : obj(raw, where);
+  const c: EventConditions = {};
+  if (o.realmMin !== undefined) c.realmMin = str(o, "realmMin", where);
+  if (o.realmMax !== undefined) c.realmMax = str(o, "realmMax", where);
+  if (o.ageMin !== undefined) c.ageMin = num(o, "ageMin", where, { min: 0 });
+  if (o.ageMax !== undefined) c.ageMax = num(o, "ageMax", where, { min: 0 });
+  c.flags = optStrList(o, "flags", where);
+  c.flagsNot = optStrList(o, "flagsNot", where);
+  c.schedules = optStrList(o, "schedules", where);
+  if (o.bottleneck !== undefined) {
+    if (typeof o.bottleneck !== "boolean") fail(where, "bottleneck", "必須是 true 或 false");
+    c.bottleneck = o.bottleneck;
+  }
+  for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
+  for (const k of Object.keys(o)) {
+    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck"].includes(k)) {
+      fail(where, k, "不是合法的條件");
+    }
+  }
+  return c;
+}
+
+function parseChoice(raw: unknown, where: string): ChoiceDef {
+  const o = obj(raw, where);
+  const choice: ChoiceDef = {
+    text: str(o, "text", where),
+    outcomes: list(o.outcomes, `${where} 欄位 outcomes`).map((r, j) => {
+      const ow = `${where} 結果 ${j + 1}`;
+      const oo = obj(r, ow);
+      const outcome: ChoiceDef["outcomes"][number] = {
+        weight: num(oo, "weight", ow, { min: 0 }),
+        text: str(oo, "text", ow),
+        effects: oo.effects === undefined ? {} : parseEffects(oo.effects, `${ow} 欄位 effects`),
+      };
+      if (oo.weightPerAttribute !== undefined) {
+        outcome.weightPerAttribute = attrRecord(oo, "weightPerAttribute", ow);
+      }
+      if (outcome.weight <= 0 && !Object.values(outcome.weightPerAttribute ?? {}).some((v) => v > 0)) {
+        fail(ow, "weight", "必須 > 0（或由 weightPerAttribute 提供權重）");
+      }
+      return outcome;
+    }),
+  };
+  if (o.requires !== undefined) {
+    const rw = `${where} 欄位 requires`;
+    const r = obj(o.requires, rw);
+    choice.requires = {};
+    if (r.spiritStones !== undefined) choice.requires.spiritStones = num(r, "spiritStones", rw, { min: 0, integer: true });
+    if (r.items !== undefined) choice.requires.items = intRecord(r, "items", rw, 0);
+  }
+  return choice;
+}
+
+export function validateEvents(raw: unknown, file = "events.json"): EventDef[] {
+  const events = list(raw, file).map((r, i): EventDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const where = `${file} 第 ${i + 1} 筆（${id}）`;
+    const type = o.type;
+    if (type !== "anecdote" && type !== "choice") {
+      fail(where, "type", `必須是 "anecdote" 或 "choice"，目前為 ${JSON.stringify(type)}`);
+    }
+    const tone = o.tone;
+    if (tone !== "good" && tone !== "bad" && tone !== "neutral") {
+      fail(where, "tone", `必須是 good、bad 或 neutral，目前為 ${JSON.stringify(tone)}`);
+    }
+    const ev: EventDef = {
+      id,
+      type,
+      title: str(o, "title", where),
+      text: str(o, "text", where),
+      weight: num(o, "weight", where, { gt: 0 }),
+      tone,
+      maxPerLife: o.maxPerLife === undefined ? 1 : num(o, "maxPerLife", where, { gt: 0, integer: true }),
+      conditions: parseConditions(o.conditions, `${where} 欄位 conditions`),
+    };
+    if (o.scheduleWeights !== undefined) {
+      const sw = obj(o.scheduleWeights, `${where} 欄位 scheduleWeights`);
+      ev.scheduleWeights = {};
+      for (const k of Object.keys(sw)) ev.scheduleWeights[k] = num(sw, k, `${where} 欄位 scheduleWeights`, { min: 0 });
+    }
+    if (type === "anecdote") {
+      if (o.choices !== undefined) fail(where, "choices", "見聞不能有選項");
+      if (o.effects !== undefined) ev.effects = parseEffects(o.effects, `${where} 欄位 effects`);
+    } else {
+      if (o.effects !== undefined) fail(where, "effects", "抉擇的效果要寫在各選項的結果裡");
+      const choices = list(o.choices, `${where} 欄位 choices`);
+      if (choices.length < 2 || choices.length > 3) fail(where, "choices", `必須有 2–3 個選項，目前為 ${choices.length}`);
+      ev.choices = choices.map((c, j) => parseChoice(c, `${where} 選項 ${j + 1}`));
+      if (!ev.choices.some((c) => !c.requires)) {
+        fail(where, "choices", "至少要有一個沒有前提的選項，否則玩家可能無路可選");
+      }
+    }
+    return ev;
+  });
+  uniqueIds(events, file);
+  return events;
+}
+
 export function validateSpiritRoots(raw: unknown, file = "spiritRoots.json"): SpiritRootDef[] {
   const roots = list(raw, file).map((r, i): SpiritRootDef => {
     const o = obj(r, `${file} 第 ${i + 1} 筆`);
@@ -318,6 +473,30 @@ export function validateGameData(data: GameData): GameData {
   });
   data.origins.forEach((o, i) => {
     for (const id of Object.keys(o.items)) has(itemIds, id, `origins.json 第 ${i + 1} 筆（${o.id}）的 items`, "items.json");
+  });
+
+  const scheduleIds = new Set(data.schedules.map((s) => s.id));
+  const allEffects = (ev: EventDef): Effects[] => [
+    ...(ev.effects ? [ev.effects] : []),
+    ...(ev.choices ?? []).flatMap((c) => c.outcomes.map((o) => o.effects)),
+  ];
+  const setFlags = new Set(data.events.flatMap((ev) => allEffects(ev).flatMap((e) => e.flags ?? [])));
+  data.events.forEach((ev, i) => {
+    const from = `events.json 第 ${i + 1} 筆（${ev.id}）`;
+    const c = ev.conditions;
+    for (const r of [c.realmMin, c.realmMax]) if (r !== undefined) has(realmIds, r, `${from} 的 conditions`, "realms.json");
+    for (const s of c.schedules ?? []) has(scheduleIds, s, `${from} 的 conditions.schedules`, "schedules.json");
+    for (const s of Object.keys(ev.scheduleWeights ?? {})) has(scheduleIds, s, `${from} 的 scheduleWeights`, "schedules.json");
+    // 要求的旗標必須有某個結果會設定，抓拼字錯誤
+    for (const f of c.flags ?? []) {
+      if (!setFlags.has(f)) throw new Error(`${from}：conditions.flags 的 ${f} 沒有任何事件結果會設定它`);
+    }
+    for (const e of allEffects(ev)) {
+      for (const id of Object.keys(e.items ?? {})) has(itemIds, id, `${from} 的 effects.items`, "items.json");
+    }
+    for (const ch of ev.choices ?? []) {
+      for (const id of Object.keys(ch.requires?.items ?? {})) has(itemIds, id, `${from} 的 requires.items`, "items.json");
+    }
   });
   return data;
 }

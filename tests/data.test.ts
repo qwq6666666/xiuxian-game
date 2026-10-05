@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   validateConfig,
+  validateEvents,
   validateGameData,
   validateItems,
   validateOrigins,
@@ -56,6 +57,63 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(() => validateItems([{ ...i, price: 0 }])).toThrow("第 1 筆（juqi_dan）：欄位 price");
     expect(() => validateItems([{ ...i, effect: { kind: "boom" } }])).toThrow("kind");
     expect(() => validateItems([{ ...i, effect: { kind: "lifespan", years: 10 } }])).toThrow("maxPerLife");
+  });
+
+  it("events：指出哪一筆事件的哪個欄位", () => {
+    const choice = gameData.events[0];
+    const anec = gameData.events.find((e) => e.type === "anecdote")!;
+    const bad = (e: unknown) => () => validateEvents([e]);
+    expect(bad({ ...choice, type: "story" })).toThrow("第 1 筆（cave_001）：欄位 type");
+    expect(bad({ ...choice, tone: "great" })).toThrow("tone");
+    expect(bad({ ...choice, weight: 0 })).toThrow("weight");
+    expect(bad({ ...choice, maxPerLife: 0 })).toThrow("maxPerLife");
+    expect(bad({ ...choice, conditions: { realmMin: 5 } })).toThrow("realmMin");
+    expect(bad({ ...choice, conditions: { flagz: ["a"] } })).toThrow("flagz");
+    expect(bad({ ...anec, choices: choice.choices })).toThrow("見聞不能有選項");
+    expect(bad({ ...choice, effects: {} })).toThrow("抉擇的效果要寫在各選項的結果裡");
+    expect(bad({ ...choice, choices: [choice.choices![0]] })).toThrow("2–3 個選項");
+    expect(bad({ ...anec, effects: { gold: 5 } })).toThrow("gold");
+    expect(bad({ ...anec, effects: { attributes: { luck: 1 } } })).toThrow("attributes.luck");
+    expect(bad({ ...anec, effects: { cultivation: "x" } })).toThrow("cultivation");
+  });
+
+  it("events：選項與結果的錯誤指出是第幾個", () => {
+    const e = gameData.events[0];
+    const withChoices = (choices: unknown) => () => validateEvents([{ ...e, choices }]);
+    const c = e.choices!;
+    expect(withChoices([{ ...c[0], text: "" }, c[1]])).toThrow("選項 1：欄位 text");
+    expect(withChoices([c[0], { ...c[1], outcomes: [{ weight: 0, text: "a", effects: {} }] }])).toThrow("選項 2 結果 1：欄位 weight");
+    expect(withChoices([c[0], { ...c[1], outcomes: [] }])).toThrow("outcomes");
+    expect(withChoices([c[0], { ...c[1], requires: { spiritStones: -1 } }])).toThrow("spiritStones");
+  });
+
+  it("events：每個抉擇至少要有一個沒有前提的選項", () => {
+    const e = gameData.events.find((x) => x.id === "senior_001")!;
+    const locked = e.choices!.map((c) => ({ ...c, requires: { spiritStones: 5 } }));
+    expect(() => validateEvents([{ ...e, choices: locked }])).toThrow("沒有前提");
+  });
+
+  it("events：權重可全由屬性加成提供", () => {
+    const e = gameData.events.find((x) => x.id === "demon_001")!;
+    const outcome = { weight: 0, text: "a", effects: {}, weightPerAttribute: { mind: 5 } };
+    const ok = { ...e, choices: [{ text: "x", outcomes: [outcome] }, e.choices![1]] };
+    expect(validateEvents([ok])[0].id).toBe("demon_001");
+  });
+
+  it("跨檔案檢查：事件的旗標、物品、境界、安排", () => {
+    // 連鎖的前段（會設定旗標）一起帶上，避免先觸發「旗標沒人設定」的錯誤
+    const cave1 = gameData.events.find((e) => e.id === "cave_001")!;
+    const cave2 = gameData.events.find((e) => e.id === "cave_002")!;
+    const bad = (patch: Partial<typeof cave2>) => () => validateGameData({ ...gameData, events: [cave1, { ...cave2, ...patch }] });
+    // 要求的旗標沒有任何結果會設定（拼字錯誤）
+    expect(bad({ conditions: { flags: ["cave_001_mraked"] } })).toThrow("cave_001_mraked");
+    expect(bad({ conditions: { flags: ["cave_001_marked"], realmMin: "ghost" } })).toThrow("ghost");
+    expect(bad({ conditions: { flags: ["cave_001_marked"], schedules: ["ghost"] } })).toThrow("ghost");
+    expect(bad({ scheduleWeights: { ghost: 2 } })).toThrow("ghost");
+    const outcome = { weight: 1, text: "a", effects: { items: { ghost: 1 } } };
+    expect(bad({ choices: [{ text: "a", outcomes: [outcome] }, cave2.choices![1]] })).toThrow("ghost");
+    const req = { text: "a", requires: { items: { ghost: 1 } }, outcomes: [outcome] };
+    expect(bad({ choices: [req, cave2.choices![1]] })).toThrow("ghost");
   });
 
   it("跨檔案檢查：引用不存在的物品或境界", () => {
