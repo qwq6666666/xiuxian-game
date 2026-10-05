@@ -1,0 +1,6 @@
+{
+  "msPerMonth": 1000,
+  "speeds": [1, 2, 4],
+  "startAgeYears": 10,
+  "maxCatchUpMonths": 12
+}
