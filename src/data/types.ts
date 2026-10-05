@@ -150,10 +150,18 @@ export interface OutcomeDef {
   weightPerAttribute?: Partial<Record<AttributeKey, number>>;
 }
 
+/** 選項的前提：靈石、物品、屬性下限、持有的殘卷（跨世累積） */
+export interface ChoiceRequires {
+  spiritStones?: number;
+  items?: Record<string, number>;
+  attributes?: Partial<Record<AttributeKey, number>>;
+  fragments?: string[];
+}
+
 export interface ChoiceDef {
   text: string;
   /** 選項的前提，不足時無法選擇 */
-  requires?: { spiritStones?: number; items?: Record<string, number> };
+  requires?: ChoiceRequires;
   outcomes: OutcomeDef[];
 }
 

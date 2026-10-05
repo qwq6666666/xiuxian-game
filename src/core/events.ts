@@ -1,6 +1,6 @@
 // 事件系統：計時、依條件抽取、抉擇結算。
 import { gameData } from "../data/load";
-import { ATTRIBUTE_KEYS, type ChoiceDef, type Effects, type EventDef, type GameData } from "../data/types";
+import { ATTRIBUTE_KEYS, type AttributeKey, type ChoiceDef, type Effects, type EventDef, type GameData } from "../data/types";
 import { availableFragments, drawFragment, grantFragment } from "./fragments";
 import { eventWeight, outcomeWeight, stageNeed } from "./formulas";
 import { addLog, atBottleneck, eventOf, realmOf, resolveStages, scheduleOf } from "./progress";
@@ -53,6 +53,8 @@ export function canChoose(state: GameState, choice: ChoiceDef): boolean {
   if (!r) return true;
   if (r.spiritStones !== undefined && state.spiritStones < r.spiritStones) return false;
   for (const [id, n] of Object.entries(r.items ?? {})) if ((state.items[id] ?? 0) < n) return false;
+  for (const [k, n] of Object.entries(r.attributes ?? {})) if (state.attributes[k as AttributeKey] < n) return false;
+  if (r.fragments && !r.fragments.every((f) => state.meta.fragments.includes(f))) return false;
   return true;
 }
 

@@ -256,6 +256,20 @@ describe("計時與觸發", () => {
     expect(firstAvailableChoice(living(1, { spiritStones: 100 }), e)).toBe(0);
   });
 
+  it("選項前提：屬性下限與持有殘卷", () => {
+    const base = living(1);
+    const gated = { text: "x", requires: { attributes: { insight: 7 }, fragments: ["f06"] }, outcomes: [{ weight: 1, text: "。", effects: {} }] };
+    const withAttr = (insight: number, frags: string[]) => ({
+      ...base,
+      attributes: { ...base.attributes, insight },
+      meta: { ...base.meta, fragments: frags },
+    });
+    expect(canChoose(withAttr(7, ["f06"]), gated)).toBe(true);
+    expect(canChoose(withAttr(6, ["f06"]), gated)).toBe(false);
+    expect(canChoose(withAttr(9, []), gated)).toBe(false);
+    expect(canChoose(withAttr(9, ["f05"]), gated)).toBe(false);
+  });
+
   it("等待抉擇時才打開自動抉擇：立刻替玩家選好，關閉則只改設定", () => {
     const s = { ...living(1, { spiritStones: 0 }), pendingEvent: "senior_001" };
     const on = setAutoChoice(s, true);

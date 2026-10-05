@@ -2,7 +2,7 @@ import { eraName } from "../core/era";
 import type { OfflineSummary } from "../core/offline";
 import type { Changes, LifeReview, LogEntry, Meta } from "../core/state";
 import { DEFAULT_SLOTS, fillSlots, type SlotValues } from "../data/slots";
-import { ATTRIBUTE_KEYS, type AttributeKey, type GameData, type RealmDef, type TalentDef } from "../data/types";
+import { ATTRIBUTE_KEYS, type AttributeKey, type ChoiceRequires, type GameData, type RealmDef, type TalentDef } from "../data/types";
 
 export const ATTR_LABEL: Record<AttributeKey, string> = {
   bone: "根骨",
@@ -91,8 +91,8 @@ export function eraTransition(index: number, data: GameData): string {
 
 /** 選項無法選擇的原因，可以選則回傳 null 。 */
 export function choiceBlockReason(
-  requires: { spiritStones?: number; items?: Record<string, number> } | undefined,
-  state: { spiritStones: number; items: Record<string, number> },
+  requires: ChoiceRequires | undefined,
+  state: { spiritStones: number; items: Record<string, number>; attributes?: Record<AttributeKey, number>; meta?: { fragments: string[] } },
   data: GameData,
 ): string | null {
   if (!requires) return null;
@@ -103,6 +103,11 @@ export function choiceBlockReason(
   for (const [id, n] of Object.entries(requires.items ?? {})) {
     if ((state.items[id] ?? 0) < n) lacks.push(`${data.items.find((i) => i.id === id)?.name ?? id} ×${n}`);
   }
+  for (const [k, n] of Object.entries(requires.attributes ?? {})) {
+    if ((state.attributes?.[k as AttributeKey] ?? 0) < n) lacks.push(`${ATTR_LABEL[k as AttributeKey]} ${n}`);
+  }
+  // 殘卷門檻不寫殘卷名稱，免得提前洩漏
+  if ((requires.fragments ?? []).some((f) => !(state.meta?.fragments ?? []).includes(f))) lacks.push("一則尚未讀過的舊聞");
   return lacks.length > 0 ? `需要 ${lacks.join("、")}` : null;
 }
 

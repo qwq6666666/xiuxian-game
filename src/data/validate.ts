@@ -414,6 +414,14 @@ function parseChoice(raw: unknown, where: string): ChoiceDef {
     choice.requires = {};
     if (r.spiritStones !== undefined) choice.requires.spiritStones = num(r, "spiritStones", rw, { min: 0, integer: true });
     if (r.items !== undefined) choice.requires.items = intRecord(r, "items", rw, 0);
+    if (r.attributes !== undefined) choice.requires.attributes = attrRecord(r, "attributes", rw);
+    if (r.fragments !== undefined) {
+      const fr = r.fragments;
+      if (!Array.isArray(fr) || fr.length === 0 || !fr.every((f) => typeof f === "string")) {
+        fail(rw, "fragments", `必須是非空的字串陣列，目前為 ${JSON.stringify(fr)}`);
+      }
+      choice.requires.fragments = fr as string[];
+    }
   }
   return choice;
 }
@@ -453,7 +461,7 @@ export function validateEvents(raw: unknown, file = "events.json"): EventDef[] {
     } else {
       if (o.effects !== undefined) fail(where, "effects", "抉擇的效果要寫在各選項的結果裡");
       const choices = list(o.choices, `${where} 欄位 choices`);
-      if (choices.length < 2 || choices.length > 3) fail(where, "choices", `必須有 2–3 個選項，目前為 ${choices.length}`);
+      if (choices.length < 2 || choices.length > 4) fail(where, "choices", `必須有 2–4 個選項，目前為 ${choices.length}`);
       ev.choices = choices.map((c, j) => parseChoice(c, `${where} 選項 ${j + 1}`));
       if (!ev.choices.some((c) => !c.requires)) {
         fail(where, "choices", "至少要有一個沒有前提的選項，否則玩家可能無路可選");
@@ -981,6 +989,7 @@ export function validateGameData(data: GameData): GameData {
     }
     for (const ch of ev.choices ?? []) {
       for (const id of Object.keys(ch.requires?.items ?? {})) has(itemIds, id, `${from} 的 requires.items`, "items.json");
+      for (const id of ch.requires?.fragments ?? []) has(fragmentIds, id, `${from} 的 requires.fragments`, "fragments.json");
     }
   });
   return data;

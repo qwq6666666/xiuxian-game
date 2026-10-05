@@ -242,6 +242,7 @@
         "outcomes": [
           {
             "weight": 52,
+            "weightPerAttribute": {"bone": 4},
             "text": "你屏息斂神，與灰狼對峙良久，終使其退去。經此一役，心境略有長進。",
             "effects": { "attributes": { "mind": 1 } }
           },
@@ -264,6 +265,22 @@
             "weight": 100,
             "text": "你悄悄退出數十步，另覓小徑，一路平安。",
             "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "迎上去，硬接一擊",
+        "requires": {"attributes": {"bone": 7}},
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "你架臂擋住撲來的灰狼，震得虎口發麻，那畜生竟先退了。",
+            "effects": {"attributes": {"bone": 1}}
+          },
+          {
+            "weight": 40,
+            "text": "你擋住了第一下，沒擋住第二下，肩頭掛了彩。",
+            "effects": {"lifespan": -2}
           }
         ]
       }
@@ -300,6 +317,22 @@
           {
             "weight": 100,
             "text": "你任由景象流轉，睜眼時天已大亮，人無大礙，只是平白耗去一夜。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "睜眼直視心魔",
+        "requires": {"attributes": {"mind": 7}},
+        "outcomes": [
+          {
+            "weight": 80,
+            "text": "你看著那些景象一一走過，它們便如舊屋裡的灰，一吹就散。",
+            "effects": {"cultivation": 0.12}
+          },
+          {
+            "weight": 20,
+            "text": "景象走得慢了些，你多耗了半夜。",
             "effects": {}
           }
         ]
@@ -703,6 +736,22 @@
             "effects": {}
           }
         ]
+      },
+      {
+        "text": "舊物一律不碰，只抄壁上的字",
+        "requires": {"fragments": ["f10"]},
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "你想起某本日誌裡的規矩，洞中舊物原樣擱著，只抄了壁上的字。抄完之後，心裡反倒踏實了。",
+            "effects": {"attributes": {"mind": 1}}
+          },
+          {
+            "weight": 50,
+            "text": "你什麼也沒碰，什麼也沒帶走。洞裡很安靜。",
+            "effects": {}
+          }
+        ]
       }
     ]
   },
@@ -738,6 +787,22 @@
           {
             "weight": 100,
             "text": "你聽了一刻，夥計問你買不買，你說再看看。他的笑容當場收了。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "翻到供奉冊那一頁，指給夥計看",
+        "requires": {"fragments": ["f06"]},
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "夥計的笑容僵在臉上，默默把價錢抹了，另塞給你一小袋靈石，請你別再提。",
+            "effects": {"spiritStones": 12}
+          },
+          {
+            "weight": 40,
+            "text": "夥計看了一眼，說這頁是拓本，不作數。他說得很快，快得不太像實話。",
             "effects": {}
           }
         ]
@@ -784,6 +849,22 @@
             "effects": {}
           }
         ]
+      },
+      {
+        "text": "問他口訣裡那個名字",
+        "requires": {"fragments": ["f09"]},
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "行腳客沉默了很久，只說：「這個問題，我們這行不收錢，也不答。」他把茶喝完，替你把杯子洗了。",
+            "effects": {"attributes": {"mind": 1}}
+          },
+          {
+            "weight": 50,
+            "text": "他笑了笑，說知道的人都不開口，開口的人都不知道。",
+            "effects": {}
+          }
+        ]
       }
     ]
   },
@@ -823,6 +904,22 @@
           {
             "weight": 50,
             "text": "紙上全是外門的值日表，哪一階由誰來掃，寫得清清楚楚。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "追上去，問他階上的事",
+        "requires": {"fragments": ["f08"]},
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "他臉色一白，奪回文書便走，慌亂間掉了一顆丹藥在你腳邊。",
+            "effects": {"items": {"juqi_dan": 1}}
+          },
+          {
+            "weight": 40,
+            "text": "他裝作沒聽見，腳步卻快了一倍。",
             "effects": {}
           }
         ]
@@ -935,6 +1032,7 @@
         "outcomes": [
           {
             "weight": 68,
+            "weightPerAttribute": {"bone": 3},
             "text": "你攀著岩縫採得整叢藥草，換得不少靈石，指尖被割了數道口子。",
             "effects": { "spiritStones": 30 }
           },
@@ -957,6 +1055,22 @@
             "weight": 100,
             "text": "你只採外圍的一半，留了根。山裡的藥草，來年還會再長。",
             "effects": { "spiritStones": 12 }
+          }
+        ]
+      },
+      {
+        "text": "徒手攀上去，整叢採下",
+        "requires": {"attributes": {"bone": 6}},
+        "outcomes": [
+          {
+            "weight": 85,
+            "text": "你手腳並用爬上斷崖，整叢藥草連根採下，換得不少靈石。",
+            "effects": {"spiritStones": 30}
+          },
+          {
+            "weight": 15,
+            "text": "你爬到一半抓空一把，滑下來擦破了手掌，藥草是沒採成。",
+            "effects": {"lifespan": -1}
           }
         ]
       }
@@ -1020,6 +1134,7 @@
           },
           {
             "weight": 55,
+            "weightPerAttribute": {"mind": 5},
             "text": "你咬牙撐過，氣息漸漸歸順，心性也沉穩了些。",
             "effects": { "attributes": { "mind": 1 } }
           }
@@ -1032,6 +1147,17 @@
             "weight": 100,
             "text": "你收功調息三日，損失不大，只是白耽誤了幾日工夫。",
             "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "順著經脈細察刺痛之處",
+        "requires": {"attributes": {"insight": 7}},
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你循著刺痛一路細察，找出氣機岔開的那一處，順手撥正。",
+            "effects": {"cultivation": 0.04}
           }
         ]
       }
@@ -1090,6 +1216,7 @@
         "outcomes": [
           {
             "weight": 45,
+            "weightPerAttribute": {"insight": 5},
             "text": "丹藥入口微苦，靈氣倒是真的，只是少了幾分火候。",
             "effects": { "spiritStones": -10, "cultivation": 0.12 }
           },
@@ -1121,6 +1248,22 @@
           {
             "weight": 100,
             "text": "你從攤前走過，沒有回頭。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "照著舊手札的口氣，報出延壽丹的行情",
+        "requires": {"fragments": ["f05"]},
+        "outcomes": [
+          {
+            "weight": 55,
+            "text": "丹師的眼神變了，說這個價只有行內人才知道。他把一粒試丹塞進你手裡，沒收錢。",
+            "effects": {"cultivation": 0.08}
+          },
+          {
+            "weight": 45,
+            "text": "丹師說手札上的價早就變了，你報得不對。你也不知道是手札舊了，還是行情變了。",
             "effects": {}
           }
         ]
@@ -1546,9 +1689,14 @@
         "text": "去幫忙",
         "outcomes": [
           {
-            "weight": 100,
+            "weight": 60,
             "text": "你割了三天稻，腰痠得像是練過一套功法。鄰家給了兩袋米和一籃雞蛋。",
             "effects": { "spiritStones": 6 }
+          },
+          {
+            "weight": 40,
+            "text": "你割了三天稻，腰痠得直不起來，過幾日卻覺得筋骨比往常結實了些。鄰家給了兩袋米。",
+            "effects": { "spiritStones": 6, "attributes": { "bone": 1 } }
           }
         ]
       },
@@ -1653,6 +1801,7 @@
         "outcomes": [
           {
             "weight": 56,
+            "weightPerAttribute": {"bone": 4},
             "text": "你在水裡來回十幾趟，救出好幾戶人家，自己也病了一場。事後村裡湊了些東西謝你。",
             "effects": { "lifespan": -2, "spiritStones": 12, "attributes": { "fortune": 1 } }
           },
@@ -1685,6 +1834,22 @@
             "weight": 100,
             "text": "水退之後，你的屋子竟安然無恙。鄰里看你的目光有些複雜。",
             "effects": { "cultivation": 0.03 }
+          }
+        ]
+      },
+      {
+        "text": "背著人涉水而出",
+        "requires": {"attributes": {"bone": 7}},
+        "outcomes": [
+          {
+            "weight": 70,
+            "text": "你踩著水底的石頭，一趟背出一戶人家，竟不覺得累。事後有人往你屋裡送了些吃用。",
+            "effects": {"spiritStones": 8, "attributes": {"bone": 1}}
+          },
+          {
+            "weight": 30,
+            "text": "你背出幾戶人家便力竭，在高處歇了半日。",
+            "effects": {"lifespan": -1}
           }
         ]
       }

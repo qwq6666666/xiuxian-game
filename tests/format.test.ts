@@ -74,6 +74,19 @@ describe("format", () => {
     );
   });
 
+  it("選項前提：屬性不足寫出門檻，殘卷不足不寫殘卷名稱", () => {
+    const state = {
+      spiritStones: 0,
+      items: {},
+      attributes: { bone: 3, insight: 8, fortune: 1, mind: 1 },
+      meta: { fragments: ["f05"] },
+    };
+    expect(choiceBlockReason({ attributes: { insight: 7 } }, state, gameData)).toBeNull();
+    expect(choiceBlockReason({ attributes: { bone: 7 } }, state, gameData)).toBe("需要 根骨 7");
+    expect(choiceBlockReason({ fragments: ["f05"] }, state, gameData)).toBeNull();
+    expect(choiceBlockReason({ fragments: ["f05", "f06"] }, state, gameData)).toBe("需要 一則尚未讀過的舊聞");
+  });
+
   it("購買與拾得會帶入物品名稱", () => {
     const buy = formatLogEntry({ month: 500, kind: "buy", realmId: "mortal", stage: 0, itemId: "juqi_dan" }, gameData);
     expect(buy).toContain("聚氣丹");

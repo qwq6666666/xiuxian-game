@@ -97,7 +97,7 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(bad({ ...choice, conditions: { flagz: ["a"] } })).toThrow("flagz");
     expect(bad({ ...anec, choices: choice.choices })).toThrow("見聞不能有選項");
     expect(bad({ ...choice, effects: {} })).toThrow("抉擇的效果要寫在各選項的結果裡");
-    expect(bad({ ...choice, choices: [choice.choices![0]] })).toThrow("2–3 個選項");
+    expect(bad({ ...choice, choices: [choice.choices![0]] })).toThrow("2–4 個選項");
     expect(bad({ ...anec, effects: { gold: 5 } })).toThrow("gold");
     expect(bad({ ...anec, effects: { attributes: { luck: 1 } } })).toThrow("attributes.luck");
     expect(bad({ ...anec, effects: { cultivation: "x" } })).toThrow("cultivation");
@@ -111,6 +111,17 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(withChoices([c[0], { ...c[1], outcomes: [{ weight: 0, text: "a", effects: {} }] }])).toThrow("選項 2 結果 1：欄位 weight");
     expect(withChoices([c[0], { ...c[1], outcomes: [] }])).toThrow("outcomes");
     expect(withChoices([c[0], { ...c[1], requires: { spiritStones: -1 } }])).toThrow("spiritStones");
+  });
+
+  it("events：requires 的屬性鍵與殘卷 id 要合法", () => {
+    const e = gameData.events[0];
+    const c = e.choices!;
+    const withReq = (requires: unknown) => () => validateEvents([{ ...e, choices: [c[0], { ...c[1], requires }] }]);
+    expect(withReq({ attributes: { luck: 3 } })).toThrow("luck");
+    expect(withReq({ fragments: [] })).toThrow("fragments");
+    expect(withReq({ attributes: { bone: 5 }, fragments: ["f01"] })).not.toThrow();
+    const gated = { ...c[1], requires: { fragments: ["ghost"] } };
+    expect(() => validateGameData({ ...gameData, events: [{ ...e, choices: [c[0], gated] }] })).toThrow("ghost");
   });
 
   it("events：每個抉擇至少要有一個沒有前提的選項", () => {
