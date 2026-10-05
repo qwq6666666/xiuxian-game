@@ -138,13 +138,49 @@ describe("新事件的獎懲幅度", () => {
 describe("金丹期事件", () => {
   const jindan = data.events.filter((e) => e.id.startsWith("jindan_"));
 
+  it("三條連鎖依抉擇分支，沒有選到的後段不會入池", () => {
+    const paths = [
+      { first: "jindan_friend_001", choices: [[0, "jindan_friend_002_hosted"], [1, "jindan_friend_002_declined"]] },
+      { first: "jindan_guard_001", choices: [[0, "jindan_guard_002"], [1, ""]] },
+      { first: "jindan_dispute_001", choices: [[0, "jindan_dispute_002_split"], [1, "jindan_dispute_002_ruled"], [2, ""]] },
+    ] as const;
+    const followups = [
+      "jindan_friend_002_hosted", "jindan_friend_002_declined", "jindan_guard_002",
+      "jindan_dispute_002_split", "jindan_dispute_002_ruled",
+    ];
+    for (const path of paths) {
+      for (const [choice, expected] of path.choices) {
+        const before = at(300, { realmId: "jindan" });
+        const after = chooseEvent({ ...before, pendingEvent: path.first }, choice, data);
+        for (const id of followups) {
+          expect(eventAvailable(before, ev(id)), `${path.first} 選 ${choice} 前的 ${id}`).toBe(false);
+          expect(eventAvailable(after, ev(id)), `${path.first} 選 ${choice} 後的 ${id}`).toBe(id === expected);
+        }
+      }
+    }
+  });
+
+  it("金丹連鎖後段提高權重且能進入一生回顧", () => {
+    for (const [first, followups] of [
+      ["jindan_friend_001", ["jindan_friend_002_hosted", "jindan_friend_002_declined"]],
+      ["jindan_guard_001", ["jindan_guard_002"]],
+      ["jindan_dispute_001", ["jindan_dispute_002_split", "jindan_dispute_002_ruled"]],
+    ] as const) {
+      for (const id of followups) {
+        expect(ev(id).weight, id).toBeGreaterThan(ev(first).weight);
+        expect(ev(id).highlight, id).toBeGreaterThanOrEqual(2);
+        expect(ev(id).maxPerLife, id).toBe(1);
+      }
+    }
+  });
+
   it("至少十五個，築基以前不出現，金丹之後才進池子", () => {
     expect(jindan.length).toBeGreaterThanOrEqual(15);
     for (const e of jindan) {
       expect(e.conditions.realmMin, e.id).toBe("jindan");
       expect(eventAvailable(at(150, { realmId: "zhuji" }), e) && e.conditions.bottleneck !== true, e.id).toBe(false);
     }
-    const plain = jindan.filter((e) => e.conditions.bottleneck !== true && e.conditions.ageMin === undefined);
+    const plain = jindan.filter((e) => e.conditions.bottleneck !== true && e.conditions.ageMin === undefined && !e.conditions.flags?.length);
     for (const e of plain) expect(eventAvailable(at(300, { realmId: "jindan" }), e), e.id).toBe(true);
   });
 

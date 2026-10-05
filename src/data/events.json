@@ -2463,7 +2463,7 @@
     "type": "choice",
     "title": "故人來訪",
     "text": "一位白髮老者登門，自稱當年曾在你門外站過一個下午。你想了很久，才想起那是個十來歲的孩子。",
-    "weight": 6,
+    "weight": 20,
     "tone": "neutral",
     "conditions": {
       "realmMin": "jindan"
@@ -2478,13 +2478,14 @@
             "effects": {
               "attributes": {
                 "mind": 1
-              }
+              },
+              "flags": ["jindan_friend_hosted"]
             }
           },
           {
             "weight": 40,
-            "text": "他坐下後只說了一句家常，便睡著了。你替他蓋了件衣裳，等他醒來。",
-            "effects": {}
+            "text": "他端著茶，只說了一句家常，便睡著了。你替他蓋了件衣裳，等他醒來。",
+            "effects": { "flags": ["jindan_friend_hosted"] }
           }
         ]
       },
@@ -2494,11 +2495,31 @@
           {
             "weight": 100,
             "text": "你隔著門道了謝。腳步聲在門外停了一會兒，漸漸遠了。",
-            "effects": {}
+            "effects": { "flags": ["jindan_friend_declined"] }
           }
         ]
       }
     ]
+  },
+  {
+    "id": "jindan_friend_002_hosted",
+    "type": "anecdote",
+    "highlight": 3,
+    "title": "舊茶盞",
+    "text": "一名自稱故人晚輩的人送來一只舊茶盞，說老人臨終前囑她還你。你認出杯沿那道缺口，收下了，沒有問她姓名。",
+    "weight": 80,
+    "tone": "neutral",
+    "conditions": { "realmMin": "jindan", "flags": ["jindan_friend_hosted"] }
+  },
+  {
+    "id": "jindan_friend_002_declined",
+    "type": "anecdote",
+    "highlight": 3,
+    "title": "未封的信",
+    "text": "一名自稱故人晚輩的人送來一封未封的信。紙上只有一句「那日多謝」，你看了很久，才將它收起。",
+    "weight": 80,
+    "tone": "neutral",
+    "conditions": { "realmMin": "jindan", "flags": ["jindan_friend_declined"] }
   },
   {
     "id": "jindan_askway_001",
@@ -2552,7 +2573,7 @@
     "type": "choice",
     "title": "山門請帖",
     "text": "{guard}遣人送來一張請帖，邀你赴山門論道。信寫得很客氣，客氣得沒有一句實話。",
-    "weight": 5,
+    "weight": 20,
     "tone": "neutral",
     "conditions": {
       "realmMin": "jindan"
@@ -2567,13 +2588,14 @@
             "effects": {
               "attributes": {
                 "insight": 1
-              }
+              },
+              "flags": ["jindan_guard_attended"]
             }
           },
           {
             "weight": 50,
             "text": "席間話題始終繞著規矩與正統打轉。你聽了半日，什麼也沒帶走。",
-            "effects": {}
+            "effects": { "flags": ["jindan_guard_attended"] }
           }
         ]
       },
@@ -2588,6 +2610,16 @@
         ]
       }
     ]
+  },
+  {
+    "id": "jindan_guard_002",
+    "type": "anecdote",
+    "highlight": 3,
+    "title": "論道舊函",
+    "text": "一份當年論道的抄本輾轉到你手中。你認出自己在席間隨手寫下的兩個字，旁邊還有別人添的一句反駁。字跡都已褪色，問題還在。",
+    "weight": 80,
+    "tone": "neutral",
+    "conditions": { "realmMin": "jindan", "flags": ["jindan_guard_attended"] }
   },
   {
     "id": "jindan_merchant_001",
@@ -2838,7 +2870,7 @@
     "type": "choice",
     "title": "礦苗之爭",
     "text": "兩名散修為了一處零星礦苗吵得面紅耳赤，聽說你路過，請你評理。他們都說自己先到，礦苗不發表意見。",
-    "weight": 6,
+    "weight": 20,
     "tone": "neutral",
     "conditions": {
       "realmMin": "jindan"
@@ -2853,7 +2885,8 @@
             "effects": {
               "attributes": {
                 "fortune": 1
-              }
+              },
+              "flags": ["jindan_dispute_split"]
             }
           }
         ]
@@ -2867,13 +2900,14 @@
             "effects": {
               "attributes": {
                 "mind": 1
-              }
+              },
+              "flags": ["jindan_dispute_ruled"]
             }
           },
           {
             "weight": 50,
-            "text": "先到的那位其實是後到的，你過了三年才聽說。",
-            "effects": {}
+            "text": "先到的那位其實是後到的，你後來才聽說。",
+            "effects": { "flags": ["jindan_dispute_ruled"] }
           }
         ]
       },
@@ -2888,6 +2922,26 @@
         ]
       }
     ]
+  },
+  {
+    "id": "jindan_dispute_002_split",
+    "type": "anecdote",
+    "highlight": 3,
+    "title": "礦苗兩家",
+    "text": "當年分礦苗的兩名散修又攜手來訪，說後來各守半邊，竟一起挖出一條小脈。他們仍爭誰先看見，這回倒是笑著爭的。",
+    "weight": 80,
+    "tone": "neutral",
+    "conditions": { "realmMin": "jindan", "flags": ["jindan_dispute_split"] }
+  },
+  {
+    "id": "jindan_dispute_002_ruled",
+    "type": "anecdote",
+    "highlight": 3,
+    "title": "礦苗舊案",
+    "text": "當年爭礦苗的兩名散修又同來見你，說那處礦脈早已挖盡，如今還有人拿你的裁決爭論。他們這回沒有請你再斷，只留下兩份互不相同的說法。",
+    "weight": 80,
+    "tone": "neutral",
+    "conditions": { "realmMin": "jindan", "flags": ["jindan_dispute_ruled"] }
   },
   {
     "id": "jindan_offering_001",
