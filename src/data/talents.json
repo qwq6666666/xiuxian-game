@@ -5,7 +5,7 @@
     "desc": "前世的修行烙在神魂裡，今生吐納更為順暢。",
     "maxLevel": 30,
     "effect": "cultivation",
-    "perLevel": 0.1,
+    "perLevel": 0.12,
     "cost": { "base": 2, "growth": 1.25 }
   },
   {

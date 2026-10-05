@@ -16,6 +16,7 @@
   "fortuneGoodWeight": 0.05,
   "daoYunFirstTimeMult": 2,
   "offlineMaxHours": 168,
+  "offlineMaxYears": 20,
   "offlineMinSeconds": 60,
   "offlineStopLifespanRatio": 0.1
 }

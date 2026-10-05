@@ -29,6 +29,8 @@ export interface GameConfig {
   daoYunFirstTimeMult: number;
   /** 離線進度最多計算的現實小時數 */
   offlineMaxHours: number;
+  /** 離線一次最多閉關幾年（遊戲內），避免回來時壽元耗掉大半 */
+  offlineMaxYears: number;
   /** 離線少於此秒數不算（也不顯示回歸提示） */
   offlineMinSeconds: number;
   /** 離線時壽元剩餘低於此比例就停止閉關 */

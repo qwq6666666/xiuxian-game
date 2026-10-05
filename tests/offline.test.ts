@@ -4,7 +4,7 @@ import { lifespanMonths } from "../src/core/formulas";
 import { applyOffline } from "../src/core/offline";
 import { realmOf } from "../src/core/progress";
 import { tick } from "../src/core/tick";
-import { living } from "./helpers";
+import { lianqiNeed, living } from "./helpers";
 
 const HOUR = 3_600_000;
 
@@ -30,7 +30,7 @@ describe("離線進度", () => {
   });
 
   it("卡在大境界瓶頸就停止", () => {
-    const { state, summary } = applyOffline(living(2, { realmId: "lianqi", stage: 8, cultivation: 0 }), 168 * HOUR, data);
+    const { state, summary } = applyOffline(living(2, { realmId: "lianqi", stage: 8, cultivation: lianqiNeed(8) - 5 }), 168 * HOUR, data);
     expect(summary.stop).toBe("bottleneck");
     expect(summary.months).toBeGreaterThan(0);
     expect(state.phase).toBe("living");
@@ -46,6 +46,12 @@ describe("離線進度", () => {
     const left = total - state.ageMonths;
     expect(left).toBeGreaterThanOrEqual(total * data.config.offlineStopLifespanRatio);
     expect(realmOf(state, data).id).toBe(realm.id);
+  });
+
+  it("單次閉關年數有上限", () => {
+    const s = living(2, { realmId: "lianqi", stage: 0, lifespanBonus: 100000, cultivation: 0 });
+    const { summary } = applyOffline(s, 168 * HOUR, data);
+    expect(summary.months).toBeLessThanOrEqual(data.config.offlineMaxYears * 12);
   });
 
   it("離線時間有上限", () => {

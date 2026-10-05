@@ -1,9 +1,11 @@
 // 無介面模擬。用法：npm run sim -- [局數] [種子] [世數]
 //   世數 = 1（預設）：模擬 N 個獨立的一世，輸出享年、最高境界、事件與死因統計。
 //   世數 > 1：模擬 N 場連續轉世的戰役，每場跑「世數」世，輸出每一世的進度，看輪迴加成的效果。
-// 玩家策略很簡單：一直閉關，卡在瓶頸就突破（有築基丹就吃），抉擇在可選的選項中隨機挑一個，
+// 預設策略（simple）：一直閉關，卡在瓶頸就突破（有築基丹就吃），抉擇在可選的選項中隨機挑一個，
 // 每世結束後把道韻優先買宿慧。
-import { buyTalent, canBuyTalent } from "../src/core/actions";
+// 混合策略（mixed，第 5 個參數）：練氣前期外出歷練、之後閉關，靈石拿去買聚氣丹、延壽丹與築基丹，
+// 道韻依目標等級均衡購買五種天賦，比較接近認真玩的人。
+import { buyItem, buyTalent, canBuyItem, canBuyTalent, canUseItem, setSchedule, useItem } from "../src/core/actions";
 import { attemptBreakthrough, canBreakthrough } from "../src/core/breakthrough";
 import { canChoose, chooseEvent, eventOf } from "../src/core/events";
 import { createInitialState, newLife, startLife } from "../src/core/life";
@@ -16,6 +18,7 @@ import { realmLabel } from "../src/ui/format";
 const runs = Number(process.argv[2] ?? 1000);
 const baseSeed = Number(process.argv[3] ?? 1);
 const lives = Number(process.argv[4] ?? 1);
+const strategy = process.argv[5] === "mixed" ? "mixed" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -27,11 +30,41 @@ function randomChoice(pendingId: string, state: GameState): number {
   return options[Math.floor(v * options.length)];
 }
 
+/** 混合策略的每月操作：換安排、買丹藥、吃丹藥 */
+function mixedActions(state: GameState): GameState {
+  let s = state;
+  const lianqiEarly = s.realmId === "lianqi" && s.stage < 3;
+  s = setSchedule(s, lianqiEarly ? "adventure" : "retreat", gameData);
+  if (s.realmId === "lianqi" && s.stage >= 6 && (s.items.zhuji_dan ?? 0) === 0) s = buyItem(s, "zhuji_dan", gameData);
+  if (canBuyItem(s, "yanshou_dan", gameData) && s.realmId !== "mortal") s = buyItem(s, "yanshou_dan", gameData);
+  if (canUseItem(s, "yanshou_dan", gameData)) s = useItem(s, "yanshou_dan", gameData);
+  while (s.realmId !== "mortal" && canBuyItem(s, "juqi_dan", gameData) && s.spiritStones >= 520) s = buyItem(s, "juqi_dan", gameData);
+  while (canUseItem(s, "juqi_dan", gameData)) s = useItem(s, "juqi_dan", gameData);
+  return s;
+}
+
+/** 混合策略的天賦購買：依目標等級均衡，永遠買「等級/目標」最低且買得起的 */
+const TALENT_TARGETS: Record<string, number> = { suhui: 12, daoxin: 3, tianjuan: 2, fuyuan: 2, yize: 2 };
+function buyTalentsBalanced(state: GameState): GameState {
+  let s = state;
+  for (;;) {
+    const order = Object.entries(TALENT_TARGETS)
+      .map(([id, target]) => [id, (s.meta.talents[id] ?? 0) / target] as const)
+      .sort((a, b) => a[1] - b[1]);
+    const pick = order.find(([id]) => canBuyTalent(s, id, gameData));
+    if (!pick) return s;
+    // 最缺的天賦買不起就存著，不要被便宜的搶先（宿慧以外的天賦很貴）
+    if (!canBuyTalent(s, order[0][0], gameData)) return s;
+    s = buyTalent(s, pick[0], gameData);
+  }
+}
+
 /** 從開局玩到這一世結束（死亡或通關） */
 function playLife(start: GameState): GameState {
   let state = startLife(start, gameData);
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
+    if (strategy === "mixed" && state.phase === "living") state = mixedActions(state);
     if (state.pendingEvent !== null) state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
     // 卡在瓶頸時反覆嘗試突破，直到成功或老死
     while (state.phase === "living" && atBottleneck(state, gameData) && canBreakthrough(state, gameData)) {
@@ -188,12 +221,13 @@ function campaigns(): void {
         gotClear = true;
       }
       // 把道韻優先花在宿慧
-      while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
+      if (strategy === "mixed") state = buyTalentsBalanced(state);
+      else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：優先買宿慧）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${strategy === "mixed" ? "混合" : "優先買宿慧"}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(

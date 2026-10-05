@@ -32,7 +32,7 @@ export function applyOffline(
   if (!(elapsedMs >= config.offlineMinSeconds * 1000)) return idle("elapsed");
 
   const capped = Math.min(elapsedMs, config.offlineMaxHours * 3_600_000);
-  const budget = Math.floor(capped / config.msPerMonth);
+  const budget = Math.min(Math.floor(capped / config.msPerMonth), Math.floor(config.offlineMaxYears * 12));
   const sched = data.schedules.find((s) => s.id === "retreat");
   if (!sched) throw new Error("離線進度：找不到閉關修煉（retreat）安排");
 

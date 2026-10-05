@@ -124,6 +124,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     fortuneGoodWeight: num(o, "fortuneGoodWeight", file, { min: 0 }),
     daoYunFirstTimeMult: num(o, "daoYunFirstTimeMult", file, { min: 1 }),
     offlineMaxHours: num(o, "offlineMaxHours", file, { gt: 0 }),
+    offlineMaxYears: num(o, "offlineMaxYears", file, { gt: 0 }),
     offlineMinSeconds: num(o, "offlineMinSeconds", file, { min: 0 }),
     offlineStopLifespanRatio: num(o, "offlineStopLifespanRatio", file, { min: 0, max: 1 }),
   };
