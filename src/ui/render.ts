@@ -9,6 +9,7 @@ import {
 } from "../core/breakthrough";
 import { eventOf } from "../core/events";
 import { CLEAR_FRAGMENT_ID } from "../core/fragments";
+import { activeWorldEffects, itemPrice } from "../core/worldeffects";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
 import type { MapTarget } from "./mapinfo";
@@ -399,7 +400,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     pill: HTMLInputElement;
     pillText: HTMLElement;
     bag: HTMLElement;
-    market: { id: string; owned: HTMLElement; b: HTMLButtonElement }[];
+    market: { id: string; price: HTMLElement; owned: HTMLElement; b: HTMLButtonElement }[];
+    marketNote: HTMLElement;
   }
   let els: LifeEls | null = null;
   let lastState: GameState | null = null;
@@ -428,7 +430,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
           </section>
           <section><h2>背包</h2><ul id="bag" class="items"></ul></section>
-          <section><h2>坊市</h2><ul id="market" class="items"></ul></section>
+          <section><h2>坊市</h2><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p></section>
         </aside>
       </div>
       <div class="modal" id="eventModal" hidden>
@@ -456,7 +458,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const marketBox = q("#market");
     const market = data.items.map((item) => {
       const li = document.createElement("li");
-      li.innerHTML = `<div><strong>${item.name}</strong> <span class="price">${item.price} 靈石</span><small>${item.desc}</small></div>`;
+      li.innerHTML = `<div><strong>${item.name}</strong> <span class="price"></span><small>${item.desc}</small></div>`;
       const owned = document.createElement("span");
       owned.className = "owned";
       const b = document.createElement("button");
@@ -465,7 +467,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       b.addEventListener("click", () => handlers.onBuyItem(item.id));
       li.append(owned, b);
       marketBox.appendChild(li);
-      return { id: item.id, owned, b };
+      return { id: item.id, price: li.querySelector<HTMLElement>(".price")!, owned, b };
     });
 
     els = {
@@ -492,6 +494,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       pillText: q("#pillText"),
       bag: q("#bag"),
       market,
+      marketNote: q("#marketNote"),
     };
     els.btButton.addEventListener("click", () => handlers.onBreakthrough(els!.pill.checked));
     // 勾選丹藥後立刻更新成功率，不用等下一個月
@@ -566,6 +569,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     renderBag(state, e);
     for (const m of e.market) {
       const item = data.items.find((i) => i.id === m.id)!;
+      const price = itemPrice(state, m.id, data);
+      m.price.textContent = `${price} 靈石`;
+      m.price.classList.toggle("price-up", price > item.price);
+      m.price.classList.toggle("price-down", price < item.price);
       m.owned.textContent = `持有 ${state.items[m.id] ?? 0}`;
       m.b.disabled = !canBuyItem(state, m.id, data);
       const used = state.itemsUsed[m.id] ?? 0;
@@ -575,6 +582,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         if (taken > 0) m.owned.textContent += `／此階段已服 ${taken}，藥力 ${Math.round(pillPower(item.effect.falloff, taken) * 100)}%`;
       }
     }
+
+    // 世局讓價格變動時，說明原因
+    const reasons = activeWorldEffects(state, data).map((x) => fillSlots(x.reason, slotsOf(state)));
+    e.marketNote.hidden = reasons.length === 0;
+    e.marketNote.textContent = reasons.join("　");
 
     const last = state.log[state.log.length - 1];
     const key = `${state.log.length}:${last?.month ?? ""}:${last?.kind ?? ""}`;

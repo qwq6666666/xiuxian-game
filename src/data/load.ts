@@ -11,6 +11,7 @@ import spiritRootsJson from "./spiritRoots.json";
 import talentsJson from "./talents.json";
 import textJson from "./text.json";
 import mapJson from "./map.json";
+import worldEffectsJson from "./worldEffects.json";
 import worldEventsJson from "./worldEvents.json";
 import worldNamesJson from "./worldNames.json";
 import type { GameData } from "./types";
@@ -29,6 +30,7 @@ import {
   validateTalents,
   validateMap,
   validateText,
+  validateWorldEffects,
   validateWorldEvents,
   validateWorldNames,
 } from "./validate";
@@ -48,6 +50,7 @@ export const gameData: GameData = validateGameData({
   worldNames: validateWorldNames(worldNamesJson),
   map: validateMap(mapJson),
   worldEvents: validateWorldEvents(worldEventsJson),
+  worldEffects: validateWorldEffects(worldEffectsJson),
   eras: validateEras(erasJson),
 });
 

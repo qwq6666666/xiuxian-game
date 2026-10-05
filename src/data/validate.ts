@@ -21,6 +21,8 @@ import {
   type MapRegion,
   type Point,
   SECT_STATES,
+  type SectState,
+  type WorldEffectDef,
   type WorldEventDef,
   WORLD_EVENT_KINDS,
   type WorldEventKind,
@@ -371,6 +373,8 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   c.flags = optStrList(o, "flags", where);
   c.flagsNot = optStrList(o, "flagsNot", where);
   c.schedules = optStrList(o, "schedules", where);
+  c.world = optStrList(o, "world", where);
+  c.worldNot = optStrList(o, "worldNot", where);
   if (o.bottleneck !== undefined) {
     if (typeof o.bottleneck !== "boolean") fail(where, "bottleneck", "必須是 true 或 false");
     c.bottleneck = o.bottleneck;
@@ -380,7 +384,7 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   }
   for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
   for (const k of Object.keys(o)) {
-    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable"].includes(k)) {
+    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot"].includes(k)) {
       fail(where, k, "不是合法的條件");
     }
   }
@@ -796,6 +800,34 @@ const WORLD_EVENT_RULES: Record<WorldEventKind, { targets: string[]; tokens: str
   ferry: { targets: ["ferry"], tokens: ["region"], to: ["broken", "rebuilt"] },
 };
 
+export function validateWorldEffects(raw: unknown, file = "worldEffects.json"): WorldEffectDef[] {
+  const ids = new Set<string>();
+  return list(raw, file).map((r, i): WorldEffectDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const w = `${file} 第 ${i + 1} 筆（${id}）`;
+    if (ids.has(id)) fail(w, "id", "重複");
+    ids.add(id);
+    const wo = obj(o.when, `${w} 欄位 when`);
+    const when: WorldEffectDef["when"] = {};
+    if (wo.guardState !== undefined) {
+      const states = strList(wo, "guardState", `${w} 欄位 when`);
+      for (const s of states) {
+        if (!(SECT_STATES as readonly string[]).includes(s)) fail(w, "when.guardState", `${s} 不是合法的宗門狀態`);
+      }
+      when.guardState = states as SectState[];
+    }
+    if (wo.merchantBranchesMin !== undefined) when.merchantBranchesMin = num(wo, "merchantBranchesMin", `${w} 欄位 when`, { min: 1, integer: true });
+    if (wo.ferriesBrokenMin !== undefined) when.ferriesBrokenMin = num(wo, "ferriesBrokenMin", `${w} 欄位 when`, { min: 1, integer: true });
+    if (Object.keys(when).length === 0) fail(w, "when", "至少要有一個條件");
+    const mo = obj(o.market, `${w} 欄位 market`);
+    const market: Record<string, number> = {};
+    for (const k of Object.keys(mo)) market[k] = num(mo, k, `${w} 欄位 market`, { gt: 0 });
+    if (Object.keys(market).length === 0) fail(w, "market", "至少要有一個物品");
+    return { id, when, market, reason: str(o, "reason", w) };
+  });
+}
+
 export function validateWorldEvents(raw: unknown, file = "worldEvents.json"): WorldEventDef[] {
   const events = list(raw, file).map((r, i): WorldEventDef => {
     const where = `${file} 第 ${i + 1} 筆`;
@@ -913,6 +945,7 @@ function checkSlotRules(data: GameData): void {
   data.talents.forEach((x, i) => check(`talents.json 第 ${i + 1} 筆（${x.id}）`, x, false));
   data.spiritRoots.forEach((x, i) => check(`spiritRoots.json 第 ${i + 1} 筆（${x.id}）`, x, false));
   data.realms.forEach((x, i) => check(`realms.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.worldEffects.forEach((x, i) => check(`worldEffects.json 第 ${i + 1} 筆（${x.id}）`, { reason: x.reason }, true));
   data.worldEvents.forEach((x, i) => check(`worldEvents.json 第 ${i + 1} 筆（${x.id}）`, { note: x.note.replace(SLOT_PATTERN_FOR_NOTE, "") }, false));
   check("map.json", data.map, false);
   // text.json 的日誌模板用自己的 {realm}、{item} 等，只檢查參考名
@@ -951,6 +984,15 @@ export function validateGameData(data: GameData): GameData {
       if (level > talent.maxLevel) {
         throw new Error(`${where} 的 breakthroughRule.${key}：${ref.id} 的等級 ${level} 超過天賦上限 ${talent.maxLevel}`);
       }
+    }
+  });
+  const effectIds = new Set(data.worldEffects.map((x) => x.id));
+  data.worldEffects.forEach((x, i) => {
+    for (const id of Object.keys(x.market)) has(itemIds, id, `worldEffects.json 第 ${i + 1} 筆（${x.id}）的 market`, "items.json");
+  });
+  data.events.forEach((ev) => {
+    for (const id of [...(ev.conditions.world ?? []), ...(ev.conditions.worldNot ?? [])]) {
+      has(effectIds, id, `events.json ${ev.id} 的 conditions.world`, "worldEffects.json");
     }
   });
   data.schedules.forEach((s, i) => {

@@ -140,6 +140,10 @@ export interface EventConditions {
   bottleneck?: boolean;
   /** 還抽得到層級不超過此數的殘卷時才出現（1–3） */
   fragmentAvailable?: number;
+  /** 當下世局要有的全部效果 id（worldEffects.json，M17）；世局由年齡算出，不進存檔 */
+  world?: string[];
+  /** 當下世局不能有的任一效果 id */
+  worldNot?: string[];
 }
 
 export interface OutcomeDef {
@@ -383,6 +387,23 @@ export interface WorldEventDef {
   note: string;
 }
 
+/** 世局效果（M17）：當下世局符合 when 的全部條件時，坊市價格乘上 market 的倍率，事件條件可用它的 id */
+export interface WorldEffectDef {
+  id: string;
+  when: {
+    /** 守梯宗門目前的狀態 */
+    guardState?: SectState[];
+    /** 商行已設分號的地域數下限 */
+    merchantBranchesMin?: number;
+    /** 毀去的渡口數下限 */
+    ferriesBrokenMin?: number;
+  };
+  /** 物品 id → 價格倍率 */
+  market: Record<string, number>;
+  /** 坊市旁顯示的原因，可用名稱欄位 */
+  reason: string;
+}
+
 export interface GameData {
   config: GameConfig;
   realms: RealmDef[];
@@ -398,6 +419,7 @@ export interface GameData {
   worldNames: WorldNames;
   map: MapData;
   worldEvents: WorldEventDef[];
+  worldEffects: WorldEffectDef[];
   /** 年號清單，依世數循環使用 */
   eras: string[];
 }

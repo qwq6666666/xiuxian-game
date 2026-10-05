@@ -2,6 +2,7 @@
 import { gameData } from "../data/load";
 import type { GameData } from "../data/types";
 import { pillPower, stageNeed, talentCost } from "./formulas";
+import { itemPrice } from "./worldeffects";
 import type { GameState } from "./state";
 import { addLog, atBottleneck, realmOf, resolveStages } from "./tick";
 
@@ -21,7 +22,7 @@ export function renameCharacter(state: GameState, input: string, data: GameData 
 
 export function canBuyItem(state: GameState, itemId: string, data: GameData = gameData): boolean {
   const item = data.items.find((i) => i.id === itemId);
-  if (!item || state.phase !== "living" || state.spiritStones < item.price) return false;
+  if (!item || state.phase !== "living" || state.spiritStones < itemPrice(state, itemId, data)) return false;
   // 有每世上限的丹藥，買了用不掉就不讓買
   if (item.effect.kind === "lifespan") {
     return (state.items[itemId] ?? 0) + (state.itemsUsed[itemId] ?? 0) < item.effect.maxPerLife;
@@ -31,11 +32,10 @@ export function canBuyItem(state: GameState, itemId: string, data: GameData = ga
 
 export function buyItem(state: GameState, itemId: string, data: GameData = gameData): GameState {
   if (!canBuyItem(state, itemId, data)) return state;
-  const item = data.items.find((i) => i.id === itemId)!;
   return addLog(
     {
       ...state,
-      spiritStones: state.spiritStones - item.price,
+      spiritStones: state.spiritStones - itemPrice(state, itemId, data),
       items: { ...state.items, [itemId]: (state.items[itemId] ?? 0) + 1 },
     },
     { month: state.ageMonths, kind: "buy", realmId: state.realmId, stage: state.stage, itemId },

@@ -2178,5 +2178,145 @@
         ]
       }
     ]
+  },
+  {
+    "id": "gate_tea_001",
+    "type": "anecdote",
+    "title": "山門前的茶棚",
+    "text": "{guard}的山門關了，山腳的茶棚反倒生意興隆，等著進山的人坐滿了條凳。你坐下來聽了半個下午的閒話，沒聽到一句準話。",
+    "weight": 10,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "lianqi",
+      "world": [
+        "guard_closed"
+      ]
+    }
+  },
+  {
+    "id": "gate_market_001",
+    "type": "choice",
+    "title": "門內流出的丹藥",
+    "text": "{market}的巷尾，有人低聲說手上有一顆從{guard}門內流出來的築基丹，價錢比坊市便宜些。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 20,
+      "world": [
+        "guard_closed"
+      ]
+    },
+    "choices": [
+      {
+        "text": "買下",
+        "requires": {
+          "spiritStones": 300
+        },
+        "outcomes": [
+          {
+            "weight": 55,
+            "text": "丹藥是真的，包藥的紙上還蓋著山門的印。",
+            "effects": {
+              "spiritStones": -300,
+              "items": {
+                "zhuji_dan": 1
+              }
+            }
+          },
+          {
+            "weight": 45,
+            "text": "回去一剝，裡頭是蜜丸，賣丹的人早已不見了。",
+            "effects": {
+              "spiritStones": -300
+            }
+          }
+        ]
+      },
+      {
+        "text": "問他丹是從哪裡流出來的",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "賣丹的人看了你一眼，轉身就走，走得比來時快。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "不理他",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你繞過巷口，沒有回頭。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "branch_sign_001",
+    "type": "anecdote",
+    "title": "新招牌",
+    "text": "{merchant}在{market}的分號換了新招牌，夥計說今年各地都在換，字是同一個師傅寫的。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": {
+      "ageMin": 14,
+      "world": [
+        "merchant_wide"
+      ]
+    }
+  },
+  {
+    "id": "ferry_broken_001",
+    "type": "choice",
+    "title": "斷渡",
+    "text": "渡口毀了，擺渡人蹲在岸邊修船，說至少要等月餘。往來的客商都堵在這裡。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": {
+      "ageMin": 14,
+      "world": [
+        "ferries_broken"
+      ]
+    },
+    "choices": [
+      {
+        "text": "幫著搬貨",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你替客商搬了半日的貨，工錢是幾塊靈石。",
+            "effects": {
+              "spiritStones": 8
+            }
+          }
+        ]
+      },
+      {
+        "text": "就地打坐等船",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在岸邊坐了數日，等船的事漸漸忘了。",
+            "effects": {
+              "cultivation": 0.03
+            }
+          }
+        ]
+      },
+      {
+        "text": "繞道而行",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你繞了遠路，山水倒是看了不少。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
   }
 ]

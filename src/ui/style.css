@@ -157,3 +157,6 @@ blockquote.fragment-text small { display: block; margin-top: 4px; }
 .map-notes p { margin: 2px 0; }
 .map-info { margin-top: 12px; padding: 8px 12px; border-left: 2px solid var(--accent); min-height: 3.4em; }
 .map-info p { margin: 4px 0 0; }
+.price-up { color: var(--bad, #c0554a); }
+.price-down { color: var(--good, #4a9a6a); }
+.market-note { margin: 0.4em 0 0; font-size: 0.8em; opacity: 0.8; }
