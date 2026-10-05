@@ -29,6 +29,10 @@
 
 /* 彈窗：遮罩蓋住整個畫面，卡片在內部捲動，不會超出視窗 */
 .modal { position: fixed; inset: 0; z-index: var(--z-modal); padding: var(--sp-4); background: var(--overlay); display: flex; align-items: center; justify-content: center; }
+.modal:not([hidden]) { animation: modal-fade var(--dur-base) var(--ease); }
+.modal:not([hidden]) .card { animation: modal-rise var(--dur-base) var(--ease); }
+@keyframes modal-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .modal .card { min-width: 280px; }
 .modal .card:focus { outline: none; }
 .codex { z-index: var(--z-modal-top); }

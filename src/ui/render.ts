@@ -587,12 +587,20 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   let els: LifeEls | null = null;
   let lastState: GameState | null = null;
   let logKey = "";
+  let logLen = 0;
+  let prevStones: number | null = null;
+  let prevCultivation: number | null = null;
+  let prevStageKey = "";
   let bagKey = "";
   let eventKey = "";
 
   function buildLife(state: GameState): void {
     built = "life";
     logKey = "";
+    logLen = 0;
+    prevStones = null;
+    prevCultivation = null;
+    prevStageKey = "";
     bagKey = "";
     eventKey = "";
     // 桌面：日誌在左、側欄在右；手機（≤640px）改單欄，順序由 CSS 排：安排、突破、坐化、日誌、角色、背包、坊市。
@@ -779,6 +787,19 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     }
   }
 
+  /** 數值變動浮字：放在 anchor 內，aria-hidden，動畫結束自行移除 */
+  function floatDelta(anchor: HTMLElement, delta: number, extra: string): void {
+    if (delta === 0) return;
+    const span = document.createElement("span");
+    span.className = `float-delta ${delta > 0 ? "up" : "down"} ${extra}`.trim();
+    span.setAttribute("aria-hidden", "true");
+    span.textContent = delta > 0 ? `+${delta}` : `${delta}`;
+    anchor.appendChild(span);
+    span.addEventListener("animationend", () => span.remove());
+    // 動畫被關閉（reduced-motion）時不會觸發 animationend，保險起見定時移除
+    setTimeout(() => span.remove(), 1200);
+  }
+
   function renderLife(state: GameState): void {
     if (built !== "life" || !els) buildLife(state);
     const e = els!;
@@ -792,12 +813,41 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const lifespan = lifespanYears(state, data);
     const left = yearsLeft(state.ageMonths, lifespan);
     e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespan}（餘 ${left} 年）`;
-    e.stones.textContent = `靈石 ${state.spiritStones}`;
+    // 只改文字節點，避免把進行中的浮字一併清掉
+    const stonesText = `靈石 ${state.spiritStones}`;
+    if (e.stones.firstChild?.nodeType === Node.TEXT_NODE) e.stones.firstChild.nodeValue = stonesText;
+    else e.stones.prepend(stonesText);
+    if (prevStones !== null && state.spiritStones !== prevStones && !document.hidden) {
+      floatDelta(e.stones, state.spiritStones - prevStones, "");
+    }
+    prevStones = state.spiritStones;
     e.sched.textContent = `安排：${data.schedules.find((s) => s.id === state.schedule)?.name ?? ""}`;
     const travelTarget = state.travel.targetId ? placesAt(state, data).find((place) => place.id === state.travel.targetId) : null;
     e.travelOpen.hidden = travelTarget === null;
     if (travelTarget) e.travelOpen.textContent = `行至${travelTarget.name}・餘 ${state.travel.remainingMonths} 月`;
-    e.fill.style.width = `${Math.min(100, (state.cultivation / need) * 100)}%`;
+    // 進度條過渡長度 = 一個月的現實時間；換階段或歸零時不做倒退動畫
+    const stageKey = `${realm.id}:${state.stage}`;
+    const width = Math.min(100, (state.cultivation / need) * 100);
+    const resets = stageKey !== prevStageKey || width < parseFloat(e.fill.style.width || "0");
+    e.fill.style.setProperty("--dur-tick", `${Math.max(1, data.config.msPerMonth / state.speed)}ms`);
+    if (resets) {
+      e.fill.style.transition = "none";
+      e.fill.style.width = `${width}%`;
+      void e.fill.offsetWidth;
+      e.fill.style.transition = "";
+    } else {
+      e.fill.style.width = `${width}%`;
+    }
+    // 修為浮字：只在同一階段內出現跳升或損失（服藥、事件、突破失敗），日常累積不顯示
+    const gainNow = Math.floor(state.cultivation);
+    if (prevCultivation !== null && stageKey === prevStageKey && !document.hidden) {
+      const d = gainNow - prevCultivation;
+      const perMonth = paceHint(state, data);
+      const step = perMonth.kind === "eta" ? perMonth.perMonth * Math.max(1, state.speed) * 2 + 1 : Infinity;
+      if (d < 0 || d > step) floatDelta(e.progress, d, "bar");
+    }
+    prevCultivation = gainNow;
+    prevStageKey = stageKey;
     const cultivation = Math.floor(state.cultivation);
     const stuck = atBottleneck(state, data);
     e.barText.textContent = `修為 ${cultivation} / ${need}${stuck ? "　瓶頸" : ""}`;
@@ -882,10 +932,16 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const key = `${state.log.length}:${last?.month ?? ""}:${last?.kind ?? ""}`;
     if (key !== logKey) {
       logKey = key;
+      // 只有少量新增時才淡入；離線補算、匯入存檔一次多筆就不播
+      const added = state.log.length - logLen;
+      const fresh = logLen > 0 && added >= 1 && added <= 3 ? added : 0;
+      logLen = state.log.length;
       if (last) e.live.textContent = formatLogEntry(last, data, state.name, slotsOf(state));
       e.log.innerHTML = "";
+      let shown = 0;
       for (const entry of [...state.log].reverse()) {
         const li = document.createElement("li");
+        if (shown++ < fresh) li.className = "log-new";
         li.textContent = formatLogEntry(entry, data, state.name, slotsOf(state));
         const changes = formatChanges(entry.changes, data, slotsOf(state));
         if (changes.length > 0) {

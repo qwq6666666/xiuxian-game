@@ -26,7 +26,7 @@
 .todo::before { content: "待辦"; font-size: var(--fs-xs); border: 1px solid var(--accent); border-radius: 3px; padding: 0 6px; color: var(--accent); }
 
 .progress { position: relative; height: 22px; margin-top: var(--sp-2); background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; }
-#fill { height: 100%; background: var(--accent-dim); width: 0; }
+#fill { height: 100%; background: var(--accent-dim); width: 0; transition: width var(--dur-tick) linear; }
 #barText { position: absolute; inset: 0; text-align: center; font-size: var(--fs-sm); line-height: 22px; }
 
 .cols { display: grid; grid-template-columns: 1fr var(--side-w); gap: var(--sp-3); margin-top: var(--sp-3); }
@@ -35,3 +35,13 @@
 .log li { padding: var(--sp-1) 0; border-bottom: 1px dashed var(--line); }
 .log li:last-child { border-bottom: 0; }
 .side > * + * { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+/* 新日誌淡入；數值變動浮字（aria-hidden，不進螢幕閱讀器） */
+.log li.log-new { animation: log-in var(--dur-base) var(--ease); }
+@keyframes log-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+#stones { position: relative; }
+.float-delta { position: absolute; left: 100%; top: 0; margin-left: var(--sp-1); white-space: nowrap; pointer-events: none; font-size: var(--fs-sm); animation: float-up var(--dur-slow) var(--ease) forwards; }
+.float-delta.up { color: var(--good); }
+.float-delta.down { color: var(--bad); }
+.float-delta.bar { left: auto; right: var(--sp-2); top: 0; margin: 0; line-height: 22px; }
+@keyframes float-up { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }

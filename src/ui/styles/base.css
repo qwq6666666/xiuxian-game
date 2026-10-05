@@ -25,6 +25,7 @@ button {
   border-radius: var(--r-sm);
   padding: var(--sp-1) var(--sp-3);
   cursor: pointer;
+  transition: border-color var(--dur-fast), background-color var(--dur-fast), color var(--dur-fast);
 }
 button:hover:not(:disabled) { border-color: var(--muted); }
 button:disabled { color: var(--muted); border-style: dashed; background: transparent; cursor: default; }

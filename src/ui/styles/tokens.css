@@ -55,6 +55,13 @@
   --page-max: 960px;
   --side-w: 260px;
 
+  /* 動態：克制的淡入與位移，不用彈跳與發光；reduced-motion 時由 base.css 全域關閉 */
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 700ms;
+  --ease: ease-out;
+  --dur-tick: 1000ms; /* 進度條過渡長度，由 render.ts 依速度覆寫 */
+
   /* 層級 */
   --z-menu: 5;
   --z-modal: 20;
