@@ -1,6 +1,16 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
+
+/** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
+export interface TravelState {
+  locationId: string;
+  targetId: string | null;
+  totalMonths: number;
+  remainingMonths: number;
+  /** 依到訪順序記錄地點，供地圖繪製軌跡。 */
+  trail: string[];
+}
 
 /** 跨世保留的資料 */
 export interface Meta {
@@ -135,6 +145,7 @@ export interface GameState {
   nameCustom: boolean;
   /** 世界種子：每世擲骰時定下，世界由它重算，不存進存檔 */
   worldSeed: number;
+  travel: TravelState;
   attributes: Attributes;
   spiritRootId: string;
   originId: string;

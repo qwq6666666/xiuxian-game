@@ -1,5 +1,6 @@
 // 天下圖的畫面：用一張 SVG 畫出地域、國家、宗門、渡口與「你在這裡」，點選後顯示簡介。
 import type { GameState } from "../core/state";
+import { placesAt, routeTo, type TravelPlace } from "../core/travel";
 import { polityLabel, worldAt, worldFor } from "../core/world";
 import type { GameData, MapRegion } from "../data/types";
 import { activeEffectsAt, describeEffect, describeTarget, effectsForTarget, legendOf, mapAgeYears, sectMarker, type MapTarget } from "./mapinfo";
@@ -21,6 +22,36 @@ function html<K extends keyof HTMLElementTagNameMap>(tag: K, className?: string,
 
 const sameTarget = (a: MapTarget | null, b: MapTarget): boolean => a !== null && JSON.stringify(a) === JSON.stringify(b);
 
+function placeIdOf(target: MapTarget | null): string | null {
+  if (!target || target.kind === "stairs") return null;
+  if (target.kind === "region") return target.id === "beihuang" ? null : `capital:${target.id}`;
+  if (target.kind === "sect" || target.kind === "ferry") return `${target.kind}:${target.id}`;
+  if (target.kind === "branch") return `branch:${target.region}`;
+  return target.kind;
+}
+
+function targetOfPlace(place: TravelPlace): MapTarget {
+  if (place.id.startsWith("capital:")) return { kind: "region", id: place.region };
+  if (place.id.startsWith("sect:")) return { kind: "sect", id: place.id.slice(5) };
+  if (place.id.startsWith("ferry:")) return { kind: "ferry", id: place.id.slice(6) };
+  if (place.id.startsWith("branch:")) return { kind: "branch", region: place.region };
+  return { kind: place.id as "village" | "market" | "mountain" | "merchantHq" };
+}
+
+function along(points: [number, number][], progress: number): [number, number] {
+  const lengths = points.slice(1).map((p, i) => Math.hypot(p[0] - points[i][0], p[1] - points[i][1]));
+  const total = lengths.reduce((sum, n) => sum + n, 0);
+  let distance = total * Math.max(0, Math.min(1, progress));
+  for (let i = 0; i < lengths.length; i++) {
+    if (distance <= lengths[i]) {
+      const t = lengths[i] === 0 ? 0 : distance / lengths[i];
+      return [points[i][0] + (points[i + 1][0] - points[i][0]) * t, points[i][1] + (points[i + 1][1] - points[i][1]) * t];
+    }
+    distance -= lengths[i];
+  }
+  return points.at(-1)!;
+}
+
 /** 目前這一世、這個年齡的天下圖快照鍵：世界種子加變化條數，用來判斷「有新變化」 */
 export function mapStamp(state: GameState, data: GameData): string {
   const world = worldFor(state.worldSeed, data);
@@ -32,12 +63,16 @@ export function buildWorldMap(
   state: GameState,
   data: GameData,
   selected: MapTarget | null,
-  handlers: { onSelect(target: MapTarget | null): void; onClose(): void },
+  handlers: { onSelect(target: MapTarget | null): void; onClose(): void; onTravel(targetId: string): void },
 ): DocumentFragment {
   const world = worldFor(state.worldSeed, data);
   const snap = worldAt(world, mapAgeYears(state.ageMonths));
   const [w, h] = data.map.viewBox;
   const frag = document.createDocumentFragment();
+  const layout = html("div", "map-layout");
+  const mapPane = html("div", "map-pane");
+  const mapSide = html("div", "map-side");
+  layout.append(mapPane, mapSide);
 
   const head = html("div", "codex-head");
   head.append(html("h2", undefined, "天下圖"));
@@ -45,9 +80,9 @@ export function buildWorldMap(
   close.type = "button";
   close.addEventListener("click", handlers.onClose);
   head.append(close);
-  frag.append(head, html("p", "desc", "九渡洲。這一世的天下，與上一世不同。"));
+  frag.append(head, html("p", "desc", "九渡洲。山河未改，行路的人已不同。"), layout);
 
-  const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "map-svg", role: "img", "aria-label": "九渡洲示意圖" });
+  const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "map-svg", role: "img", "aria-label": "九渡洲地圖" });
 
   // 標記共用：點選、放大點擊範圍（手機上好點）
   const interactive = (el: SVGElement, target: MapTarget, hit?: [number, number, number]): SVGElement => {
@@ -83,6 +118,17 @@ export function buildWorldMap(
     });
     root.append(interactive(path, { kind: "region", id: region.id }));
   }
+
+  // 已走路線與正在走的路線放在地形之上、地點標記之下。
+  const places = placesAt(state, data);
+  const visited = state.travel.trail.map((id) => places.find((place) => place.id === id)).filter((place) => place !== undefined);
+  for (let i = 1; i < visited.length; i++) {
+    root.append(svg("path", { d: `M${visited[i - 1].point.join(",")} L${visited[i].point.join(",")}`, class: "map-visited" }));
+  }
+  const activeRoute = state.travel.targetId ? routeTo(state, state.travel.targetId, data) : null;
+  const previewRoute = !activeRoute && selected ? routeTo(state, placeIdOf(selected) ?? "", data) : null;
+  const shownRoute = activeRoute ?? previewRoute;
+  if (shownRoute) root.append(svg("polyline", { points: shownRoute.points.map((p) => p.join(",")).join(" "), class: activeRoute ? "map-route active" : "map-route" }));
   for (const region of data.map.regions) {
     const p = region.land ? polityOf(region) : undefined;
     const label = svg("text", { x: region.label[0], y: region.label[1], class: "map-label", "text-anchor": "middle" });
@@ -161,17 +207,21 @@ export function buildWorldMap(
   mt.textContent = world.birth.mountain;
   root.append(mt);
   const [vx, vy] = birthRegion.birth!.village;
-  const village = svg("g", { class: "map-you" });
-  village.append(svg("circle", { cx: vx, cy: vy, r: 9, class: "map-you-ring" }), svg("circle", { cx: vx, cy: vy, r: 4, class: "map-you-dot" }));
+  const village = svg("g", { class: "map-village" });
+  village.append(svg("circle", { cx: vx, cy: vy, r: 4, class: "map-village-dot" }));
   root.append(interactive(village, { kind: "village" }, [vx, vy, 12]));
-  const you = svg("text", { x: vx, y: vy - 13, class: "map-you-label", "text-anchor": "middle" });
-  you.textContent = "你在這裡";
   const villageName = svg("text", { x: vx, y: vy + 21, class: "map-small", "text-anchor": "middle" });
   villageName.textContent = world.birth.village;
-  root.append(you, villageName);
+  root.append(villageName);
+
+  const current = places.find((place) => place.id === state.travel.locationId)?.point ?? [vx, vy];
+  const markerPoint = activeRoute ? along(activeRoute.points, (state.travel.totalMonths - state.travel.remainingMonths) / state.travel.totalMonths) : current;
+  const you = svg("g", { class: "map-you" });
+  you.append(svg("circle", { cx: markerPoint[0], cy: markerPoint[1], r: 10, class: "map-you-ring" }), svg("circle", { cx: markerPoint[0], cy: markerPoint[1], r: 5, class: "map-you-dot" }));
+  root.append(you);
 
   root.addEventListener("click", () => handlers.onSelect(null));
-  frag.append(root);
+  mapPane.append(root);
 
   // 圖例
   const legend = html("div", "map-legend");
@@ -182,15 +232,60 @@ export function buildWorldMap(
     chip.append(sw, document.createTextNode(item.name));
     legend.append(chip);
   }
-  frag.append(legend);
-  frag.append(html("p", "desc map-symbols", "宗門：● 興盛　○ 平穩　◌ 衰微　◍ 閉山　✕ 覆滅　｜　◇ 渡口　■ 商行"));
+  mapPane.append(legend);
+  mapPane.append(html("p", "desc map-symbols", "● 目前位置　◇ 渡口　■ 商行　◉ 宗門　⋯ 預覽路線　━ 已走路線"));
+
+  const travel = html("section", "map-travel");
+  travel.append(html("h3", undefined, "行跡"));
+  const currentPlace = places.find((place) => place.id === state.travel.locationId);
+  travel.append(html("p", undefined, `目前：${currentPlace?.name ?? "出生地"}　已訪 ${new Set(state.travel.trail).size} 處`));
+  if (state.travel.trail.length > 1) {
+    const recent = state.travel.trail.slice(-6).map((id) => places.find((place) => place.id === id)?.name ?? id);
+    travel.append(html("p", "map-trail-text", `近程：${recent.join(" → ")}`));
+  }
+  const destinationLabel = html("label", "map-destination-label", "選擇地點");
+  const destinationSelect = html("select", "map-destination");
+  const prompt = html("option", undefined, "— 請選擇 —");
+  prompt.value = "";
+  destinationSelect.append(prompt);
+  for (const region of data.map.regions.filter((r) => r.land)) {
+    const group = html("optgroup");
+    group.label = region.name;
+    for (const place of places.filter((p) => p.region === region.id)) {
+      const option = html("option", undefined, `${place.name}・${place.status}`);
+      option.value = place.id;
+      group.append(option);
+    }
+    destinationSelect.append(group);
+  }
+  destinationSelect.value = placeIdOf(selected) ?? "";
+  destinationSelect.addEventListener("change", () => {
+    const place = places.find((item) => item.id === destinationSelect.value);
+    handlers.onSelect(place ? targetOfPlace(place) : null);
+  });
+  destinationLabel.append(destinationSelect);
+  travel.append(destinationLabel);
+  if (activeRoute) {
+    travel.append(html("p", "map-travel-status", `正往${activeRoute.to.name}，尚需 ${state.travel.remainingMonths} 個月。途中修行與事件照常。`));
+  } else if (previewRoute) {
+    travel.append(html("p", "map-travel-status", `${previewRoute.to.status}。需時 ${previewRoute.months} 個月，途經 ${previewRoute.regions.map((id) => data.map.regions.find((r) => r.id === id)!.name).join("、")}。`));
+    if (state.phase === "living" && state.pendingEvent === null) {
+      const go = html("button", "primary", `前往${previewRoute.to.name}`);
+      go.type = "button";
+      go.addEventListener("click", () => handlers.onTravel(previewRoute.to.id));
+      travel.append(go);
+    }
+  } else {
+    travel.append(html("p", "desc", "點選都城、宗門、渡口或坊市，可查看路線。"));
+  }
+  mapSide.append(travel);
 
   // 天下大勢
   const notes = html("div", "map-notes");
   notes.append(html("h3", undefined, "天下大勢"));
   if (snap.notes.length === 0) notes.append(html("p", "desc", "天下無事。"));
   for (const n of snap.notes) notes.append(html("p", undefined, n));
-  frag.append(notes);
+  mapSide.append(notes);
 
   // 世局影響：生效中的效果，原因加上影響的物價；點選相關標記時標出
   const related = new Set((selected ? effectsForTarget(selected, snap, data) : []).map((e) => e.id));
@@ -204,7 +299,7 @@ export function buildWorldMap(
     p.append(document.createTextNode(d.reason), html("small", undefined, `　${d.impact}`));
     effects.append(p);
   }
-  frag.append(effects);
+  mapSide.append(effects);
 
   // 簡介
   const info = html("div", "map-info");
@@ -219,6 +314,6 @@ export function buildWorldMap(
   } else {
     info.append(html("p", "desc", "點選地域、宗門、渡口，看一看。"));
   }
-  frag.append(info);
+  mapSide.append(info);
   return frag;
 }

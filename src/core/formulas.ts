@@ -12,6 +12,11 @@ export function splitAge(ageMonths: number): [number, number] {
   return [Math.floor(ageMonths / 12), ageMonths % 12];
 }
 
+/** 旅行月數：同域二個月，每跨一處地域再加四個月。 */
+export function travelMonths(regionHops: number): number {
+  return 2 + Math.max(0, regionHops) * 4;
+}
+
 export interface CultivationParams {
   config: GameConfig;
   rootMult: number;

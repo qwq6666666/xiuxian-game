@@ -15,7 +15,7 @@
 .menu-list { position: absolute; right: 0; top: calc(100% + var(--sp-1)); z-index: var(--z-menu); display: flex; flex-direction: column; gap: 6px; min-width: 9em; padding: var(--sp-2); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); }
 .menu-list button { text-align: left; white-space: nowrap; }
 
-#notice { color: var(--accent); margin: 0 0 var(--sp-3); }
+#notice { color: var(--accent); margin: 0 0 var(--sp-3); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
 
 .status { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); }
 .line { display: flex; flex-wrap: wrap; gap: var(--sp-1) 20px; align-items: baseline; }

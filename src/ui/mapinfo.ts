@@ -94,7 +94,7 @@ export function describeTarget(target: MapTarget, world: World, snap: WorldSnaps
       const birthPolity = polityOf(world.birth.region);
       const name = slots[target.kind];
       const text = fillBlurb(b[target.kind], { ...base, name, region: regionName(world.birth.region), country: polityLabel(birthPolity), capital: birthPolity.capital });
-      return { title: target.kind === "village" ? `${name}（你在這裡）` : name, lines: [text] };
+      return { title: target.kind === "village" ? `${name}（出生地）` : name, lines: [text] };
     }
   }
 }

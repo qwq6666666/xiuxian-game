@@ -8,6 +8,7 @@ import {
   pillAvailable,
 } from "../core/breakthrough";
 import { eventOf } from "../core/events";
+import { placesAt } from "../core/travel";
 import { CLEAR_FRAGMENT_ID } from "../core/fragments";
 import { activeWorldEffects, itemPrice } from "../core/worldeffects";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
@@ -55,6 +56,7 @@ export interface UiHandlers {
   onUseItem(itemId: string): void;
   onBuyItem(itemId: string): void;
   onZuohua(): void;
+  onTravel(targetId: string): void;
 }
 
 export interface Ui {
@@ -83,14 +85,17 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         </details>
       </div>
     </header>
-    <p id="notice" role="status" hidden></p>
+    <div id="notice" role="status" hidden><span id="noticeText"></span><button id="noticeGo" type="button" hidden></button><button id="noticeClose" type="button" aria-label="關閉提示">關閉</button></div>
     <div id="stage"></div>
     <div class="modal codex" id="codex" role="dialog" aria-modal="true" aria-label="殘卷錄" hidden><div class="card review" id="codex-card"></div></div>
-    <div class="modal codex" id="map" role="dialog" aria-modal="true" aria-label="天下圖" hidden><div class="card review" id="map-card"></div></div>
+    <div class="modal codex" id="map" role="dialog" aria-modal="true" aria-label="天下圖" hidden><div class="card review map-card" id="map-card"></div></div>
     <div class="modal codex" id="collection" role="dialog" aria-modal="true" aria-label="收藏" hidden><div class="card review" id="collection-card"></div></div>
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
   const noticeEl = root.querySelector<HTMLElement>("#notice")!;
+  const noticeText = root.querySelector<HTMLElement>("#noticeText")!;
+  const noticeGo = root.querySelector<HTMLButtonElement>("#noticeGo")!;
+  root.querySelector<HTMLButtonElement>("#noticeClose")!.addEventListener("click", () => { noticeEl.hidden = true; });
   const speedBox = root.querySelector<HTMLElement>(".speeds")!;
 
   const speedButtons = data.config.speeds.map((s) => {
@@ -279,15 +284,22 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   }
 
   function buildMap(state: GameState): void {
-    mapCard.replaceChildren(
-      buildWorldMap(state, data, mapSelected, {
+    const focusedOnDestination = document.activeElement?.classList.contains("map-destination") ?? false;
+    const content = buildWorldMap(state, data, mapSelected, {
         onSelect(target) {
           mapSelected = target;
           if (lastState) buildMap(lastState);
         },
         onClose: closeMap,
-      }),
-    );
+        onTravel(targetId) { handlers.onTravel(targetId); },
+      });
+    const marketLink = document.createElement("button");
+    marketLink.type = "button";
+    marketLink.textContent = "查看坊市物價";
+    marketLink.addEventListener("click", () => { closeMap(); requestAnimationFrame(() => jumpTo("market")); });
+    if (state.phase !== "rolling") content.append(marketLink);
+    mapCard.replaceChildren(content);
+    if (focusedOnDestination) mapCard.querySelector<HTMLSelectElement>(".map-destination")?.focus({ preventScroll: true });
   }
 
   function openMap(): void {
@@ -407,6 +419,30 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
   const itemName = (id: string) => data.items.find((i) => i.id === id)?.name ?? id;
 
+  function jumpTo(target: "market" | "schedules" | "breakthrough" | "goals" | "bag"): void {
+    if (!els) return;
+    const node = stageEl.querySelector<HTMLElement>({
+      market: ".s-market", schedules: "#schedSection", breakthrough: "#btSection", goals: "#goalsFold", bag: ".s-bag",
+    }[target]);
+    if (!node) return;
+    if (node instanceof HTMLDetailsElement) node.open = true;
+    node.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    (node.querySelector<HTMLElement>("button:not([disabled]), summary") ?? node).focus({ preventScroll: true });
+  }
+
+  // 只用已有的旗標定義找前情，不額外記錄或預告尚未發生的事件。
+  function relatedEvents(eventId: string): string[] {
+    const ev = data.events.find((item) => item.id === eventId);
+    if (!ev) return [];
+    const needed = new Set(ev.conditions.flags ?? []);
+    const produced = new Set([...(ev.effects?.flags ?? []), ...(ev.choices ?? []).flatMap((choice) => choice.outcomes.flatMap((outcome) => outcome.effects.flags ?? []))]);
+    return data.events.filter((candidate) => candidate.id !== eventId && (
+      (candidate.effects?.flags ?? []).some((flag) => needed.has(flag)) ||
+      (candidate.choices ?? []).some((choice) => choice.outcomes.some((outcome) => (outcome.effects.flags ?? []).some((flag) => needed.has(flag)))) ||
+      (candidate.conditions.flags ?? []).some((flag) => produced.has(flag))
+    )).map((candidate) => candidate.id);
+  }
+
   const statsHtml = (state: GameState): string =>
     `<dl class="stats">${ATTRIBUTE_KEYS.map(
       (k) => `<div><dt>${ATTR_LABEL[k]}</dt><dd>${state.attributes[k]}</dd></div>`,
@@ -501,6 +537,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     barText: HTMLElement;
     progress: HTMLElement;
     sched: HTMLElement;
+    travelOpen: HTMLButtonElement;
     pace: HTMLElement;
     todo: HTMLElement;
     todoText: HTMLElement;
@@ -510,10 +547,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     eventModal: HTMLElement;
     eventTitle: HTMLElement;
     eventText: HTMLElement;
+    eventHistory: HTMLElement;
     eventChoices: HTMLElement;
     life: HTMLElement;
     goalsFold: HTMLElement;
     goals: HTMLElement;
+    goalHint: HTMLElement;
+    goalGo: HTMLButtonElement;
     modal: HTMLElement;
     modalBody: HTMLElement;
     schedules: { id: string; b: HTMLButtonElement; facts: HTMLElement; hint: HTMLElement }[];
@@ -528,6 +568,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     bag: HTMLElement;
     market: { id: string; price: HTMLElement; owned: HTMLElement; b: HTMLButtonElement }[];
     marketNote: HTMLElement;
+    marketLink: HTMLButtonElement;
   }
   let els: LifeEls | null = null;
   let lastState: GameState | null = null;
@@ -545,7 +586,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const wide = window.matchMedia("(min-width: 641px)").matches;
     stageEl.innerHTML = `
       <section class="status" aria-label="狀態">
-        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><span id="life" class="muted"></span></div>
+        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
         <p id="pace" class="pace"></p>
         <div id="todo" class="todo" hidden><span id="todoText"></span><button id="todoGo" type="button" class="primary">前往突破</button></div>
@@ -565,16 +606,17 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <p id="zuohuaInfo" class="desc"></p>
             <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
-          <details class="fold s-goals" id="goalsFold"${wide ? " open" : ""}><summary>本世目標</summary><ul id="goals" class="goals"></ul></details>
+          <details class="fold s-goals" id="goalsFold"${wide ? " open" : ""}><summary>本世目標</summary><ul id="goals" class="goals"></ul><p id="goalHint" class="desc"></p><button id="goalGo" type="button" hidden></button></details>
           <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}${guideHtml()}${identityHtml(state)}</details>
           <details class="fold s-bag"${wide ? " open" : ""}><summary>背包</summary><ul id="bag" class="items"></ul></details>
-          <details class="fold s-market"${wide ? " open" : ""}><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p></details>
+          <details class="fold s-market"${wide ? " open" : ""}><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>查看世局原因</button></details>
         </aside>
       </div>
       <div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" hidden>
         <div class="card event">
           <h2 id="eventTitle"></h2>
           <p id="eventText"></p>
+          <div id="eventHistory" class="event-history" hidden></div>
           <div id="eventChoices" class="choices"></div>
         </div>
       </div>
@@ -620,6 +662,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       barText: q("#barText"),
       progress: q("#progress"),
       sched: q("#sched"),
+      travelOpen: q<HTMLButtonElement>("#travelOpen"),
       pace: q("#pace"),
       todo: q("#todo"),
       todoText: q("#todoText"),
@@ -629,10 +672,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       eventModal: q("#eventModal"),
       eventTitle: q("#eventTitle"),
       eventText: q("#eventText"),
+      eventHistory: q("#eventHistory"),
       eventChoices: q("#eventChoices"),
       life: q("#life"),
       goalsFold: q("#goalsFold"),
       goals: q("#goals"),
+      goalHint: q("#goalHint"),
+      goalGo: q<HTMLButtonElement>("#goalGo"),
       modal: q("#modal"),
       modalBody: q("#modalBody"),
       schedules,
@@ -647,8 +693,16 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       bag: q("#bag"),
       market,
       marketNote: q("#marketNote"),
+      marketLink: q<HTMLButtonElement>("#marketLink"),
     };
     els.btButton.addEventListener("click", () => handlers.onBreakthrough(els!.pill.checked));
+    els.marketLink.addEventListener("click", openMap);
+    els.travelOpen.addEventListener("click", openMap);
+    els.goalGo.addEventListener("click", () => {
+      const target = els!.goalGo.dataset.target;
+      if (target === "codex") openCodex();
+      else if (target === "schedules" || target === "market" || target === "breakthrough") jumpTo(target);
+    });
     els.todoGo.addEventListener("click", () => {
       els!.btSection.scrollIntoView({ block: "nearest" });
       els!.btButton.focus();
@@ -726,6 +780,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespan}（餘 ${left} 年）`;
     e.stones.textContent = `靈石 ${state.spiritStones}`;
     e.sched.textContent = `安排：${data.schedules.find((s) => s.id === state.schedule)?.name ?? ""}`;
+    const travelTarget = state.travel.targetId ? placesAt(state, data).find((place) => place.id === state.travel.targetId) : null;
+    e.travelOpen.hidden = travelTarget === null;
+    if (travelTarget) e.travelOpen.textContent = `行至${travelTarget.name}・餘 ${state.travel.remainingMonths} 月`;
     e.fill.style.width = `${Math.min(100, (state.cultivation / need) * 100)}%`;
     const cultivation = Math.floor(state.cultivation);
     const stuck = atBottleneck(state, data);
@@ -757,6 +814,16 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     }
     e.todo.hidden = e.todoText.textContent === "";
     e.todoGo.hidden = !(canBt && stuck);
+    if (stuck && canBt) {
+      const rule = breakthroughRuleOf(state, data);
+      if (rule?.pillId && !pillAvailable(state, data)) {
+        const pill = data.items.find((item) => item.id === rule.pillId);
+        if (pill) {
+          const shortfall = Math.max(0, itemPrice(state, pill.id, data) - state.spiritStones);
+          e.todoText.textContent += ` ${pill.name}可在坊市購得${shortfall > 0 ? `，尚缺 ${shortfall} 靈石` : ""}。`;
+        }
+      }
+    }
 
     for (const { id, b, facts, hint } of e.schedules) {
       const sched = data.schedules.find((s) => s.id === id)!;
@@ -794,6 +861,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const reasons = activeWorldEffects(state, data).map((x) => fillSlots(x.reason, slotsOf(state)));
     e.marketNote.hidden = reasons.length === 0;
     e.marketNote.textContent = reasons.join("　");
+    e.marketLink.hidden = reasons.length === 0;
 
     const last = state.log[state.log.length - 1];
     const key = `${state.log.length}:${last?.month ?? ""}:${last?.kind ?? ""}`;
@@ -811,6 +879,22 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           small.textContent = changes.join("　");
           li.appendChild(small);
         }
+        if (entry.kind === "event" && entry.eventId) {
+          const related = relatedEvents(entry.eventId);
+          const earlier = state.log.filter((prior) => prior.kind === "event" && prior.eventId && related.includes(prior.eventId) && prior.month < entry.month);
+          if (earlier.length > 0) {
+            const history = document.createElement("details");
+            const summary = document.createElement("summary");
+            summary.textContent = `回看前情（${earlier.length}）`;
+            history.append(summary);
+            for (const prior of earlier) {
+              const p = document.createElement("p");
+              p.textContent = formatLogEntry(prior, data, state.name, slotsOf(state));
+              history.append(p);
+            }
+            li.append(history);
+          }
+        }
         e.log.appendChild(li);
       }
     }
@@ -826,6 +910,21 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         const slots = slotsOf(state);
         e.eventTitle.textContent = fillSlots(ev.title, slots);
         e.eventText.textContent = fillSlots(ev.text, slots);
+        const earlier = state.log.filter((entry) => entry.kind === "event" && entry.eventId && relatedEvents(ev.id).includes(entry.eventId));
+        e.eventHistory.hidden = earlier.length === 0;
+        e.eventHistory.replaceChildren();
+        if (earlier.length > 0) {
+          const details = document.createElement("details");
+          const summary = document.createElement("summary");
+          summary.textContent = `先前的因緣（${earlier.length}）`;
+          details.append(summary);
+          for (const entry of earlier) {
+            const p = document.createElement("p");
+            p.textContent = formatLogEntry(entry, data, state.name, slots);
+            details.append(p);
+          }
+          e.eventHistory.append(details);
+        }
         (ev.choices ?? []).forEach((choice, i) => {
           const reason = choiceBlockReason(choice.requires, state, data);
           const b = document.createElement("button");
@@ -851,6 +950,18 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           return li;
         }),
       );
+      const pending = items.find((g) => !g.done);
+      e.goalGo.hidden = !pending;
+      if (!pending) e.goalHint.textContent = items.length ? "本世目標已盡數達成。" : "";
+      else {
+        const kind = pending.def.condition.kind;
+        e.goalHint.textContent = kind === "fragments" || kind === "events" ? "想多見些人事，可考慮外出歷練或走訪渡口；修為進度會放慢。" :
+          kind === "realm" ? "想推進修為，可考慮閉關；遇到瓶頸仍須親自突破。" :
+          kind === "age" ? "壽元不足時，可留意延壽丹與背包。" : "此事自有後續，留意往後見聞。";
+        const target = kind === "age" ? "market" : kind === "fragments" && state.meta.fragments.length > 0 ? "codex" : kind === "realm" && stuck ? "breakthrough" : "schedules";
+        e.goalGo.dataset.target = target;
+        e.goalGo.textContent = { market: "查看坊市", codex: "閱讀殘卷", breakthrough: "查看突破", schedules: "查看安排" }[target];
+      }
     }
     e.life.textContent = `第 ${state.meta.lives + (state.review === null ? 1 : 0)} 世`;
     renderModal(state, e);
@@ -989,19 +1100,38 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
   return {
     render(state) {
+      const arrivedAt = lastState?.travel.targetId && !state.travel.targetId && state.travel.locationId === lastState.travel.targetId
+        ? placesAt(state, data).find((place) => place.id === state.travel.locationId)?.name : null;
       lastState = state;
       updateCodexButton(state);
       updateMapButton(state);
       if (!codexEl.hidden) buildCodex(state);
       if (!collectionEl.hidden) buildCollection(state);
-      if (!mapEl.hidden) buildMap(state);
+      if (!mapEl.hidden && !document.activeElement?.classList.contains("map-destination")) buildMap(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));
       if (state.phase === "rolling") renderRoll(state);
       else renderLife(state);
+      if (arrivedAt) {
+        noticeText.textContent = `已抵達${arrivedAt}。此處的風物，總算不只在圖上。`;
+        noticeGo.hidden = true;
+        noticeEl.hidden = false;
+      }
+      if (!noticeEl.hidden && noticeText.textContent.startsWith("閉關 ")) {
+        let target: "breakthrough" | "bag" | "schedules" | null = null;
+        if (state.phase === "living" && atBottleneck(state, data) && canBreakthrough(state, data)) target = "breakthrough";
+        else if (state.phase === "living" && yearsLeft(state.ageMonths, lifespanYears(state, data)) < lifespanYears(state, data) * 0.1) target = "bag";
+        else if (state.phase === "living") target = "schedules";
+        noticeGo.hidden = target === null;
+        if (target) {
+          noticeGo.textContent = { breakthrough: "查看突破", bag: "查看背包", schedules: "查看安排" }[target];
+          noticeGo.onclick = () => { noticeEl.hidden = true; jumpTo(target); };
+        }
+      }
     },
     notice(message) {
-      noticeEl.textContent = message;
+      noticeText.textContent = message;
+      noticeGo.hidden = true;
       noticeEl.hidden = message === "";
     },
   };

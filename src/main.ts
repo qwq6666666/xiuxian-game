@@ -8,6 +8,7 @@ import { createInitialState, newLife, reroll, startLife } from "./core/life";
 import { deserialize, importSave, serialize } from "./core/save";
 import type { GameState } from "./core/state";
 import { tick } from "./core/tick";
+import { beginTravel } from "./core/travel";
 import { gameData as data } from "./data/load";
 import { formatOffline } from "./ui/format";
 import { mountUi } from "./ui/render";
@@ -77,6 +78,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onBreakthrough: (usePill) => update(attemptBreakthrough(state, usePill, data)),
   onUseItem: (id) => update(useItem(state, id, data)),
   onZuohua: () => update(zuohua(state, data)),
+  onTravel: (targetId) => update(beginTravel(state, targetId, data)),
   onBuyItem: (id) => update(buyItem(state, id, data)),
   onExport() {
     const text = serialize(state);

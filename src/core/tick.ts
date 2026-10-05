@@ -6,6 +6,7 @@ import { addLog, atBottleneck, realmOf, resolveStages, scheduleOf } from "./prog
 import { endLife } from "./review";
 import { nextInt, nextRandom } from "./rng";
 import type { GameState } from "./state";
+import { advanceTravel } from "./travel";
 
 // 其他模組一直從 tick 取用這些函式，維持原本的匯入路徑
 export { addLog, atBottleneck, lifespanYears, nextRealm, realmOf, resolveStages, scheduleOf, scheduleOpen } from "./progress";
@@ -90,6 +91,7 @@ function stepMonth(state: GameState, data: GameData): GameState {
     const died = addLog(s, { month, kind: "death", realmId: s.realmId, stage: s.stage }, data.config.logLimit);
     return endLife(died, "lifespan", data);
   }
+  s = { ...s, travel: advanceTravel(s.travel) };
   return advanceEvents(s, month, data);
 }
 

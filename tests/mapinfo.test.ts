@@ -53,12 +53,12 @@ describe("天下圖：簡介", () => {
     }
   });
 
-  it("「你在這裡」寫出村名與所屬國；殘階只有一句傳聞", () => {
+  it("出生地寫出村名與所屬國；殘階只有一句傳聞", () => {
     const world = generateWorld(5, data);
     const snap = worldAt(world, 20);
     const v = describeTarget({ kind: "village" }, world, snap, data);
     expect(v.title).toContain(world.birth.village);
-    expect(v.title).toContain("你在這裡");
+    expect(v.title).toContain("出生地");
     expect(v.lines[0]).toContain(world.birth.village);
     expect(describeTarget({ kind: "stairs" }, world, snap, data).lines).toEqual([data.map.stairs.text]);
   });
