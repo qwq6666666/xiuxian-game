@@ -1,7 +1,7 @@
 // 玩家主動的操作：切換日常安排、坊市購買、使用丹藥。
 import { gameData } from "../data/load";
 import type { GameData } from "../data/types";
-import { stageNeed, talentCost } from "./formulas";
+import { pillPower, stageNeed, talentCost } from "./formulas";
 import type { GameState } from "./state";
 import { addLog, atBottleneck, realmOf, resolveStages } from "./tick";
 
@@ -65,13 +65,18 @@ export function buyTalent(state: GameState, talentId: string, data: GameData = g
   };
 }
 
+/** 目前這個階段已服的聚氣丹數（丹毒）；換了階段就從 0 算 */
+export function pillsTaken(state: GameState): number {
+  return state.pillStage === `${state.realmId}:${state.stage}` ? state.pillCount : 0;
+}
+
 /** 背包裡可以直接服用的丹藥（築基丹在突破時才消耗，不能直接服用） */
 export function canUseItem(state: GameState, itemId: string, data: GameData = gameData): boolean {
   const item = data.items.find((i) => i.id === itemId);
   if (!item || state.phase !== "living" || (state.items[itemId] ?? 0) <= 0) return false;
   switch (item.effect.kind) {
     case "cultivationFraction":
-      return !atBottleneck(state, data);
+      return !atBottleneck(state, data) && pillPower(item.effect.falloff, pillsTaken(state)) > 0;
     case "lifespan":
       return (state.itemsUsed[itemId] ?? 0) < item.effect.maxPerLife;
     case "breakthrough":
@@ -88,7 +93,9 @@ export function useItem(state: GameState, itemId: string, data: GameData = gameD
     itemsUsed: { ...state.itemsUsed, [itemId]: (state.itemsUsed[itemId] ?? 0) + 1 },
   };
   if (item.effect.kind === "cultivationFraction") {
-    const gain = stageNeed(realmOf(s, data), s.stage) * item.effect.value;
+    const power = pillPower(item.effect.falloff, pillsTaken(state));
+    const gain = stageNeed(realmOf(s, data), s.stage) * item.effect.value * power;
+    s = { ...s, pillStage: `${state.realmId}:${state.stage}`, pillCount: pillsTaken(state) + 1 };
     s = resolveStages({ ...s, cultivation: s.cultivation + gain }, s.ageMonths, data);
   } else if (item.effect.kind === "lifespan") {
     s = { ...s, lifespanBonus: s.lifespanBonus + item.effect.years };

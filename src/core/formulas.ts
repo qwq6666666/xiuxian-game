@@ -43,6 +43,11 @@ export function stageNeed(realm: RealmDef, stage: number): number {
   return Math.round(realm.need.base * realm.need.growth ** stage);
 }
 
+/** 同一階段已服 count 顆聚氣丹時，下一顆的藥力倍率（丹毒）：依 falloff 逐顆遞減，超過清單為 0 */
+export function pillPower(falloff: number[], count: number): number {
+  return falloff[count] ?? 0;
+}
+
 /** 事件的抽取權重：基礎 × 日常安排倍率 ×（好事件再乘以 1 + 氣運 × 係數） */
 export function eventWeight(
   baseWeight: number,

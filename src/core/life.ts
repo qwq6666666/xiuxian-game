@@ -78,6 +78,8 @@ export function createInitialState(
       spiritStones: 0,
       items: {},
       itemsUsed: {},
+      pillStage: "",
+      pillCount: 0,
       lifespanBonus: 0,
       schedule: data.schedules[0].id,
       realmId: data.realms[0].id,

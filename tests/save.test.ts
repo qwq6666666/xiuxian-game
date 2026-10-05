@@ -130,6 +130,16 @@ describe("save", () => {
     expect(() => deserialize(JSON.stringify({ ...good, log: noId }))).toThrow("eventId");
   });
 
+  it("v10 存檔遷移：補上丹毒計數", () => {
+    const cur: Record<string, unknown> = { ...JSON.parse(serialize(startLife(createInitialState(4)))), version: 10 };
+    delete cur.pillStage;
+    delete cur.pillCount;
+    const s = deserialize(JSON.stringify(cur));
+    expect(s.version).toBe(SAVE_VERSION);
+    expect(s.pillStage).toBe("");
+    expect(s.pillCount).toBe(0);
+  });
+
   it("匯入：容忍頭尾空白與 BOM，內容壞掉時丟出錯誤", () => {
     const s = tick({ ...startLife(createInitialState(5)), autoChoice: true }, 120);
     expect(importSave(`﻿  

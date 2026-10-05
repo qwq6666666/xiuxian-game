@@ -99,7 +99,7 @@ export interface ScheduleDef {
 }
 
 export type ItemEffect =
-  | { kind: "cultivationFraction"; value: number }
+  | { kind: "cultivationFraction"; value: number; falloff: number[] }
   | { kind: "lifespan"; years: number; maxPerLife: number }
   | { kind: "breakthrough" };
 

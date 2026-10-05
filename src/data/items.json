@@ -2,9 +2,9 @@
   {
     "id": "juqi_dan",
     "name": "聚氣丹",
-    "desc": "服之可立得一筆修為，約當前階段所需的四分之一。",
+    "desc": "服之可立得一筆修為，約當前階段所需的四分之一。同一階段服得越多，藥力越淡，丹毒積深則不能再服。",
     "price": 20,
-    "effect": { "kind": "cultivationFraction", "value": 0.25 }
+    "effect": { "kind": "cultivationFraction", "value": 0.25, "falloff": [1, 0.6, 0.3] }
   },
   {
     "id": "zhuji_dan",

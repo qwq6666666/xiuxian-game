@@ -274,7 +274,11 @@ export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
     const kind = e.kind;
     let effect: ItemEffect;
     if (kind === "cultivationFraction") {
-      effect = { kind, value: num(e, "value", ew, { gt: 0 }) };
+      const falloff = e.falloff;
+      if (!Array.isArray(falloff) || falloff.length === 0 || !falloff.every((x) => typeof x === "number" && x > 0 && x <= 1)) {
+        return fail(ew, "falloff", `必須是非空的陣列，每個元素介於 0（不含）與 1 之間，目前為 ${JSON.stringify(falloff)}`);
+      }
+      effect = { kind, value: num(e, "value", ew, { gt: 0 }), falloff: falloff as number[] };
     } else if (kind === "lifespan") {
       effect = {
         kind,

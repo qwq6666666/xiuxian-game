@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 
 /** 跨世保留的資料 */
 export interface Meta {
@@ -127,6 +127,10 @@ export interface GameState {
   items: Record<string, number>;
   /** 本世各物品已服用的次數 */
   itemsUsed: Record<string, number>;
+  /** 丹毒：本世最近一次服聚氣丹時所在的階段（"境界id:階段"），換階段後計數作廢 */
+  pillStage: string;
+  /** 丹毒：在 pillStage 這個階段已服的聚氣丹數 */
+  pillCount: number;
   /** 延壽丹累積的壽元上限（年） */
   lifespanBonus: number;
   /** 目前的日常安排 */

@@ -61,6 +61,8 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     const i = gameData.items[0];
     expect(() => validateItems([{ ...i, price: 0 }])).toThrow("第 1 筆（juqi_dan）：欄位 price");
     expect(() => validateItems([{ ...i, effect: { kind: "boom" } }])).toThrow("kind");
+    expect(() => validateItems([{ ...i, effect: { kind: "cultivationFraction", value: 0.25 } }])).toThrow("falloff");
+    expect(() => validateItems([{ ...i, effect: { kind: "cultivationFraction", value: 0.25, falloff: [1, 0] } }])).toThrow("falloff");
     expect(() => validateItems([{ ...i, effect: { kind: "lifespan", years: 10 } }])).toThrow("maxPerLife");
   });
 

@@ -7,6 +7,7 @@
 // 道韻依目標等級均衡購買五種天賦，比較接近認真玩的人。
 // 通關後策略（post，第 5 個參數）：通關前與 mixed 相同；第一次通關之後道韻先買神光到結嬰門檻，
 // 再依較高的目標均衡購買，並量測首次元嬰、金丹期單世時長與結嬰嘗試次數（對照 GDD 第 23.6 節）。
+// 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
 // 例：npm run sim -- 300 1 40 post
 import { buyItem, buyTalent, canBuyItem, canBuyTalent, canUseItem, setSchedule, useItem } from "../src/core/actions";
 import { attemptBreakthrough, canBreakthrough } from "../src/core/breakthrough";
@@ -21,7 +22,7 @@ import { realmLabel } from "../src/ui/format";
 const runs = Number(process.argv[2] ?? 1000);
 const baseSeed = Number(process.argv[3] ?? 1);
 const lives = Number(process.argv[4] ?? 1);
-const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : "simple";
+const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -43,6 +44,14 @@ function mixedActions(state: GameState): GameState {
   if (canBuyItem(s, "yanshou_dan", gameData) && s.realmId !== "mortal") s = buyItem(s, "yanshou_dan", gameData);
   if (canUseItem(s, "yanshou_dan", gameData)) s = useItem(s, "yanshou_dan", gameData);
   while (s.realmId !== "mortal" && canBuyItem(s, "juqi_dan", gameData) && s.spiritStones >= 520) s = buyItem(s, "juqi_dan", gameData);
+  while (canUseItem(s, "juqi_dan", gameData)) s = useItem(s, "juqi_dan", gameData);
+  return s;
+}
+
+/** 採藥丹修策略的每月操作：一直採藥，凡人以外有錢就買聚氣丹、能服就服 */
+function herbActions(state: GameState): GameState {
+  let s = setSchedule(state, "herb", gameData);
+  while (s.realmId !== "mortal" && canBuyItem(s, "juqi_dan", gameData)) s = buyItem(s, "juqi_dan", gameData);
   while (canUseItem(s, "juqi_dan", gameData)) s = useItem(s, "juqi_dan", gameData);
   return s;
 }
@@ -89,7 +98,8 @@ function playLife(start: GameState): GameState {
   let state = startLife(start, gameData);
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
-    if (strategy !== "simple" && state.phase === "living") state = mixedActions(state);
+    if (strategy === "herb" && state.phase === "living") state = herbActions(state);
+    else if (strategy !== "simple" && state.phase === "living") state = mixedActions(state);
     if (state.pendingEvent !== null) state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
     // 卡在瓶頸時反覆嘗試突破，直到成功或老死
     while (state.phase === "living" && atBottleneck(state, gameData) && canBreakthrough(state, gameData)) {
@@ -286,14 +296,14 @@ function campaigns(): void {
         yuanyingHours.push((months * gameData.config.msPerMonth) / 3_600_000);
       }
       // 把道韻優先花在宿慧
-      if (strategy === "mixed") state = buyTalentsBalanced(state);
+      if (strategy === "mixed" || strategy === "herb") state = buyTalentsBalanced(state);
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", simple: "優先買宿慧" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", simple: "優先買宿慧" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(

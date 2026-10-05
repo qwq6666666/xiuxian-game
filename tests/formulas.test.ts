@@ -3,6 +3,7 @@ import {
   cultivationPerMonth,
   lifespanMonths,
   msToMonths,
+  pillPower,
   splitAge,
   stageNeed,
 } from "../src/core/formulas";
@@ -61,5 +62,13 @@ describe("formulas", () => {
   it("壽元上限以月計", () => {
     expect(lifespanMonths(mortal)).toBe(960);
     expect(lifespanMonths(lianqi)).toBe(1440);
+  });
+});
+
+describe("pillPower", () => {
+  it("依服用順序取藥力倍率，超過清單為 0", () => {
+    expect(pillPower([1, 0.6, 0.3], 0)).toBe(1);
+    expect(pillPower([1, 0.6, 0.3], 2)).toBe(0.3);
+    expect(pillPower([1, 0.6, 0.3], 3)).toBe(0);
   });
 });

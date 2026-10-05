@@ -93,6 +93,28 @@ describe("使用丹藥", () => {
     expect(t.itemsUsed.juqi_dan).toBe(1);
   });
 
+  it("丹毒：同一階段每顆藥力遞減，第四顆起不能再服", () => {
+    let s = living(1, { realmId: "lianqi", stage: 2, cultivation: 0, items: { juqi_dan: 5 } });
+    const need = lianqiNeed(2);
+    s = useItem(s, "juqi_dan");
+    expect(s.cultivation).toBeCloseTo(need * 0.25);
+    s = useItem(s, "juqi_dan");
+    expect(s.cultivation).toBeCloseTo(need * 0.25 * 1.6);
+    s = useItem(s, "juqi_dan");
+    expect(s.cultivation).toBeCloseTo(need * 0.25 * 1.9);
+    expect(canUseItem(s, "juqi_dan")).toBe(false);
+    expect(useItem(s, "juqi_dan")).toBe(s);
+    expect(s.items.juqi_dan).toBe(2);
+  });
+
+  it("丹毒：換了階段就重新計算", () => {
+    let s = living(1, { realmId: "lianqi", stage: 2, cultivation: 0, items: { juqi_dan: 5 } });
+    for (let i = 0; i < 3; i++) s = useItem(s, "juqi_dan");
+    const next = { ...s, stage: 3, cultivation: 0 };
+    expect(canUseItem(next, "juqi_dan")).toBe(true);
+    expect(useItem(next, "juqi_dan").cultivation).toBeCloseTo(lianqiNeed(3) * 0.25);
+  });
+
   it("聚氣丹足以升級時會直接升層", () => {
     const s = living(1, { realmId: "lianqi", stage: 0, cultivation: lianqiNeed(0) - 10, items: { juqi_dan: 1 } });
     const t = useItem(s, "juqi_dan");

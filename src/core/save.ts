@@ -78,6 +78,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   8: (d) => ({ ...d, version: 9, meta: { ...obj(d.meta, "meta"), clears: {} } }),
   // v9 沒有元嬰紀錄：補上空的紀錄
   9: (d) => ({ ...d, version: 10, meta: { ...obj(d.meta, "meta"), yuanying: {} } }),
+  // v10 沒有丹毒計數：補上空的（等於這一階段還沒服過聚氣丹）
+  10: (d) => ({ ...d, version: 11, pillStage: "", pillCount: 0 }),
 };
 
 function fail(field: string, msg: string): never {
@@ -304,6 +306,8 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     spiritStones: num(o, "spiritStones", { integer: true, min: 0 }),
     items: intRecord(o, "items"),
     itemsUsed: intRecord(o, "itemsUsed"),
+    pillStage: str(o, "pillStage"),
+    pillCount: num(o, "pillCount", { integer: true, min: 0 }),
     lifespanBonus: num(o, "lifespanBonus", { integer: true }),
     schedule,
     realmId,

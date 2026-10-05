@@ -1,4 +1,4 @@
-import { canBuyItem, canBuyTalent, canUseItem } from "../core/actions";
+import { canBuyItem, canBuyTalent, canUseItem, pillsTaken } from "../core/actions";
 import {
   breakthroughRuleOf,
   canBreakthrough,
@@ -14,7 +14,7 @@ import { fillSlots, type SlotValues } from "../data/slots";
 import type { MapTarget } from "./mapinfo";
 import { buildWorldMap, mapStamp } from "./worldmap";
 import { eraName, lifeIndex } from "../core/era";
-import { splitAge, stageNeed, talentCost } from "../core/formulas";
+import { pillPower, splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { CLEARED_FLAG } from "../core/review";
 import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
@@ -570,6 +570,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       m.b.disabled = !canBuyItem(state, m.id, data);
       const used = state.itemsUsed[m.id] ?? 0;
       if (item.effect.kind === "lifespan") m.owned.textContent += `／已服 ${used}`;
+      if (item.effect.kind === "cultivationFraction") {
+        const taken = pillsTaken(state);
+        if (taken > 0) m.owned.textContent += `／此階段已服 ${taken}，藥力 ${Math.round(pillPower(item.effect.falloff, taken) * 100)}%`;
+      }
     }
 
     const last = state.log[state.log.length - 1];
