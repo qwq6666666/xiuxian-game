@@ -234,8 +234,8 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
   });
   uniqueIds(realms, file);
   const last = realms[realms.length - 1];
-  if (last && last.endsLife !== "always") {
-    fail(`${file} 第 ${realms.length} 筆（${last.id}）`, "endsLife", `最後一個境界必須是 "always"，目前為 ${JSON.stringify(last.endsLife)}`);
+  if (last && last.endsLife === "never") {
+    fail(`${file} 第 ${realms.length} 筆（${last.id}）`, "endsLife", `最後一個境界不能是 "never"，否則這一世永遠不會結束`);
   }
   return realms;
 }

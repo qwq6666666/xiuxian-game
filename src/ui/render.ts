@@ -19,7 +19,7 @@ import { buildWorldMap, mapStamp } from "./worldmap";
 import { eraName, lifeIndex } from "../core/era";
 import { pillPower, splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
-import { CLEARED_FLAG } from "../core/review";
+import { CLEARED_FLAG, YUANYING_FLAG } from "../core/review";
 import { atBottleneck, lifespanYears, realmOf, scheduleOpen } from "../core/tick";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
 import {
@@ -717,7 +717,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const realm = realmOf(state, data);
     const need = stageNeed(realm, state.stage);
     const [years, months] = splitAge(state.ageMonths);
-    e.realm.textContent = realmLabel(realm, state.stage) + (state.flags.includes(CLEARED_FLAG) ? "（已通關）" : "");
+    e.realm.textContent =
+      realmLabel(realm, state.stage) +
+      (state.flags.includes(YUANYING_FLAG) ? "（已結嬰）" : state.flags.includes(CLEARED_FLAG) ? "（已通關）" : "");
     e.name.textContent = `${state.name}（${eraName(lifeIndex(state), data)}年間）`;
     const lifespan = lifespanYears(state, data);
     const left = yearsLeft(state.ageMonths, lifespan);

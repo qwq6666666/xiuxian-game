@@ -2,7 +2,7 @@
 import { gameData } from "../data/load";
 import type { BreakthroughRule, GameData } from "../data/types";
 import { breakthroughFailLoss, breakthroughRate, talentBonus } from "./formulas";
-import { applyClear, CLEARED_FLAG, endLife, endsLifeOnEntry } from "./review";
+import { applyEndingAndContinue, endLife, endsLifeOnEntry } from "./review";
 import { nextRandom } from "./rng";
 import type { GameState } from "./state";
 import { addLog, atBottleneck, nextRealm, realmOf } from "./tick";
@@ -75,9 +75,8 @@ export function attemptBreakthrough(state: GameState, usePill: boolean, data: Ga
     );
     if (next.endsLife === "never") return won;
     if (endsLifeOnEntry(next, state)) return endLife(won, next.ending, data);
-    // 通關過的存檔：記一次通關，這一世繼續
-    const cont = applyClear(won);
-    return { ...cont, flags: cont.flags.includes(CLEARED_FLAG) ? cont.flags : [...cont.flags, CLEARED_FLAG] };
+    // 紀錄過的存檔：記一次通關或元嬰，這一世繼續
+    return applyEndingAndContinue(won, next.ending);
   }
   const loss = currentFailLoss(s, data);
   return addLog(

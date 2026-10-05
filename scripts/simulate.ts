@@ -95,13 +95,14 @@ function buyTalentsBalanced(state: GameState, targets: Record<string, number> = 
 }
 
 /** 最近一世的量測：金丹期的結嬰嘗試次數與停留月數（沒進金丹為 0） */
-let lifeStats = { attempts: 0, jindanMonths: 0, ready: false, zuohua: false };
+let lifeStats = { attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: false, zuohua: false };
 
 /** 從開局玩到這一世結束（死亡、通關或元嬰大成） */
 function playLife(start: GameState): GameState {
   const need = gameData.realms.find((r) => r.id === "jindan")?.breakthroughRule?.requiresTalent;
-  lifeStats = { attempts: 0, jindanMonths: 0, ready: !need || (start.meta.talents[need.id] ?? 0) >= need.level, zuohua: false };
+  lifeStats = { attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: !need || (start.meta.talents[need.id] ?? 0) >= need.level, zuohua: false };
   let jindanEntered: number | null = null;
+  let jindanLeft: number | null = null;
   let state = startLife(start, gameData);
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
@@ -116,13 +117,21 @@ function playLife(start: GameState): GameState {
       if (atBottleneck(state, gameData)) break;
     }
     if (jindanEntered === null && state.realmId === "jindan") jindanEntered = state.ageMonths;
+    // 離開金丹（結嬰）的那一刻封存金丹期的長度與止步位置；元嬰期之後的月數不算金丹期
+    if (jindanEntered !== null && jindanLeft === null) {
+      if (state.realmId === "jindan") lifeStats.jindanEnd = state.stage;
+      else {
+        jindanLeft = state.ageMonths;
+        lifeStats.jindanEnd = 3;
+      }
+    }
     // post 策略：神光沒到門檻，修到金丹後期圓滿、卡在瓶頸時坐化，不空等壽盡（第 24.2 節）
     if (strategy === "post" && !lifeStats.ready && state.phase === "living" && canZuohua(state, gameData) && atBottleneck(state, gameData)) {
       lifeStats.zuohua = true;
       state = zuohua(state, gameData);
     }
   }
-  if (jindanEntered !== null) lifeStats.jindanMonths = state.ageMonths - jindanEntered;
+  if (jindanEntered !== null) lifeStats.jindanMonths = (jindanLeft ?? state.ageMonths) - jindanEntered;
   return state;
 }
 
@@ -305,7 +314,7 @@ function campaigns(): void {
       else if (lifeStats.jindanMonths > 0 && !lifeStats.ready) waitingLives++;
       if (lifeStats.jindanMonths > 0 && lifeStats.ready) jindanMinutes.push((lifeStats.jindanMonths * gameData.config.msPerMonth) / 60000);
       if (lifeStats.attempts > 0) attemptCounts.push(lifeStats.attempts);
-      if (lifeStats.jindanMonths > 0 && lifeStats.ready) jindanEnds[state.realmId === "yuanying" ? 3 : state.stage]++;
+      if (lifeStats.jindanMonths > 0 && lifeStats.ready) jindanEnds[lifeStats.jindanEnd]++;
       if (!gotYuanying && state.review?.cause === "yuanying") {
         gotYuanying = true;
         yuanyingGap.push(k + 1 - clearLife);
