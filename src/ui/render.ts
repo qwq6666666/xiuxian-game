@@ -7,6 +7,7 @@ import {
   pillAvailable,
 } from "../core/breakthrough";
 import { eventOf } from "../core/events";
+import { CLEAR_FRAGMENT_ID } from "../core/fragments";
 import { splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
@@ -51,12 +52,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     <header class="bar">
       <span class="speeds"></span>
       <label class="auto"><input type="checkbox" id="auto" /> 自動抉擇</label>
+      <button id="codex-open" type="button"></button>
       <button id="export" type="button">匯出存檔</button>
       <button id="import" type="button">匯入存檔</button>
       <button id="reset" type="button">重新開始</button>
     </header>
     <p id="notice" hidden></p>
     <div id="stage"></div>
+    <div class="modal codex" id="codex" hidden><div class="card review" id="codex-card"></div></div>
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
   const noticeEl = root.querySelector<HTMLElement>("#notice")!;
@@ -80,6 +83,94 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   });
   root.querySelector("#reset")!.addEventListener("click", () => {
     if (confirm("確定要清除存檔並重新開始嗎？道韻與輪迴天賦也會一併清除。")) handlers.onReset();
+  });
+
+  // ---- 殘卷錄 ----
+  const SEEN_KEY = "xiuxian-fragments-seen";
+  const readSeen = (): string[] => {
+    try {
+      const v = JSON.parse(localStorage.getItem(SEEN_KEY) ?? "[]");
+      return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string") : [];
+    } catch {
+      return [];
+    }
+  };
+  const writeSeen = (ids: string[]): void => {
+    try {
+      localStorage.setItem(SEEN_KEY, JSON.stringify(ids));
+    } catch {
+      // 無法記住也沒關係，只是標記會一直亮著
+    }
+  };
+  const codexEl = root.querySelector<HTMLElement>("#codex")!;
+  const codexCard = root.querySelector<HTMLElement>("#codex-card")!;
+  const codexBtn = root.querySelector<HTMLButtonElement>("#codex-open")!;
+  const totalFragments = data.fragments.items.length;
+
+  function updateCodexButton(state: GameState): void {
+    const seen = readSeen();
+    const fresh = state.meta.fragments.some((id) => !seen.includes(id));
+    codexBtn.textContent = `殘卷錄 ${state.meta.fragments.length}／${totalFragments}${fresh ? " ●" : ""}`;
+  }
+
+  function buildCodex(state: GameState): void {
+    const held = new Set(state.meta.fragments);
+    const box = document.createDocumentFragment();
+    const head = document.createElement("div");
+    head.className = "codex-head";
+    const title = document.createElement("h2");
+    title.textContent = `殘卷錄　${held.size}／${totalFragments}`;
+    const close = document.createElement("button");
+    close.type = "button";
+    close.textContent = "關閉";
+    close.addEventListener("click", closeCodex);
+    head.append(title, close);
+    const note = document.createElement("p");
+    note.className = "desc";
+    note.textContent = "這些你都讀過，只是不記得了。";
+    box.append(head, note);
+    for (const [topicId, topicName] of Object.entries(data.fragments.topics)) {
+      const h = document.createElement("h3");
+      h.textContent = topicName;
+      box.append(h);
+      for (const f of data.fragments.items.filter((x) => x.topic === topicId)) {
+        const art = document.createElement("article");
+        art.className = held.has(f.id) ? "fragment" : "fragment missing";
+        if (held.has(f.id)) {
+          const t = document.createElement("strong");
+          t.textContent = f.title;
+          const meta = document.createElement("small");
+          meta.className = "changes";
+          meta.textContent = `${f.source}｜${data.fragments.stances[f.stance] ?? f.stance}｜${f.era}`;
+          const body = document.createElement("p");
+          body.className = "fragment-text";
+          body.textContent = f.text;
+          art.append(t, meta, body);
+        } else {
+          art.textContent = "（未得）";
+        }
+        box.append(art);
+      }
+    }
+    codexCard.replaceChildren(box);
+  }
+
+  function openCodex(): void {
+    if (!lastState) return;
+    buildCodex(lastState);
+    codexEl.hidden = false;
+    writeSeen(lastState.meta.fragments);
+    updateCodexButton(lastState);
+  }
+  function closeCodex(): void {
+    codexEl.hidden = true;
+  }
+  codexBtn.addEventListener("click", openCodex);
+  codexEl.addEventListener("click", (ev) => {
+    if (ev.target === codexEl) closeCodex();
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && !codexEl.hidden) closeCodex();
   });
 
   const itemName = (id: string) => data.items.find((i) => i.id === id)?.name ?? id;
@@ -409,6 +500,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       box.append(el("p", undefined, "此生已了，且入輪迴。"));
     } else {
       box.append(el("p", "summary", formatReviewSummary(review, data)));
+      // 通關時固定得到的殘卷，直接讀給玩家
+      const clearFragment = review.cause === "cleared" ? data.fragments.items.find((f) => f.id === CLEAR_FRAGMENT_ID) : undefined;
+      if (clearFragment && state.meta.fragments.includes(clearFragment.id)) {
+        const quote = el("blockquote", "fragment-text", clearFragment.text);
+        quote.append(el("small", "changes", `《${clearFragment.title}》`));
+        box.append(quote);
+      }
       const origin = data.origins.find((o) => o.id === review.originId);
       const root = data.spiritRoots.find((r) => r.id === review.spiritRootId);
       const facts = el("dl", "facts");
@@ -483,6 +581,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   return {
     render(state) {
       lastState = state;
+      updateCodexButton(state);
+      if (!codexEl.hidden) buildCodex(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.disabled = s === state.speed;
       if (state.phase === "rolling") renderRoll(state);
