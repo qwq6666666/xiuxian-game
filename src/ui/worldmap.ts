@@ -1,7 +1,8 @@
 // 天下圖的畫面：用一張 SVG 畫出地域、國家、宗門、渡口與「你在這裡」，點選後顯示簡介。
 import type { GameState } from "../core/state";
-import { placesAt, routeTo, type TravelPlace } from "../core/travel";
+import { localTerritory, marketTerritory, placesAt, routeTo, type TravelPlace } from "../core/travel";
 import { polityLabel, worldAt, worldFor } from "../core/world";
+import { sectReach, territoriesAt, territoryForPoint } from "../core/territory";
 import type { GameData, MapRegion } from "../data/types";
 import { activeEffectsAt, describeEffect, describeTarget, effectsForTarget, legendOf, mapAgeYears, sectMarker, type MapTarget } from "./mapinfo";
 
@@ -24,7 +25,7 @@ const sameTarget = (a: MapTarget | null, b: MapTarget): boolean => a !== null &&
 
 function placeIdOf(target: MapTarget | null): string | null {
   if (!target || target.kind === "stairs") return null;
-  if (target.kind === "region") return target.id === "beihuang" ? null : `capital:${target.id}`;
+  if (target.kind === "region" || target.kind === "territory") return (target.kind === "region" ? target.id : target.region) === "beihuang" ? null : `capital:${target.kind === "region" ? target.id : target.region}`;
   if (target.kind === "sect" || target.kind === "ferry") return `${target.kind}:${target.id}`;
   if (target.kind === "branch") return `branch:${target.region}`;
   return target.kind;
@@ -67,6 +68,10 @@ export function buildWorldMap(
 ): DocumentFragment {
   const world = worldFor(state.worldSeed, data);
   const snap = worldAt(world, mapAgeYears(state.ageMonths));
+  const territories = territoriesAt(world, mapAgeYears(state.ageMonths), data);
+  const polityById = (id: string) => snap.polities.find((p) => p.id === id)
+    ?? world.polities.find((p) => p.id === id)
+    ?? world.changes.flatMap((c) => c.kind === "split" ? [c.created] : []).find((p) => p.id === id);
   const [w, h] = data.map.viewBox;
   const frag = document.createDocumentFragment();
   const layout = html("div", "map-layout");
@@ -102,21 +107,50 @@ export function buildWorldMap(
     return g;
   };
 
-  // 地域
+  // 地域底線與分區；國家易手後依世局年份逐步換色。
   const polityOf = (r: MapRegion) => snap.polities.find((p) => p.id === snap.owners[r.id]);
+  const defs = svg("defs");
+  for (const region of data.map.regions.filter((r) => r.land)) {
+    const clip = svg("clipPath", { id: `territory-${region.id}` });
+    clip.append(svg("path", { d: region.path }));
+    defs.append(clip);
+  }
+  root.append(defs);
   for (const region of data.map.regions) {
     const p = region.land ? polityOf(region) : undefined;
     const path = svg("path", {
       d: region.path,
       class: p ? "map-region" : "map-region map-region-void",
       ...(p ? { fill: p.color } : {}),
-      "fill-opacity": p ? 0.4 : 0.22,
+      "fill-opacity": p ? 0.1 : 0.22,
       stroke: "currentColor",
       "stroke-opacity": 0.45,
       "stroke-width": 1.2,
       ...(p?.tribal ? { "stroke-dasharray": "4 3" } : {}),
     });
     root.append(interactive(path, { kind: "region", id: region.id }));
+  }
+  for (const region of data.map.regions.filter((r) => r.land)) {
+    const group = svg("g", { "clip-path": `url(#territory-${region.id})` });
+    for (const territory of territories.filter((t) => t.region === region.id)) {
+      const polity = polityById(territory.ownerId);
+      group.append(interactive(svg("polygon", {
+        points: territory.polygon.map((p) => p.map((n) => n.toFixed(1)).join(",")).join(" "),
+        class: territory.contested ? "map-territory contested" : "map-territory",
+        fill: polity?.color ?? data.map.palette[0],
+      }), { kind: "territory", id: territory.id, region: region.id }));
+    }
+    root.append(group);
+  }
+
+  // 宗門只覆蓋靈脈勢力，不改凡俗國界。
+  for (const sect of snap.sects) {
+    const reach = sectReach(sect, data);
+    if (reach === 0) continue;
+    const region = data.map.regions.find((r) => r.id === sect.region)!;
+    const [x, y] = region.sites![sect.site];
+    const circle = svg("circle", { cx: x, cy: y, r: reach, class: `map-influence ${sect.state}` });
+    root.append(interactive(circle, { kind: "sect", id: sect.id }));
   }
 
   // 已走路線與正在走的路線放在地形之上、地點標記之下。
@@ -225,7 +259,12 @@ export function buildWorldMap(
 
   // 圖例
   const legend = html("div", "map-legend");
-  for (const item of legendOf(snap)) {
+  const oldOwners = [...new Set(territories.map((t) => t.ownerId))]
+    .filter((id) => !snap.polities.some((p) => p.id === id))
+    .map((id) => polityById(id))
+    .filter((p) => p !== undefined)
+    .map((p) => ({ name: `${polityLabel(p)}（舊界）`, color: p.color }));
+  for (const item of [...legendOf(snap), ...oldOwners]) {
     const chip = html("span", "map-chip");
     const sw = html("span", "map-swatch");
     sw.style.background = item.color;
@@ -233,7 +272,7 @@ export function buildWorldMap(
     legend.append(chip);
   }
   mapPane.append(legend);
-  mapPane.append(html("p", "desc map-symbols", "● 目前位置　◇ 渡口　■ 商行　◉ 宗門　⋯ 預覽路線　━ 已走路線"));
+  mapPane.append(html("p", "desc map-symbols", "色塊為國家領土；虛線色塊為推進中的邊界；圓圈為宗門靈脈勢力。● 目前位置　◇ 渡口　■ 商行　⋯ 路線"));
 
   const travel = html("section", "map-travel");
   travel.append(html("h3", undefined, "行跡"));
@@ -258,17 +297,40 @@ export function buildWorldMap(
     }
     destinationSelect.append(group);
   }
-  destinationSelect.value = placeIdOf(selected) ?? "";
+  destinationSelect.value = selected?.kind === "territory" ? "" : placeIdOf(selected) ?? "";
   destinationSelect.addEventListener("change", () => {
     const place = places.find((item) => item.id === destinationSelect.value);
     handlers.onSelect(place ? targetOfPlace(place) : null);
   });
   destinationLabel.append(destinationSelect);
   travel.append(destinationLabel);
+  const territoryLabel = html("label", "map-destination-label", "查看領土");
+  const territorySelect = html("select", "map-destination");
+  const territoryPrompt = html("option", undefined, "— 請選擇 —");
+  territoryPrompt.value = "";
+  territorySelect.append(territoryPrompt);
+  for (const region of data.map.regions.filter((r) => r.land)) {
+    const group = html("optgroup");
+    group.label = region.name;
+    for (const territory of territories.filter((t) => t.region === region.id)) {
+      const owner = polityById(territory.ownerId);
+      const option = html("option", undefined, `第 ${territory.index + 1} 處・${owner ? polityLabel(owner) : "諸部"}${territory.contested ? "・邊界推移中" : ""}`);
+      option.value = territory.id;
+      group.append(option);
+    }
+    territorySelect.append(group);
+  }
+  territorySelect.value = selected?.kind === "territory" ? selected.id : "";
+  territorySelect.addEventListener("change", () => {
+    const territory = territories.find((t) => t.id === territorySelect.value);
+    handlers.onSelect(territory ? { kind: "territory", id: territory.id, region: territory.region } : null);
+  });
+  territoryLabel.append(territorySelect);
+  travel.append(territoryLabel);
   if (activeRoute) {
     travel.append(html("p", "map-travel-status", `正往${activeRoute.to.name}，尚需 ${state.travel.remainingMonths} 個月。途中修行與事件照常。`));
   } else if (previewRoute) {
-    travel.append(html("p", "map-travel-status", `${previewRoute.to.status}。需時 ${previewRoute.months} 個月，途經 ${previewRoute.regions.map((id) => data.map.regions.find((r) => r.id === id)!.name).join("、")}。`));
+    travel.append(html("p", "map-travel-status", `${previewRoute.to.status}。需時 ${previewRoute.months} 個月${previewRoute.delayMonths ? `（邊境動盪多 ${previewRoute.delayMonths} 個月）` : ""}，途經 ${previewRoute.regions.map((id) => data.map.regions.find((r) => r.id === id)!.name).join("、")}。`));
     if (state.phase === "living" && state.pendingEvent === null) {
       const go = html("button", "primary", `前往${previewRoute.to.name}`);
       go.type = "button";
@@ -299,6 +361,8 @@ export function buildWorldMap(
     p.append(document.createTextNode(d.reason), html("small", undefined, `　${d.impact}`));
     effects.append(p);
   }
+  if (marketTerritory(state, data)?.contested) effects.append(html("p", "map-effect", `出生坊市一帶國界正在易手，物價約漲 ${Math.round((data.map.territoryRules.marketMultiplier - 1) * 100)}%。`));
+  if (localTerritory(state, data)?.contested) effects.append(html("p", "map-effect", "目前所在地邊界動盪，可能遇到關道商隊。"));
   mapSide.append(effects);
 
   // 簡介
@@ -307,6 +371,18 @@ export function buildWorldMap(
     const d = describeTarget(selected, world, snap, data);
     info.append(html("strong", undefined, d.title));
     for (const line of d.lines) info.append(html("p", undefined, line));
+    if (selected.kind === "territory") {
+      const territory = territories.find((t) => t.id === selected.id);
+      const owner = territory ? polityById(territory.ownerId) : undefined;
+      info.append(html("p", "map-effect-line", `此處現由${owner ? polityLabel(owner) : "諸部"}掌握。${territory?.contested ? "邊界仍在推移，行路與交易會受影響。" : "邊界暫時安定。"}`));
+    } else {
+      const place = places.find((p) => p.id === placeIdOf(selected));
+      const territory = place ? territoryForPoint(territories, place.region, place.point) : undefined;
+      if (territory) {
+        const owner = polityById(territory.ownerId);
+        info.append(html("p", "map-effect-line", `所在地：${owner ? polityLabel(owner) : "諸部"}${territory.contested ? "；邊界正在推移" : ""}。`));
+      }
+    }
     for (const e of effectsForTarget(selected, snap, data)) {
       const x = describeEffect(e, world, data);
       info.append(html("p", "map-effect-line", `${x.reason}（${x.impact}）`));

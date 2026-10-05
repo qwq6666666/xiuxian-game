@@ -7,6 +7,7 @@ import { effectApplies } from "../core/worldeffects";
 
 export type MapTarget =
   | { kind: "region"; id: string }
+  | { kind: "territory"; id: string; region: string }
   | { kind: "sect"; id: string }
   | { kind: "ferry"; id: string }
   | { kind: "branch"; region: string }
@@ -58,6 +59,8 @@ export function describeTarget(target: MapTarget, world: World, snap: WorldSnaps
   const b = data.map.blurbs;
 
   switch (target.kind) {
+    case "territory":
+      return describeTarget({ kind: "region", id: target.region }, world, snap, data);
     case "region": {
       const region = data.map.regions.find((r) => r.id === target.id)!;
       if (!region.land) return { title: region.name, lines: [region.desc, `靈氣：${region.aura}。`] };

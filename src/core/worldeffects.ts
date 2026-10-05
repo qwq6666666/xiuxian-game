@@ -3,6 +3,7 @@
 import { gameData } from "../data/load";
 import type { GameData, WorldEffectDef, WorldWhen } from "../data/types";
 import type { GameState } from "./state";
+import { marketTerritory } from "./travel";
 import { worldAt, worldFor, type WorldSnapshot } from "./world";
 
 /** 世局是否符合效果的全部條件 */
@@ -53,5 +54,6 @@ export function itemPrice(state: GameState, itemId: string, data: GameData = gam
   if (!item) return 0;
   let mult = 1;
   for (const e of activeWorldEffects(state, data)) mult *= e.market[itemId] ?? 1;
+  if (marketTerritory(state, data)?.contested) mult *= data.map.territoryRules.marketMultiplier;
   return Math.max(1, Math.round(item.price * mult));
 }

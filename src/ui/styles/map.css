@@ -10,6 +10,12 @@
 .map-hit { cursor: pointer; }
 .map-hit.selected { stroke: var(--accent); stroke-width: 2; }
 .map-region.selected { stroke-opacity: 1; fill-opacity: 0.28; }
+.map-territory { fill-opacity: 0.44; stroke: var(--panel); stroke-opacity: 0.68; stroke-width: 0.8; cursor: pointer; transition: fill 500ms ease, fill-opacity 180ms ease; }
+.map-territory:hover, .map-territory.selected { fill-opacity: 0.66; stroke: var(--text); stroke-width: 1.5; }
+.map-territory.contested { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 3 2; }
+.map-influence { fill: var(--accent); fill-opacity: 0.12; stroke: var(--accent); stroke-opacity: 0.8; stroke-width: 1.6; stroke-dasharray: 3 3; cursor: pointer; transition: r 500ms ease; }
+.map-influence.prosper { fill-opacity: 0.18; stroke-width: 2; }
+.map-influence.decline { fill-opacity: 0.06; stroke-opacity: 0.5; }
 .map-label { font-size: 14px; fill: var(--text); stroke: var(--panel); stroke-width: 2.5px; paint-order: stroke; pointer-events: none; }
 .map-small { font-size: 10.5px; fill: var(--text); stroke: var(--panel); stroke-width: 2px; paint-order: stroke; pointer-events: none; }
 .map-capital { fill: var(--text); fill-opacity: 0.7; pointer-events: none; }
