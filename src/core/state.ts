@@ -60,6 +60,7 @@ export const LOG_KINDS = [
   "adventureDeath",
   "event",
   "retreat",
+  "era",
 ] as const;
 export type LogKind = (typeof LOG_KINDS)[number];
 
@@ -97,6 +98,8 @@ export interface LogEntry {
   /** 閉關見聞：實際閉關的月數與結束原因 */
   retreatMonths?: number;
   stop?: OfflineStop;
+  /** 開場日誌：這一世是第幾世（從 0 起算），年號由它算出 */
+  eraIndex?: number;
 }
 
 export interface GameState {

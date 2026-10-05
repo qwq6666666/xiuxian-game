@@ -2,6 +2,7 @@ import configJson from "./config.json";
 import eventsJson from "./events.json";
 import fragmentsJson from "./fragments.json";
 import itemsJson from "./items.json";
+import erasJson from "./eras.json";
 import namesJson from "./names.json";
 import originsJson from "./origins.json";
 import realmsJson from "./realms.json";
@@ -15,6 +16,7 @@ import worldNamesJson from "./worldNames.json";
 import type { GameData } from "./types";
 import {
   validateConfig,
+  validateEras,
   validateEvents,
   validateFragments,
   validateGameData,
@@ -46,6 +48,7 @@ export const gameData: GameData = validateGameData({
   worldNames: validateWorldNames(worldNamesJson),
   map: validateMap(mapJson),
   worldEvents: validateWorldEvents(worldEventsJson),
+  eras: validateEras(erasJson),
 });
 
 export const config = gameData.config;

@@ -519,6 +519,7 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
   // 先檢查 review，缺欄位時錯誤訊息的順序才穩定
   const review = parseReview(o.review, `${file} 欄位 review`);
   const collection = obj(o.collection, `${file} 欄位 collection`);
+  const era = obj(o.era, `${file} 欄位 era`);
   return {
     log: {
       stageUp: strList(log, "stageUp", where),
@@ -539,6 +540,11 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
           lifespan: strList(retreatStop, "lifespan", `${where}.retreat.stop`),
         },
       },
+    },
+    era: {
+      opening: strList(era, "opening", `${file} 欄位 era`),
+      transition: str(era, "transition", `${file} 欄位 era`),
+      born: str(era, "born", `${file} 欄位 era`),
     },
     review,
     collection: {
@@ -791,6 +797,18 @@ export function validateWorldEvents(raw: unknown, file = "worldEvents.json"): Wo
   });
   uniqueIds(events, file);
   return events;
+}
+
+export function validateEras(raw: unknown, file = "eras.json"): string[] {
+  const o = obj(raw, file);
+  const names = strList(o, "names", file);
+  const seen = new Set<string>();
+  names.forEach((n, i) => {
+    if (n.length < 2 || n.length > 4) fail(file, `names[${i}]`, `年號需要 2 到 4 個字，目前為「${n}」`);
+    if (seen.has(n)) fail(file, `names[${i}]`, `年號「${n}」重複`);
+    seen.add(n);
+  });
+  return names;
 }
 
 export function validateNames(raw: unknown, file = "names.json"): NameData {

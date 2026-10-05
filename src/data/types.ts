@@ -224,6 +224,8 @@ export interface TextData {
       stop: { bottleneck: string[]; lifespan: string[] };
     };
   };
+  /** 年號相關文字：開場日誌（依世數挑）、換世句、回顧的出生句 */
+  era: { opening: string[]; transition: string; born: string };
   /** 收藏畫面的文字 */
   collection: { note: string; empty: string; allCleared: string };
   /** 一生回顧的收尾句，依結束方式分類 */
@@ -368,4 +370,6 @@ export interface GameData {
   worldNames: WorldNames;
   map: MapData;
   worldEvents: WorldEventDef[];
+  /** 年號清單，依世數循環使用 */
+  eras: string[];
 }

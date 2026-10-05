@@ -1,9 +1,10 @@
 // 開局擲骰與每一世的開始、重擲、轉世。
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
+import { lifeIndex } from "./era";
 import { talentBonus } from "./formulas";
 import { deriveSeed, nextInt, pickWeighted } from "./rng";
-import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type Meta } from "./state";
+import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type LogEntry, type Meta } from "./state";
 
 /** 重新擲出屬性、靈根、出身，並套用出身效果 */
 export function rollLife(state: GameState, data: GameData = gameData): GameState {
@@ -108,7 +109,14 @@ export function reroll(state: GameState, data: GameData = gameData): GameState {
 export function startLife(state: GameState, data: GameData = gameData): GameState {
   if (state.phase !== "rolling") return state;
   const [eventThreshold, rngSeed] = nextInt(state.rngSeed, data.config.eventIntervalMin, data.config.eventIntervalMax);
-  return { ...state, phase: "living", eventThreshold, eventClock: 0, rngSeed };
+  const opening: LogEntry = {
+    month: state.ageMonths,
+    kind: "era",
+    realmId: state.realmId,
+    stage: state.stage,
+    eraIndex: lifeIndex(state),
+  };
+  return { ...state, log: [...state.log, opening].slice(-data.config.logLimit), phase: "living", eventThreshold, eventClock: 0, rngSeed };
 }
 
 /**

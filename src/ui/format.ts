@@ -1,3 +1,4 @@
+import { eraName } from "../core/era";
 import type { OfflineSummary } from "../core/offline";
 import type { Changes, LifeReview, LogEntry, Meta } from "../core/state";
 import { DEFAULT_SLOTS, fillSlots, type SlotValues } from "../data/slots";
@@ -73,6 +74,17 @@ export function formatReviewSummary(review: LifeReview, data: GameData): string 
   return `享年${years}歲，終身${realmLabel(realm, review.stage)}。${closing}`;
 }
 
+/** 第 index 世的年號文字：「生於承平年間」。transition 用於第二世起的擲骰畫面。 */
+export function eraBorn(index: number, data: GameData): string {
+  return data.text.era.born.replace("{era}", eraName(index, data));
+}
+
+/** 擲骰畫面的換世句；第一世沒有上一世，回傳空字串 */
+export function eraTransition(index: number, data: GameData): string {
+  if (index <= 0) return "";
+  return data.text.era.transition.replace("{prev}", eraName(index - 1, data)).replace("{era}", eraName(index, data));
+}
+
 /** 選項無法選擇的原因，可以選則回傳 null 。 */
 export function choiceBlockReason(
   requires: { spiritStones?: number; items?: Record<string, number> } | undefined,
@@ -135,6 +147,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
     years: `${toChineseNumber(Math.floor(entry.month / 12))}歲`,
     item: data.items.find((i) => i.id === entry.itemId)?.name ?? entry.itemId ?? "",
     name,
+    era: entry.eraIndex === undefined ? "" : eraName(entry.eraIndex, data),
   };
   const pick = (list: string[]) => list[entry.month % list.length];
   const pickBy = (list: string[], n: number) => list[n % list.length];
@@ -176,6 +189,9 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
       template = pickBy(tier, months) + (tail.length > 0 ? pickBy(tail, months) : "");
       break;
     }
+    case "era":
+      template = pickBy(data.text.era.opening, entry.eraIndex ?? 0);
+      break;
     case "event": {
       const ev = data.events.find((e) => e.id === entry.eventId);
       if (!ev) throw new Error(`日誌：找不到事件 ${entry.eventId}`);
@@ -186,7 +202,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
   }
   const body = fill(template, vars);
   // 死亡文字自帶「享年」，不再加年齡前綴
-  return entry.kind === "death" || entry.kind === "adventureDeath" ? body : `${formatAgeZh(entry.month)}，${body}`;
+  return entry.kind === "death" || entry.kind === "adventureDeath" || entry.kind === "era" ? body : `${formatAgeZh(entry.month)}，${body}`;
 }
 
 export interface CollectionSummary {

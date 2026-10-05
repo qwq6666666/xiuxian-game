@@ -12,6 +12,7 @@ import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
 import type { MapTarget } from "./mapinfo";
 import { buildWorldMap, mapStamp } from "./worldmap";
+import { eraName, lifeIndex } from "../core/era";
 import { splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { atBottleneck, lifespanYears, realmOf } from "../core/tick";
@@ -20,6 +21,8 @@ import {
   ATTR_LABEL,
   choiceBlockReason,
   describeTalent,
+  eraBorn,
+  eraTransition,
   collectionSummary,
   formatChanges,
   formatLogEntry,
@@ -346,6 +349,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       <main class="card roll">
         <h1>一念輪迴</h1>
         <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲，是好是壞，且看天意。</p>
+        ${eraTransition(lifeIndex(state), data) !== "" ? `<p class="desc">${eraTransition(lifeIndex(state), data)}</p>` : ""}
         <label class="namebox">姓名 <input id="name" type="text" maxlength="${data.config.nameMaxLength}" /></label>
         ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
         ${statsHtml(state)}
@@ -545,7 +549,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const need = stageNeed(realm, state.stage);
     const [years, months] = splitAge(state.ageMonths);
     e.realm.textContent = realmLabel(realm, state.stage);
-    e.name.textContent = state.name;
+    e.name.textContent = `${state.name}（${eraName(lifeIndex(state), data)}年間）`;
     e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespanYears(state, data)}`;
     e.stones.textContent = `靈石 ${state.spiritStones}`;
     e.fill.style.width = `${Math.min(100, (state.cultivation / need) * 100)}%`;
@@ -642,6 +646,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       // 輪迴功能加入前存下的死亡存檔沒有回顧，直接進入輪迴即可
       box.append(el("p", undefined, "此生已了，且入輪迴。"));
     } else {
+      box.append(el("p", "desc", eraBorn(lifeIndex(state), data)));
       box.append(el("p", "summary", formatReviewSummary(review, data)));
       // 通關時固定得到的殘卷，直接讀給玩家
       const clearFragment = review.cause === "cleared" ? data.fragments.items.find((f) => f.id === CLEAR_FRAGMENT_ID) : undefined;

@@ -154,6 +154,8 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
     if (!(OFFLINE_STOPS as readonly string[]).includes(stop)) fail(`${p}.stop`, `不是合法的閉關結束原因：${stop}`);
     entry.stop = stop as OfflineStop;
   }
+  if (eo.eraIndex !== undefined) entry.eraIndex = num(eo, "eraIndex", { integer: true, min: 0 }, `${p}.eraIndex`);
+  if (kind === "era" && entry.eraIndex === undefined) fail(p, "開場日誌必須有 eraIndex");
   if (kind === "retreat" && (entry.retreatMonths === undefined || entry.stop === undefined)) {
     fail(p, "閉關見聞必須有 retreatMonths 與 stop");
   }

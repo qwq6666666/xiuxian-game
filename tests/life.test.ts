@@ -87,7 +87,7 @@ describe("tick", () => {
     expect(t.realmId).toBe("lianqi");
     expect(t.stage).toBe(0);
     expect(t.cultivation).toBeLessThan(5);
-    expect(t.log.map((e) => e.kind)).toEqual(["realmUp"]);
+    expect(t.log.map((e) => e.kind)).toEqual(["era", "realmUp"]);
   });
 
   it("練氣小階段修為滿了自動升級", () => {
