@@ -1,4 +1,5 @@
 import configJson from "./config.json";
+import goalsJson from "./goals.json";
 import eventsJson from "./events.json";
 import fragmentsJson from "./fragments.json";
 import itemsJson from "./items.json";
@@ -21,6 +22,7 @@ import {
   validateEvents,
   validateFragments,
   validateGameData,
+  validateGoals,
   validateItems,
   validateNames,
   validateOrigins,
@@ -51,6 +53,7 @@ export const gameData: GameData = validateGameData({
   map: validateMap(mapJson),
   worldEvents: validateWorldEvents(worldEventsJson),
   worldEffects: validateWorldEffects(worldEffectsJson),
+  goals: validateGoals(goalsJson),
   eras: validateEras(erasJson),
 });
 

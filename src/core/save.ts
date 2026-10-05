@@ -1,5 +1,6 @@
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "../data/types";
+import { pickGoals } from "./goals";
 import { createInitialState } from "./life";
 import { deriveSeed, nextInt } from "./rng";
 import {
@@ -10,6 +11,7 @@ import {
   type Attributes,
   type Changes,
   type GameState,
+  type LifeBrief,
   type LifeReview,
   type LogEntry,
   type LogKind,
@@ -80,6 +82,22 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   9: (d) => ({ ...d, version: 10, meta: { ...obj(d.meta, "meta"), yuanying: {} } }),
   // v10 沒有丹毒計數：補上空的（等於這一階段還沒服過聚氣丹）
   10: (d) => ({ ...d, version: 11, pillStage: "", pillCount: 0 }),
+  // v11 沒有每世目標：擲骰中的存檔照世界種子抽一組；進行中與已結束的不補（沒有開局目標可言）。
+  // 跨世資料補上空的目標收藏與上一世紀錄，既有回顧補上空的目標結果。
+  11: (d, gd) => {
+    const meta = obj(d.meta, "meta");
+    const fragments = Array.isArray(meta.fragments) ? meta.fragments.length : 0;
+    const lives = typeof meta.lives === "number" ? meta.lives : 0;
+    const review = d.review === null || d.review === undefined ? null : { ...obj(d.review, "review"), goals: [], prev: null };
+    return {
+      ...d,
+      version: 12,
+      goalIds: d.phase === "rolling" ? pickGoals(Number(d.worldSeed) >>> 0, lives, gd) : [],
+      startFragments: fragments,
+      meta: { ...meta, goals: {}, lastLife: null },
+      review,
+    };
+  },
 };
 
 function fail(field: string, msg: string): never {
@@ -167,6 +185,18 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
   return entry;
 }
 
+function parseBrief(v: unknown, path: string, data: GameData): LifeBrief {
+  const o = obj(v, path);
+  const realmId = str(o, "realmId", `${path}.realmId`);
+  const realm = data.realms.find((r) => r.id === realmId);
+  if (!realm) fail(`${path}.realmId`, `找不到境界 ${realmId}`);
+  const stage = num(o, "stage", { integer: true, min: 0 }, `${path}.stage`);
+  if (stage >= realm.stageNames.length) fail(`${path}.stage`, `超出 ${realm.name} 的階段數，目前為 ${stage}`);
+  const originId = str(o, "originId", `${path}.originId`);
+  if (!data.origins.some((x) => x.id === originId)) fail(`${path}.originId`, `找不到出身 ${originId}`);
+  return { ageMonths: num(o, "ageMonths", { integer: true, min: 0 }, `${path}.ageMonths`), realmId, stage, originId };
+}
+
 function parseMeta(v: unknown, data: GameData): Meta {
   const o = obj(v, "meta");
   const talents = intRecord(o, "talents", "meta.talents");
@@ -193,7 +223,14 @@ function parseMeta(v: unknown, data: GameData): Meta {
     }
     return counts;
   };
+  const goals = intRecord(o, "goals", "meta.goals");
+  for (const [id, n] of Object.entries(goals)) {
+    if (!data.goals.some((g) => g.id === id)) fail(`meta.goals.${id}`, `找不到目標 ${id}`);
+    if (n < 1) fail(`meta.goals.${id}`, `必須是正整數，目前為 ${n}`);
+  }
   return {
+    goals,
+    lastLife: o.lastLife === null ? null : parseBrief(o.lastLife, "meta.lastLife", data),
     fragments,
     clears: originCounts("clears"),
     yuanying: originCounts("yuanying"),
@@ -202,6 +239,17 @@ function parseMeta(v: unknown, data: GameData): Meta {
     reached: o.reached as string[],
     lives: num(o, "lives", { integer: true, min: 0 }, "meta.lives"),
   };
+}
+
+function parseGoalResults(v: unknown, path: string, data: GameData): { id: string; done: boolean }[] {
+  if (!Array.isArray(v)) fail(path, "必須是陣列");
+  return v.map((x, i) => {
+    const o = obj(x, `${path}[${i}]`);
+    const id = str(o, "id", `${path}[${i}].id`);
+    if (!data.goals.some((g) => g.id === id)) fail(`${path}[${i}].id`, `找不到目標 ${id}`);
+    if (typeof o.done !== "boolean") fail(`${path}[${i}].done`, `必須是 true 或 false，目前為 ${JSON.stringify(o.done)}`);
+    return { id, done: o.done };
+  });
 }
 
 function parseReview(v: unknown, data: GameData): LifeReview | null {
@@ -229,6 +277,8 @@ function parseReview(v: unknown, data: GameData): LifeReview | null {
     daoYunBase: num(o, "daoYunBase", { integer: true, min: 0 }, "review.daoYunBase"),
     daoYunBonus: num(o, "daoYunBonus", { integer: true, min: 0 }, "review.daoYunBonus"),
     highlights: o.highlights.map((e, i) => parseLogEntry(e, `review.highlights[${i}]`, data)),
+    goals: parseGoalResults(o.goals, "review.goals", data),
+    prev: o.prev === null ? null : parseBrief(o.prev, "review.prev", data),
   };
 }
 
@@ -282,6 +332,12 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   const log = o.log.map((e, i) => parseLogEntry(e, `log[${i}]`, data));
 
   if (!Array.isArray(o.flags) || !o.flags.every((f) => typeof f === "string")) fail("flags", "必須是字串陣列");
+  if (!Array.isArray(o.goalIds)) fail("goalIds", "必須是字串陣列");
+  const goalIds = o.goalIds.map((id, i) => {
+    if (typeof id !== "string") fail(`goalIds[${i}]`, "必須是字串");
+    if (!data.goals.some((g) => g.id === id)) fail(`goalIds[${i}]`, `找不到目標 ${id}`);
+    return id;
+  });
   const pendingEvent = o.pendingEvent;
   if (pendingEvent !== null) {
     if (typeof pendingEvent !== "string") fail("pendingEvent", `必須是字串或 null，目前為 ${JSON.stringify(pendingEvent)}`);
@@ -314,6 +370,8 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     stage,
     cultivation: num(o, "cultivation", { min: 0 }),
     breakthroughs: num(o, "breakthroughs", { integer: true, min: 0 }),
+    goalIds,
+    startFragments: num(o, "startFragments", { integer: true, min: 0 }),
     flags: o.flags as string[],
     eventCounts: intRecord(o, "eventCounts"),
     eventClock: num(o, "eventClock", { min: 0 }),

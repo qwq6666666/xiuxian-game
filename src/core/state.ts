@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 /** 跨世保留的資料 */
 export interface Meta {
@@ -18,10 +18,22 @@ export interface Meta {
   clears: Record<string, number>;
   /** 各出身結成元嬰的次數（出身 id → 次數），只收藏，不影響任何數值 */
   yuanying: Record<string, number>;
+  /** 各目標達成的次數（目標 id → 次數），只收藏，不影響任何數值 */
+  goals: Record<string, number>;
+  /** 上一世的簡要結果，供一生回顧比較；還沒走完過一世為 null */
+  lastLife: LifeBrief | null;
+}
+
+/** 一世的簡要結果，用來和下一世比較 */
+export interface LifeBrief {
+  ageMonths: number;
+  realmId: string;
+  stage: number;
+  originId: string;
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {} };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, goals: {}, lastLife: null };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
@@ -43,6 +55,10 @@ export interface LifeReview {
   daoYunBonus: number;
   /** 挑出的關鍵事件，依時間排序 */
   highlights: LogEntry[];
+  /** 這一世目標的結果 */
+  goals: { id: string; done: boolean }[];
+  /** 上一世的簡要結果（第一世為 null），一生回顧用它列出差別 */
+  prev: LifeBrief | null;
 }
 
 /** cleared：這一世以通關或元嬰大成結束（死亡為 dead） */
@@ -142,6 +158,10 @@ export interface GameState {
   cultivation: number;
   /** 本世成功突破大境界的次數 */
   breakthroughs: number;
+  /** 這一世抽出的目標 id */
+  goalIds: string[];
+  /** 這一世開始時已有的殘卷數，用來算「本世取得」 */
+  startFragments: number;
   /** 本世累積的事件旗標 */
   flags: string[];
   /** 本世各事件已出現的次數 */

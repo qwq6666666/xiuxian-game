@@ -65,3 +65,10 @@ blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }
 .guide summary { cursor: pointer; }
 .guide ul { margin: var(--sp-1) 0 0; padding-left: 1.2em; }
 .guide strong { color: var(--text); font-weight: normal; }
+
+/* 每世目標：只作收藏，語氣放輕 */
+.goals { list-style: none; margin: var(--sp-1) 0; padding: 0; }
+.goals li { padding: 2px 0; color: var(--muted); }
+.goals li.done { color: var(--accent); }
+.goals-box h3 { margin: var(--sp-3) 0 var(--sp-1); font-size: 0.95em; color: var(--muted); font-weight: normal; }
+.versus { margin: 2px 0; }

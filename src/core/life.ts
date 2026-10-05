@@ -3,6 +3,7 @@ import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
 import { lifeIndex } from "./era";
 import { talentBonus } from "./formulas";
+import { pickGoals } from "./goals";
 import { deriveSeed, nextInt, pickWeighted } from "./rng";
 import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type LogEntry, type Meta } from "./state";
 
@@ -36,6 +37,8 @@ export function rollLife(state: GameState, data: GameData = gameData): GameState
     rngSeed: seed2,
     // 世界種子由最後的亂數狀態雜湊而來，不消耗亂數；重擲會得到另一個世界
     worldSeed: deriveSeed(seed2, 1),
+    // 目標跟著命盤抽：由最後的亂數狀態雜湊而來，不消耗亂數
+    goalIds: pickGoals(seed2, state.meta.lives, data),
     name,
     attributes,
     spiritRootId: data.spiritRoots[rootIdx].id,
@@ -86,6 +89,8 @@ export function createInitialState(
       stage: 0,
       cultivation: 0,
       breakthroughs: 0,
+      goalIds: [],
+      startFragments: meta.fragments.length,
       flags: [],
       eventCounts: {},
       eventClock: 0,

@@ -2,6 +2,7 @@
 import { gameData } from "../data/load";
 import type { GameData, RealmDef, ReviewCause } from "../data/types";
 import { CLEAR_FRAGMENT_ID, grantFragment } from "./fragments";
+import { goalStatuses, lifeBrief } from "./goals";
 import { eventOf, realmOf } from "./progress";
 import type { GameState, LifeReview, LogEntry } from "./state";
 
@@ -128,7 +129,12 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
     daoYunBase: base,
     daoYunBonus: bonus,
     highlights: selectHighlights(state.log, data),
+    goals: goalStatuses(state, data).map((g) => ({ id: g.def.id, done: g.done })),
+    prev: state.meta.lastLife,
   };
+  // 目標達成次數：只收藏
+  const goals = { ...state.meta.goals };
+  for (const g of review.goals) if (g.done) goals[g.id] = (goals[g.id] ?? 0) + 1;
   // 通關：記一次通關，首次得到最後一份殘卷
   const earned = cause === "cleared" ? applyClear(state) : state;
   // 元嬰大成：記一次元嬰，不另算通關
@@ -149,6 +155,8 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       fragments: earned.meta.fragments,
       clears: earned.meta.clears,
       yuanying,
+      goals,
+      lastLife: lifeBrief(state),
     },
   };
 }

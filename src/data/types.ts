@@ -270,6 +270,16 @@ export interface TextData {
   breakthroughGate: string;
   /** 擲骰畫面與角色區的說明；# 由介面依 config 填入百分比 */
   guide: { bone: string; insight: string; fortune: string; mind: string; spiritRoot: string };
+  /** 一生回顧「與上一世的差別」的句子；{n} 為數字，{from}、{to} 為進度名稱 */
+  versus: {
+    ageMore: string;
+    ageLess: string;
+    ageSame: string;
+    progressFar: string;
+    progressShort: string;
+    progressSame: string;
+    originDiff: string;
+  };
   /** 收藏畫面的文字 */
   collection: { note: string; empty: string; allCleared: string };
   /** 一生回顧的收尾句，依結束方式分類 */
@@ -425,6 +435,26 @@ export interface WorldEffectDef {
   mapRef?: MapRef;
 }
 
+/** 每世目標的達成條件；全由既有的狀態欄位算出，不新增任何追蹤 */
+export type GoalCondition =
+  | { kind: "realm"; realmId: string; stage?: number }
+  | { kind: "age"; years: number }
+  | { kind: "fragments"; count: number }
+  | { kind: "flag"; flagId: string }
+  | { kind: "events"; count: number };
+
+/** 每世目標：開局抽出，只作收藏，不給道韻、不動數值 */
+export interface GoalDef {
+  id: string;
+  name: string;
+  desc: string;
+  /** 同一世每個群組至多抽一個，讓目標類型有變化 */
+  group: string;
+  /** 已走完至少這麼多世才會抽到 */
+  minLives: number;
+  condition: GoalCondition;
+}
+
 export interface GameData {
   config: GameConfig;
   realms: RealmDef[];
@@ -441,6 +471,7 @@ export interface GameData {
   map: MapData;
   worldEvents: WorldEventDef[];
   worldEffects: WorldEffectDef[];
+  goals: GoalDef[];
   /** 年號清單，依世數循環使用 */
   eras: string[];
 }

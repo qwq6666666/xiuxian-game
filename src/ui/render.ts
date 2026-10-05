@@ -12,6 +12,7 @@ import { CLEAR_FRAGMENT_ID } from "../core/fragments";
 import { activeWorldEffects, itemPrice } from "../core/worldeffects";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
+import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
 import { attributeGuide, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
 import type { MapTarget } from "./mapinfo";
 import { buildWorldMap, mapStamp } from "./worldmap";
@@ -31,6 +32,7 @@ import {
   formatChanges,
   formatLogEntry,
   formatReviewSummary,
+  formatVersus,
   realmLabel,
   reviewTitle,
   talentSummary,
@@ -343,6 +345,18 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       art.append(name, count, desc);
       box.append(art);
     }
+    const goalHead = document.createElement("h3");
+    goalHead.textContent = "目標收藏";
+    const goalList = document.createElement("ul");
+    goalList.className = "goals";
+    for (const g of data.goals) {
+      const n = state.meta.goals[g.id] ?? 0;
+      const li = document.createElement("li");
+      li.textContent = n > 0 ? `✓ ${g.name}　達成 ${n} 次` : `　${g.name}　（尚未達成）`;
+      li.classList.toggle("done", n > 0);
+      goalList.append(li);
+    }
+    box.append(goalHead, goalList);
     if (sum.allCleared) {
       const done = document.createElement("p");
       done.className = "desc";
@@ -398,6 +412,19 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       (k) => `<div><dt>${ATTR_LABEL[k]}</dt><dd>${state.attributes[k]}</dd></div>`,
     ).join("")}</dl>`;
 
+  /** 這一世的目標：只作收藏，不給任何數值，所以措辭上不強求 */
+  const goalLine = (g: GoalProgress): string => {
+    // 境界與旗標的進度數字沒有意義，只有年歲、殘卷、見聞才顯示
+    const counted = ["age", "fragments", "events"].includes(g.def.condition.kind) && !g.done;
+    return `${g.done ? "✓ " : ""}${g.def.name}｜${g.def.desc}${counted ? `（${g.current} / ${g.target}）` : ""}`;
+  };
+
+  const goalsHtml = (state: GameState): string => {
+    const items = goalStatuses(state, data);
+    if (items.length === 0) return "";
+    return `<section class="goals-box"><h3>這一世的目標</h3><ul class="goals">${items.map((g) => `<li>${goalLine(g)}</li>`).join("")}</ul><p class="desc">不強求，達成了記進收藏，沒達成也無妨。</p></section>`;
+  };
+
   /** 屬性與靈根各自影響什麼，收在可展開的說明裡 */
   const guideHtml = (): string => {
     const g = attributeGuide(data);
@@ -447,6 +474,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         ${guideHtml()}
         ${identityHtml(state)}
         ${birthHtml(state)}
+        ${goalsHtml(state)}
         <div class="actions">
           <button id="reroll" type="button" ${state.rerolls > 0 ? "" : "disabled"}>重擲（剩 ${state.rerolls} 次）</button>
           <button id="start" type="button" class="primary">開始修行</button>
@@ -484,6 +512,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     eventText: HTMLElement;
     eventChoices: HTMLElement;
     life: HTMLElement;
+    goalsFold: HTMLElement;
+    goals: HTMLElement;
     modal: HTMLElement;
     modalBody: HTMLElement;
     schedules: { id: string; b: HTMLButtonElement; facts: HTMLElement; hint: HTMLElement }[];
@@ -535,6 +565,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <p id="zuohuaInfo" class="desc"></p>
             <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
+          <details class="fold s-goals" id="goalsFold"${wide ? " open" : ""}><summary>本世目標</summary><ul id="goals" class="goals"></ul></details>
           <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}${guideHtml()}${identityHtml(state)}</details>
           <details class="fold s-bag"${wide ? " open" : ""}><summary>背包</summary><ul id="bag" class="items"></ul></details>
           <details class="fold s-market"${wide ? " open" : ""}><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p></details>
@@ -600,6 +631,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       eventText: q("#eventText"),
       eventChoices: q("#eventChoices"),
       life: q("#life"),
+      goalsFold: q("#goalsFold"),
+      goals: q("#goals"),
       modal: q("#modal"),
       modalBody: q("#modalBody"),
       schedules,
@@ -805,6 +838,18 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       }
     }
 
+    {
+      const items = goalStatuses(state, data);
+      e.goalsFold.hidden = items.length === 0;
+      e.goals.replaceChildren(
+        ...items.map((g) => {
+          const li = document.createElement("li");
+          li.textContent = goalLine(g);
+          li.classList.toggle("done", g.done);
+          return li;
+        }),
+      );
+    }
     e.life.textContent = `第 ${state.meta.lives + (state.review === null ? 1 : 0)} 世`;
     renderModal(state, e);
   }
@@ -862,7 +907,22 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         row.append(el("dt", undefined, k), el("dd", undefined, v));
         facts.append(row);
       }
-      box.append(facts, el("h3", undefined, "此生所記"));
+      box.append(facts);
+      if (review.goals.length > 0) {
+        box.append(el("h3", undefined, "這一世的目標"));
+        const gl = el("ul", "goals");
+        for (const g of review.goals) {
+          const def = data.goals.find((x) => x.id === g.id)!;
+          gl.append(el("li", g.done ? "done" : undefined, `${g.done ? "✓ " : "　"}${def.name}`));
+        }
+        box.append(gl);
+      }
+      const versus = compareLives(review, data);
+      if (versus.length > 0) {
+        box.append(el("h3", undefined, "與上一世相比"));
+        for (const line of versus) box.append(el("p", "versus", formatVersus(line, data)));
+      }
+      box.append(el("h3", undefined, "此生所記"));
       const ul = el("ul", "highlights");
       if (review.highlights.length === 0) ul.append(el("li", "desc", "平平淡淡，無甚可記。"));
       for (const entry of review.highlights) {

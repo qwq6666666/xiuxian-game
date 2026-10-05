@@ -1,3 +1,4 @@
+import type { VersusLine } from "../core/goals";
 import { eraName } from "../core/era";
 import type { OfflineSummary } from "../core/offline";
 import type { Changes, LifeReview, LogEntry, Meta } from "../core/state";
@@ -252,4 +253,18 @@ export function formatOffline(summary: OfflineSummary): string {
   const span = [years > 0 ? `${years} 年` : "", months > 0 ? `${months} 個月` : ""].filter(Boolean).join(" ");
   const reason = { elapsed: "", bottleneck: "，已至瓶頸", lifespan: "，壽元所剩不多，不宜再閉關" }[summary.stop];
   return `閉關 ${span}，修為增加 ${Math.round(summary.gained)}${reason}。`;
+}
+
+/** 與上一世的差別：把比較結果填進 text.json 的句子 */
+export function formatVersus(line: VersusLine, data: GameData): string {
+  const t = data.text.versus;
+  const name = (b: { realmId: string; stage: number }): string => realmLabel(data.realms.find((r) => r.id === b.realmId)!, b.stage);
+  switch (line.kind) {
+    case "age":
+      return fill(line.cmp === "more" ? t.ageMore : line.cmp === "less" ? t.ageLess : t.ageSame, { n: String(line.years) });
+    case "progress":
+      return fill(line.cmp === "far" ? t.progressFar : line.cmp === "short" ? t.progressShort : t.progressSame, { from: name(line.from), to: name(line.to) });
+    case "origin":
+      return t.originDiff;
+  }
 }

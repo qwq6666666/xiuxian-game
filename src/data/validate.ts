@@ -16,6 +16,8 @@ import {
   type FragmentData,
   type FragmentDef,
   type GameConfig,
+  type GoalCondition,
+  type GoalDef,
   type GameData,
   type MapData,
   type MapRegion,
@@ -614,6 +616,19 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       born: str(era, "born", `${file} 欄位 era`),
     },
     breakthroughGate: str(o, "breakthroughGate", file),
+    versus: (() => {
+      const g = obj(o.versus, `${file} 欄位 versus`);
+      const w = `${file} 欄位 versus`;
+      return {
+        ageMore: str(g, "ageMore", w),
+        ageLess: str(g, "ageLess", w),
+        ageSame: str(g, "ageSame", w),
+        progressFar: str(g, "progressFar", w),
+        progressShort: str(g, "progressShort", w),
+        progressSame: str(g, "progressSame", w),
+        originDiff: str(g, "originDiff", w),
+      };
+    })(),
     guide: (() => {
       const g = obj(o.guide, `${file} 欄位 guide`);
       const w = `${file} 欄位 guide`;
@@ -860,6 +875,40 @@ export function validateWorldEffects(raw: unknown, file = "worldEffects.json"): 
   });
 }
 
+export function validateGoals(raw: unknown, file = "goals.json"): GoalDef[] {
+  const goals = list(raw, file).map((r, i): GoalDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const w = `${file} 第 ${i + 1} 筆（${id}）`;
+    const co = obj(o.condition, `${w} 欄位 condition`);
+    const cw = `${w} 欄位 condition`;
+    const kind = str(co, "kind", cw);
+    let condition: GoalCondition;
+    if (kind === "realm") {
+      condition = { kind, realmId: str(co, "realmId", cw), ...(co.stage !== undefined ? { stage: num(co, "stage", cw, { min: 0, integer: true }) } : {}) };
+    } else if (kind === "age") {
+      condition = { kind, years: num(co, "years", cw, { gt: 0, integer: true }) };
+    } else if (kind === "fragments" || kind === "events") {
+      condition = { kind, count: num(co, "count", cw, { gt: 0, integer: true }) };
+    } else if (kind === "flag") {
+      condition = { kind, flagId: str(co, "flagId", cw) };
+    } else {
+      return fail(cw, "kind", `必須是 realm、age、fragments、flag、events 之一，目前為 ${kind}`);
+    }
+    return {
+      id,
+      name: str(o, "name", w),
+      desc: str(o, "desc", w),
+      group: str(o, "group", w),
+      minLives: num(o, "minLives", w, { min: 0, integer: true }),
+      condition,
+    };
+  });
+  uniqueIds(goals, file);
+  if (goals.length === 0) fail(file, "（根）", "不可為空");
+  return goals;
+}
+
 export function validateWorldEvents(raw: unknown, file = "worldEvents.json"): WorldEventDef[] {
   const events = list(raw, file).map((r, i): WorldEventDef => {
     const where = `${file} 第 ${i + 1} 筆`;
@@ -981,6 +1030,7 @@ function checkSlotRules(data: GameData): void {
   data.talents.forEach((x, i) => check(`talents.json 第 ${i + 1} 筆（${x.id}）`, x, false));
   data.spiritRoots.forEach((x, i) => check(`spiritRoots.json 第 ${i + 1} 筆（${x.id}）`, x, false));
   data.realms.forEach((x, i) => check(`realms.json 第 ${i + 1} 筆（${x.id}）`, x, false));
+  data.goals.forEach((x, i) => check(`goals.json 第 ${i + 1} 筆（${x.id}）`, x, false));
   data.worldEffects.forEach((x, i) => check(`worldEffects.json 第 ${i + 1} 筆（${x.id}）`, { reason: x.reason }, true));
   data.worldEvents.forEach((x, i) => check(`worldEvents.json 第 ${i + 1} 筆（${x.id}）`, { note: x.note.replace(SLOT_PATTERN_FOR_NOTE, "") }, false));
   check("map.json", data.map, false);
@@ -1071,6 +1121,16 @@ export function validateGameData(data: GameData): GameData {
       for (const id of Object.keys(ch.requires?.items ?? {})) has(itemIds, id, `${from} 的 requires.items`, "items.json");
       for (const id of ch.requires?.fragments ?? []) has(fragmentIds, id, `${from} 的 requires.fragments`, "fragments.json");
     }
+  });
+  data.goals.forEach((g, i) => {
+    const w = `goals.json 第 ${i + 1} 筆（${g.id}）`;
+    const c = g.condition;
+    if (c.kind === "realm") {
+      has(realmIds, c.realmId, `${w} 的 condition`, "realms.json");
+      const realm = data.realms.find((r) => r.id === c.realmId)!;
+      if (c.stage !== undefined && c.stage >= realm.stageNames.length) throw new Error(`${w}：condition.stage ${c.stage} 超出 ${realm.name} 的階段數`);
+    }
+    if (c.kind === "flag" && !setFlags.has(c.flagId)) throw new Error(`${w}：condition.flagId ${c.flagId} 沒有任何事件結果會設定它`);
   });
   return data;
 }

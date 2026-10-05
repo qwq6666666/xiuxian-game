@@ -1,0 +1,91 @@
+[
+  {
+    "id": "lianqi_full",
+    "name": "練氣圓滿",
+    "desc": "把練氣九層一路修到頭。",
+    "group": "cultivation",
+    "minLives": 0,
+    "condition": {
+      "kind": "realm",
+      "realmId": "lianqi",
+      "stage": 8
+    }
+  },
+  {
+    "id": "reach_zhuji",
+    "name": "築基有成",
+    "desc": "破開第一道大關。",
+    "group": "cultivation",
+    "minLives": 1,
+    "condition": {
+      "kind": "realm",
+      "realmId": "zhuji"
+    }
+  },
+  {
+    "id": "reach_jindan",
+    "name": "金丹一粒",
+    "desc": "凝出金丹，算是真正入了門。",
+    "group": "cultivation",
+    "minLives": 3,
+    "condition": {
+      "kind": "realm",
+      "realmId": "jindan"
+    }
+  },
+  {
+    "id": "age_60",
+    "name": "活過六十",
+    "desc": "凡人能熬到的歲數，不見得比修士少。",
+    "group": "life",
+    "minLives": 0,
+    "condition": {
+      "kind": "age",
+      "years": 60
+    }
+  },
+  {
+    "id": "age_100",
+    "name": "活過百歲",
+    "desc": "白髮多了，故事也多了。",
+    "group": "life",
+    "minLives": 2,
+    "condition": {
+      "kind": "age",
+      "years": 100
+    }
+  },
+  {
+    "id": "one_fragment",
+    "name": "得一份殘卷",
+    "desc": "路上撿到的字紙，偶爾比丹藥值錢。",
+    "group": "story",
+    "minLives": 0,
+    "condition": {
+      "kind": "fragments",
+      "count": 1
+    }
+  },
+  {
+    "id": "ten_events",
+    "name": "見聞十事",
+    "desc": "不挑好壞，多看幾件事。",
+    "group": "story",
+    "minLives": 0,
+    "condition": {
+      "kind": "events",
+      "count": 10
+    }
+  },
+  {
+    "id": "raise_child",
+    "name": "養大一個孩子",
+    "desc": "收養的孩子長大成人，不算修行，卻也是一生。",
+    "group": "story",
+    "minLives": 0,
+    "condition": {
+      "kind": "flag",
+      "flagId": "child_grown"
+    }
+  }
+]

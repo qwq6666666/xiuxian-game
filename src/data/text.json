@@ -73,6 +73,15 @@
     "transition": "{prev}年間之後，隔了不知多少年，如今是{era}年間。",
     "born": "生於{era}年間"
   },
+  "versus": {
+    "ageMore": "比上一世多活了 {n} 年。",
+    "ageLess": "比上一世少活了 {n} 年。",
+    "ageSame": "與上一世活得一樣久。",
+    "progressFar": "比上一世走得遠：上一世止於{from}，這一世到了{to}。",
+    "progressShort": "沒有上一世走得遠：上一世到了{from}，這一世止於{to}。",
+    "progressSame": "和上一世一樣，止於{to}。",
+    "originDiff": "出身與上一世不同，路自然也不同。"
+  },
   "guide": {
     "bone": "每點讓修煉速度快 #%。",
     "insight": "每點讓突破成功率高一些。",
