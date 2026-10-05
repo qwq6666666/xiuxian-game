@@ -3,14 +3,18 @@ import { msToMonths } from "./core/formulas";
 import { buyItem, buyTalent, setSchedule, useItem } from "./core/actions";
 import { attemptBreakthrough } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
+import { applyOffline } from "./core/offline";
 import { createInitialState, newLife, reroll, startLife } from "./core/life";
 import { deserialize, serialize } from "./core/save";
 import type { GameState } from "./core/state";
 import { tick } from "./core/tick";
 import { gameData as data } from "./data/load";
+import { formatOffline } from "./ui/format";
 import { mountUi } from "./ui/render";
 
 const SAVE_KEY = "xiuxian-save";
+// 最後一次存檔的現實時間，離線進度由此計算（不放進存檔本體，core 不碰時間）
+const SEEN_KEY = "xiuxian-last-seen";
 
 function newGame(): GameState {
   // 種子由外部（這裡）決定，core 不讀時間
@@ -31,12 +35,28 @@ function load(): GameState {
 function save(s: GameState): void {
   try {
     localStorage.setItem(SAVE_KEY, serialize(s));
+    localStorage.setItem(SEEN_KEY, String(Date.now()));
   } catch {
     // 存檔失敗（空間不足或被禁用）時不中斷遊戲
   }
 }
 
+/** 距離上次存檔過了多久（毫秒）；沒有紀錄時為 0 */
+function elapsedSinceSeen(): number {
+  try {
+    const seen = Number(localStorage.getItem(SEEN_KEY));
+    return seen > 0 ? Date.now() - seen : 0;
+  } catch {
+    return 0;
+  }
+}
+
 let state = load();
+{
+  const off = applyOffline(state, elapsedSinceSeen(), data);
+  state = off.state;
+  if (notice === "") notice = formatOffline(off.summary);
+}
 
 function update(next: GameState): void {
   state = next;
@@ -91,6 +111,19 @@ function frame(now: number): void {
 requestAnimationFrame(frame);
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) save(state);
+  if (document.hidden) {
+    save(state);
+    return;
+  }
+  // 分頁被凍結或電腦休眠後回到前景：補算離開的時間
+  const off = applyOffline(state, elapsedSinceSeen(), data);
+  if (off.summary.months > 0) {
+    ui.notice(formatOffline(off.summary));
+    last = performance.now();
+    acc = 0;
+    update(off.state);
+  } else {
+    save(state);
+  }
 });
 window.addEventListener("beforeunload", () => save(state));

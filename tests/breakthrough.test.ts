@@ -8,13 +8,13 @@ import {
 import { breakthroughFailLoss, breakthroughRate } from "../src/core/formulas";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
-import { living, seedWhere } from "./helpers";
+import { lianqiNeed, living, seedWhere } from "./helpers";
 
 const attrs = { bone: 5, insight: 5, fortune: 5, mind: 5 };
 
 /** 練氣九層圓滿、卡在瓶頸：悟性 5 → 成功率 40%，心性 5 → 失敗損失 20% */
 function atLianqiCap(patch = {}) {
-  return living(1, { realmId: "lianqi", stage: 8, cultivation: 2563, attributes: attrs, ...patch });
+  return living(1, { realmId: "lianqi", stage: 8, cultivation: lianqiNeed(8), attributes: attrs, ...patch });
 }
 
 describe("突破公式", () => {
@@ -38,11 +38,11 @@ describe("突破公式", () => {
 describe("手動突破", () => {
   it("只有卡在瓶頸的修行中才能突破", () => {
     expect(canBreakthrough(atLianqiCap())).toBe(true);
-    expect(canBreakthrough(atLianqiCap({ cultivation: 2000 }))).toBe(false);
-    expect(canBreakthrough(atLianqiCap({ stage: 7, cultivation: 1000 }))).toBe(false);
+    expect(canBreakthrough(atLianqiCap({ cultivation: lianqiNeed(8) - 1 }))).toBe(false);
+    expect(canBreakthrough(atLianqiCap({ stage: 7, cultivation: lianqiNeed(7) }))).toBe(false);
     expect(canBreakthrough(atLianqiCap({ phase: "dead" }))).toBe(false);
     expect(canBreakthrough(living(1))).toBe(false);
-    const s = atLianqiCap({ cultivation: 2000 });
+    const s = atLianqiCap({ cultivation: lianqiNeed(8) - 1 });
     expect(attemptBreakthrough(s, false)).toBe(s);
   });
 
@@ -62,7 +62,7 @@ describe("手動突破", () => {
     const t = attemptBreakthrough(atLianqiCap({ rngSeed }), false);
     expect(t.realmId).toBe("lianqi");
     expect(t.stage).toBe(8);
-    expect(t.cultivation).toBeCloseTo(2563 * 0.8);
+    expect(t.cultivation).toBeCloseTo(lianqiNeed(8) * 0.8);
     expect(t.breakthroughs).toBe(0);
     expect(t.log[t.log.length - 1].kind).toBe("breakthroughFail");
     expect(canBreakthrough(t)).toBe(false);

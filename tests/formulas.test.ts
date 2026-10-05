@@ -47,13 +47,11 @@ describe("formulas", () => {
     expect(v).toBeCloseTo(1 * 2.5 * 1.5 * 3 * 0.3 * 1.1 * 1.2);
   });
 
-  it("練氣各層修為需求：一層 100、九層約 2563", () => {
-    expect(stageNeed(lianqi, 0)).toBe(100);
-    expect(stageNeed(lianqi, 1)).toBe(150);
-    expect(stageNeed(lianqi, 8)).toBe(2563);
-    const total = Array.from({ length: 9 }, (_, i) => stageNeed(lianqi, i)).reduce((a, b) => a + b);
-    expect(total).toBeGreaterThan(7400);
-    expect(total).toBeLessThan(7600);
+  it("練氣各層修為需求：基礎 × 成長率^階段，四捨五入", () => {
+    const { base, growth } = lianqi.need;
+    for (let i = 0; i < 9; i++) expect(stageNeed(lianqi, i)).toBe(Math.round(base * growth ** i));
+    expect(stageNeed(lianqi, 0)).toBe(base);
+    expect(stageNeed(lianqi, 8)).toBeGreaterThan(stageNeed(lianqi, 7));
   });
 
   it("凡人修為滿 50 進練氣", () => {

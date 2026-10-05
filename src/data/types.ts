@@ -27,6 +27,12 @@ export interface GameConfig {
   fortuneGoodWeight: number;
   /** 首次達成某階段時，該階段道韻的倍率（2 = 加倍） */
   daoYunFirstTimeMult: number;
+  /** 離線進度最多計算的現實小時數 */
+  offlineMaxHours: number;
+  /** 離線少於此秒數不算（也不顯示回歸提示） */
+  offlineMinSeconds: number;
+  /** 離線時壽元剩餘低於此比例就停止閉關 */
+  offlineStopLifespanRatio: number;
 }
 
 /** 大境界手動突破的成功率規則 */

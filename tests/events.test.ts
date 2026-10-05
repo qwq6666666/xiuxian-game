@@ -14,7 +14,7 @@ import type { GameState } from "../src/core/state";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import type { Effects, EventDef, GameData } from "../src/data/types";
-import { living } from "./helpers";
+import { lianqiNeed, living } from "./helpers";
 
 const ev = (id: string): EventDef => gameData.events.find((e) => e.id === id)!;
 
@@ -218,7 +218,7 @@ describe("計時與觸發", () => {
     const entry = t.log[t.log.length - 1];
     expect(entry).toMatchObject({ kind: "event", eventId: "rain" });
     expect(entry.choice).toBeUndefined();
-    expect(entry.changes?.cultivation).toBe(50);
+    expect(entry.changes?.cultivation).toBe(Math.round(lianqiNeed(0) * 0.5));
   });
 
   it("每世上限：maxPerLife 為 1 的事件不會重複", () => {
@@ -290,24 +290,25 @@ describe("抉擇結算", () => {
     return chooseEvent(s, 0, data);
   };
 
-  it("修為：以當前階段所需修為的比例計算（練氣三層需 225）", () => {
+  it("修為：以當前階段所需修為的比例計算（練氣三層需求以資料檔為準）", () => {
     const up = run({ cultivation: 0.2 });
-    expect(up.cultivation).toBe(145);
-    expect(up.log[up.log.length - 1].changes?.cultivation).toBe(45);
+    const n = lianqiNeed(2);
+    expect(up.cultivation).toBe(100 + Math.round(n * 0.2));
+    expect(up.log[up.log.length - 1].changes?.cultivation).toBe(Math.round(n * 0.2));
     const down = run({ cultivation: -0.2 });
-    expect(down.cultivation).toBe(55);
-    expect(down.log[down.log.length - 1].changes?.cultivation).toBe(-45);
+    expect(down.cultivation).toBe(100 - Math.round(n * 0.2));
+    expect(down.log[down.log.length - 1].changes?.cultivation).toBe(-Math.round(n * 0.2));
   });
 
   it("修為損失不會低於 0，增加足夠時會升層", () => {
     expect(run({ cultivation: -5 }).cultivation).toBe(0);
-    const up = run({ cultivation: 0.6 }); // +135 → 235 ≥ 225 → 升到四層
+    const up = run({ cultivation: 0.6 }); // 100 + 0.6 × 需求 ≥ 需求 → 升到四層
     expect(up.stage).toBe(3);
   });
 
   it("卡在瓶頸時修為增加無效、不記變化", () => {
-    const t = run({ cultivation: 0.5 }, { stage: 8, cultivation: 2563 });
-    expect(t.cultivation).toBe(2563);
+    const t = run({ cultivation: 0.5 }, { stage: 8, cultivation: lianqiNeed(8) });
+    expect(t.cultivation).toBe(lianqiNeed(8));
     expect(t.log[t.log.length - 1].changes).toBeUndefined();
   });
 

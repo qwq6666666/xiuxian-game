@@ -1,3 +1,4 @@
+import type { OfflineSummary } from "../core/offline";
 import type { Changes, LifeReview, LogEntry } from "../core/state";
 import { ATTRIBUTE_KEYS, type AttributeKey, type GameData, type RealmDef, type TalentDef } from "../data/types";
 
@@ -170,4 +171,14 @@ export function formatLogEntry(entry: LogEntry, data: GameData): string {
   const body = fill(template, vars);
   // 死亡文字自帶「享年」，不再加年齡前綴
   return entry.kind === "death" || entry.kind === "adventureDeath" ? body : `${formatAgeZh(entry.month)}，${body}`;
+}
+
+/** 離線回歸提示，例如「閉關 3 年 2 個月，修為增加 360。」；沒有閉關則回傳空字串 */
+export function formatOffline(summary: OfflineSummary): string {
+  if (summary.months <= 0) return "";
+  const years = Math.floor(summary.months / 12);
+  const months = summary.months % 12;
+  const span = [years > 0 ? `${years} 年` : "", months > 0 ? `${months} 個月` : ""].filter(Boolean).join(" ");
+  const reason = { elapsed: "", bottleneck: "，已至瓶頸", lifespan: "，壽元所剩不多，不宜再閉關" }[summary.stop];
+  return `閉關 ${span}，修為增加 ${Math.round(summary.gained)}${reason}。`;
 }

@@ -79,6 +79,7 @@ function singleLives(): void {
   const choiceCounts: number[] = [];
   const causes = { lifespan: 0, event: 0, adventure: 0, cleared: 0 };
   let totalMonths = 0;
+  let totalProgress = 0;
 
   for (let i = 0; i < runs; i++) {
     const start = createInitialState(freshSeed(), gameData);
@@ -91,6 +92,7 @@ function singleLives(): void {
       if (ev.type === "choice") choices += n;
     }
     choiceCounts.push(choices);
+    totalProgress += progressOf(state);
     causes[state.review!.cause]++;
     reached.set(finalLabel(state), (reached.get(finalLabel(state)) ?? 0) + 1);
   }
@@ -108,6 +110,20 @@ function singleLives(): void {
   console.log(
     `死因：壽元耗盡 ${causes.lifespan}、事件 ${causes.event}（${((causes.event / runs) * 100).toFixed(1)}%）、歷練 ${causes.adventure}、通關 ${causes.cleared}`,
   );
+
+  // 對照 GDD 第 13 節
+  const minutes = (totalMonths / runs / 60) * (gameData.config.msPerMonth / 1000);
+  const avgProgress = totalProgress / runs;
+  // 玩家策略從不歷練，所以歷練身亡用最壞情況推算：整世都在歷練
+  const adventure = gameData.schedules.find((x) => x.id === "adventure");
+  const lianqi = gameData.realms.find((r) => r.id === "lianqi")!;
+  const advDeath = adventure ? 1 - (1 - adventure.deathChance) ** (lianqi.lifespan * 12 - gameData.config.startAgeYears * 12) : 0;
+  const ok = (pass: boolean): string => (pass ? "✓" : "✗");
+  console.log("對照第 13 節：");
+  console.log(`  ${ok(minutes >= 20 && minutes <= 25)} 第一世時長：${minutes.toFixed(1)} 分鐘（目標 20–25）`);
+  console.log(`  ${ok(avgProgress >= 5 && avgProgress <= 7)} 第一世平均止步：練氣 ${avgProgress.toFixed(1)} 層（目標 5–7）`);
+  console.log(`  ${ok(avgChoices >= 8 && avgChoices <= 15)} 每世抉擇事件：${avgChoices.toFixed(1)} 個（目標 8–15）`);
+  console.log(`  ${ok(advDeath <= 0.05)} 歷練身亡（整世都在歷練的最壞情況）：${(advDeath * 100).toFixed(1)}%（目標 ≤ 5%）`);
   console.log("各事件平均每世出現次數：");
   for (const [id, n] of [...eventTotals.entries()].sort((a, b) => b[1] - a[1])) {
     console.log(`  ${id.padEnd(16)} ${(n / runs).toFixed(2)}`);
@@ -130,11 +146,16 @@ function campaigns(): void {
   };
   const firstZhuji = new Map<number, number>();
   const firstClear = new Map<number, number>();
+  /** 每場戰役首次築基、首次金丹的世數（沒達成為 Infinity），以及到首次金丹為止的遊玩分鐘數（×1 速度） */
+  const zhujiLives: number[] = [];
+  const clearLives: number[] = [];
+  const clearMinutes: number[] = [];
 
   for (let c = 0; c < runs; c++) {
     let state = createInitialState(freshSeed(), gameData);
     let gotZhuji = false;
     let gotClear = false;
+    let months = 0;
     for (let k = 0; k < lives; k++) {
       const row = perLife[k];
       row.suhui += state.meta.talents.suhui ?? 0;
@@ -142,6 +163,7 @@ function campaigns(): void {
       state = playLife(state);
       row.progress += progressOf(state);
       row.years += (state.ageMonths - start) / 12;
+      months += state.ageMonths - start;
       row.gained += state.review!.daoYunBase + state.review!.daoYunBonus;
       const t5 = yearsToLianqi5(state);
       if (t5 !== null) {
@@ -150,12 +172,19 @@ function campaigns(): void {
       }
       if (realmIdx(state) >= zhujiIdx) {
         row.zhuji++;
-        if (!gotZhuji) firstZhuji.set(k + 1, (firstZhuji.get(k + 1) ?? 0) + 1);
+        if (!gotZhuji) {
+          firstZhuji.set(k + 1, (firstZhuji.get(k + 1) ?? 0) + 1);
+          zhujiLives.push(k + 1);
+        }
         gotZhuji = true;
       }
       if (realmIdx(state) >= jindanIdx) {
         row.cleared++;
-        if (!gotClear) firstClear.set(k + 1, (firstClear.get(k + 1) ?? 0) + 1);
+        if (!gotClear) {
+          firstClear.set(k + 1, (firstClear.get(k + 1) ?? 0) + 1);
+          clearLives.push(k + 1);
+          clearMinutes.push((months * gameData.config.msPerMonth) / 60000);
+        }
         gotClear = true;
       }
       // 把道韻優先花在宿慧
@@ -184,4 +213,21 @@ function campaigns(): void {
     [...m.entries()].sort((a, b) => a[0] - b[0]).map(([k, n]) => `第 ${k} 世 ${((n / runs) * 100).toFixed(0)}%`).join("、") || "（無）";
   console.log(`首次築基發生在：${dist(firstZhuji)}`);
   console.log(`首次金丹發生在：${dist(firstClear)}`);
+
+  // 對照 GDD 第 13 節：把沒達成的戰役算成無限大，中位數才不會被只看成功者而低估
+  const median = (done: number[]): number => {
+    const all = [...done, ...Array<number>(runs - done.length).fill(Infinity)].sort((a, b) => a - b);
+    return all[Math.floor(runs / 2)];
+  };
+  const [zLo, zHi] = [3, 5];
+  const [cLo, cHi] = [8, 12];
+  const zMed = median(zhujiLives);
+  const cMed = median(clearLives);
+  const hours = clearMinutes.length > 0 ? clearMinutes.reduce((a, b) => a + b, 0) / clearMinutes.length / 60 : NaN;
+  const ok = (pass: boolean): string => (pass ? "✓" : "✗");
+  console.log("對照第 13 節（以中位數判定）：");
+  console.log(`  ${ok(zMed >= zLo && zMed <= zHi)} 首次築基：中位數第 ${zMed} 世（目標第 ${zLo}–${zHi} 世）`);
+  console.log(`  ${ok(cMed >= cLo && cMed <= cHi)} 首次金丹：中位數第 ${cMed} 世（目標第 ${cLo}–${cHi} 世）`);
+  console.log(`  ${ok(hours >= 4 && hours <= 6)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（目標 4–6 小時，僅計已通關者）`);
+  console.log(`  ${lives} 世內已築基 ${((zhujiLives.length / runs) * 100).toFixed(0)}%、已通關 ${((clearLives.length / runs) * 100).toFixed(0)}%`);
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LOG_KINDS } from "../src/core/state";
 import { gameData } from "../src/data/load";
-import { choiceBlockReason, formatAgeZh, formatChanges, formatLogEntry, toChineseNumber } from "../src/ui/format";
+import { choiceBlockReason, formatAgeZh, formatChanges, formatLogEntry, formatOffline, toChineseNumber } from "../src/ui/format";
 
 describe("format", () => {
   it("中文數字", () => {
@@ -94,5 +94,14 @@ describe("format", () => {
         expect((text.match(/。/g) ?? []).length).toBeLessThanOrEqual(3);
       }
     }
+  });
+});
+
+describe("離線回歸提示", () => {
+  it("顯示閉關年月與修為，卡瓶頸或壽元將盡時附註原因", () => {
+    expect(formatOffline({ months: 38, gained: 360.4, stop: "elapsed" })).toBe("閉關 3 年 2 個月，修為增加 360。");
+    expect(formatOffline({ months: 24, gained: 10, stop: "bottleneck" })).toBe("閉關 2 年，修為增加 10，已至瓶頸。");
+    expect(formatOffline({ months: 5, gained: 10, stop: "lifespan" })).toContain("壽元所剩不多");
+    expect(formatOffline({ months: 0, gained: 0, stop: "elapsed" })).toBe("");
   });
 });

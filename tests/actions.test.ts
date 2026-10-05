@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buyItem, canBuyItem, canUseItem, setSchedule, useItem } from "../src/core/actions";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
-import { living } from "./helpers";
+import { lianqiNeed, living } from "./helpers";
 
 describe("日常安排", () => {
   it("可切換，未知的安排與非修行中會被忽略", () => {
@@ -88,16 +88,16 @@ describe("使用丹藥", () => {
   it("聚氣丹：立得當前階段所需修為的 25%", () => {
     const s = living(1, { realmId: "lianqi", stage: 2, cultivation: 0, items: { juqi_dan: 2 } });
     const t = useItem(s, "juqi_dan");
-    expect(t.cultivation).toBeCloseTo(225 * 0.25);
+    expect(t.cultivation).toBeCloseTo(lianqiNeed(2) * 0.25);
     expect(t.items.juqi_dan).toBe(1);
     expect(t.itemsUsed.juqi_dan).toBe(1);
   });
 
   it("聚氣丹足以升級時會直接升層", () => {
-    const s = living(1, { realmId: "lianqi", stage: 0, cultivation: 90, items: { juqi_dan: 1 } });
+    const s = living(1, { realmId: "lianqi", stage: 0, cultivation: lianqiNeed(0) - 10, items: { juqi_dan: 1 } });
     const t = useItem(s, "juqi_dan");
     expect(t.stage).toBe(1);
-    expect(t.cultivation).toBeCloseTo(90 + 25 - 100);
+    expect(t.cultivation).toBeCloseTo(lianqiNeed(0) - 10 + lianqiNeed(0) * 0.25 - lianqiNeed(0));
   });
 
   it("卡在瓶頸時不能服聚氣丹", () => {

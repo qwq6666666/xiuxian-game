@@ -14,5 +14,8 @@
   "eventIntervalMin": 12,
   "eventIntervalMax": 36,
   "fortuneGoodWeight": 0.05,
-  "daoYunFirstTimeMult": 2
+  "daoYunFirstTimeMult": 2,
+  "offlineMaxHours": 168,
+  "offlineMinSeconds": 60,
+  "offlineStopLifespanRatio": 0.1
 }

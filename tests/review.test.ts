@@ -10,6 +10,9 @@ import type { EventDef, GameData } from "../src/data/types";
 import { formatReviewSummary, reviewTitle } from "../src/ui/format";
 import { living } from "./helpers";
 
+// 各境界每階段的道韻，隨資料檔變動
+const dy = (id: string): number => gameData.realms.find((r) => r.id === id)!.daoYun;
+
 const at = (realmId: string, stage: number, patch: Partial<GameState> = {}) => living(1, { realmId, stage, ...patch });
 
 describe("道韻結算", () => {
@@ -17,31 +20,31 @@ describe("道韻結算", () => {
     expect(settleDaoYun(at("mortal", 0))).toEqual({ base: 0, bonus: 0, newlyReached: [] });
   });
 
-  it("練氣每層 1 點：到練氣六層共 6 點，首次達成再加 6", () => {
+  it("練氣每層固定點數：到練氣六層共 6 層，首次達成再加一倍", () => {
     const r = settleDaoYun(at("lianqi", 5));
-    expect(r.base).toBe(6);
-    expect(r.bonus).toBe(6);
+    expect(r.base).toBe(6 * dy("lianqi"));
+    expect(r.bonus).toBe(6 * dy("lianqi"));
     expect(r.newlyReached).toEqual(["lianqi:0", "lianqi:1", "lianqi:2", "lianqi:3", "lianqi:4", "lianqi:5"]);
   });
 
-  it("築基每期 10 點、金丹 50 點，並計入先前境界的全部階段", () => {
-    // 練氣 9 層 ×1 + 築基初期、中期 ×10
-    expect(settleDaoYun(at("zhuji", 1)).base).toBe(9 + 20);
-    // 練氣 9 + 築基 3 期 30 + 金丹 50
-    expect(settleDaoYun(at("jindan", 0)).base).toBe(9 + 30 + 50);
+  it("築基每期、金丹各有固定點數，並計入先前境界的全部階段", () => {
+    // 練氣 9 層 + 築基初期、中期
+    expect(settleDaoYun(at("zhuji", 1)).base).toBe(9 * dy("lianqi") + 2 * dy("zhuji"));
+    // 練氣 9 層 + 築基 3 期 + 金丹
+    expect(settleDaoYun(at("jindan", 0)).base).toBe(9 * dy("lianqi") + 3 * dy("zhuji") + dy("jindan"));
   });
 
   it("首次達成加倍只算一次：曾經達成的階段不再加倍", () => {
     const meta = { ...emptyMeta(), reached: ["lianqi:0", "lianqi:1", "lianqi:2"] };
     const r = settleDaoYun(at("lianqi", 4, { meta }));
-    expect(r.base).toBe(5);
-    expect(r.bonus).toBe(2); // 只有第 4、5 層是新的
+    expect(r.base).toBe(5 * dy("lianqi"));
+    expect(r.bonus).toBe(2 * dy("lianqi")); // 只有第 4、5 層是新的
     expect(r.newlyReached).toEqual(["lianqi:3", "lianqi:4"]);
   });
 
   it("倍率由設定決定", () => {
     const data: GameData = { ...gameData, config: { ...gameData.config, daoYunFirstTimeMult: 3 } };
-    expect(settleDaoYun(at("lianqi", 1), data)).toMatchObject({ base: 2, bonus: 4 });
+    expect(settleDaoYun(at("lianqi", 1), data)).toMatchObject({ base: 2 * dy("lianqi"), bonus: 4 * dy("lianqi") });
   });
 });
 
@@ -56,10 +59,10 @@ describe("結束一世", () => {
       ageMonths: 1440,
       realmId: "lianqi",
       stage: 5,
-      daoYunBase: 6,
-      daoYunBonus: 6,
+      daoYunBase: 6 * dy("lianqi"),
+      daoYunBonus: 6 * dy("lianqi"),
     });
-    expect(t.meta.daoYun).toBe(12);
+    expect(t.meta.daoYun).toBe(12 * dy("lianqi"));
     expect(t.meta.lives).toBe(1);
     expect(t.meta.reached).toHaveLength(6);
     expect(t.log[t.log.length - 1].kind).toBe("death");
@@ -103,9 +106,9 @@ describe("結束一世", () => {
   it("首次達成加倍跨世只算一次：同一境界第二世不再加倍", () => {
     const first = tick(dying(), 1);
     const second = tick(dying({ meta: first.meta }), 1);
-    expect(first.review).toMatchObject({ daoYunBase: 6, daoYunBonus: 6 });
-    expect(second.review).toMatchObject({ daoYunBase: 6, daoYunBonus: 0 });
-    expect(second.meta.daoYun).toBe(12 + 6);
+    expect(first.review).toMatchObject({ daoYunBase: 6 * dy("lianqi"), daoYunBonus: 6 * dy("lianqi") });
+    expect(second.review).toMatchObject({ daoYunBase: 6 * dy("lianqi"), daoYunBonus: 0 });
+    expect(second.meta.daoYun).toBe(18 * dy("lianqi"));
     expect(second.meta.lives).toBe(2);
   });
 

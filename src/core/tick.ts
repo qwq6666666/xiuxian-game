@@ -57,26 +57,33 @@ function applySchedule(state: GameState, sched: ScheduleDef, month: number, data
   return s;
 }
 
+/** 依日常安排計算一個月的修為增量 */
+export function monthlyGain(state: GameState, sched: ScheduleDef, data: GameData): number {
+  const realm = realmOf(state, data);
+  const root = data.spiritRoots.find((r) => r.id === state.spiritRootId);
+  if (!root) throw new Error(`狀態：找不到靈根 ${state.spiritRootId}`);
+  return cultivationPerMonth({
+    config: data.config,
+    rootMult: root.mult,
+    bone: state.attributes.bone,
+    realmMult: realm.cultivationMult,
+    scheduleMult: sched.cultivationMult,
+    originBonus: state.cultivationBonus,
+    reincarnationBonus: talentBonus(state.meta, data.talents, "cultivation"),
+  });
+}
+
+/** 累積一個月的修為並處理升級（呼叫前須確認未卡瓶頸） */
+export function addCultivation(state: GameState, sched: ScheduleDef, month: number, data: GameData): GameState {
+  return resolveStages({ ...state, cultivation: state.cultivation + monthlyGain(state, sched, data) }, month, data);
+}
+
 function stepMonth(state: GameState, data: GameData): GameState {
   const month = state.ageMonths + 1;
   let s: GameState = { ...state, ageMonths: month };
   const sched = scheduleOf(s, data);
   // 已卡在瓶頸就不再累積修為
-  if (!atBottleneck(state, data)) {
-    const realm = realmOf(s, data);
-    const root = data.spiritRoots.find((r) => r.id === s.spiritRootId);
-    if (!root) throw new Error(`狀態：找不到靈根 ${s.spiritRootId}`);
-    const gain = cultivationPerMonth({
-      config: data.config,
-      rootMult: root.mult,
-      bone: s.attributes.bone,
-      realmMult: realm.cultivationMult,
-      scheduleMult: sched.cultivationMult,
-      originBonus: s.cultivationBonus,
-      reincarnationBonus: talentBonus(s.meta, data.talents, "cultivation"),
-    });
-    s = resolveStages({ ...s, cultivation: s.cultivation + gain }, month, data);
-  }
+  if (!atBottleneck(state, data)) s = addCultivation(s, sched, month, data);
   s = applySchedule(s, sched, month, data);
   if (s.phase !== "living") return s;
   if (month >= lifespanMonths(realmOf(s, data), s.lifespanBonus)) {

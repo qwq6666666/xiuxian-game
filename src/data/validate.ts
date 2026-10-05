@@ -43,6 +43,7 @@ function list(raw: unknown, where: string): unknown[] {
 interface NumOpts {
   min?: number;
   gt?: number;
+  max?: number;
   integer?: boolean;
 }
 
@@ -54,6 +55,7 @@ function num(o: Obj, key: string, where: string, opts: NumOpts = {}): number {
   if (opts.integer && !Number.isInteger(v)) fail(where, key, `必須是整數，目前為 ${v}`);
   if (opts.min !== undefined && v < opts.min) fail(where, key, `必須 ≥ ${opts.min}，目前為 ${v}`);
   if (opts.gt !== undefined && v <= opts.gt) fail(where, key, `必須 > ${opts.gt}，目前為 ${v}`);
+  if (opts.max !== undefined && v > opts.max) fail(where, key, `必須 ≤ ${opts.max}，目前為 ${v}`);
   return v;
 }
 
@@ -121,6 +123,9 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     eventIntervalMax: num(o, "eventIntervalMax", file, { min: eventMin, integer: true }),
     fortuneGoodWeight: num(o, "fortuneGoodWeight", file, { min: 0 }),
     daoYunFirstTimeMult: num(o, "daoYunFirstTimeMult", file, { min: 1 }),
+    offlineMaxHours: num(o, "offlineMaxHours", file, { gt: 0 }),
+    offlineMinSeconds: num(o, "offlineMinSeconds", file, { min: 0 }),
+    offlineStopLifespanRatio: num(o, "offlineStopLifespanRatio", file, { min: 0, max: 1 }),
   };
 }
 

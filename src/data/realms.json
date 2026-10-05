@@ -15,9 +15,9 @@
     "lifespan": 120,
     "cultivationMult": 1,
     "stageNames": ["一層", "二層", "三層", "四層", "五層", "六層", "七層", "八層", "九層"],
-    "need": { "base": 100, "growth": 1.5 },
+    "need": { "base": 160, "growth": 1.25 },
     "breakthrough": "manual",
-    "daoYun": 1,
+    "daoYun": 5,
     "breakthroughRule": { "baseRate": 0.3, "insightBonus": 0.02, "pillId": "zhuji_dan", "pillBonus": 0.2 }
   },
   {
@@ -26,9 +26,9 @@
     "lifespan": 200,
     "cultivationMult": 3,
     "stageNames": ["初期", "中期", "後期"],
-    "need": { "base": 5000, "growth": 2 },
+    "need": { "base": 3300, "growth": 1.8 },
     "breakthrough": "manual",
-    "daoYun": 10,
+    "daoYun": 50,
     "breakthroughRule": { "baseRate": 0.15, "insightBonus": 0.02 }
   },
   {
@@ -39,6 +39,6 @@
     "stageNames": [""],
     "need": { "base": 1, "growth": 1 },
     "breakthrough": "manual",
-    "daoYun": 50
+    "daoYun": 250
   }
 ]

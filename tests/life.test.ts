@@ -4,7 +4,7 @@ import type { GameState } from "../src/core/state";
 import { atBottleneck, tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { ATTRIBUTE_KEYS } from "../src/data/types";
-import { living } from "./helpers";
+import { lianqiNeed, living } from "./helpers";
 
 describe("開局擲骰", () => {
   it("同種子結果相同，起始年齡 10 歲、停在擲骰階段", () => {
@@ -91,20 +91,20 @@ describe("tick", () => {
   });
 
   it("練氣小階段修為滿了自動升級", () => {
-    const s = living(1, { realmId: "lianqi", stage: 2, cultivation: 224.9 });
+    const s = living(1, { realmId: "lianqi", stage: 2, cultivation: lianqiNeed(2) - 0.1 });
     const t = tick(s, 1);
     expect(t.stage).toBe(3);
     expect(t.log[t.log.length - 1].kind).toBe("stageUp");
   });
 
   it("一次修為足夠可連升多層", () => {
-    const s = living(1, { realmId: "lianqi", stage: 0, cultivation: 99.9 + 150 + 225 });
+    const s = living(1, { realmId: "lianqi", stage: 0, cultivation: lianqiNeed(0) + lianqiNeed(1) + lianqiNeed(2) - 0.1 });
     const t = tick(s, 1);
     expect(t.stage).toBe(3);
   });
 
   it("練氣九層圓滿後卡在瓶頸：修為封頂、只記一次日誌", () => {
-    const need9 = 2563;
+    const need9 = lianqiNeed(8);
     const s = living(1, { realmId: "lianqi", stage: 8, cultivation: need9 - 0.1 });
     const t = tick(s, 1);
     expect(atBottleneck(t)).toBe(true);

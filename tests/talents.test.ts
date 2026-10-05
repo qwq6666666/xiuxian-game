@@ -17,7 +17,7 @@ const ended = (patch: Partial<GameState> = {}) => living(1, { phase: "dead", ...
 describe("價格與購買", () => {
   it("第 n 級的價格 = 無條件進位（base × growth^目前等級）", () => {
     const suhui = talent("suhui");
-    expect([0, 1, 2, 3, 4].map((lv) => talentCost(suhui, lv))).toEqual([2, 3, 4, 5, 7]);
+    expect([0, 1, 2, 3, 4].map((lv) => talentCost(suhui, lv))).toEqual([0, 1, 2, 3, 4].map((lv) => Math.ceil(suhui.cost.base * suhui.cost.growth ** lv)));
     expect(talentCost(talent("tianjuan"), 2)).toBe(32);
     expect(talentCost(talent("fuyuan"), 1)).toBe(22);
   });
@@ -49,10 +49,10 @@ describe("價格與購買", () => {
     expect(canBuyTalent(maxed, "ghost")).toBe(false);
   });
 
-  it("天賦等級不受 20 級以外的限制：宿慧上限 20", () => {
-    const s = ended({ meta: withTalents({ suhui: 19 }, 1e9) });
+  it("宿慧等級達上限後不能再買", () => {
+    const s = ended({ meta: withTalents({ suhui: talent("suhui").maxLevel - 1 }, 1e9) });
     const t = buyTalent(s, "suhui");
-    expect(t.meta.talents.suhui).toBe(20);
+    expect(t.meta.talents.suhui).toBe(talent("suhui").maxLevel);
     expect(canBuyTalent(t, "suhui")).toBe(false);
   });
 });
@@ -60,7 +60,7 @@ describe("價格與購買", () => {
 describe("天賦效果", () => {
   it("效果加總 = 等級 × 每級效果", () => {
     const meta = withTalents({ suhui: 4, fuyuan: 2, tianjuan: 3, yize: 5, daoxin: 2 });
-    expect(talentBonus(meta, gameData.talents, "cultivation")).toBeCloseTo(0.2);
+    expect(talentBonus(meta, gameData.talents, "cultivation")).toBeCloseTo(4 * talent("suhui").perLevel);
     expect(talentBonus(meta, gameData.talents, "fortune")).toBe(2);
     expect(talentBonus(meta, gameData.talents, "rerolls")).toBe(3);
     expect(talentBonus(meta, gameData.talents, "stoneCarry")).toBeCloseTo(0.5);
@@ -68,12 +68,13 @@ describe("天賦效果", () => {
     expect(talentBonus(emptyMeta(), gameData.talents, "cultivation")).toBe(0);
   });
 
-  it("宿慧：每級修煉速度 +5%（同角色同月份比較）", () => {
+  it("宿慧：每級修煉速度加成（同角色同月份比較）", () => {
     const month = (level: number) =>
       tick(living(3, { realmId: "lianqi", stage: 0, cultivation: 0, meta: withTalents({ suhui: level }) }), 1).cultivation;
     expect(month(0)).toBeGreaterThan(0);
-    expect(month(4) / month(0)).toBeCloseTo(1.2);
-    expect(month(20) / month(0)).toBeCloseTo(2);
+    const per = talent("suhui").perLevel;
+    expect(month(4) / month(0)).toBeCloseTo(1 + 4 * per);
+    expect(month(20) / month(0)).toBeCloseTo(1 + 20 * per);
   });
 
   it("天眷：開局重擲次數 +1 每級", () => {
@@ -168,7 +169,7 @@ describe("轉世保留跨世資料", () => {
   it("擲骰畫面的加成摘要", () => {
     expect(talentSummary({}, gameData)).toEqual([]);
     expect(talentSummary({ suhui: 3, daoxin: 1 }, gameData)).toEqual([
-      "宿慧 3 級：修煉速度 +15%",
+      `宿慧 3 級：修煉速度 +${Math.round(talent("suhui").perLevel * 300)}%`,
       "道心 1 級：突破失敗的修為損失 −5%",
     ]);
     expect(describeTalent(talent("tianjuan"), 2)).toBe("開局重擲 +2 次");
@@ -200,7 +201,7 @@ describe("存檔：跨世資料與回顧", () => {
     expect(dead.review).not.toBeNull();
     const back = deserialize(serialize(dead));
     expect(back).toEqual(dead);
-    expect(back.meta.daoYun).toBe(12);
+    expect(back.meta.daoYun).toBe(12 * gameData.realms.find((r) => r.id === "lianqi")!.daoYun);
   });
 
   it("欄位錯誤時指出欄位", () => {

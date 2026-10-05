@@ -3,10 +3,10 @@
     "id": "suhui",
     "name": "宿慧",
     "desc": "前世的修行烙在神魂裡，今生吐納更為順暢。",
-    "maxLevel": 20,
+    "maxLevel": 30,
     "effect": "cultivation",
-    "perLevel": 0.05,
-    "cost": { "base": 2, "growth": 1.35 }
+    "perLevel": 0.1,
+    "cost": { "base": 2, "growth": 1.25 }
   },
   {
     "id": "tianjuan",
