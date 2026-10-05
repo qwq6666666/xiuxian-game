@@ -5,6 +5,7 @@ import { deriveSeed, nextInt } from "./rng";
 import {
   emptyMeta,
   LOG_KINDS,
+  OFFLINE_STOPS,
   SAVE_VERSION,
   type Attributes,
   type Changes,
@@ -12,6 +13,7 @@ import {
   type LifeReview,
   type LogEntry,
   type LogKind,
+  type OfflineStop,
   type Meta,
   type Phase,
 } from "./state";
@@ -144,6 +146,15 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
   if (eo.choice !== undefined) entry.choice = num(eo, "choice", { integer: true, min: 0 }, `${p}.choice`);
   if (eo.outcome !== undefined) entry.outcome = num(eo, "outcome", { integer: true, min: 0 }, `${p}.outcome`);
   if (eo.changes !== undefined) entry.changes = parseChanges(eo.changes, `${p}.changes`);
+  if (eo.retreatMonths !== undefined) entry.retreatMonths = num(eo, "retreatMonths", { integer: true, min: 1 }, `${p}.retreatMonths`);
+  if (eo.stop !== undefined) {
+    const stop = str(eo, "stop", `${p}.stop`);
+    if (!(OFFLINE_STOPS as readonly string[]).includes(stop)) fail(`${p}.stop`, `不是合法的閉關結束原因：${stop}`);
+    entry.stop = stop as OfflineStop;
+  }
+  if (kind === "retreat" && (entry.retreatMonths === undefined || entry.stop === undefined)) {
+    fail(p, "閉關見聞必須有 retreatMonths 與 stop");
+  }
   if (kind === "event" && entry.eventId === undefined) fail(`${p}.eventId`, "事件日誌必須有 eventId");
   return entry;
 }

@@ -37,6 +37,8 @@ export interface GameConfig {
   offlineMinSeconds: number;
   /** 離線時壽元剩餘低於此比例就停止閉關 */
   offlineStopLifespanRatio: number;
+  /** 閉關見聞的分檔門檻（年）：未滿第一個值為短，到第二個值以上為長，其間為中 */
+  offlineRetreatTierYears: [number, number];
 }
 
 /** 大境界手動突破的成功率規則 */
@@ -214,6 +216,13 @@ export interface TextData {
     buy: string[];
     find: string[];
     adventureDeath: string;
+    /** 閉關見聞：依閉關長短分檔，結束原因的補句接在後面（時間用完不補） */
+    retreat: {
+      short: string[];
+      medium: string[];
+      long: string[];
+      stop: { bottleneck: string[]; lifespan: string[] };
+    };
   };
   /** 一生回顧的收尾句，依結束方式分類 */
   review: Record<ReviewCause, ClosingVariant[]>;

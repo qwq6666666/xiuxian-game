@@ -57,8 +57,13 @@ export const LOG_KINDS = [
   "find",
   "adventureDeath",
   "event",
+  "retreat",
 ] as const;
 export type LogKind = (typeof LOG_KINDS)[number];
+
+/** 離線閉關為何結束：時間用完、卡在瓶頸、壽元將盡 */
+export type OfflineStop = "elapsed" | "bottleneck" | "lifespan";
+export const OFFLINE_STOPS: readonly OfflineStop[] = ["elapsed", "bottleneck", "lifespan"];
 
 /** 事件結果實際造成的變化，由介面另外顯示 */
 export interface Changes {
@@ -87,6 +92,9 @@ export interface LogEntry {
   choice?: number;
   outcome?: number;
   changes?: Changes;
+  /** 閉關見聞：實際閉關的月數與結束原因 */
+  retreatMonths?: number;
+  stop?: OfflineStop;
 }
 
 export interface GameState {

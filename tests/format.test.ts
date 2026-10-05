@@ -97,6 +97,46 @@ describe("format", () => {
   });
 });
 
+describe("閉關見聞日誌", () => {
+  const entry = (months: number, stop: "elapsed" | "bottleneck" | "lifespan") =>
+    ({ month: 3000, kind: "retreat" as const, realmId: "lianqi", stage: 2, retreatMonths: months, stop });
+  const { retreat } = gameData.text.log;
+  const [mid, long] = gameData.config.offlineRetreatTierYears;
+
+  it("依閉關長短取不同檔的文字，並帶年齡前綴", () => {
+    const pickText = (list: string[], n: number) => list[n % list.length];
+    const short = formatLogEntry(entry(12, "elapsed"), gameData);
+    expect(short).toBe(`${formatAgeZh(3000)}，${pickText(retreat.short, 12)}`);
+    const medium = formatLogEntry(entry(mid * 12, "elapsed"), gameData);
+    expect(medium).toContain(pickText(retreat.medium, mid * 12));
+    const longText = formatLogEntry(entry(long * 12, "elapsed"), gameData);
+    expect(longText).toContain(pickText(retreat.long, long * 12));
+  });
+
+  it("同樣的輸入永遠得到同樣的文字", () => {
+    expect(formatLogEntry(entry(100, "elapsed"), gameData)).toBe(formatLogEntry(entry(100, "elapsed"), gameData));
+  });
+
+  it("卡瓶頸或壽元將盡時接上對應補句，時間用完則不補", () => {
+    const base = formatLogEntry(entry(100, "elapsed"), gameData);
+    const bottleneck = formatLogEntry(entry(100, "bottleneck"), gameData);
+    const lifespan = formatLogEntry(entry(100, "lifespan"), gameData);
+    expect(bottleneck.startsWith(base)).toBe(true);
+    expect(retreat.stop.bottleneck.some((t) => bottleneck.endsWith(t))).toBe(true);
+    expect(retreat.stop.lifespan.some((t) => lifespan.endsWith(t))).toBe(true);
+  });
+
+  it("每則見聞文字不超過三句，也沒有殘留的模板欄位", () => {
+    const all = [...retreat.short, ...retreat.medium, ...retreat.long];
+    for (const t of all) {
+      for (const tail of [...retreat.stop.bottleneck, ...retreat.stop.lifespan]) {
+        expect(((t + tail).match(/[。！？]/g) ?? []).length).toBeLessThanOrEqual(3);
+      }
+      expect(t).not.toMatch(/[{}]/);
+    }
+  });
+});
+
 describe("離線回歸提示", () => {
   it("顯示閉關年月與修為，卡瓶頸或壽元將盡時附註原因", () => {
     expect(formatOffline({ months: 38, gained: 360.4, stop: "elapsed" })).toBe("閉關 3 年 2 個月，修為增加 360。");

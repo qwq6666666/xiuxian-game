@@ -14,6 +14,18 @@ describe("save", () => {
     expect(deserialize(serialize(s))).toEqual(s);
   });
 
+  it("閉關見聞日誌可存讀，缺欄位或原因不合法時指出欄位", () => {
+    const base = createInitialState(1);
+    const entry = { month: 200, kind: "retreat", realmId: "mortal", stage: 0, retreatMonths: 60, stop: "elapsed" };
+    const text = serialize({ ...base, log: [entry as never] });
+    expect(deserialize(text).log[0]).toMatchObject({ retreatMonths: 60, stop: "elapsed" });
+    const good = JSON.parse(serialize(base));
+    const withLog = (e: object) => JSON.stringify({ ...good, log: [e] });
+    expect(() => deserialize(withLog({ ...entry, stop: "zzz" }))).toThrow("log[0].stop");
+    expect(() => deserialize(withLog({ ...entry, retreatMonths: 0 }))).toThrow("log[0].retreatMonths");
+    expect(() => deserialize(withLog({ month: 1, kind: "retreat", realmId: "mortal", stage: 0 }))).toThrow("log[0]");
+  });
+
   it("格式錯誤時指出欄位", () => {
     const good = JSON.parse(serialize(createInitialState(1)));
     expect(() => deserialize("{")).toThrow("JSON");

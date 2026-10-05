@@ -78,6 +78,7 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(() => validateRealms([{ ...r, daoYun: -1 }])).toThrow("daoYun");
     expect(() => validateEvents([{ ...gameData.events[0], highlight: -1 }])).toThrow("highlight");
     expect(() => validateConfig({ ...gameData.config, daoYunFirstTimeMult: 0.5 })).toThrow("daoYunFirstTimeMult");
+    expect(() => validateConfig({ ...gameData.config, offlineRetreatTierYears: [15, 5] })).toThrow("offlineRetreatTierYears");
     const bad = { ...gameData, text: { ...gameData.text, review: { ...gameData.text.review, lifespan: [{ text: "a", ifItem: "ghost" }, { text: "b" }] } } };
     expect(() => validateGameData(bad)).toThrow("ghost");
   });

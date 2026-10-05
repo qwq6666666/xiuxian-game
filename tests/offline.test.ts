@@ -60,6 +60,30 @@ describe("離線進度", () => {
     expect(summary.months).toBeLessThanOrEqual((data.config.offlineMaxHours * HOUR) / data.config.msPerMonth);
   });
 
+  it("閉關結束時在日誌補一筆見聞，記下月數與結束原因", () => {
+    const s = living(3);
+    const { state, summary } = applyOffline(s, 100 * data.config.msPerMonth, data);
+    const last = state.log[state.log.length - 1];
+    expect(last).toMatchObject({ kind: "retreat", retreatMonths: 100, stop: "elapsed", month: state.ageMonths });
+    expect(summary.months).toBe(100);
+  });
+
+  it("卡瓶頸時見聞記下 bottleneck，沒閉關則不寫", () => {
+    const s = living(2, { realmId: "lianqi", stage: 8, cultivation: lianqiNeed(8) - 5 });
+    const { state } = applyOffline(s, 168 * HOUR, data);
+    expect(state.log[state.log.length - 1]).toMatchObject({ kind: "retreat", stop: "bottleneck" });
+    const full = living(2, { realmId: "lianqi", stage: 8, cultivation: lianqiNeed(8) });
+    const r = applyOffline(full, 168 * HOUR, data);
+    expect(r.state.log.some((e) => e.kind === "retreat")).toBe(false);
+  });
+
+  it("見聞不影響亂數與修為結果", () => {
+    const s = living(4);
+    const { state } = applyOffline(s, 100 * data.config.msPerMonth, data);
+    expect(state.rngSeed).toBe(s.rngSeed);
+    expect(state.log.filter((e) => e.kind === "retreat")).toHaveLength(1);
+  });
+
   it("時間太短、負數、非修行中或等待抉擇時原樣回傳", () => {
     const s = living(1);
     for (const ms of [0, -5000, 10_000, Number.NaN]) {

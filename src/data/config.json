@@ -19,5 +19,6 @@
   "offlineMaxHours": 168,
   "offlineMaxYears": 20,
   "offlineMinSeconds": 60,
-  "offlineStopLifespanRatio": 0.1
+  "offlineStopLifespanRatio": 0.1,
+  "offlineRetreatTierYears": [8, 15]
 }

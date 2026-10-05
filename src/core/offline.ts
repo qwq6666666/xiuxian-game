@@ -2,11 +2,11 @@
 import { gameData } from "../data/load";
 import type { GameData } from "../data/types";
 import { lifespanMonths } from "./formulas";
-import { atBottleneck, realmOf } from "./progress";
-import type { GameState } from "./state";
+import { addLog, atBottleneck, realmOf } from "./progress";
+import type { GameState, OfflineStop } from "./state";
 import { addCultivation, monthlyGain } from "./tick";
 
-export type OfflineStop = "elapsed" | "bottleneck" | "lifespan";
+export type { OfflineStop };
 
 export interface OfflineSummary {
   /** 實際閉關的月數 */
@@ -54,6 +54,14 @@ export function applyOffline(
     gained += monthlyGain(s, sched, data);
     s = addCultivation({ ...s, ageMonths: s.ageMonths + 1 }, sched, s.ageMonths + 1, data);
     months++;
+  }
+  if (months > 0) {
+    // 閉關見聞：文字依閉關長短與結束原因由介面挑選，這裡只記事實，不動亂數
+    s = addLog(
+      s,
+      { month: s.ageMonths, kind: "retreat", realmId: s.realmId, stage: s.stage, retreatMonths: months, stop },
+      config.logLimit,
+    );
   }
   return { state: s, summary: { months, gained, stop } };
 }

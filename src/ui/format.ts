@@ -137,6 +137,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
     name,
   };
   const pick = (list: string[]) => list[entry.month % list.length];
+  const pickBy = (list: string[], n: number) => list[n % list.length];
   let template: string;
   switch (entry.kind) {
     case "stageUp":
@@ -166,6 +167,15 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
     case "adventureDeath":
       template = log.adventureDeath;
       break;
+    case "retreat": {
+      const months = entry.retreatMonths ?? 0;
+      const [mid, long] = data.config.offlineRetreatTierYears;
+      const years = months / 12;
+      const tier = years >= long ? log.retreat.long : years >= mid ? log.retreat.medium : log.retreat.short;
+      const tail = entry.stop === "bottleneck" || entry.stop === "lifespan" ? log.retreat.stop[entry.stop] : [];
+      template = pickBy(tier, months) + (tail.length > 0 ? pickBy(tail, months) : "");
+      break;
+    }
     case "event": {
       const ev = data.events.find((e) => e.id === entry.eventId);
       if (!ev) throw new Error(`日誌：找不到事件 ${entry.eventId}`);

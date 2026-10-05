@@ -108,6 +108,14 @@ function uniqueIds(items: { id: string }[], file: string): void {
   }
 }
 
+function tierYears(o: Obj, file: string): [number, number] {
+  const v = o.offlineRetreatTierYears;
+  if (!Array.isArray(v) || v.length !== 2 || !v.every((n) => typeof n === "number" && n > 0) || !(v[0] < v[1])) {
+    fail(file, "offlineRetreatTierYears", "必須是兩個由小到大的正數，例如 [5, 15]");
+  }
+  return [v[0], v[1]];
+}
+
 export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
   const o = obj(raw, file);
   const msPerMonth = num(o, "msPerMonth", file, { gt: 0 });
@@ -143,6 +151,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     offlineMaxYears: num(o, "offlineMaxYears", file, { gt: 0 }),
     offlineMinSeconds: num(o, "offlineMinSeconds", file, { min: 0 }),
     offlineStopLifespanRatio: num(o, "offlineStopLifespanRatio", file, { min: 0, max: 1 }),
+    offlineRetreatTierYears: tierYears(o, file),
   };
 }
 
@@ -499,6 +508,8 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
   const o = obj(raw, file);
   const log = obj(o.log, `${file} 欄位 log`);
   const where = `${file} 欄位 log`;
+  const retreat = obj(log.retreat, `${where}.retreat`);
+  const retreatStop = obj(retreat.stop, `${where}.retreat.stop`);
   const strRecord = (key: string): Record<string, string> => {
     const raw = obj(log[key], `${where}.${key}`);
     const out: Record<string, string> = {};
@@ -516,6 +527,15 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       buy: strList(log, "buy", where),
       find: strList(log, "find", where),
       adventureDeath: str(log, "adventureDeath", where),
+      retreat: {
+        short: strList(retreat, "short", `${where}.retreat`),
+        medium: strList(retreat, "medium", `${where}.retreat`),
+        long: strList(retreat, "long", `${where}.retreat`),
+        stop: {
+          bottleneck: strList(retreatStop, "bottleneck", `${where}.retreat.stop`),
+          lifespan: strList(retreatStop, "lifespan", `${where}.retreat.stop`),
+        },
+      },
     },
     review: parseReview(o.review, `${file} 欄位 review`),
   };
