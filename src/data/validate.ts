@@ -8,6 +8,8 @@ import {
   type Effects,
   type EventConditions,
   type EventDef,
+  type FragmentData,
+  type FragmentDef,
   type GameConfig,
   type GameData,
   type ItemDef,
@@ -282,8 +284,18 @@ function parseEffects(raw: unknown, where: string): Effects {
     if (typeof o.death !== "boolean") fail(where, "death", "必須是 true 或 false");
     e.death = o.death;
   }
+  if (o.fragment !== undefined) {
+    const fw = `${where} 欄位 fragment`;
+    const f = obj(o.fragment, fw);
+    if ((f.id === undefined) === (f.maxTier === undefined)) fail(fw, "id/maxTier", "必須擇一提供");
+    if (f.id !== undefined) e.fragment = { id: str(f, "id", fw) };
+    else {
+      const maxTier = num(f, "maxTier", fw, { min: 1, max: 3, integer: true });
+      e.fragment = { maxTier };
+    }
+  }
   for (const k of Object.keys(o)) {
-    if (!["cultivation", "spiritStones", "lifespan", "attributes", "items", "flags", "death"].includes(k)) {
+    if (!["cultivation", "spiritStones", "lifespan", "attributes", "items", "flags", "death", "fragment"].includes(k)) {
       fail(where, k, "不是合法的效果");
     }
   }
@@ -304,9 +316,12 @@ function parseConditions(raw: unknown, where: string): EventConditions {
     if (typeof o.bottleneck !== "boolean") fail(where, "bottleneck", "必須是 true 或 false");
     c.bottleneck = o.bottleneck;
   }
+  if (o.fragmentAvailable !== undefined) {
+    c.fragmentAvailable = num(o, "fragmentAvailable", where, { min: 1, max: 3, integer: true });
+  }
   for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
   for (const k of Object.keys(o)) {
-    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck"].includes(k)) {
+    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable"].includes(k)) {
       fail(where, k, "不是合法的條件");
     }
   }
@@ -492,6 +507,44 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
   };
 }
 
+export function validateFragments(raw: unknown, file = "fragments.json"): FragmentData {
+  const o = obj(raw, file);
+  const nameMap = (key: string): Record<string, string> => {
+    const r = obj(o[key], `${file} 欄位 ${key}`);
+    const out: Record<string, string> = {};
+    for (const k of Object.keys(r)) out[k] = str(r, k, `${file} 欄位 ${key}`);
+    if (Object.keys(out).length === 0) fail(file, key, "不可為空");
+    return out;
+  };
+  const topics = nameMap("topics");
+  const stances = nameMap("stances");
+  const items = list(o.items, `${file} 欄位 items`).map((raw, i): FragmentDef => {
+    const where = `${file} 第 ${i + 1} 筆`;
+    const f = obj(raw, where);
+    const id = str(f, "id", where);
+    const w = `${file} 第 ${i + 1} 筆（${id}）`;
+    const topic = str(f, "topic", w);
+    if (!(topic in topics)) fail(w, "topic", `不是 topics 裡的 id（${Object.keys(topics).join("、")}），目前為 ${topic}`);
+    const stance = str(f, "stance", w);
+    if (!(stance in stances)) fail(w, "stance", `不是 stances 裡的 id（${Object.keys(stances).join("、")}），目前為 ${stance}`);
+    const tier = num(f, "tier", w, { min: 1, max: 3, integer: true }) as 1 | 2 | 3;
+    if (f.fixed !== undefined && typeof f.fixed !== "boolean") fail(w, "fixed", "必須是 true 或 false");
+    return {
+      id,
+      title: str(f, "title", w),
+      topic,
+      source: str(f, "source", w),
+      stance,
+      era: str(f, "era", w),
+      tier,
+      ...(f.fixed === true ? { fixed: true } : {}),
+      text: str(f, "text", w),
+    };
+  });
+  uniqueIds(items, file);
+  return { topics, stances, items };
+}
+
 export function validateNames(raw: unknown, file = "names.json"): NameData {
   const o = obj(raw, file);
   return { surnames: strList(o, "surnames", file), given: strList(o, "given", file) };
@@ -555,6 +608,7 @@ export function validateGameData(data: GameData): GameData {
   }
 
   const scheduleIds = new Set(data.schedules.map((s) => s.id));
+  const fragmentIds = new Set(data.fragments.items.map((f) => f.id));
   const allEffects = (ev: EventDef): Effects[] => [
     ...(ev.effects ? [ev.effects] : []),
     ...(ev.choices ?? []).flatMap((c) => c.outcomes.map((o) => o.effects)),
@@ -572,6 +626,7 @@ export function validateGameData(data: GameData): GameData {
     }
     for (const e of allEffects(ev)) {
       for (const id of Object.keys(e.items ?? {})) has(itemIds, id, `${from} 的 effects.items`, "items.json");
+      if (e.fragment && "id" in e.fragment) has(fragmentIds, e.fragment.id, `${from} 的 effects.fragment`, "fragments.json");
     }
     for (const ch of ev.choices ?? []) {
       for (const id of Object.keys(ch.requires?.items ?? {})) has(itemIds, id, `${from} 的 requires.items`, "items.json");

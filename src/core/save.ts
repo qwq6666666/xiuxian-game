@@ -68,6 +68,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
     const [gi] = nextInt(s1, 0, gd.names.given.length - 1);
     return { ...d, version: 6, name: gd.names.surnames[si] + gd.names.given[gi], nameCustom: false };
   },
+  // v6 沒有殘卷：跨世資料補上空清單
+  6: (d) => ({ ...d, version: 7, meta: { ...obj(d.meta, "meta"), fragments: [] } }),
 };
 
 function fail(field: string, msg: string): never {
@@ -106,6 +108,7 @@ function parseChanges(v: unknown, path: string): Changes {
   for (const k of ["cultivation", "spiritStones", "lifespan"] as const) {
     if (o[k] !== undefined) c[k] = num(o, k, {}, `${path}.${k}`);
   }
+  if (o.fragment !== undefined) c.fragment = str(o, "fragment", `${path}.fragment`);
   if (o.attributes !== undefined) {
     const a = obj(o.attributes, `${path}.attributes`);
     c.attributes = {};
@@ -154,7 +157,15 @@ function parseMeta(v: unknown, data: GameData): Meta {
   if (!Array.isArray(o.reached) || !o.reached.every((k) => typeof k === "string")) {
     fail("meta.reached", "必須是字串陣列");
   }
+  if (!Array.isArray(o.fragments)) fail("meta.fragments", "必須是字串陣列");
+  const fragments = o.fragments.map((id, i) => {
+    if (typeof id !== "string") fail(`meta.fragments[${i}]`, "必須是字串");
+    if (!data.fragments.items.some((f) => f.id === id)) fail(`meta.fragments[${i}]`, `找不到殘卷 ${id}`);
+    return id;
+  });
+  if (new Set(fragments).size !== fragments.length) fail("meta.fragments", "有重複的殘卷");
   return {
+    fragments,
     daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
     talents,
     reached: o.reached as string[],

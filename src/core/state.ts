@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 /** 跨世保留的資料 */
 export interface Meta {
@@ -12,10 +12,12 @@ export interface Meta {
   reached: string[];
   /** 已走完的世數 */
   lives: number;
+  /** 已得的殘卷 id，依取得順序 */
+  fragments: string[];
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0 };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [] };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
@@ -67,6 +69,8 @@ export interface Changes {
   lifespan?: number;
   attributes?: Partial<Attributes>;
   items?: Record<string, number>;
+  /** 得到的殘卷 id */
+  fragment?: string;
 }
 
 /** 日誌只存事件類型，文字由介面依資料檔組出 */

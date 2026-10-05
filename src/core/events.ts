@@ -1,6 +1,7 @@
 // 事件系統：計時、依條件抽取、抉擇結算。
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type ChoiceDef, type Effects, type EventDef, type GameData } from "../data/types";
+import { availableFragments, drawFragment, grantFragment } from "./fragments";
 import { eventWeight, outcomeWeight, stageNeed } from "./formulas";
 import { addLog, atBottleneck, eventOf, realmOf, resolveStages, scheduleOf } from "./progress";
 import { endLife } from "./review";
@@ -24,6 +25,7 @@ export function eventAvailable(state: GameState, ev: EventDef, data: GameData = 
   if (c.flagsNot && c.flagsNot.some((f) => state.flags.includes(f))) return false;
   if (c.schedules && !c.schedules.includes(state.schedule)) return false;
   if (c.bottleneck !== undefined && atBottleneck(state, data) !== c.bottleneck) return false;
+  if (c.fragmentAvailable !== undefined && availableFragments(state, c.fragmentAvailable, data).length === 0) return false;
   return true;
 }
 
@@ -114,6 +116,20 @@ function applyEffects(
     const flags = [...s.flags];
     for (const f of effects.flags) if (!flags.includes(f)) flags.push(f);
     s = { ...s, flags };
+  }
+  if (effects.fragment) {
+    let id: string | null;
+    if ("id" in effects.fragment) id = effects.fragment.id;
+    else {
+      const [drawn, seed] = drawFragment(s, effects.fragment.maxTier, data);
+      id = drawn;
+      s = { ...s, rngSeed: seed };
+    }
+    // 已持有就不重複給，也不記變化
+    if (id !== null && !s.meta.fragments.includes(id)) {
+      s = grantFragment(s, id);
+      changes.fragment = id;
+    }
   }
   return { state: s, changes };
 }

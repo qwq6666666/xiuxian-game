@@ -104,6 +104,8 @@ export interface Effects {
   items?: Record<string, number>;
   flags?: string[];
   death?: boolean;
+  /** 給殘卷：指定一份，或從未持有、已解鎖、非 fixed 且層級不超過 maxTier 的殘卷中抽一份 */
+  fragment?: { id: string } | { maxTier: number };
 }
 
 export interface EventConditions {
@@ -120,6 +122,8 @@ export interface EventConditions {
   schedules?: string[];
   /** true 表示只在卡在瓶頸時出現 */
   bottleneck?: boolean;
+  /** 還抽得到層級不超過此數的殘卷時才出現（1–3） */
+  fragmentAvailable?: number;
 }
 
 export interface OutcomeDef {
@@ -215,6 +219,29 @@ export interface TextData {
   review: Record<ReviewCause, ClosingVariant[]>;
 }
 
+/** 殘卷：世界內的文獻，跨世保留，只給「知道」不給數值 */
+export interface FragmentDef {
+  id: string;
+  title: string;
+  topic: string;
+  source: string;
+  stance: string;
+  era: string;
+  /** 1 隨時可得、2 曾達築基後、3 曾達築基後期後 */
+  tier: 1 | 2 | 3;
+  /** true 表示不進抽取池，只由指定方式取得 */
+  fixed?: boolean;
+  text: string;
+}
+
+export interface FragmentData {
+  /** 主題 id → 顯示名稱，殘卷錄依此分組（順序即顯示順序） */
+  topics: Record<string, string>;
+  /** 立場 id → 顯示名稱 */
+  stances: Record<string, string>;
+  items: FragmentDef[];
+}
+
 /** 隨機姓名：姓 + 名 */
 export interface NameData {
   surnames: string[];
@@ -232,4 +259,5 @@ export interface GameData {
   origins: OriginDef[];
   text: TextData;
   names: NameData;
+  fragments: FragmentData;
 }

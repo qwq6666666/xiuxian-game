@@ -1,6 +1,7 @@
 // 一生的結束：回顧、道韻結算。死亡與通關的每個出口都從 endLife 進來，確保只結算一次。
 import { gameData } from "../data/load";
 import type { GameData, ReviewCause } from "../data/types";
+import { CLEAR_FRAGMENT_ID, grantFragment } from "./fragments";
 import { eventOf, realmOf } from "./progress";
 import type { GameState, LifeReview, LogEntry } from "./state";
 
@@ -99,6 +100,8 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
     daoYunBonus: bonus,
     highlights: selectHighlights(state.log, data),
   };
+  // 首次通關固定得到最後一份殘卷
+  const earned = cause === "cleared" ? grantFragment(state, CLEAR_FRAGMENT_ID) : state;
   return {
     ...state,
     phase: cause === "cleared" ? "cleared" : "dead",
@@ -109,6 +112,7 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       daoYun: state.meta.daoYun + base + bonus,
       reached: [...state.meta.reached, ...newlyReached],
       lives: state.meta.lives + 1,
+      fragments: earned.meta.fragments,
     },
   };
 }

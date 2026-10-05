@@ -24,6 +24,7 @@ export function formatChanges(changes: Changes | undefined, data: GameData): str
     const d = changes.attributes?.[k];
     if (d) out.push(`${ATTR_LABEL[k]} ${signed(d)}`);
   }
+  if (changes.fragment) out.push(`得殘卷《${data.fragments.items.find((f) => f.id === changes.fragment)?.title ?? changes.fragment}》`);
   for (const [id, n] of Object.entries(changes.items ?? {})) {
     if (n) out.push(`${data.items.find((i) => i.id === id)?.name ?? id} ${signed(n)}`);
   }

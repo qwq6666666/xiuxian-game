@@ -1,5 +1,6 @@
 import configJson from "./config.json";
 import eventsJson from "./events.json";
+import fragmentsJson from "./fragments.json";
 import itemsJson from "./items.json";
 import namesJson from "./names.json";
 import originsJson from "./origins.json";
@@ -12,6 +13,7 @@ import type { GameData } from "./types";
 import {
   validateConfig,
   validateEvents,
+  validateFragments,
   validateGameData,
   validateItems,
   validateNames,
@@ -34,6 +36,7 @@ export const gameData: GameData = validateGameData({
   origins: validateOrigins(originsJson),
   text: validateText(textJson),
   names: validateNames(namesJson),
+  fragments: validateFragments(fragmentsJson),
 });
 
 export const config = gameData.config;
