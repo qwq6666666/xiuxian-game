@@ -1,9 +1,9 @@
 import { canUseItem } from "../core/actions";
 import {
   breakthroughRuleOf,
+  breakthroughRateParts,
   canBreakthrough,
   canChooseWave,
-  currentBreakthroughRate,
   waveChance,
   waveImage,
   wardItem,
@@ -72,10 +72,20 @@ export function createPanels(ctx: PanelContext): Panels {
     if (pillId) e.pillText.textContent = `服用${itemName(pillId)}（持有 ${state.items[pillId] ?? 0}）`;
     e.btButton.disabled = !can;
     if (can) {
-      const rate = Math.round(currentBreakthroughRate(state, e.pill.checked, data) * 100);
+      const rates = breakthroughRateParts(state, e.pill.checked, data);
+      const rateDetail = ([
+        ["基礎", rates.base],
+        ["悟性", rates.insight],
+        ["丹藥", rates.pill],
+        ["天賦", rates.talent],
+        ["心得", rates.study],
+      ] as const)
+        .filter(([, value]) => value !== 0)
+        .map(([label, value]) => `${label} ${Math.round(value * 100)}%${label === "心得" ? "（失敗累積的心得）" : ""}`)
+        .join("＋");
       const loss = Math.round(currentFailLoss(state, data) * 100);
       const waves = breakthroughRuleOf(state, data)?.tribulation?.waves;
-      e.btInfo.textContent = `成功率 ${rate}%・失敗損失 ${loss}%${waves ? `・${waves} 道天劫，可逐道準備` : ""}`;
+      e.btInfo.textContent = `成功率：${rateDetail}＝${Math.round(rates.total * 100)}%・失敗損失 ${loss}%${waves ? `・${waves} 道天劫，可逐道準備` : ""}`;
     } else if (atBottleneck(state, data) && missingTalent(state, data) !== null) {
       e.btInfo.textContent = breakthroughRuleOf(state, data)?.gateText ?? data.text.breakthroughGate;
     } else {
