@@ -674,6 +674,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     stageEl.innerHTML = `
       <main class="card roll">
         <h1>一念輪迴</h1>
+        <div class="scene-art scene-art-opening" role="img" aria-label="晨霧村舍外，一名旅人走向遠山"></div>
         <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲。</p>
         ${eraTransition(lifeIndex(state), data) !== "" ? `<p class="desc">${eraTransition(lifeIndex(state), data)}</p>` : ""}
         <label class="namebox">姓名 <input id="name" type="text" maxlength="${data.config.nameMaxLength}" /></label>
@@ -795,8 +796,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         <details class="log fold" id="foldLog" open><summary>日誌</summary><ul id="log"></ul></details>
         <aside class="side" data-active="play">
           <nav id="sideTabs" class="tabs" role="tablist" aria-label="分頁">${SIDE_TABS.map((t) => `<button type="button" role="tab" data-go="${t.id}" aria-selected="${t.id === "play"}">${t.label}</button>`).join("")}</nav>
-          <section id="schedSection" class="s-sched" data-tab="play"><h2>日常安排</h2><div id="schedules" class="choices"></div></section>
+          <section id="schedSection" class="s-sched" data-tab="play"><h2>日常安排</h2><div class="scene-art scene-art-wilderness" role="img" aria-label="雲霧山野間，一名旅人沿石徑前行"></div><div id="schedules" class="choices"></div></section>
           <section id="btSection" class="s-bt" data-tab="play"><h2>突破</h2>
+            <div class="scene-art scene-art-breakthrough" role="img" aria-label="修士在石室中靜坐，雲氣緩緩匯聚"></div>
             <p id="btInfo" class="desc"></p>
             <label id="pillRow" hidden><input type="checkbox" id="pill" /> <span id="pillText"></span></label>
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
@@ -811,7 +813,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           <details class="fold s-goals" id="goalsFold" data-tab="me" open><summary>目標</summary><ul id="goals" class="goals"></ul><p id="goalHint" class="desc"></p><button id="goalGo" type="button" hidden></button></details>
           <details class="fold s-role" data-tab="me" open><summary>角色</summary>${statsHtml(state)}<div id="statDetail" class="stat-detail"></div>${guideHtml()}${identityHtml(state)}</details>
           <details class="fold s-bag" data-tab="pack" open><summary>背包</summary><ul id="bag" class="items"></ul></details>
-          <details class="fold s-market" data-tab="pack" open><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>世局</button></details>
+          <details class="fold s-market" data-tab="pack" open><summary>坊市</summary><div class="scene-art scene-art-market" role="img" aria-label="暮色中的坊市，攤棚下陳列藥材與器物"></div><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>世局</button></details>
         </aside>
       </div>
       <div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" hidden>
@@ -1647,6 +1649,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const box = el("div");
     const review = state.review;
     box.append(el("h2", undefined, reviewTitle(review)));
+    const scene = el("div", "scene-art scene-art-reincarnation");
+    scene.setAttribute("role", "img");
+    scene.setAttribute("aria-label", "月輪映照群山與靜水，遠方小徑通向晨光");
+    box.append(scene);
     if (review === null) {
       // 輪迴功能加入前存下的死亡存檔沒有回顧，直接進入輪迴即可
       box.append(el("p", undefined, "此生已了，且入輪迴。"));
@@ -1715,6 +1721,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   function buildTalents(state: GameState): HTMLElement {
     const box = el("div");
     box.append(el("h2", undefined, "輪迴天賦"), el("p", "daoyun", `道韻餘額 ${state.meta.daoYun}`));
+    const scene = el("div", "scene-art scene-art-reincarnation");
+    scene.setAttribute("role", "img");
+    scene.setAttribute("aria-label", "月輪映照群山與靜水，遠方小徑通向晨光");
+    box.append(scene);
     const ul = el("ul", "items talents");
     const advice = recommendTalent(state.meta, data);
     for (const talent of data.talents) {
