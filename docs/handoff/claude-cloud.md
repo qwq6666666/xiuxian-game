@@ -3,6 +3,11 @@
 > 雲端工作階段專用，新的一筆寫在最上面；本機的紀錄在 `claude.md`。規則見 `AGENTS.md`「本機與雲端並行」。
 > 雲端只推 `ai/claude-cloud`，由本機整合者合併進 `master`。
 
+### 2026-10-06 諸部空名稱修正與文件整理
+- 分支：master-mxid6d（PR #1 合併後，已從最新 `origin/master` 重設）。`core/travel.ts`：諸部地域的旅行地點改名「某某諸部」、狀態「諸部聚居地」（原本名稱是空字串，下拉顯示「・都城」），`tests/travel.test.ts` 新增 200 個種子的檢查（修正前會在種子 2 失敗）。`docs/GDD.md` 第 38–39 節的小節編號依序重排（38.1–38.3、39.1），`docs/TODO.md` 更新預約表與已完成項目，並新增「檢視後的待辦」。
+- 驗證：`npm run verify`；未動存檔與數值，未跑 sim。
+- 沒做（要本機或 ChatGPT）：手機天下圖雙捲軸與首屏順序（`src/ui/`）、元嬰累計時間目標、`render.ts` 拆分、容量。已記進 TODO。
+
 ### 2026-10-06 M39 遇怪風險感、機率提示、事件鏈後續（GDD 38.3、第 42 節）
 - 遇怪：`monsters.json` 新增 `rules.drawLossFrac`（0.003），`encounter.ts` 平手時損失修為，`types.ts`／`validate.ts`。機率提示：`ui/format.ts` 的 `choiceOdds`、`ui/render.ts`（「更多」選單的切換鈕、選項小字，偏好存 `localStorage` 的 `xiuxian-odds`）。事件鏈：`events.json` 兩處結果加旗標，新增 `events/chains.json`（`alchemist_002`、`rival_002`）並登記。測試：`tests/reunion.test.ts`、`tests/encounter.test.ts`。
 - 驗證：`npm run verify` 全過；`hunt` 16 世首次金丹 10→13 世（調值過程見 GDD 38.3，1.5% 太重已放棄）；`mixed`、`simple` 抉擇 15.6／14.7，全 ✓。
