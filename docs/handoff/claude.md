@@ -1,6 +1,20 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：領與國家脫鉤、國家數可調、關係進入世局與判定（M51–M53，GDD 第 51–53 節）
+
+- 分支 `ai/claude-m51`（本機）。使用者授權我自主執行 M51–M53（睡前交代，不必再問），WORLD.md 仍只提案、不直接改。
+- **M51**：新增 `core/fiefs.ts`（領：邏輯座標陸地上 48 個點，鄰接、`partitionNations`、`seatOf`）；`World.owners` 改為「領→國」，`WorldPolity.seat`、`WorldSect.fief`，`WorldChange` 的 `split`／`owner` 帶 `fiefs`；`generateWorld(seed, data, nationCount)`、`worldFor(seed, data, nationCount)`；`territory.ts` 判定層改成以領為單位（`territoryAt`）；`frontier.ts` 顯示層改成「格→領（加雜訊位移）→國」，`Fight` 帶箭頭起訖；`travel.ts` 都城改每國一座（`capital:<國 id>`）。`map.json` 加 `fiefRules`、`nations`，移除各地域的 `territories`。存檔 v29：`GameState.nationCount`、`Meta.nationCount`，遷移補 5，旅行位置在舊都的退回出生村。擲骰畫面加「天下國數」按鈕（`setNationCount`）。UI 動到 `worldmap.ts`、`mapinfo.ts`、`rollview.ts`、`render.ts`、`components.css`。
+- **M52**：關係的初始值改在世局變化前決定；關係變化與世局候選依年齡交錯模擬（各用自己的亂數線 47／48／49）；併國偏向互惠的兩國、易手偏向世仇的兩國（`worldRelations.json` 的 `influence`，倍率全 1 時與關係全關時逐項相同）。
+- **M53**：入宗者前往宗門世仇國境內多 1 個月盤查、坊市物價 ×1.05（互惠 ×0.95）、事件條件 `territoryRelation` 與兩則新事件（`relation_feud_border_001`、`relation_ally_guest_001`）；`effects` 的上限由驗證守住。沒入宗一律沒有影響。
+- 驗證：`npm run verify` 全過（734 測試、建置 894 KB）。新測試：`fiefs`、`nations`、`relationeffects`，改寫 `frontier`、`territory`、`relations` 等。sim：因判定層單位改變，基準重建；`simple`／`mixed` 單世與 16 世、herb／wander／alchemy／forge／hunt／sect 與 master 比對，見下。瀏覽器：看過 5 國與 9 國的地圖、擲骰畫面的國家數鈕、世界存檔遷移。
+- sim 的結論與風險寫在這裡的最後一段（見「sim 結果」）。
+- 沒驗證：手機寬度的天下圖與國家數按鈕（沒開 375px）；真實手機觸控；時間軸往回拖時 9 國世界的箭頭與高亮；其他世界種子的外觀（只看了兩個）；新增兩則事件的實際出現頻率（只有入宗策略會遇到）。
+- 給 ChatGPT：請審 `rollview.ts` 的「天下國數」區塊樣式（`.nation-choices`）、天下圖在 9 國時的國名標籤擁擠與配色（`map.json` palette 只有 9 色，分裂新國會重複用色）、兩則新事件與 `worldRelations.json` 六條 note 的文字語氣。
+- 設計取捨：領是政治單位、省（國界格數滑桿）降為純視覺細分；領中心用最佳候選撒點，國界因此是「最近領 + 雜訊位移」的有機線，不貼地域線；`contested`（交戰）只算「正在被奪的那一個領」，否則坊市漲價與關道事件會比舊制多（舊制整個地域 4 個領土中心一次動）。
+- **sim 結果**（`300 1 N` 與 master 比對）：`simple` 單世止步 8.4 層、`mixed` 單世 8.6 層、`simple`／`mixed` 16 世首次金丹中位數 11／9，全 ✓；`herb`／`wander`／`alchemy` 第一世止步 4.6／4.5／4.8（master 4.6／4.5／4.9，✗ 是預期）；`forge` 首次金丹第 8 世、`hunt` 第 13 世（master 14，不低於第 7 世）；`sect` 止步 8.7（與 master 相同）。`post`（100 場 × 40 世）三個種子：通關總時間 5.9–6.3（master 5.7–6.1，邊緣會飄），首次元嬰累計 12.9–13.6 小時，✗（master 12.9–13.3 也是 ✗，M46 起的舊問題，TODO 仍開著）。`f01 與 f02 第 3 世前到手`：600 場 54%（master 56%）。結論：M51–M53 沒有讓節奏超出 master 的雜訊範圍。
+- 樣本邊緣的指標在不同世界內容下會飄 ±0.3 小時、±6%，判斷要用 100 場以上、換種子對照 master。
+
 ## 2026-10-07：S1 宗門與國家關係（M50 步驟 5，GDD 第 50.7、50.13）
 
 - 分支 `ai/claude-m50`。新增 `core/relations.ts`、`src/data/worldRelations.json`（驗證 `validateWorldRelations`、`types.ts` 三個型別、`GameData.worldRelations`）；`core/world.ts` 加 `World.relations`、`WorldSnapshot.relations`、`WorldChange` 的 `relation`，`applyChange` 處理併國改記與閉山清除，並匯出 `makeRng` 等輔助；`frontier.ts` 的國勢多算互惠宗門。UI：`mapinfo.ts`（`relationEdges`、`relationLines`）、`worldmap.ts`（光暈色分互惠／世仇／兩者、只在選取宗門或國家時畫關係線、資訊卡關係行）、`map.css` 與 `tokens.css`（`--map-ally`、`--map-feud`）。存檔不動（v28）。
