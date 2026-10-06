@@ -55,6 +55,20 @@ describe("UI 煙霧測試", () => {
     expect(root.querySelectorAll(".side").length).toBe(1);
   });
 
+  it("凡人的「煉製」頁不是空白：顯示開放條件，分頁鈕標成未開放；入練氣後恢復", () => {
+    const { root, ui } = mount();
+    ui.render(living(1));
+    const note = root.querySelector<HTMLElement>('[data-locked-for="make"]')!;
+    expect(note.hidden).toBe(false);
+    expect(note.textContent).toContain("練氣");
+    expect(root.querySelector<HTMLElement>('#sideTabs button[data-go="make"]')!.dataset.locked).toBe("true");
+    // 修行、行囊、角色頁一直有內容，不顯示說明
+    for (const id of ["play", "pack", "me"]) expect(root.querySelector<HTMLElement>(`[data-locked-for="${id}"]`)!.hidden).toBe(true);
+    ui.render(living(1, { realmId: "lianqi", stage: 1 }));
+    expect(root.querySelector<HTMLElement>('[data-locked-for="make"]')!.hidden).toBe(true);
+    expect(root.querySelector<HTMLElement>('#sideTabs button[data-go="make"]')!.dataset.locked).toBeUndefined();
+  });
+
   it("連續 tick 多年後重繪不拋錯，日誌有內容", () => {
     const { root, ui } = mount();
     let state = living(7, { eventThreshold: 12 });

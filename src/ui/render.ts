@@ -17,6 +17,7 @@ import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { createVeil } from "./veil";
 import { groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
+import { lockedNote } from "./tabinfo";
 import { esc } from "./dom";
 import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./rollview";
 import { createPanels } from "./panels";
@@ -151,6 +152,24 @@ export interface LifeEls {
 export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers): Ui {
   /** 目前的側欄分頁；重建畫面（轉世、匯入）後沿用 */
   let sideTab: SideTab = "play";
+  /** 整頁沒有任何可見區塊（例如凡人的「煉製」）時，顯示開放條件並把分頁鈕標成未開放 */
+  function syncLockedTabs(): void {
+    const side = root.querySelector<HTMLElement>(".side");
+    if (!side) return;
+    for (const { id } of SIDE_TABS) {
+      const note = side.querySelector<HTMLElement>(`[data-locked-for="${id}"]`);
+      if (!note) continue;
+      const empty = !Array.from(side.querySelectorAll<HTMLElement>(`:scope > [data-tab="${id}"]`)).some((s) => s !== note && !s.hidden);
+      if (note.hidden !== !empty) note.hidden = !empty;
+      if (empty && note.querySelector("p")!.textContent === "") note.querySelector("p")!.textContent = lockedNote(id, data);
+      const btn = side.querySelector<HTMLElement>(`#sideTabs button[data-go="${id}"]`);
+      if (btn) {
+        if (empty) btn.dataset.locked = "true";
+        else delete btn.dataset.locked;
+      }
+    }
+  }
+
   function showSideTab(tab: SideTab): void {
     sideTab = tab;
     const side = root.querySelector<HTMLElement>(".side");
@@ -350,6 +369,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         <details class="log fold" id="foldLog" open><summary>日誌</summary><ul id="log"></ul></details>
         <aside class="side" data-active="play">
           <nav id="sideTabs" class="tabs" role="tablist" aria-label="分頁">${SIDE_TABS.map((t) => `<button type="button" role="tab" data-go="${t.id}" aria-selected="${t.id === "play"}">${t.label}</button>`).join("")}</nav>
+          ${SIDE_TABS.map((t) => `<section class="s-locked" data-tab="${t.id}" data-locked-for="${t.id}" hidden><h2>尚未開放</h2><p class="desc"></p></section>`).join("")}
           <section id="schedSection" class="s-sched" data-tab="play"><h2>日常安排</h2><div class="scene-art scene-art-wilderness" role="img" aria-label="雲霧山野間，一名旅人沿石徑前行"></div><div id="schedules" class="choices"></div></section>
           <section id="btSection" class="s-bt" data-tab="play"><h2>突破</h2>
             <div class="scene-art scene-art-breakthrough" role="img" aria-label="修士在石室中靜坐，雲氣緩緩匯聚"></div>
@@ -819,6 +839,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       }
     }
     e.life.textContent = `第 ${state.meta.lives + (state.review === null ? 1 : 0)} 世`;
+    syncLockedTabs();
     reviewModal.render(state, e);
   }
 
