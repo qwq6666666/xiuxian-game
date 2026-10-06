@@ -92,7 +92,7 @@
   --d: 0s; /* 場景粒子的動畫延遲，由各粒子的 style 覆寫 */
 }
 .scene[data-realm="lianqi"], .vignette[data-realm="lianqi"] { --scene-sky-top: #14222a; --scene-sky-bottom: #28434a; --scene-far: #23393f; --scene-mid: #1b2d33; --scene-near: #131f24; }
-.scene[data-realm="zhuji"], .vignette[data-realm="zhuji"] { --scene-sky-top: #1d1a2c; --scene-sky-bottom: #3b3456; --scene-far: #322d4a; --scene-mid: #28243b; --scene-near: #1a1727; --scene-orb: #e3d6b8; }
+.scene[data-realm="zhuji"], .vignette[data-realm="zhuji"] { --scene-sky-top: #1d1a2c; --scene-sky-bottom: #3b3456; --scene-far: #322d4a; --scene-mid: #28243b; --scene-near: #1a1727; --scene-orb: #e3d6b8; --scene-qi: #d8c38d; }
 .scene[data-realm="jindan"], .vignette[data-realm="jindan"] { --scene-sky-top: #2a1f14; --scene-sky-bottom: #5a4224; --scene-far: #4a3822; --scene-mid: #382a19; --scene-near: #221a10; --scene-orb: #f0d9a0; --scene-qi: #f0cf86; }
 .scene[data-realm="yuanying"], .vignette[data-realm="yuanying"] { --scene-sky-top: #101635; --scene-sky-bottom: #2c3a73; --scene-far: #232f63; --scene-mid: #1a234c; --scene-near: #101635; --scene-orb: #f2eed8; --scene-qi: #b9c8f2; }
 .scene[data-realm="huashen"], .vignette[data-realm="huashen"] { --scene-sky-top: #2a2f3a; --scene-sky-bottom: #7d8699; --scene-far: #5d6679; --scene-mid: #444c5e; --scene-near: #2d3341; --scene-orb: #fbf7ea; --scene-qi: #ffffff; }
