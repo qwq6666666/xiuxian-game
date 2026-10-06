@@ -53,3 +53,17 @@
 .status.flash-down { animation: flash-down var(--dur-slow) var(--ease); }
 @keyframes flash-up { 0% { border-color: var(--accent); background-color: var(--accent-dim); } 100% { border-color: var(--line); } }
 @keyframes flash-down { 0% { border-color: var(--bad); } 100% { border-color: var(--line); } }
+
+/* 側欄分頁：一次只顯示一頁（沒有 hidden 的區塊才會出現，所以只對非目前頁的區塊設 display:none） */
+.tabs { display: flex; gap: var(--sp-1); }
+.tabs button { flex: 1 1 0; padding: var(--sp-1) var(--sp-2); white-space: nowrap; }
+.tabs button[aria-selected="true"] { border-color: var(--accent); color: var(--accent); font-weight: bold; }
+.side[data-active="play"] > [data-tab]:not([data-tab="play"]),
+.side[data-active="make"] > [data-tab]:not([data-tab="make"]),
+.side[data-active="pack"] > [data-tab]:not([data-tab="pack"]),
+.side[data-active="me"] > [data-tab]:not([data-tab="me"]) { display: none; }
+
+/* 常駐資源列 */
+.resbar { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-top: var(--sp-2); }
+.resbar:empty { display: none; }
+.chip { min-height: 0; padding: 0 var(--sp-2); font-size: var(--fs-sm); border-radius: 999px; color: var(--text); }

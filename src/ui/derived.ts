@@ -96,12 +96,9 @@ export function scheduleFacts(state: GameState, sched: ScheduleDef, data: GameDa
 
 /** 安排按鈕上的效率說明，一行一項 */
 export function scheduleFactLines(f: ScheduleFacts): string[] {
-  const lines = [`修為 ${formatGain(f.perMonth)}／月（修煉 ${f.cultivationPct}%）`];
-  lines.push(`約每 ${f.eventEveryYears.toFixed(1)} 年遇一件事`);
-  if (f.stonesPerMonth > 0) {
-    lines.push(`靈石約 ${f.stonesPerMonth.toFixed(1)}／月，攢一顆${f.refName}（${f.refPrice}）約 ${Math.ceil(f.refYears!)} 年`);
-  }
-  if (f.contributionPerMonth !== undefined) lines.push(`貢獻 +${f.contributionPerMonth}／月（用來晉升）`);
+  const lines = [`修為 ${formatGain(f.perMonth)}／月`, `${f.eventEveryYears.toFixed(1)} 年一事`];
+  if (f.stonesPerMonth > 0) lines.push(`靈石 ${f.stonesPerMonth.toFixed(1)}／月`);
+  if (f.contributionPerMonth !== undefined) lines.push(`貢獻 +${f.contributionPerMonth}／月`);
   if (f.risky) lines.push("有性命之憂");
   return lines;
 }
