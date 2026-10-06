@@ -7,6 +7,8 @@ import type { GameData } from "../data/types";
 
 export interface RecipeRow {
   id: string;
+  /** 產出物的物品 id（畫圖示用） */
+  itemId: string;
   /** 產出物的名稱 */
   name: string;
   /** 每種材料：名稱、需要與手上的數量 */
@@ -21,6 +23,7 @@ export interface RecipeRow {
 
 export interface ForgeRow {
   id: string;
+  itemId: string;
   name: string;
   /** 欄位名稱與品階，例如「法器・二階」 */
   kind: string;
@@ -67,6 +70,7 @@ export function alchemyPanel(state: GameState, data: GameData): AlchemyPanel | n
     }
     return {
       id: r.id,
+      itemId: r.output,
       name: itemName(r.output),
       inputs: Object.entries(r.inputs).map(([id, need]) => ({ name: itemName(id), need, have: state.items[id] ?? 0 })),
       months: r.months,
@@ -120,6 +124,7 @@ function forgeRows(state: GameState, data: GameData, itemName: (id: string) => s
       }
       return {
         id: r.id,
+        itemId: r.output,
         name: art.name,
         kind: `${SLOT_NAME[art.effect.slot]}・${art.effect.tier} 階`,
         effect: bonusText(art.effect.bonus),

@@ -69,3 +69,30 @@
   --z-modal: 20;
   --z-modal-top: 30;
 }
+
+/* 場景與插圖用色（主畫面的動態場景、事件配圖）：深墨底上的淡彩，依境界換色調。
+   只用在 .scene 與 .vignette 裡的向量圖，文字不放在這些色上，所以不受文字對比測試約束。 */
+:root {
+  --scene-sky-top: #161c28;
+  --scene-sky-bottom: #2a3243;
+  --scene-orb: #d9d2b4;
+  --scene-far: #263042;
+  --scene-mid: #1e2736;
+  --scene-near: #151b26;
+  --scene-figure: #0d1015;
+  --scene-qi: #c9a45c;
+  --scene-fall: #d9d2b4;
+  --scene-water: #3d5670;
+  --scene-warm: #c98f4e;
+  --scene-ink: #8f9aae;
+  --d: 0s; /* 場景粒子的動畫延遲，由各粒子的 style 覆寫 */
+}
+.scene[data-realm="lianqi"], .vignette[data-realm="lianqi"] { --scene-sky-top: #14222a; --scene-sky-bottom: #28434a; --scene-far: #23393f; --scene-mid: #1b2d33; --scene-near: #131f24; }
+.scene[data-realm="zhuji"], .vignette[data-realm="zhuji"] { --scene-sky-top: #1d1a2c; --scene-sky-bottom: #3b3456; --scene-far: #322d4a; --scene-mid: #28243b; --scene-near: #1a1727; --scene-orb: #e3d6b8; }
+.scene[data-realm="jindan"], .vignette[data-realm="jindan"] { --scene-sky-top: #2a1f14; --scene-sky-bottom: #5a4224; --scene-far: #4a3822; --scene-mid: #382a19; --scene-near: #221a10; --scene-orb: #f0d9a0; --scene-qi: #f0cf86; }
+.scene[data-realm="yuanying"], .vignette[data-realm="yuanying"] { --scene-sky-top: #101635; --scene-sky-bottom: #2c3a73; --scene-far: #232f63; --scene-mid: #1a234c; --scene-near: #101635; --scene-orb: #f2eed8; --scene-qi: #b9c8f2; }
+.scene[data-realm="huashen"], .vignette[data-realm="huashen"] { --scene-sky-top: #2a2f3a; --scene-sky-bottom: #7d8699; --scene-far: #5d6679; --scene-mid: #444c5e; --scene-near: #2d3341; --scene-orb: #fbf7ea; --scene-qi: #ffffff; }
+.scene[data-season="spring"] { --scene-fall: #e6b8c0; }
+.scene[data-season="summer"] { --scene-fall: #9fd0a0; }
+.scene[data-season="autumn"] { --scene-fall: #d99a58; }
+.scene[data-season="winter"] { --scene-fall: #f2f4f8; }

@@ -1,0 +1,51 @@
+/* 主畫面場景與事件配圖：向量圖的上色與動畫。顏色只取 tokens.css 的 --scene-*。 */
+.scene { aspect-ratio: 800 / 120; margin: calc(var(--sp-3) * -1) calc(var(--sp-4) * -1) var(--sp-3); border-radius: var(--r-md) var(--r-md) 0 0; overflow: hidden; background: linear-gradient(var(--scene-sky-top), var(--scene-sky-bottom)); }
+.scene svg { display: block; width: 100%; height: 100%; }
+.sc-orb { fill: var(--scene-orb); }
+.sc-halo { fill: var(--scene-orb); opacity: 0.12; }
+.sc-cloud ellipse { fill: var(--scene-orb); opacity: 0.1; }
+.sc-cloud-a { animation: sc-drift 60s linear infinite alternate; }
+.sc-cloud-b { animation: sc-drift 90s linear infinite alternate-reverse; }
+.sc-far { fill: var(--scene-far); }
+.sc-mid { fill: var(--scene-mid); }
+.sc-near { fill: var(--scene-near); }
+.sc-seat, .sc-body, .sc-head { fill: var(--scene-figure); }
+.sc-aura { fill: none; stroke: var(--scene-qi); stroke-width: 0.8; opacity: 0; }
+.sc-body { transform-box: fill-box; transform-origin: 50% 100%; animation: sc-breathe 4s ease-in-out infinite; }
+.sc-qi { fill: var(--scene-qi); opacity: 0; animation: sc-rise 3.6s ease-out infinite; animation-delay: var(--d); }
+.sc-fallp { fill: var(--scene-fall); opacity: 0; animation: sc-fall 7s linear infinite; animation-delay: var(--d); }
+.sc-furnace, .sc-herbs, .sc-banner, .sc-boat { display: none; }
+.sc-furnace path, .sc-furnace rect { fill: var(--scene-figure); }
+.sc-glow { fill: var(--scene-warm); opacity: 0.8; animation: sc-flicker 1.6s ease-in-out infinite; }
+.sc-smoke { fill: var(--scene-orb); opacity: 0; animation: sc-smoke 3.2s ease-out infinite; animation-delay: var(--d); }
+.sc-herbs path, .sc-banner path { fill: none; stroke: var(--scene-figure); stroke-width: 1.6; stroke-linecap: round; }
+.sc-boat path { fill: var(--scene-figure); }
+.sc-burst { fill: none; stroke: var(--scene-qi); stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.scene.burst .sc-burst { animation: sc-burst 1.3s ease-out; }
+.scene[data-sched="alchemy"] .sc-furnace, .scene[data-sched="herb"] .sc-herbs, .scene[data-sched="sectDuty"] .sc-banner, .scene[data-sched="wander"] .sc-boat { display: block; }
+/* 靈氣光圈：閉關與煉丹最明顯，境界越高越亮；凡人沒有靈氣 */
+.scene[data-sched="retreat"] .sc-aura, .scene[data-sched="alchemy"] .sc-aura { opacity: 0.35; }
+.scene[data-realm="zhuji"] .sc-aura { opacity: 0.5; }
+.scene[data-realm="jindan"] .sc-aura, .scene[data-realm="yuanying"] .sc-aura, .scene[data-realm="huashen"] .sc-aura { opacity: 0.7; stroke-width: 1.2; }
+.scene[data-realm="mortal"] .sc-aura, .scene[data-realm="mortal"] .sc-qi { display: none; }
+.scene:not([data-sched="retreat"]):not([data-sched="alchemy"]) .sc-qi { animation-duration: 6s; }
+
+@keyframes sc-drift { from { transform: translateX(-30px); } to { transform: translateX(60px); } }
+@keyframes sc-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.03); } }
+@keyframes sc-rise { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 0.9; } 100% { transform: translateY(-26px); opacity: 0; } }
+@keyframes sc-fall { 0% { transform: translate(0, -10px); opacity: 0; } 15% { opacity: 0.8; } 100% { transform: translate(-18px, 100px); opacity: 0; } }
+@keyframes sc-flicker { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@keyframes sc-smoke { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 25% { opacity: 0.35; } 100% { transform: translateY(-22px) scale(1.6); opacity: 0; } }
+@keyframes sc-burst { 0% { transform: scale(1); opacity: 0.9; } 100% { transform: scale(14); opacity: 0; } }
+
+/* 事件配圖 */
+.vignette { margin: 0 0 var(--sp-3); border-radius: var(--r-sm); overflow: hidden; background: linear-gradient(var(--scene-sky-top), var(--scene-sky-bottom)); height: 84px; }
+.vignette svg { display: block; width: 100%; height: 100%; }
+.vg-far { fill: var(--scene-far); } .vg-mid { fill: var(--scene-mid); } .vg-near { fill: var(--scene-near); }
+.vg-dark { fill: var(--scene-figure); } .vg-orb { fill: var(--scene-orb); } .vg-water { fill: var(--scene-water); opacity: 0.55; }
+.vg-warm { fill: var(--scene-warm); } .vg-stroke { fill: none; stroke: var(--scene-ink); stroke-width: 1.2; stroke-linecap: round; opacity: 0.8; }
+.vg-soft { fill: var(--scene-orb); opacity: 0.14; }
+
+@media (max-width: 640px) {
+  .scene { aspect-ratio: auto; height: 84px; margin: calc(var(--sp-3) * -1) calc(var(--sp-3) * -1) var(--sp-2); }
+}
