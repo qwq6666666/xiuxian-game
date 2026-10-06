@@ -107,6 +107,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   // v15 沒有最快年齡：舊存檔沒記下過去的年齡，無從回推，補上空的紀錄
   // v16 沒有天劫：補上未在天劫中的狀態
   16: (d) => ({ ...d, version: 17, tribulation: null }),
+  // v17 沒有煉丹：補上未在煉丹的狀態
+  17: (d) => ({ ...d, version: 18, alchemy: null }),
   15: (d) => ({ ...d, version: 16, meta: { ...obj(d.meta, "meta"), fastest: {} } }),
   14: (d) => ({
     ...d,
@@ -409,6 +411,20 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   } else if (o.tribulation === undefined) {
     fail("tribulation", "不可缺少（沒有天劫時為 null）");
   }
+  let alchemy: GameState["alchemy"] = null;
+  if (o.alchemy !== null && o.alchemy !== undefined) {
+    const ao = obj(o.alchemy, "alchemy");
+    const recipeId = str(ao, "recipeId", "alchemy.recipeId");
+    const recipe = data.recipes.recipes.find((r) => r.id === recipeId);
+    if (!recipe) fail("alchemy.recipeId", `找不到丹方 ${recipeId}`);
+    const progress = num(ao, "progress", { integer: true, min: 0 }, "alchemy.progress");
+    if (progress >= recipe.months) fail("alchemy.progress", `必須小於丹方月數 ${recipe.months}，目前為 ${progress}`);
+    if (typeof ao.paid !== "boolean") fail("alchemy.paid", "必須是 true 或 false");
+    if (!ao.paid && progress !== 0) fail("alchemy.progress", "材料未投入時必須為 0");
+    alchemy = { recipeId, progress, paid: ao.paid };
+  } else if (o.alchemy === undefined) {
+    fail("alchemy", "不可缺少（沒有煉丹時為 null）");
+  }
   const sectRaw = o.sect === null ? null : obj(o.sect, "sect");
   if (sectRaw !== null) {
     const sid = str(sectRaw, "id", "sect.id");
@@ -448,6 +464,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     goalIds,
     startFragments: num(o, "startFragments", { integer: true, min: 0 }),
     tribulation,
+    alchemy,
     sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
     sectsTried: o.sectsTried as string[],
     sectPeak: num(o, "sectPeak", { integer: true, min: 0 }),

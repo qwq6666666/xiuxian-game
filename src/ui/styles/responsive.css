@@ -14,7 +14,7 @@
   .cols { display: flex; flex-direction: column; gap: var(--sp-3); }
   .side { display: contents; }
   .side > * { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-md); padding: var(--sp-3) var(--sp-4); margin: 0; }
-  .s-sched { order: 1; } .s-bt { order: 2; } .s-zuohua { order: 3; } .s-sect { order: 3; }
+  .s-sched { order: 1; } .s-bt { order: 2; } .s-zuohua { order: 3; } .s-sect { order: 3; } .s-alchemy { order: 3; }
   .log { order: 4; } .s-role { order: 5; } .s-bag { order: 6; } .s-market { order: 7; }
   .log ul { max-height: 50vh; max-height: 50dvh; }
   .items li { flex-wrap: wrap; }

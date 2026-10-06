@@ -34,6 +34,9 @@ import {
   type WorldNames,
   type ItemDef,
   type ItemEffect,
+  ALCHEMY_SCHEDULE,
+  type RecipeDef,
+  type RecipesData,
   type OriginDef,
   type RealmDef,
   type ScheduleDef,
@@ -258,14 +261,17 @@ export function validateSchedules(raw: unknown, file = "schedules.json"): Schedu
     const min = num(stones, "min", sw, { min: 0, integer: true });
     const chance = num(stones, "chance", sw, { min: 0 });
     if (chance > 1) fail(sw, "chance", `必須 ≤ 1，目前為 ${chance}`);
-    if (!Array.isArray(o.finds)) fail(where, "finds", "必須是陣列");
-    const finds = o.finds.map((f, j) => {
-      const fw = `${where} 欄位 finds[${j}]`;
-      const fo = obj(f, fw);
-      const c = num(fo, "chance", fw, { min: 0 });
-      if (c > 1) fail(fw, "chance", `必須 ≤ 1，目前為 ${c}`);
-      return { itemId: str(fo, "itemId", fw), chance: c };
-    });
+    const chanceList = (key: "finds" | "drops", raw: unknown) => {
+      if (!Array.isArray(raw)) fail(where, key, "必須是陣列");
+      return raw.map((f, j) => {
+        const fw = `${where} 欄位 ${key}[${j}]`;
+        const fo = obj(f, fw);
+        const c = num(fo, "chance", fw, { min: 0 });
+        if (c > 1) fail(fw, "chance", `必須 ≤ 1，目前為 ${c}`);
+        return { itemId: str(fo, "itemId", fw), chance: c };
+      });
+    };
+    const finds = chanceList("finds", o.finds);
     const deathChance = num(o, "deathChance", where, { min: 0 });
     if (deathChance > 1) fail(where, "deathChance", `必須 ≤ 1，目前為 ${deathChance}`);
     return {
@@ -276,6 +282,7 @@ export function validateSchedules(raw: unknown, file = "schedules.json"): Schedu
       eventRateMult: num(o, "eventRateMult", where, { min: 0 }),
       stones: { chance, min, max: num(stones, "max", sw, { min, integer: true }) },
       finds,
+      ...(o.drops !== undefined ? { drops: chanceList("drops", o.drops) } : {}),
       deathChance,
       ...(o.realmMin !== undefined ? { realmMin: str(o, "realmMin", where) } : {}),
       ...(o.requiresSect === true ? { requiresSect: true } : {}),
@@ -319,19 +326,47 @@ export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
       effect = { kind };
     } else if (kind === "tribulationWard") {
       effect = { kind, bonus: num(e, "bonus", ew, { gt: 0, max: 0.5 }) };
+    } else if (kind === "failLossRelief") {
+      effect = { kind, value: num(e, "value", ew, { gt: 0, max: 0.3 }) };
+    } else if (kind === "material") {
+      effect = { kind };
     } else {
-      return fail(ew, "kind", `必須是 cultivationFraction、lifespan、breakthrough 或 tribulationWard，目前為 ${JSON.stringify(kind)}`);
+      return fail(ew, "kind", `必須是 cultivationFraction、lifespan、breakthrough、tribulationWard、failLossRelief 或 material，目前為 ${JSON.stringify(kind)}`);
     }
     return {
       id,
       name: str(o, "name", where),
       desc: str(o, "desc", where),
-      price: num(o, "price", where, { gt: 0, integer: true }),
+      // 材料不在坊市賣，價格固定為 0；其餘必須是正整數
+      price: effect.kind === "material" ? num(o, "price", where, { min: 0, max: 0, integer: true }) : num(o, "price", where, { gt: 0, integer: true }),
       effect,
     };
   });
   uniqueIds(items, file);
   return items;
+}
+
+export function validateRecipes(raw: unknown, file = "recipes.json"): RecipesData {
+  const o = obj(raw, file);
+  const rw = `${file} 欄位 rules`;
+  const r = obj(o.rules, rw);
+  const rules = {
+    insightPerPoint: num(r, "insightPerPoint", rw, { min: 0, max: 0.1 }),
+    maxRate: num(r, "maxRate", rw, { gt: 0, max: 1 }),
+    failRefund: num(r, "failRefund", rw, { min: 0, max: 1 }),
+  };
+  const recipes = list(o.recipes, `${file} 欄位 recipes`).map((x, i): RecipeDef => {
+    const where = `${file} 第 ${i + 1} 筆`;
+    const ro = obj(x, where);
+    const id = str(ro, "id", where);
+    const w = `${where}（${id}）`;
+    const inputs = intRecord(ro, "inputs", w, 1);
+    if (Object.keys(inputs).length === 0) fail(w, "inputs", "至少要有一種材料");
+    const baseRate = num(ro, "baseRate", w, { gt: 0, max: 1 });
+    return { id, output: str(ro, "output", w), inputs, months: num(ro, "months", w, { gt: 0, integer: true }), baseRate, realmMin: str(ro, "realmMin", w) };
+  });
+  uniqueIds(recipes, `${file} 欄位 recipes`);
+  return { rules, recipes };
 }
 
 function optStrList(o: Obj, key: string, where: string): string[] | undefined {
@@ -656,6 +691,11 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       zuohua: str(log, "zuohua", where),
       stageMilestone: strRecord("stageMilestone"),
       tribulationFail: str(log, "tribulationFail", where),
+      alchemy: (() => {
+        const aw = `${where}.alchemy`;
+        const ao = obj(log.alchemy, aw);
+        return { done: str(ao, "done", aw), fail: str(ao, "fail", aw), stop: str(ao, "stop", aw) };
+      })(),
       sect: (() => {
         const sw = `${where}.sect`;
         const so = obj(log.sect, sw);
@@ -1260,7 +1300,24 @@ export function validateGameData(data: GameData): GameData {
   data.schedules.forEach((s, i) => {
     if (s.realmMin !== undefined) has(realmIds, s.realmMin, `schedules.json 第 ${i + 1} 筆（${s.id}）的 realmMin`, "realms.json");
     for (const f of s.finds) has(itemIds, f.itemId, `schedules.json 第 ${i + 1} 筆（${s.id}）的 finds`, "items.json");
+    for (const f of s.drops ?? []) {
+      has(itemIds, f.itemId, `schedules.json 第 ${i + 1} 筆（${s.id}）的 drops`, "items.json");
+      if (data.items.find((x) => x.id === f.itemId)?.effect.kind !== "material") {
+        throw new Error(`schedules.json 第 ${i + 1} 筆（${s.id}）的 drops：${f.itemId} 不是材料`);
+      }
+    }
   });
+  data.recipes.recipes.forEach((rc, i) => {
+    const where = `recipes.json 第 ${i + 1} 筆（${rc.id}）`;
+    has(itemIds, rc.output, `${where} 的 output`, "items.json");
+    has(realmIds, rc.realmMin, `${where} 的 realmMin`, "realms.json");
+    if (data.items.find((x) => x.id === rc.output)?.effect.kind === "material") throw new Error(`${where} 的 output：${rc.output} 是材料，不能是產出`);
+    for (const id of Object.keys(rc.inputs)) {
+      has(itemIds, id, `${where} 的 inputs`, "items.json");
+      if (data.items.find((x) => x.id === id)?.effect.kind !== "material") throw new Error(`${where} 的 inputs：${id} 不是材料`);
+    }
+  });
+  if (!data.schedules.some((s) => s.id === ALCHEMY_SCHEDULE)) throw new Error(`schedules.json：缺少煉丹用的日常安排 ${ALCHEMY_SCHEDULE}`);
   data.origins.forEach((o, i) => {
     for (const id of Object.keys(o.items)) has(itemIds, id, `origins.json 第 ${i + 1} 筆（${o.id}）的 items`, "items.json");
   });

@@ -200,6 +200,15 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
     case "zuohua":
       template = log.zuohua;
       break;
+    case "alchemyDone":
+      template = log.alchemy.done;
+      break;
+    case "alchemyFail":
+      template = log.alchemy.fail;
+      break;
+    case "alchemyStop":
+      template = log.alchemy.stop;
+      break;
     case "sectJoin":
       template = log.sect.join;
       break;

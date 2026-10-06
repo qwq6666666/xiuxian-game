@@ -51,7 +51,7 @@ export function worldFlagsOf(state: GameState, data: GameData = gameData): strin
 /** 物品此刻的價格：基本價乘上所有生效效果的倍率，四捨五入，至少 1 */
 export function itemPrice(state: GameState, itemId: string, data: GameData = gameData): number {
   const item = data.items.find((i) => i.id === itemId);
-  if (!item) return 0;
+  if (!item || item.price === 0) return 0;
   let mult = 1;
   for (const e of activeWorldEffects(state, data)) mult *= e.market[itemId] ?? 1;
   if (marketTerritory(state, data)?.contested) mult *= data.map.territoryRules.marketMultiplier;

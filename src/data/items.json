@@ -26,5 +26,33 @@
     "desc": "天劫中祭出，替你擋下一道劫波的鋒芒，使這一道的把握更大。用過即焚。",
     "price": 150,
     "effect": { "kind": "tribulationWard", "bonus": 0.15 }
+  },
+  {
+    "id": "huxin_dan",
+    "name": "護心丹",
+    "desc": "帶在身上即可。突破失敗時自行化開，護住心脈，這一次少折損一成修為。",
+    "price": 120,
+    "effect": { "kind": "failLossRelief", "value": 0.1 }
+  },
+  {
+    "id": "ling_cao",
+    "name": "靈草",
+    "desc": "山裡採來的普通靈草，藥性溫和。煉丹的底料。",
+    "price": 0,
+    "effect": { "kind": "material" }
+  },
+  {
+    "id": "ling_sha",
+    "name": "靈砂",
+    "desc": "歷練途中偶爾拾得的赤色砂礫，丹藥要靠它定性。",
+    "price": 0,
+    "effect": { "kind": "material" }
+  },
+  {
+    "id": "fu_zhi",
+    "name": "符紙",
+    "desc": "渡口茶棚裡有人轉手的黃紙，質地細密，能畫符。",
+    "price": 0,
+    "effect": { "kind": "material" }
   }
 ]

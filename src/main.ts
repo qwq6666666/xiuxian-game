@@ -1,6 +1,7 @@
 import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
 import { buyItem, renameCharacter, buyTalent, setSchedule, useItem, zuohua } from "./core/actions";
+import { cancelBrew, startBrew } from "./core/alchemy";
 import { attemptBreakthrough, faceWave } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
 import { applyOffline } from "./core/offline";
@@ -82,6 +83,8 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onTravel: (targetId) => update(beginTravel(state, targetId, data)),
   onBuyItem: (id) => update(buyItem(state, id, data)),
   onWave: (choice) => update(faceWave(state, choice, data)),
+  onStartBrew: (id) => update(startBrew(state, id, data)),
+  onCancelBrew: () => update(cancelBrew(state, data)),
   onJoinSect: () => update(joinSect(state, data)),
   onLeaveSect: () => update(leaveSect(state, data)),
   onPromoteSect: () => update(promoteSect(state, data)),

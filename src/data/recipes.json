@@ -1,0 +1,8 @@
+{
+  "rules": { "insightPerPoint": 0.01, "maxRate": 0.95, "failRefund": 0.5 },
+  "recipes": [
+    { "id": "juqi_dan", "output": "juqi_dan", "inputs": { "ling_cao": 4 }, "months": 2, "baseRate": 0.7, "realmMin": "lianqi" },
+    { "id": "huxin_dan", "output": "huxin_dan", "inputs": { "ling_cao": 3, "ling_sha": 1 }, "months": 3, "baseRate": 0.6, "realmMin": "lianqi" },
+    { "id": "bilei_fu", "output": "bilei_fu", "inputs": { "fu_zhi": 2, "ling_sha": 1 }, "months": 2, "baseRate": 0.6, "realmMin": "zhuji" }
+  ]
+}

@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 18;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -102,6 +102,9 @@ export const LOG_KINDS = [
   "sectRefuse",
   "sectLeave",
   "sectPromote",
+  "alchemyDone",
+  "alchemyFail",
+  "alchemyStop",
 ] as const;
 export type LogKind = (typeof LOG_KINDS)[number];
 
@@ -160,6 +163,13 @@ export interface TribulationState {
   threshold: number;
 }
 
+/** 進行中的煉丹（M29）：paid 表示這一爐的材料已經投進爐裡，progress 是已煉的月數 */
+export interface AlchemyState {
+  recipeId: string;
+  progress: number;
+  paid: boolean;
+}
+
 /** 入宗後的身分 */
 export interface SectMembership {
   id: string;
@@ -212,6 +222,8 @@ export interface GameState {
   startFragments: number;
   /** 進行中的天劫（M28）；時間暫停，等玩家逐道選擇。wave 是下一道的索引（從 0 起算），roll 是開始時抽定的亂數，threshold 是已通過各道的累積成功率 */
   tribulation: TribulationState | null;
+  /** 進行中的煉丹（M29）；換了日常安排也保留，換回來就接著煉 */
+  alchemy: AlchemyState | null;
   /** 目前所屬宗門（M25）；rank 是位階索引（0 外門），joinedAge 是入宗年齡（月） */
   sect: SectMembership | null;
   /** 本世試過或離開的宗門 id，不能再入 */

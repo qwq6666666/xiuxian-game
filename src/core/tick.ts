@@ -4,10 +4,14 @@ import { advanceEvents } from "./events";
 import { cultivationPerMonth, lifespanMonths, talentBonus } from "./formulas";
 import { addLog, atBottleneck, realmOf, resolveStages, scheduleOf } from "./progress";
 import { endLife } from "./review";
-import { nextInt, nextRandom } from "./rng";
+import { deriveSeed, nextInt, nextRandom } from "./rng";
 import type { GameState } from "./state";
 import { advanceTravel } from "./travel";
 import { sectBonus, stepSect } from "./sect";
+import { stepAlchemy } from "./alchemy";
+
+/** 材料掉落亂數的雜湊鹽值，與世界生成用的編號錯開 */
+const DROP_SALT = 7_000_000;
 
 // 其他模組一直從 tick 取用這些函式，維持原本的匯入路徑
 export { addLog, atBottleneck, lifespanYears, nextRealm, realmOf, resolveStages, scheduleOf, scheduleOpen } from "./progress";
@@ -52,6 +56,11 @@ function applySchedule(state: GameState, sched: ScheduleDef, month: number, data
     }
   }
 
+  // 材料掉落：每種各用由 seed 衍生的獨立亂數，不消耗 rngSeed，也不寫日誌，不影響既有的亂數序列
+  (sched.drops ?? []).forEach((d, j) => {
+    if (nextRandom(deriveSeed(seed, DROP_SALT + month * 8 + j))[0] < d.chance) items[d.itemId] = (items[d.itemId] ?? 0) + 1;
+  });
+
   let s: GameState = { ...state, rngSeed: seed, spiritStones: stones, items };
   for (const itemId of found) {
     s = addLog(s, { month, kind: "find", realmId: s.realmId, stage: s.stage, itemId }, limit);
@@ -89,6 +98,7 @@ function stepMonth(state: GameState, data: GameData): GameState {
   if (!atBottleneck(state, data)) s = addCultivation(s, sched, month, data);
   s = applySchedule(s, sched, month, data);
   if (s.phase !== "living") return s;
+  s = stepAlchemy(s, data);
   s = stepSect(s, data);
   if (month >= lifespanMonths(realmOf(s, data), s.lifespanBonus)) {
     const died = addLog(s, { month, kind: "death", realmId: s.realmId, stage: s.stage }, data.config.logLimit);

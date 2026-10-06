@@ -9,6 +9,7 @@ import itemsJson from "./items.json";
 import erasJson from "./eras.json";
 import namesJson from "./names.json";
 import originsJson from "./origins.json";
+import recipesJson from "./recipes.json";
 import realmsJson from "./realms.json";
 import schedulesJson from "./schedules.json";
 import sectsJson from "./sects.json";
@@ -32,6 +33,7 @@ import {
   validateNames,
   validateOrigins,
   validateRealms,
+  validateRecipes,
   validateSchedules,
   validateSects,
   validateTribulation,
@@ -49,6 +51,7 @@ export const gameData: GameData = validateGameData({
   realms: validateRealms(realmsJson),
   schedules: validateSchedules(schedulesJson),
   items: validateItems(itemsJson),
+  recipes: validateRecipes(recipesJson),
   // 新增事件檔：在 src/data/events/ 放 json，並在這裡加一行（只有整合者改這個檔）
   events: validateEventFiles([
     { file: "events.json", raw: eventsJson },
