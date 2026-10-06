@@ -65,6 +65,7 @@ export interface UiHandlers {
   onSchedule(scheduleId: string): void;
   onBreakthrough(usePill: boolean): void;
   onUseItem(itemId: string): void;
+  onUseAll(itemId: string): void;
   onBuyItem(itemId: string): void;
   onZuohua(): void;
   onTravel(targetId: string): void;
@@ -102,7 +103,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const side = root.querySelector<HTMLElement>(".side");
     if (!side) return;
     side.dataset.active = tab;
-    side.querySelectorAll<HTMLElement>("#sideTabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.go === tab)));
+    side.querySelectorAll<HTMLElement>("#sideTabs button").forEach((b) => {
+      b.setAttribute("aria-selected", String(b.dataset.go === tab));
+      // 看過這一頁就清掉提示點
+      if (b.dataset.go === tab) b.removeAttribute("data-badge");
+    });
   }
 
   root.innerHTML = `
@@ -915,6 +920,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         b.disabled = !canUseItem(state, item.id, data);
         b.addEventListener("click", () => handlers.onUseItem(item.id));
         li.appendChild(b);
+        if (item.effect.kind === "cultivationFraction" && state.items[item.id] > 1) {
+          const all = document.createElement("button");
+          all.type = "button";
+          all.textContent = "連服";
+          all.disabled = !canUseItem(state, item.id, data);
+          all.addEventListener("click", () => handlers.onUseAll(item.id));
+          li.appendChild(all);
+        }
       } else if (item.effect.kind === "artifact") {
         const b = document.createElement("button");
         b.type = "button";
@@ -924,6 +937,12 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       }
       e.bag.appendChild(li);
     }
+  }
+
+  /** 煉丹、煉器有結果：煉製頁閃一下，人在別的分頁時分頁列亮提示點 */
+  function markMake(cls: "flash-up" | "flash-down"): void {
+    flash("#alchemyBox", cls);
+    if (sideTab !== "make") stageEl.querySelector<HTMLElement>('#sideTabs [data-go="make"]')?.setAttribute("data-badge", "1");
   }
 
   /** 重播一次樣式動畫：移除再加回 class，動畫結束自行拿掉 */
@@ -1044,6 +1063,12 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const r = data.recipes.recipes.find((x) => x.id === state.alchemy!.recipeId);
       chips.push({ text: `煉${name(r?.output ?? "")} ${state.alchemy.progress}／${r?.months ?? 0}`, tab: "make" });
     }
+    // 材料夠了可以開爐或煉器時提示（最多兩個，免得資源列太長）
+    const ready = alchemyPanel(state, data);
+    if (ready) {
+      const names = [...(ready.brewing ? [] : ready.recipes.filter((r) => r.canStart)), ...ready.forge.filter((f) => f.canForge)].map((x) => x.name);
+      for (const n of names.slice(0, 2)) chips.push({ text: `可煉${n}`, tab: "make" });
+    }
     const method = data.methods.find((m) => m.id === state.methodId);
     if (method && method.id !== data.methods[0].id) chips.push({ text: method.name, tab: "me" });
     const key = JSON.stringify(chips);
@@ -1100,8 +1125,16 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     box.append(el("h2", undefined, "煉丹"));
     const b = panel.brewing;
     if (b) {
-      const stage = b.paid ? `第 ${b.progress} ／ ${b.months} 個月` : "材料下個月投入";
-      box.append(el("p", undefined, `爐中：${b.name}（${stage}），成功率 ${b.ratePct}%。`));
+      box.append(el("p", undefined, `爐中：${b.name}・成功率 ${b.ratePct}%`));
+      const bar = el("div", "brew-bar");
+      bar.setAttribute("role", "progressbar");
+      bar.setAttribute("aria-valuemin", "0");
+      bar.setAttribute("aria-valuemax", String(b.months));
+      bar.setAttribute("aria-valuenow", String(b.progress));
+      const fill = el("div", "brew-fill");
+      fill.style.width = `${(b.progress / b.months) * 100}%`;
+      bar.append(fill, el("span", undefined, b.paid ? `${b.progress}／${b.months} 個月` : "下個月投料"));
+      box.append(bar);
       if (b.paused) box.append(el("p", "desc", "爐火暫歇，切回「煉丹」即可續煉。"));
       const off = button("熄爐", () => handlers.onCancelBrew());
       off.classList.add("danger");
@@ -1289,6 +1322,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         if (entry.kind === "breakthroughSuccess" || entry.kind === "realmUp") flash(".status", "flash-up");
         else if (entry.kind === "breakthroughFail") flash(".status", "flash-down");
         else if (entry.kind === "stageUp") flash(".progress", "flash-up");
+        else if (entry.kind === "alchemyDone" || entry.kind === "forgeDone") markMake("flash-up");
+        else if (entry.kind === "alchemyFail" || entry.kind === "forgeFail" || entry.kind === "alchemyStop") markMake("flash-down");
       }
       if (last) e.live.textContent = formatLogEntry(last, data, state.name, slotsOf(state));
       e.log.innerHTML = "";
