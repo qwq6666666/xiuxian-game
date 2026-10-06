@@ -565,8 +565,6 @@ export interface MapRegion {
   birth?: { village: Point; mountain: Point };
   /** 領土分區的中心；只決定地圖形狀，不是新地名 */
   territories?: Point[];
-  /** 疆界繪製用的節點（加權 Voronoi），不影響判定；沿交界成對擺放 */
-  nodes?: Point[];
 }
 
 /** 顯示座標（橫向版面）與邏輯座標（判定用）的固定線性轉換 */
@@ -600,7 +598,7 @@ export interface MapData {
   view: MapView;
   /** 國家顏色，依序分配 */
   palette: string[];
-  territoryRules: { transitionYears: number; travelDelayMonths: number; marketMultiplier: number; greatReach: number; schoolReach: number; prosperReachMultiplier: number; declineReachMultiplier: number; frontWeight: number; frontOverlap: number; driftAmplitude: number; driftPeriodYears: number; strengthWindowYears: number; maxVertexStep: number };
+  territoryRules: { transitionYears: number; travelDelayMonths: number; marketMultiplier: number; greatReach: number; schoolReach: number; prosperReachMultiplier: number; declineReachMultiplier: number; driftPeriodYears: number; driftThreshold: number; strengthWindowYears: number };
   regions: MapRegion[];
   adjacency: Record<string, string[]>;
   stairs: { x: number; y: number; text: string };

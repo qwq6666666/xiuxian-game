@@ -1,98 +1,16 @@
-// 疆界流變：用加權 Voronoi（power diagram）算出會連續移動的國界。
-// 只管繪製幾何；「誰在交戰、路程延遲、物價」仍由 territory.ts 的整數歲判定，兩者互不影響。
+// 疆界流變：以維諾格為單位的領土歸屬。只管顯示用的歸屬與進度；
+// 「這一處是否交戰、路程延遲、物價」仍由 territory.ts 的整數歲判定，兩者互不影響。
 // 純函式：由世界種子與年齡決定，不進存檔、不消耗 rngSeed。
-import type { GameData, Point } from "../data/types";
-import { deriveSeed, nextRandom } from "./rng";
+import type { GameData } from "../data/types";
+import { MinHeap } from "./heap";
+import { clamp, hash2 } from "./noise";
+import type { Terrain } from "./terrain";
 import { worldAt, type World, type WorldChange, type WorldSnapshot } from "./world";
 
-export interface WeightedSite {
-  center: Point;
-  weight: number;
-}
-
-/** 多邊形的一個頂點；label 是「從這個頂點到下一個頂點」那條邊的鄰格索引（-1 是地圖外框） */
-interface Vertex {
-  x: number;
-  y: number;
-  label: number;
-}
-
-/**
- * 加權半平面裁切：點 p 屬於 c 的條件是 |p−c|² − w_c ≤ |p−o|² − w_o。
- * 權重全等時與 territoryPolygon 的一般 Voronoi 完全相同。others 的 index 用來標記邊的鄰格。
- */
-export function powerCell(site: WeightedSite, others: { site: WeightedSite; index: number }[], box: Point): { polygon: Point[]; neighbors: number[] } {
-  let poly: Vertex[] = [
-    { x: 0, y: 0, label: -1 }, { x: box[0], y: 0, label: -1 },
-    { x: box[0], y: box[1], label: -1 }, { x: 0, y: box[1], label: -1 },
-  ];
-  const [cx, cy] = site.center;
-  for (const { site: other, index } of others) {
-    const a = 2 * (other.center[0] - cx);
-    const b = 2 * (other.center[1] - cy);
-    const c = other.center[0] ** 2 + other.center[1] ** 2 - cx ** 2 - cy ** 2 + site.weight - other.weight;
-    const next: Vertex[] = [];
-    for (let i = 0; i < poly.length; i++) {
-      const from = poly[i];
-      const to = poly[(i + 1) % poly.length];
-      const f = a * from.x + b * from.y - c;
-      const t = a * to.x + b * to.y - c;
-      if (f <= 0) {
-        next.push({ x: from.x, y: from.y, label: f === 0 && t > 0 ? index : from.label });
-        if (f < 0 && t > 0) {
-          const r = f / (f - t);
-          next.push({ x: from.x + (to.x - from.x) * r, y: from.y + (to.y - from.y) * r, label: index });
-        }
-      } else if (t < 0) {
-        const r = f / (f - t);
-        next.push({ x: from.x + (to.x - from.x) * r, y: from.y + (to.y - from.y) * r, label: from.label });
-      }
-    }
-    poly = next;
-    if (poly.length === 0) break;
-  }
-  return { polygon: poly.map((v): Point => [v.x, v.y]), neighbors: poly.map((v) => v.label) };
-}
-
-export interface CellFight {
-  attacker: string;
-  defender: string;
-  /** 整處地域的推進進度 0..1 */
-  progress: number;
-}
-
-export interface GeoCell {
-  id: string;
-  region: string;
-  nodeIndex: number;
-  center: Point;
-  ownerId: string;
-  polygon: Point[];
-  /** 與 polygon 每條邊對應的鄰格 id；空字串是地圖外框 */
-  neighbors: string[];
-  fight?: CellFight;
-}
-
-export interface FrontLine {
-  a: Point;
-  b: Point;
-  ownerA: string;
-  ownerB: string;
-  fighting: boolean;
-}
-
-export interface GeometryOptions {
-  /** 和平時期的微小拉鋸，預設開 */
-  drift?: boolean;
-}
-
-/** 以季為單位的年齡；幾何每季才重算一次 */
+/** 以季為單位的年齡；歸屬每季才重算一次 */
 export function ageQuarters(ageMonths: number): number {
   return Math.floor(ageMonths / 3);
 }
-
-const MEMO_SIZE = 8;
-const memo: { world: World; data: GameData; key: string; value: GeoCell[] }[] = [];
 
 function changedRegions(change: WorldChange, owners: Record<string, string>): string[] {
   if (change.kind === "owner" || change.kind === "split") return [change.region];
@@ -106,17 +24,169 @@ function changeTarget(change: WorldChange): string | null {
   return null;
 }
 
-/** 推進順序：離進攻方最近的節點先換；找不到相鄰的進攻方地域就從都城向外 */
-function nodeOrder(region: string, attacker: string, owners: Record<string, string>, data: GameData): number[] {
-  const def = data.map.regions.find((r) => r.id === region)!;
-  const nodes = def.nodes!;
-  const anchors: Point[] = [];
-  for (const n of data.map.adjacency[region] ?? []) {
-    if (owners[n] === attacker) anchors.push(...data.map.regions.find((r) => r.id === n)!.nodes!);
+export interface RegionFight {
+  /** 對應 Terrain.regionIds 的索引 */
+  regionIndex: number;
+  region: string;
+  attacker: string;
+  defender: string;
+  /** 整處地域的推進進度 0..1 */
+  progress: number;
+}
+
+export interface TerritoryMap {
+  quarter: number;
+  /** 索引對應的國家 id（含分裂出的新國） */
+  polityIds: string[];
+  /** 每格的擁有者（polityIds 的索引），海是 -1 */
+  owner: Int16Array;
+  fights: RegionFight[];
+}
+
+export interface TerritoryOptions {
+  /** 和平時期交界格的微小拉鋸，預設開 */
+  drift?: boolean;
+}
+
+/** 推進順序：離進攻方最近的格先換；沒有相鄰的進攻方地域（分裂）就從都城向外 */
+const orderCache = new WeakMap<Terrain, Map<string, Int32Array>>();
+
+function regionOrder(terrain: Terrain, data: GameData, regionIndex: number, attacker: string, owners: Record<string, string>): Int32Array {
+  const regionId = terrain.regionIds[regionIndex];
+  const key = `${regionId}:${attacker}:${data.map.adjacency[regionId]?.filter((n) => owners[n] === attacker).join(",")}`;
+  let cache = orderCache.get(terrain);
+  if (!cache) orderCache.set(terrain, (cache = new Map()));
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const { cells } = terrain.grid;
+  const ids: number[] = [];
+  for (const c of cells) if (terrain.land[c.id] && terrain.region[c.id] === regionIndex) ids.push(c.id);
+  const inRegion = new Set(ids);
+  const attackerRegions = new Set((data.map.adjacency[regionId] ?? []).filter((n) => owners[n] === attacker).map((n) => terrain.regionIds.indexOf(n)));
+  const sources: number[] = [];
+  for (const id of ids) if (cells[id].nb.some((n) => terrain.land[n] && attackerRegions.has(terrain.region[n]))) sources.push(id);
+  if (sources.length === 0) {
+    // 從都城向外：取離都城最近的格
+    const capital = data.map.regions.find((r) => r.id === regionId)!.capital!;
+    const [cx, cy] = [capital[0] * data.map.view.scale[0], capital[1] * data.map.view.scale[1]];
+    let best = ids[0];
+    let bd = Infinity;
+    for (const id of ids) {
+      const q = (cells[id].x - cx) ** 2 + (cells[id].y - cy) ** 2;
+      if (q < bd) {
+        bd = q;
+        best = id;
+      }
+    }
+    sources.push(best);
   }
-  if (anchors.length === 0) anchors.push(def.capital!);
-  const dist = nodes.map((p, i) => ({ i, d: Math.min(...anchors.map((a) => Math.hypot(a[0] - p[0], a[1] - p[1]))) }));
-  return dist.sort((x, y) => x.d - y.d || x.i - y.i).map((x) => x.i);
+  const dist = new Map<number, number>();
+  const heap = new MinHeap();
+  for (const s of sources) {
+    dist.set(s, 0);
+    heap.push(0, s);
+  }
+  while (heap.size > 0) {
+    const [d, a] = heap.pop();
+    if (d > (dist.get(a) ?? Infinity)) continue;
+    for (const b of cells[a].nb) {
+      if (!inRegion.has(b)) continue;
+      const nd = d + Math.hypot(cells[a].x - cells[b].x, cells[a].y - cells[b].y);
+      if (nd < (dist.get(b) ?? Infinity)) {
+        dist.set(b, nd);
+        heap.push(nd, b);
+      }
+    }
+  }
+  // 沒連到來源的格（孤島）排在最後，依離最近來源的直線距離
+  const far = (id: number): number => 1e6 + Math.min(...sources.map((s) => Math.hypot(cells[s].x - cells[id].x, cells[s].y - cells[id].y)));
+  const ranked = ids.map((id) => ({ id, d: dist.get(id) ?? far(id) })).sort((x, y) => x.d - y.d || x.id - y.id);
+  const out = Int32Array.from(ranked.map((r) => r.id));
+  cache.set(key, out);
+  return out;
+}
+
+const mapMemo: { world: World; terrain: Terrain; key: string; value: TerritoryMap }[] = [];
+const MEMO_SIZE = 8;
+
+/** 某個季的領土歸屬。同種子同季結果相同。 */
+export function territoryMapAt(world: World, quarters: number, data: GameData, terrain: Terrain, opts: TerritoryOptions = {}): TerritoryMap {
+  const drift = opts.drift !== false;
+  const key = `${quarters}|${drift ? 1 : 0}`;
+  const hit = mapMemo.findIndex((m) => m.world === world && m.terrain === terrain && m.key === key);
+  if (hit >= 0) {
+    const [entry] = mapMemo.splice(hit, 1);
+    mapMemo.push(entry);
+    return entry.value;
+  }
+  const years = quarters / 4;
+  const rules = data.map.territoryRules;
+  const polityIds = [...world.polities.map((p) => p.id)];
+  for (const c of world.changes) if (c.kind === "split" && !polityIds.includes(c.created.id)) polityIds.push(c.created.id);
+  const index = (id: string): number => polityIds.indexOf(id);
+  const { cells } = terrain.grid;
+  const owners = { ...world.owners };
+  const owner = new Int16Array(cells.length).fill(-1);
+  for (const c of cells) if (terrain.land[c.id]) owner[c.id] = index(owners[terrain.regionIds[terrain.region[c.id]]]);
+  const fights = new Map<number, RegionFight>();
+
+  for (const change of world.changes) {
+    if (change.age > years) break;
+    const to = changeTarget(change);
+    if (to === null) continue;
+    for (const region of changedRegions(change, owners)) {
+      const ri = terrain.regionIds.indexOf(region);
+      if (ri < 0) continue;
+      const before = owners[region];
+      const order = regionOrder(terrain, data, ri, to, owners);
+      const progress = clamp((years - change.age) / rules.transitionYears, 0, 1);
+      const flips = progress >= 1 ? order.length : Math.floor(progress * order.length);
+      for (let k = 0; k < order.length; k++) owner[order[k]] = index(k < flips ? to : before);
+      if (progress < 1) fights.set(ri, { regionIndex: ri, region, attacker: to, defender: before, progress });
+      else fights.delete(ri);
+      owners[region] = to;
+    }
+  }
+
+  // 和平拉鋸：只動交界上一格深，由 deriveSeed 的雜湊決定，不改判定
+  if (drift) {
+    const snap = worldAt(world, Math.floor(years));
+    const strength = polityStrength(world, Math.floor(years), data, snap);
+    const copy = owner.slice();
+    const period = rules.driftPeriodYears;
+    const u = years / period;
+    const k0 = Math.floor(u);
+    const f = u - k0;
+    const smooth = f * f * (3 - 2 * f);
+    for (const c of cells) {
+      if (copy[c.id] < 0 || fights.has(terrain.region[c.id])) continue;
+      const mine = polityIds[copy[c.id]];
+      let rival = -1;
+      for (const n of c.nb) {
+        if (copy[n] >= 0 && copy[n] !== copy[c.id] && !fights.has(terrain.region[n])) {
+          rival = copy[n];
+          break;
+        }
+      }
+      if (rival < 0) continue;
+      const diff = (strength[mine]?.score ?? 0) - (strength[polityIds[rival]]?.score ?? 0);
+      const bias = clamp(diff / 4, -1, 1) * 0.5;
+      const a = hash2(c.id, k0, world.seed ^ 0x7d1f) * 2 - 1;
+      const b = hash2(c.id, k0 + 1, world.seed ^ 0x7d1f) * 2 - 1;
+      const wobble = a + (b - a) * smooth;
+      // 弱的一方、又碰上這個週期的低谷，邊上的這一格暫時被對面佔去
+      if (bias + wobble * 0.5 < -rules.driftThreshold) owner[c.id] = rival;
+    }
+  }
+  const value: TerritoryMap = { quarter: quarters, polityIds, owner, fights: [...fights.values()] };
+  mapMemo.push({ world, terrain, key, value });
+  if (mapMemo.length > MEMO_SIZE) mapMemo.shift();
+  return value;
+}
+
+/** 某處易手的進度，回傳 null 表示不在推進中 */
+export function regionFight(map: TerritoryMap, region: string): RegionFight | null {
+  return map.fights.find((f) => f.region === region) ?? null;
 }
 
 export interface PolityStrength {
@@ -128,7 +198,7 @@ export interface PolityStrength {
   score: number;
 }
 
-/** 國勢：持有地域、興盛／開放宗門、近年得失地。給拉鋸振幅與資訊卡用。 */
+/** 國勢：持有地域、興盛／開放宗門、近年得失地。給拉鋸偏向與資訊卡用。 */
 export function polityStrength(world: World, ageYears: number, data: GameData, snap: WorldSnapshot = worldAt(world, ageYears)): Record<string, PolityStrength> {
   const out: Record<string, PolityStrength> = {};
   const get = (id: string) => (out[id] ??= { regions: 0, prosperSects: 0, openSects: 0, recent: 0, score: 0 });
@@ -157,114 +227,6 @@ export function polityStrength(world: World, ageYears: number, data: GameData, s
   return out;
 }
 
-function smooth(t: number): number {
-  return t * t * (3 - 2 * t);
-}
-
-/** 節點隨時間的擺動值，-1..1，週期之間平滑插值；只用 deriveSeed，不碰 rngSeed */
-function driftAt(worldSeed: number, nodeSalt: number, years: number, period: number): number {
-  const u = years / period;
-  const k = Math.floor(u);
-  const val = (n: number) => nextRandom(deriveSeed(deriveSeed(worldSeed, 0x7d1f), nodeSalt * 977 + n))[0] * 2 - 1;
-  return val(k) + (val(k + 1) - val(k)) * smooth(u - k);
-}
-
-/** 某個季的國界幾何。同種子同季結果相同。 */
-export function territoryGeometryAt(world: World, quarters: number, data: GameData, opts: GeometryOptions = {}): GeoCell[] {
-  const drift = opts.drift !== false;
-  const key = `${quarters}|${drift ? 1 : 0}`;
-  const hit = memo.findIndex((m) => m.world === world && m.data === data && m.key === key);
-  if (hit >= 0) {
-    const [entry] = memo.splice(hit, 1);
-    memo.push(entry);
-    return entry.value;
-  }
-  const rules = data.map.territoryRules;
-  const years = quarters / 4;
-  const lands = data.map.regions.filter((r) => r.land);
-
-  // 一、逐筆重播易手：每個節點的所屬與權重位移
-  const owners = { ...world.owners };
-  const nodeOwner = new Map<string, string>();
-  const offset = new Map<string, number>();
-  const fights = new Map<string, CellFight>();
-  for (const r of lands) r.nodes!.forEach((_, i) => nodeOwner.set(`${r.id}:${i}`, owners[r.id]));
-  for (const change of world.changes) {
-    if (change.age > years) break;
-    const to = changeTarget(change);
-    if (to === null) continue;
-    for (const region of changedRegions(change, owners)) {
-      const def = data.map.regions.find((r) => r.id === region)!;
-      const n = def.nodes!.length;
-      const order = nodeOrder(region, to, owners, data);
-      const progress = Math.min(1, Math.max(0, (years - change.age) / rules.transitionYears));
-      const span = n + rules.frontOverlap;
-      const before = owners[region];
-      order.forEach((nodeIndex, k) => {
-        const p = Math.min(1, Math.max(0, (progress * span - k) / (rules.frontOverlap + 1)));
-        const id = `${region}:${nodeIndex}`;
-        nodeOwner.set(id, p >= 0.5 ? to : before);
-        offset.set(id, p > 0 && p < 1 ? -4 * p * (1 - p) * rules.frontWeight : 0);
-        if (progress < 1) fights.set(id, { attacker: to, defender: before, progress });
-        else fights.delete(id);
-      });
-      owners[region] = to;
-    }
-  }
-
-  // 二、第一輪（不含擺動）找出國界上的節點，第二輪才加擺動
-  const sites = lands.flatMap((r) => r.nodes!.map((p, i) => ({ id: `${r.id}:${i}`, region: r.id, index: i, p })));
-  const build = (extra: Map<string, number>) => {
-    const ws: WeightedSite[] = sites.map((s) => ({ center: s.p, weight: (offset.get(s.id) ?? 0) + (extra.get(s.id) ?? 0) }));
-    return sites.map((_, i) => powerCell(ws[i], ws.map((site, index) => ({ site, index })).filter((o) => o.index !== i), data.map.viewBox));
-  };
-  let cells = build(new Map());
-  if (drift && rules.driftAmplitude > 0) {
-    const whole = Math.floor(years);
-    const strength = polityStrength(world, whole, data);
-    const extra = new Map<string, number>();
-    sites.forEach((s, i) => {
-      const mine = nodeOwner.get(s.id)!;
-      const rivals = new Set(cells[i].neighbors.filter((n) => n >= 0).map((n) => nodeOwner.get(sites[n].id)!).filter((o) => o !== mine));
-      if (rivals.size === 0) return;
-      const diff = Math.max(...[...rivals].map((o) => (strength[mine]?.score ?? 0) - (strength[o]?.score ?? 0)));
-      const bias = Math.max(-1, Math.min(1, diff / 4)) * 0.5;
-      extra.set(s.id, rules.driftAmplitude * (bias + driftAt(world.seed, i + 1, years, rules.driftPeriodYears) * 0.5));
-    });
-    cells = build(extra);
-  }
-
-  const value = sites.map((s, i): GeoCell => ({
-    id: s.id, region: s.region, nodeIndex: s.index, center: s.p,
-    ownerId: nodeOwner.get(s.id)!,
-    polygon: cells[i].polygon,
-    neighbors: cells[i].neighbors.map((n) => (n < 0 ? "" : sites[n].id)),
-    ...(fights.has(s.id) ? { fight: fights.get(s.id) } : {}),
-  }));
-  memo.push({ world, data, key, value });
-  if (memo.length > MEMO_SIZE) memo.shift();
-  return value;
-}
-
-/** 不同國家相鄰的邊；同國格之間的內線不回傳 */
-export function frontLines(cells: GeoCell[]): FrontLine[] {
-  const byId = new Map(cells.map((c) => [c.id, c]));
-  const out: FrontLine[] = [];
-  for (const cell of cells) {
-    cell.polygon.forEach((a, i) => {
-      const nid = cell.neighbors[i];
-      if (nid === "" || nid <= cell.id) return;
-      const other = byId.get(nid);
-      if (!other || other.ownerId === cell.ownerId) return;
-      const b = cell.polygon[(i + 1) % cell.polygon.length];
-      const f = cell.fight ?? other.fight;
-      const fighting = f !== undefined && [cell.ownerId, other.ownerId].every((o) => o === f.attacker || o === f.defender);
-      out.push({ a, b, ownerA: cell.ownerId, ownerB: other.ownerId, fighting });
-    });
-  }
-  return out;
-}
-
 export interface BorderEvent {
   age: number;
   region: string;
@@ -289,9 +251,4 @@ export function territoryHistory(world: World, data: GameData, uptoAge: number):
     }
   }
   return out;
-}
-
-/** 某處易手的進度，回傳 null 表示不在推進中 */
-export function regionFight(cells: GeoCell[], region: string): CellFight | null {
-  return cells.find((c) => c.region === region && c.fight)?.fight ?? null;
 }

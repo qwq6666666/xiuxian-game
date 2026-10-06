@@ -1,222 +1,124 @@
 import { describe, expect, it } from "vitest";
 import { generateWorld } from "../src/core/world";
 import type { World } from "../src/core/world";
-import { territoriesAt, territoryForPoint, territoryPolygon } from "../src/core/territory";
-import { ageQuarters, frontLines, polityStrength, powerCell, regionFight, territoryGeometryAt, territoryHistory, type GeoCell } from "../src/core/frontier";
-import { routeTo } from "../src/core/travel";
+import { territoriesAt } from "../src/core/territory";
+import { ageQuarters, polityStrength, regionFight, territoryHistory, territoryMapAt } from "../src/core/frontier";
+import { provinceQuota, provincesFor } from "../src/core/provinces";
+import { terrainFor } from "../src/core/terrain";
+import { placesAt } from "../src/core/travel";
 import { gameData } from "../src/data/load";
-import { validateMap } from "../src/data/validate";
 import { createInitialState, startLife } from "../src/core/life";
-import type { Point } from "../src/data/types";
 
 const data = gameData;
-const BOX = data.map.viewBox;
-
-/** 把只含 M／C／L／Z（絕對座標）的 SVG path 攤平成多邊形 */
-function flatten(d: string): Point[] {
-  const tokens = d.match(/[MCLZ]|-?\d+(?:\.\d+)?/g)!;
-  const pts: Point[] = [];
-  let i = 0;
-  let cur: Point = [0, 0];
-  let cmd = "";
-  const num = () => Number(tokens[i++]);
-  while (i < tokens.length) {
-    if (/[MCLZ]/.test(tokens[i])) cmd = tokens[i++];
-    if (cmd === "Z") break;
-    if (cmd === "M" || cmd === "L") {
-      cur = [num(), num()];
-      pts.push(cur);
-    } else if (cmd === "C") {
-      const [p1, p2, p3]: Point[] = [[num(), num()], [num(), num()], [num(), num()]];
-      for (let s = 1; s <= 12; s++) {
-        const t = s / 12;
-        const u = 1 - t;
-        pts.push([
-          u ** 3 * cur[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t ** 3 * p3[0],
-          u ** 3 * cur[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t ** 3 * p3[1],
-        ]);
-      }
-      cur = p3;
-    }
-  }
-  return pts;
-}
-
-function inside(poly: Point[], p: Point): boolean {
-  let c = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    if (yi > p[1] !== yj > p[1] && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) c = !c;
-  }
-  return c;
-}
-
-function area(poly: Point[]): number {
-  let a = 0;
-  for (let i = 0; i < poly.length; i++) {
-    const [x1, y1] = poly[i];
-    const [x2, y2] = poly[(i + 1) % poly.length];
-    a += x1 * y2 - x2 * y1;
-  }
-  return Math.abs(a) / 2;
-}
-
-const landShapes = data.map.regions.filter((r) => r.land).map((r) => ({ id: r.id, poly: flatten(r.path) }));
-const regionAt = (p: Point) => landShapes.find((s) => inside(s.poly, p))?.id;
+const T = data.map.territoryRules.transitionYears;
 
 /** 手工世界：把一次易手放在指定年齡 */
 function withChange(change: World["changes"][number]): World {
-  const world = generateWorld(17);
-  return { ...world, changes: [change] };
+  return { ...generateWorld(17), changes: [change] };
 }
 
-const ownedArea = (cells: GeoCell[], owner: string, region: string) =>
-  cells.filter((c) => c.region === region && c.ownerId === owner).reduce((n, c) => n + area(c.polygon), 0);
+function countOwned(map: ReturnType<typeof territoryMapAt>, terrain: ReturnType<typeof terrainFor>, polity: string, region: string): number {
+  const ri = terrain.regionIds.indexOf(region);
+  const pi = map.polityIds.indexOf(polity);
+  let n = 0;
+  for (const c of terrain.grid.cells) if (terrain.land[c.id] && terrain.region[c.id] === ri && map.owner[c.id] === pi) n++;
+  return n;
+}
 
-describe("疆界流變：加權 Voronoi", () => {
-  it("權重全等時等於一般 Voronoi", () => {
-    const region = data.map.regions.find((r) => r.id === "north")!;
-    const sites = region.nodes!.map((center) => ({ center, weight: 0 }));
-    const plain = territoryPolygon(sites[0].center, region.nodes!.slice(1), BOX);
-    const { polygon } = powerCell(sites[0], sites.slice(1).map((site, i) => ({ site, index: i + 1 })), BOX);
-    expect(polygon.length).toBe(plain.length);
-    polygon.forEach((p, i) => {
-      expect(p[0]).toBeCloseTo(plain[i][0], 6);
-      expect(p[1]).toBeCloseTo(plain[i][1], 6);
-    });
-  });
+function regionSize(terrain: ReturnType<typeof terrainFor>, region: string): number {
+  const ri = terrain.regionIds.indexOf(region);
+  let n = 0;
+  for (const c of terrain.grid.cells) if (terrain.land[c.id] && terrain.region[c.id] === ri) n++;
+  return n;
+}
 
-  it("權重大的格往外推，邊界向弱者平移", () => {
-    const a = { center: [100, 100] as Point, weight: 0 };
-    const b = { center: [200, 100] as Point, weight: 0 };
-    const even = area(powerCell(a, [{ site: b, index: 1 }], BOX).polygon);
-    const heavy = area(powerCell({ ...a, weight: 3000 }, [{ site: b, index: 1 }], BOX).polygon);
-    const light = area(powerCell({ ...a, weight: -3000 }, [{ site: b, index: 1 }], BOX).polygon);
-    expect(heavy).toBeGreaterThan(even);
-    expect(light).toBeLessThan(even);
-    // 邊界位置：x = (|b|²−|a|² + w)/(2(bx−ax)) 的平移量
-    const cell = powerCell({ ...a, weight: 3000 }, [{ site: b, index: 1 }], BOX).polygon;
-    expect(Math.max(...cell.map((p) => p[0]))).toBeCloseTo(150 + 3000 / (2 * 100), 6);
-  });
-});
-
-describe("疆界流變：幾何", () => {
+describe("疆界流變：歸屬", () => {
   const world = generateWorld(17);
+  const terrain = terrainFor(world.seed, data);
 
-  it("同種子同季兩次結果完全相同，也與記憶體快取無關", () => {
-    const a = territoryGeometryAt(world, 200, data);
-    const fresh = territoryGeometryAt(generateWorld(17), 200, data);
-    expect(fresh.map((c) => c.polygon)).toEqual(a.map((c) => c.polygon));
-    expect(territoryGeometryAt(world, 200, data)).toBe(a);
+  it("同種子同季兩次結果相同，且最近的結果會被記住", () => {
+    const a = territoryMapAt(world, 200, data, terrain);
+    expect(territoryMapAt(world, 200, data, terrain)).toBe(a);
+    const again = territoryMapAt({ ...world }, 200, data, terrain);
+    expect(Array.from(again.owner)).toEqual(Array.from(a.owner));
   });
 
-  it("所有格涵蓋整個地圖框、互不重疊；極北荒原不參與", () => {
-    const cells = territoryGeometryAt(world, 200, data);
-    expect(cells.every((c) => c.region !== "beihuang")).toBe(true);
-    const total = cells.reduce((n, c) => n + area(c.polygon), 0);
-    expect(total).toBeCloseTo(BOX[0] * BOX[1], 3);
-    for (let x = 31; x < BOX[0]; x += 13) {
-      for (let y = 7; y < BOX[1]; y += 11) {
-        const hits = cells.filter((c) => inside(c.polygon, [x, y])).length;
-        expect(hits, `(${x},${y})`).toBeLessThanOrEqual(1);
-      }
-    }
-  });
-
-  it("沒有推進與擺動時，國界大致貼著原本的地域輪廓", () => {
+  it("沒有易手與拉鋸時，每個陸地格的擁有者就是所屬地域的擁有者；海沒有擁有者", () => {
     const calm = { ...world, changes: [] };
-    const cells = territoryGeometryAt(calm, 0, data, { drift: false });
-    let total = 0;
-    let match = 0;
-    for (let x = 30; x < BOX[0]; x += 4) {
-      for (let y = 90; y < BOX[1]; y += 4) {
-        const region = regionAt([x, y]);
-        if (!region) continue;
-        total++;
-        if (cells.find((c) => inside(c.polygon, [x, y]))?.region === region) match++;
-      }
+    const map = territoryMapAt(calm, 0, data, terrain, { drift: false });
+    for (const c of terrain.grid.cells) {
+      if (!terrain.land[c.id]) expect(map.owner[c.id]).toBe(-1);
+      else expect(map.polityIds[map.owner[c.id]]).toBe(world.owners[terrain.regionIds[terrain.region[c.id]]]);
     }
-    expect(match / total).toBeGreaterThan(0.9);
+    expect(map.fights).toEqual([]);
   });
 
-  it("三種易手：推進中有交戰、進度到 1 時全換成新主", () => {
+  it("三種易手：推進中有交戰與部分換主，進度到 1 全部換完；北方荒原不參與", () => {
     const owners = world.owners;
     const other = Object.values(owners).find((o) => o !== owners.north)!;
     const created = { id: "p_new", name: "新國", tribal: false, color: "#8fb573", capital: "新都" };
-    const mergeFrom = owners.north;
-    const cases: { change: World["changes"][number]; region: string; to: string }[] = [
-      { change: { kind: "owner", age: 40, region: "north", to: other, note: "易手。" }, region: "north", to: other },
-      { change: { kind: "merge", age: 40, from: mergeFrom, to: other, note: "併國。" }, region: "north", to: other },
-      { change: { kind: "split", age: 40, polity: owners.north, region: "north", created, note: "分裂。" }, region: "north", to: created.id },
+    const cases: { change: World["changes"][number]; to: string }[] = [
+      { change: { kind: "owner", age: 40, region: "north", to: other, note: "易手。" }, to: other },
+      { change: { kind: "merge", age: 40, from: owners.north, to: other, note: "併國。" }, to: other },
+      { change: { kind: "split", age: 40, polity: owners.north, region: "north", created, note: "分裂。" }, to: created.id },
     ];
-    for (const { change, region, to } of cases) {
+    for (const { change, to } of cases) {
       const w = withChange(change);
-      const before = territoryGeometryAt(w, 39 * 4, data, { drift: false }).filter((c) => c.region === region);
-      const during = territoryGeometryAt(w, 42 * 4, data, { drift: false }).filter((c) => c.region === region);
-      const after = territoryGeometryAt(w, 46 * 4, data, { drift: false }).filter((c) => c.region === region);
-      expect(before.every((c) => !c.fight && c.ownerId === owners.north), change.kind).toBe(true);
-      expect(during.some((c) => c.fight), change.kind).toBe(true);
-      expect(during.some((c) => c.ownerId === to) && during.some((c) => c.ownerId === owners.north), change.kind).toBe(true);
-      expect(after.every((c) => c.ownerId === to && !c.fight), change.kind).toBe(true);
-      expect(regionFight(territoryGeometryAt(w, 42 * 4, data), region)?.attacker).toBe(to);
+      const size = regionSize(terrain, "north");
+      const before = territoryMapAt(w, 39 * 4, data, terrain, { drift: false });
+      const during = territoryMapAt(w, 42 * 4, data, terrain, { drift: false });
+      const after = territoryMapAt(w, 46 * 4, data, terrain, { drift: false });
+      expect(countOwned(before, terrain, to, "north"), change.kind).toBe(0);
+      expect(before.fights, change.kind).toEqual([]);
+      const gained = countOwned(during, terrain, to, "north");
+      expect(gained, change.kind).toBeGreaterThan(size * 0.3);
+      expect(gained, change.kind).toBeLessThan(size * 0.7);
+      expect(regionFight(during, "north")?.attacker, change.kind).toBe(to);
+      expect(countOwned(after, terrain, to, "north"), change.kind).toBe(size);
+      expect(after.fights, change.kind).toEqual([]);
     }
+    expect(terrain.regionIds).not.toContain("beihuang");
   });
 
-  it("推進期間進攻方在該地域的面積單調不減", () => {
-    const to = Object.values(world.owners).find((o) => o !== world.owners.north)!;
-    const w = withChange({ kind: "owner", age: 40, region: "north", to, note: "易手。" });
-    let last = -1;
-    for (let q = 40 * 4; q <= 47 * 4; q++) {
-      const a = ownedArea(territoryGeometryAt(w, q, data, { drift: false }), to, "north");
-      expect(a, `第 ${q} 季`).toBeGreaterThanOrEqual(last - 1e-6);
-      last = a;
-    }
-    // 進度 1 時與靜態分割相同：所有權重都回到基準
-    const settled = territoryGeometryAt(w, 46 * 4, data, { drift: false });
-    const plain = territoryGeometryAt({ ...w, owners: { ...w.owners, north: to }, changes: [] }, 0, data, { drift: false });
-    expect(settled.map((c) => c.polygon)).toEqual(plain.map((c) => c.polygon));
-  });
-
-  it("相鄰兩季，任一頂點位移不超過上限", () => {
+  it("推進期間進攻方面積單調不減，每季換主的格數有上限，且從相鄰方向開始", () => {
     const to = Object.values(world.owners).find((o) => o !== world.owners.center)!;
     const w = withChange({ kind: "owner", age: 40, region: "center", to, note: "易手。" });
-    for (let q = 39 * 4; q < 48 * 4; q++) {
-      const a = territoryGeometryAt(w, q, data);
-      const b = territoryGeometryAt(w, q + 1, data);
-      a.forEach((cell, i) => {
-        // 以格的頂點對最近的新頂點量位移
-        for (const p of cell.polygon) {
-          const d = Math.min(...b[i].polygon.map((n) => Math.hypot(n[0] - p[0], n[1] - p[1])));
-          expect(d, `${cell.id} 第 ${q} 季`).toBeLessThanOrEqual(data.map.territoryRules.maxVertexStep);
-        }
-      });
+    const size = regionSize(terrain, "center");
+    let last = 0;
+    for (let q = 40 * 4; q <= 47 * 4; q++) {
+      const n = countOwned(territoryMapAt(w, q, data, terrain, { drift: false }), terrain, to, "center");
+      expect(n, `第 ${q} 季`).toBeGreaterThanOrEqual(last);
+      expect(n - last, `第 ${q} 季一次換太多格`).toBeLessThanOrEqual(Math.ceil(size / (T * 4)) + 1);
+      last = n;
+    }
+    expect(last).toBe(size);
+    // 剛開始換的格，至少有一個鄰格屬於進攻方相鄰的地域
+    const early = territoryMapAt(w, 40 * 4 + 4, data, terrain, { drift: false });
+    const adjacent = new Set((data.map.adjacency.center ?? []).filter((r) => world.owners[r] === to).map((r) => terrain.regionIds.indexOf(r)));
+    const pi = early.polityIds.indexOf(to);
+    const flipped = terrain.grid.cells.filter((c) => terrain.land[c.id] && terrain.region[c.id] === terrain.regionIds.indexOf("center") && early.owner[c.id] === pi);
+    if (adjacent.size > 0) {
+      expect(flipped.some((c) => c.nb.some((n) => terrain.land[n] && adjacent.has(terrain.region[n])))).toBe(true);
     }
   });
 
-  it("和平拉鋸只改畫面，不改所屬與判定", () => {
-    const cells = territoryGeometryAt(world, 300, data, { drift: true });
-    const still = territoryGeometryAt(world, 300, data, { drift: false });
-    expect(cells.map((c) => c.ownerId)).toEqual(still.map((c) => c.ownerId));
-    expect(cells.map((c) => c.polygon)).not.toEqual(still.map((c) => c.polygon));
+  it("和平拉鋸只改交界格的畫面歸屬，不改判定", () => {
+    const calm = { ...world, changes: [] };
+    const q = 300;
+    const still = territoryMapAt(calm, q, data, terrain, { drift: false });
+    const drifting = territoryMapAt(calm, q, data, terrain, { drift: true });
+    let moved = 0;
+    for (const c of terrain.grid.cells) {
+      if (still.owner[c.id] === drifting.owner[c.id]) continue;
+      moved++;
+      // 被改的格一定在交界上
+      expect(c.nb.some((n) => still.owner[n] >= 0 && still.owner[n] !== still.owner[c.id])).toBe(true);
+    }
+    expect(moved).toBeLessThan(terrain.grid.cells.length * 0.05);
     // 判定層不看幾何
-    let state = startLife(createInitialState(4));
-    state = { ...state, ageMonths: 300 * 3 };
-    const before = territoriesAt(generateWorld(state.worldSeed), 75, data).map((t) => [t.id, t.ownerId, t.contested]);
-    territoryGeometryAt(generateWorld(state.worldSeed), 300, data);
-    expect(territoriesAt(generateWorld(state.worldSeed), 75, data).map((t) => [t.id, t.ownerId, t.contested])).toEqual(before);
-    expect(routeTo(state, "village", data)).toEqual(routeTo(state, "village", data));
-    expect(territoryForPoint(territoriesAt(world, 75, data), "north", [100, 100])).toBeDefined();
-  });
-
-  it("單次計算夠快（已有 memo 時不重算）", () => {
-    const w = generateWorld(23);
-    const t0 = performance.now();
-    territoryGeometryAt(w, 123, data);
-    expect(performance.now() - t0).toBeLessThan(50);
-    const t1 = performance.now();
-    territoryGeometryAt(w, 123, data);
-    expect(performance.now() - t1).toBeLessThan(1);
+    const before = territoriesAt(calm, 75, data).map((t) => [t.id, t.ownerId, t.contested]);
+    territoryMapAt(calm, q, data, terrain);
+    expect(territoriesAt(calm, 75, data).map((t) => [t.id, t.ownerId, t.contested])).toEqual(before);
   });
 
   it("季量化", () => {
@@ -226,19 +128,39 @@ describe("疆界流變：幾何", () => {
   });
 });
 
+describe("省", () => {
+  const terrain = terrainFor(21, data);
+
+  it("省數 30、60、100：總數正確、每個地域至少 2 省、每個陸地格恰屬於同地域的一省", () => {
+    for (const count of [30, 60, 100]) {
+      const p = provincesFor(terrain, data, count);
+      expect(p.count, `${count}`).toBe(count);
+      const perRegion = terrain.regionIds.map(() => 0);
+      for (const r of p.region) perRegion[r]++;
+      perRegion.forEach((n, i) => expect(n, `${count} ${terrain.regionIds[i]}`).toBeGreaterThanOrEqual(data.mapart.provinces.minPerRegion));
+      for (const c of terrain.grid.cells) {
+        if (!terrain.land[c.id]) expect(p.of[c.id]).toBe(-1);
+        else expect(p.region[p.of[c.id]], `${count} 格 ${c.id}`).toBe(terrain.region[c.id]);
+      }
+    }
+  });
+
+  it("同樣的要求得到同一份結果（記憶）；超出範圍會被限制", () => {
+    expect(provincesFor(terrain, data, 80)).toBe(provincesFor(terrain, data, 80));
+    expect(provincesFor(terrain, data, 5).count).toBe(data.mapart.provinces.min);
+    expect(provincesFor(terrain, data, 999).count).toBe(data.mapart.provinces.max);
+  });
+
+  it("名額依面積分配，總和等於要求", () => {
+    const q = provinceQuota([100, 300, 600], 10, 2);
+    expect(q.reduce((s, n) => s + n, 0)).toBe(10);
+    expect(q[2]).toBeGreaterThan(q[0]);
+    expect(provinceQuota([10, 10, 10], 6, 2)).toEqual([2, 2, 2]);
+  });
+});
+
 describe("疆界流變：查詢", () => {
   const world = generateWorld(17);
-
-  it("frontLines 只回不同國家之間的邊，交戰邊標示出來", () => {
-    const to = Object.values(world.owners).find((o) => o !== world.owners.north)!;
-    const w = withChange({ kind: "owner", age: 40, region: "north", to, note: "易手。" });
-    const lines = frontLines(territoryGeometryAt(w, 42 * 4, data, { drift: false }));
-    expect(lines.length).toBeGreaterThan(0);
-    expect(lines.every((l) => l.ownerA !== l.ownerB)).toBe(true);
-    expect(lines.some((l) => l.fighting)).toBe(true);
-    const calm = frontLines(territoryGeometryAt({ ...world, changes: [] }, 0, data, { drift: false }));
-    expect(calm.every((l) => !l.fighting)).toBe(true);
-  });
 
   it("territoryHistory 依序列出到目前為止的國界變化", () => {
     const merge = world.changes.find((c) => c.kind === "merge")!;
@@ -263,23 +185,8 @@ describe("疆界流變：查詢", () => {
   });
 });
 
-describe("疆界流變：資料檢查", () => {
-  it("節點與新規則的錯誤指出具體欄位", () => {
-    const raw = JSON.parse(JSON.stringify(data.map));
-    raw.regions.find((r: { id: string }) => r.id === "west").nodes[2] = [999, 0];
-    expect(() => validateMap(raw)).toThrow("nodes[2]");
-    const few = JSON.parse(JSON.stringify(data.map));
-    few.regions.find((r: { id: string }) => r.id === "west").nodes = [[10, 10]];
-    expect(() => validateMap(few)).toThrow("nodes");
-    const rules = JSON.parse(JSON.stringify(data.map));
-    delete rules.territoryRules.frontWeight;
-    expect(() => validateMap(rules)).toThrow("frontWeight");
-  });
-});
-
 describe("天下圖地點命名", () => {
-  it("併國後被併地域保留原有城名，不會出現兩個同名都城；分號帶地域名", async () => {
-    const { placesAt } = await import("../src/core/travel");
+  it("併國後被併地域保留原有城名，不會出現兩個同名都城；分號帶地域名", () => {
     for (let seed = 1; seed <= 40; seed++) {
       let state = startLife(createInitialState(seed));
       state = { ...state, ageMonths: 80 * 12 };
