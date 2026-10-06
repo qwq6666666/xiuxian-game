@@ -99,7 +99,7 @@ describe("每世目標：結算與回顧", () => {
 
 describe("每世目標：存檔 v12", () => {
   it("存檔往返相同，保留本世目標", () => {
-    expect(SAVE_VERSION).toBe(20);
+    expect(SAVE_VERSION).toBe(21);
     const s = endLife(living(2, { goalIds: ["age_60"] }), "lifespan", data);
     expect(deserialize(serialize(s))).toEqual(s);
   });

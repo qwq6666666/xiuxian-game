@@ -1,6 +1,7 @@
 {
   "guard": { "perMind": 0.01, "max": 0.08, "extraLoss": 0.05 },
   "maxChance": 0.99,
+  "focusBonus": 0.03,
   "images": [
     {
       "name": "雷",

@@ -2,6 +2,7 @@ import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
 import { buyItem, renameCharacter, buyTalent, setSchedule, useAll, useItem, zuohua } from "./core/actions";
 import { equip, forge, unequip } from "./core/forge";
+import { focus } from "./core/focus";
 import { setMethod } from "./core/method";
 import { cancelBrew, startBrew } from "./core/alchemy";
 import { attemptBreakthrough, faceWave } from "./core/breakthrough";
@@ -85,7 +86,8 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onZuohua: () => update(zuohua(state, data)),
   onTravel: (targetId) => update(beginTravel(state, targetId, data)),
   onBuyItem: (id) => update(buyItem(state, id, data)),
-  onWave: (choice) => update(faceWave(state, choice, data)),
+  onWave: (choice, focused) => update(faceWave(state, choice, data, focused)),
+  onFocus: () => update(focus(state, data)),
   onMethod: (id) => update(setMethod(state, id, data)),
   onForge: (id) => update(forge(state, id, data)),
   onEquip: (id) => update(equip(state, id, data)),

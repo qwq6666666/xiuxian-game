@@ -111,6 +111,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   17: (d) => ({ ...d, version: 18, alchemy: null }),
   // v18 沒有心法：補上預設的無相訣（第一個心法）
   // v19 沒有法寶：補上空的裝備欄與帶來的法寶清單
+  // v20 沒有運功：補上還沒用過
+  20: (d) => ({ ...d, version: 21, focusMonth: -1 }),
   19: (d) => ({ ...d, version: 20, equipment: { weapon: null, ward: null }, meta: { ...obj(d.meta, "meta"), keptArtifacts: [] } }),
   18: (d, gd) => ({ ...d, version: 19, methodId: gd.methods[0].id }),
   15: (d) => ({ ...d, version: 16, meta: { ...obj(d.meta, "meta"), fastest: {} } }),
@@ -492,6 +494,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     tribulation,
     alchemy,
     methodId,
+    focusMonth: num(o, "focusMonth", { integer: true, min: -1 }),
     equipment,
     sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
     sectsTried: o.sectsTried as string[],

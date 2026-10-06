@@ -78,3 +78,17 @@
 @keyframes flash-bg-down { 0% { box-shadow: inset 0 0 0 2px var(--bad); } 100% { box-shadow: inset 0 0 0 2px transparent; } }
 .side > [data-tab] { animation: fold-in var(--dur-base) var(--ease); }
 .tabs button[data-badge]::after { content: " ●"; color: var(--accent); font-size: var(--fs-xs); }
+
+/* 運功鈕與場景點擊回饋 */
+.focus-btn { border-color: var(--accent); color: var(--accent); min-height: 0; padding: 0 var(--sp-3); }
+.scene { cursor: pointer; }
+.scene.pulse .sc-aura { animation: sc-pulse 0.6s ease-out; }
+@keyframes sc-pulse { 0% { transform: scale(1); opacity: 1; stroke-width: 2; } 100% { transform: scale(1.6); opacity: 0; } }
+.scene .sc-aura { transform-box: fill-box; transform-origin: center; }
+
+/* 天劫光圈：外圈收攏到靶圈時（約一輪的一半到八成）選擇，算凝神 */
+.trib-ring { position: relative; width: 84px; height: 84px; margin: var(--sp-2) auto; }
+.trib-ring span { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); }
+.ring-target { inset: 22px !important; border-style: dashed !important; opacity: 0.8; }
+.ring-close { animation: trib-close 1600ms ease-in-out infinite; }
+@keyframes trib-close { 0% { transform: scale(1.1); opacity: 0.2; } 65% { transform: scale(0.52); opacity: 1; } 100% { transform: scale(0.35); opacity: 0.3; } }

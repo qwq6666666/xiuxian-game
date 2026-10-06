@@ -92,6 +92,7 @@ export function createInitialState(
       items: {},
       itemsUsed: {},
       methodId: data.methods[0].id,
+      focusMonth: -1,
       equipment: { weapon: null, ward: null },
       pillStage: "",
       pillCount: 0,

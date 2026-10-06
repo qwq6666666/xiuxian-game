@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 20;
+export const SAVE_VERSION = 21;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -214,6 +214,8 @@ export interface GameState {
   lifespanBonus: number;
   /** 身上裝備的法寶（M30）：每格最多一件，裝備中的不在背包裡 */
   equipment: Record<ArtifactSlot, string | null>;
+  /** 最近一次運功（點擊加速）的月份（ageMonths）；同一個月只能運功一次，-1 表示還沒用過 */
+  focusMonth: number;
   /** 這一世選的心法（M31）；只能在擲骰階段更換 */
   methodId: string;
   /** 目前的日常安排 */
