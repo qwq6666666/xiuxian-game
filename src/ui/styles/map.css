@@ -11,10 +11,10 @@
 .map-hit:focus-visible { filter: drop-shadow(0 0 2px var(--map-marker-focus)); }
 .map-hit.selected { stroke: var(--accent); stroke-width: 2; }
 .map-region.selected { stroke-opacity: 1; fill-opacity: 0.28; }
-.map-territory { fill-opacity: 0.44; stroke: var(--panel); stroke-opacity: 0.68; stroke-width: 0.8; cursor: pointer; transition: fill 500ms ease, fill-opacity 180ms ease; }
+.map-territory { fill-opacity: 0.44; stroke: var(--panel); stroke-opacity: 0.68; stroke-width: 0.8; cursor: pointer; transition: fill var(--dur-slow) var(--ease), fill-opacity var(--dur-fast) var(--ease); }
 .map-territory:hover, .map-territory.selected { fill-opacity: 0.66; stroke: var(--text); stroke-width: 1.5; }
 .map-territory.contested { stroke: var(--bad); stroke-width: 1.5; stroke-dasharray: 3 2; }
-.map-influence { fill: var(--accent); fill-opacity: 0.12; stroke: var(--accent); stroke-opacity: 0.8; stroke-width: 1.6; stroke-dasharray: 3 3; cursor: pointer; transition: r 500ms ease; }
+.map-influence { fill: var(--accent); fill-opacity: 0.12; stroke: var(--accent); stroke-opacity: 0.8; stroke-width: 1.6; stroke-dasharray: 3 3; cursor: pointer; transition: r var(--dur-slow) var(--ease); }
 .map-influence.prosper { fill-opacity: 0.18; stroke-width: 2; }
 .map-influence.decline { fill-opacity: 0.06; stroke-opacity: 0.5; }
 .map-label { font-size: 14px; fill: var(--text); stroke: var(--panel); stroke-width: 2.5px; paint-order: stroke; pointer-events: none; }
@@ -34,11 +34,13 @@
 .map-sect-x { stroke: var(--map-broken); stroke-width: 1.6; fill: none; }
 .map-sect-ring { fill: none; stroke: var(--accent); stroke-width: 1; }
 .map-you-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2.5; }
-.map-you-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; animation: map-pulse 2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.map-you { transition: transform var(--dur-slow) var(--ease); }
+.map-you-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; animation: map-pulse calc(var(--dur-slow) * 4) var(--ease) infinite; transform-box: fill-box; transform-origin: center; }
 .map-you-label { font-size: 11px; fill: var(--accent); font-weight: bold; pointer-events: none; }
 .map-village-dot { fill: var(--text); stroke: var(--map-marker-outline); stroke-width: 2; }
 .map-route { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 2 6; pointer-events: none; }
-.map-route.active { stroke-width: 4; stroke-dasharray: 6 5; }
+.map-route.active { stroke-width: 4; stroke-opacity: 0.28; stroke-dasharray: 6 5; }
+.map-route-progress { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; pointer-events: none; transition: stroke-dasharray var(--dur-slow) var(--ease); }
 .map-visited { fill: none; stroke: var(--good); stroke-width: 3; stroke-opacity: 0.9; pointer-events: none; }
 .map-travel { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--sunken); }
 .map-travel h3 { margin-top: 0; }
