@@ -1,6 +1,6 @@
-import type { AttributeKey, ReviewCause } from "../data/types";
+import type { ArtifactSlot, AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -32,6 +32,8 @@ export interface Meta {
   huashen: Record<string, number>;
   /** 各出身最快達成各終局的年齡（月）；鍵是「終局:出身 id」，終局為 cleared、yuanying、huashen，只收藏 */
   fastest: Record<string, number>;
+  /** 轉世時帶來的法寶 id（本命天賦決定件數）；下一世擲骰時放進背包 */
+  keptArtifacts: string[];
   /** 歷代在宗門裡到過的最高位階（1 外門到 4 長老，0 沒入過宗），只收藏 */
   sectBest: number;
   /** 各目標達成的次數（目標 id → 次數），只收藏，不影響任何數值 */
@@ -49,7 +51,7 @@ export interface LifeBrief {
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, goals: {}, lastLife: null };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, keptArtifacts: [], goals: {}, lastLife: null };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
@@ -105,6 +107,8 @@ export const LOG_KINDS = [
   "alchemyDone",
   "alchemyFail",
   "alchemyStop",
+  "forgeDone",
+  "forgeFail",
 ] as const;
 export type LogKind = (typeof LOG_KINDS)[number];
 
@@ -208,6 +212,8 @@ export interface GameState {
   pillCount: number;
   /** 延壽丹累積的壽元上限（年） */
   lifespanBonus: number;
+  /** 身上裝備的法寶（M30）：每格最多一件，裝備中的不在背包裡 */
+  equipment: Record<ArtifactSlot, string | null>;
   /** 這一世選的心法（M31）；只能在擲骰階段更換 */
   methodId: string;
   /** 目前的日常安排 */

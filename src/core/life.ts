@@ -5,7 +5,15 @@ import { lifeIndex } from "./era";
 import { talentBonus } from "./formulas";
 import { pickGoals } from "./goals";
 import { deriveSeed, nextInt, pickWeighted } from "./rng";
+import { artifactsToKeep } from "./forge";
 import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type LogEntry, type Meta } from "./state";
+
+/** 出身的物品加上帶來的法寶 */
+function keptItems(kept: string[], base: Record<string, number>): Record<string, number> {
+  const items = { ...base };
+  for (const id of kept) items[id] = (items[id] ?? 0) + 1;
+  return items;
+}
 
 /** 重新擲出屬性、靈根、出身，並套用出身效果 */
 export function rollLife(state: GameState, data: GameData = gameData): GameState {
@@ -46,7 +54,8 @@ export function rollLife(state: GameState, data: GameData = gameData): GameState
     cultivationBonus: origin.cultivationBonus,
     // 遺澤天賦帶來的靈石一併算進初始靈石
     spiritStones: origin.spiritStones + state.carriedStones,
-    items: { ...origin.items },
+    // 轉世帶來的法寶（本命天賦）一併放進背包，重擲也不會丟
+    items: keptItems(state.meta.keptArtifacts, origin.items),
   };
 }
 
@@ -83,6 +92,7 @@ export function createInitialState(
       items: {},
       itemsUsed: {},
       methodId: data.methods[0].id,
+      equipment: { weapon: null, ward: null },
       pillStage: "",
       pillCount: 0,
       lifespanBonus: 0,
@@ -141,8 +151,10 @@ export function newLife(state: GameState, data: GameData = gameData): GameState 
   if (state.phase !== "dead" && state.phase !== "cleared") return state;
   const keep = Math.min(1, talentBonus(state.meta, data.talents, "stoneCarry"));
   const carried = Math.floor(state.spiritStones * keep);
+  // 本命天賦：挑出要帶走的法寶，下一世擲骰時放進背包
+  const meta = { ...state.meta, keptArtifacts: artifactsToKeep(state, data) };
   return {
-    ...createInitialState(state.rngSeed, data, state.meta, carried),
+    ...createInitialState(state.rngSeed, data, meta, carried),
     speed: state.speed,
     autoChoice: state.autoChoice,
     // 心法沿用上一世的選擇，擲骰時仍可更換

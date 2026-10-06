@@ -1,5 +1,5 @@
 import { gameData } from "../data/load";
-import { ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "../data/types";
+import { ARTIFACT_SLOTS, ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "../data/types";
 import { pickGoals } from "./goals";
 import { createInitialState } from "./life";
 import { deriveSeed, nextInt } from "./rng";
@@ -110,6 +110,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   // v17 沒有煉丹：補上未在煉丹的狀態
   17: (d) => ({ ...d, version: 18, alchemy: null }),
   // v18 沒有心法：補上預設的無相訣（第一個心法）
+  // v19 沒有法寶：補上空的裝備欄與帶來的法寶清單
+  19: (d) => ({ ...d, version: 20, equipment: { weapon: null, ward: null }, meta: { ...obj(d.meta, "meta"), keptArtifacts: [] } }),
   18: (d, gd) => ({ ...d, version: 19, methodId: gd.methods[0].id }),
   15: (d) => ({ ...d, version: 16, meta: { ...obj(d.meta, "meta"), fastest: {} } }),
   14: (d) => ({
@@ -235,6 +237,16 @@ function parseFastest(o: Obj, data: GameData): Record<string, number> {
   return raw;
 }
 
+/** 帶來的法寶清單：每個都必須是法寶 */
+function keptArtifacts(o: Obj, data: GameData): string[] {
+  if (!Array.isArray(o.keptArtifacts)) fail("meta.keptArtifacts", "必須是字串陣列");
+  return o.keptArtifacts.map((id, i) => {
+    const item = typeof id === "string" ? data.items.find((x) => x.id === id) : undefined;
+    if (!item || item.effect.kind !== "artifact") fail(`meta.keptArtifacts[${i}]`, `必須是法寶 id，目前為 ${JSON.stringify(id)}`);
+    return item.id;
+  });
+}
+
 function parseMeta(v: unknown, data: GameData): Meta {
   const o = obj(v, "meta");
   const talents = intRecord(o, "talents", "meta.talents");
@@ -275,6 +287,7 @@ function parseMeta(v: unknown, data: GameData): Meta {
     huashen: originCounts("huashen"),
     fastest: parseFastest(o, data),
     sectBest: num(o, "sectBest", { integer: true, min: 0 }, "meta.sectBest"),
+    keptArtifacts: keptArtifacts(o, data),
     daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
     talents,
     reached: o.reached as string[],
@@ -427,6 +440,15 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   } else if (o.alchemy === undefined) {
     fail("alchemy", "不可缺少（沒有煉丹時為 null）");
   }
+  const eqRaw = obj(o.equipment, "equipment");
+  const equipment = { weapon: null, ward: null } as GameState["equipment"];
+  for (const slot of ARTIFACT_SLOTS) {
+    const v = eqRaw[slot];
+    if (v === null) continue;
+    const item = typeof v === "string" ? data.items.find((i) => i.id === v) : undefined;
+    if (!item || item.effect.kind !== "artifact" || item.effect.slot !== slot) fail(`equipment.${slot}`, `必須是 ${slot} 欄的法寶或 null，目前為 ${JSON.stringify(v)}`);
+    equipment[slot] = item.id;
+  }
   const methodId = str(o, "methodId");
   if (!data.methods.some((m) => m.id === methodId)) fail("methodId", `找不到心法 ${methodId}`);
   const sectRaw = o.sect === null ? null : obj(o.sect, "sect");
@@ -470,6 +492,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     tribulation,
     alchemy,
     methodId,
+    equipment,
     sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
     sectsTried: o.sectsTried as string[],
     sectPeak: num(o, "sectPeak", { integer: true, min: 0 }),

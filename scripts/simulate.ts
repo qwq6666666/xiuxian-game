@@ -13,6 +13,7 @@
 // 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
 // 煉丹策略（alchemy，第 5 個參數）：同 herb（永遠採藥、有錢就買丹），另外材料攢夠就開爐煉聚氣丹與護心丹，量測煉丹有沒有讓這條最划算的路線快過閉關（GDD 第 32 節）。
 // 心法策略（method:穩進訣 id，第 5 個參數，如 method:wenjin）：同 mixed，但每世用指定的心法（無視殘卷解鎖），量測心法有沒有讓首次金丹過快或過慢（GDD 第 35 節）。
+// 法寶策略（forge，第 5 個參數）：同 mixed，最壞情況：每一世一開局就裝備二階的凝氣珠與鎮魂佩（三階要金丹期才能煉，不可能先於首次金丹），並用修煉加成最大的疾行訣，量測疊加後首次金丹有沒有過快（GDD 第 33 節）。
 // 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
 // 例：npm run sim -- 300 1 40 post
 import { canStartBrew, startBrew } from "../src/core/alchemy";
@@ -35,7 +36,7 @@ const lives = Number(process.argv[4] ?? 1);
 // method:<心法 id> 是 mixed 加上指定心法
 const forcedMethod = process.argv[5]?.startsWith("method:") ? process.argv[5].slice(7) : null;
 if (forcedMethod !== null && !gameData.methods.some((m) => m.id === forcedMethod)) throw new Error(`找不到心法 ${forcedMethod}`);
-const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : "simple";
+const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : process.argv[5] === "forge" ? "forge" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -213,7 +214,8 @@ function playLife(start: GameState): GameState {
   let yuanyingEntered: number | null = null;
   let jindanEntered: number | null = null;
   let jindanLeft: number | null = null;
-  let state = startLife(forcedMethod !== null ? { ...start, methodId: forcedMethod } : start, gameData);
+  const forgeStart = strategy === "forge" ? { ...start, methodId: "jixing", equipment: { weapon: "ningqi_zhu", ward: "zhenhun_pei" } } : start;
+  let state = startLife(forcedMethod !== null ? { ...start, methodId: forcedMethod } : forgeStart, gameData);
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
     if (strategy === "herb" && state.phase === "living") state = herbActions(state);
@@ -472,14 +474,14 @@ function campaigns(): void {
         yuanyingHours.push((months * gameData.config.msPerMonth) / 3_600_000);
       }
       // 把道韻優先花在宿慧
-      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation" || strategy === "alchemy") state = buyTalentsBalanced(state);
+      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation" || strategy === "alchemy" || strategy === "forge") state = buyTalentsBalanced(state);
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹", forge: "法寶" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(
@@ -559,6 +561,11 @@ function campaigns(): void {
   if (forcedMethod !== null) {
     console.log(`對照第 35.4 節（心法 ${forcedMethod}）：`);
     console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世；與無相訣（mixed）相比不得慢超過 2 世）`);
+  }
+  if (strategy === "forge") {
+    console.log("對照第 33.4 節（法寶，最壞情況：凝氣珠加鎮魂佩加疾行訣）：");
+    console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
+    console.log(`  ${ok(hours >= 3.5)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
   }
   if (strategy === "alchemy") {
     console.log("對照第 32.4 節（煉丹）：");

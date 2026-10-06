@@ -18,6 +18,8 @@ export interface GameConfig {
   logLimit: number;
   /** 突破失敗損失的修為比例（未計心性） */
   breakthroughFailLoss: number;
+  /** 各項修煉加成合計的設計上限（宗門、心法、法寶最大值相乘後須不超過它；由測試守住） */
+  cultivationBonusCap: number;
   /** 每點心性減少的損失比例 */
   mindLossReduction: number;
   /** 安排資訊面拿來換算「攢多久買得起」的參考物品 id */
@@ -124,13 +126,25 @@ export type ItemEffect =
   /** 突破失敗時自動服用，該次的修為損失比例減少 value（M29） */
   | { kind: "failLossRelief"; value: number }
   /** 材料：不能服用、不在坊市賣，只用來煉製（M29） */
-  | { kind: "material" };
+  | { kind: "material" }
+  /** 法寶（M30）：裝備在 slot 上提供被動加成，只能煉製，不在坊市賣 */
+  | { kind: "artifact"; slot: ArtifactSlot; tier: number; bonus: ArtifactBonus };
+
+export const ARTIFACT_SLOTS = ["weapon", "ward"] as const;
+export type ArtifactSlot = (typeof ARTIFACT_SLOTS)[number];
+
+/** 法寶的加成，省略代表 0：修煉速度、突破失敗損失減免（絕對值）、天劫護體每道加成 */
+export interface ArtifactBonus {
+  cultivation?: number;
+  failLoss?: number;
+  guardBonus?: number;
+}
 
 export interface ItemDef {
   id: string;
   name: string;
   desc: string;
-  /** 坊市價格；材料不賣，價格為 0 */
+  /** 坊市價格；材料與法寶不賣，價格為 0 */
   price: number;
   effect: ItemEffect;
 }
@@ -164,6 +178,10 @@ export const ALCHEMY_SCHEDULE = "alchemy";
 /** 丹方（M29）：閉關煉丹時，每爐先備齊 inputs，經 months 個月出丹，成功率 = baseRate + 悟性 × 每點加成 */
 export interface RecipeDef {
   id: string;
+  /** brew：閉關煉丹，經 months 個月出爐；forge：煉器，花 stones 靈石加材料，即時完成 */
+  kind: "brew" | "forge";
+  /** 煉器要付的靈石；煉丹為 0 */
+  stones: number;
   /** 產出的物品 id */
   output: string;
   inputs: Record<string, number>;
@@ -299,7 +317,7 @@ export interface OriginDef {
 }
 
 /** breakthroughAid（神光）本身不加數值，只被 breakthroughRule 的 requiresTalent、talentRate 引用 */
-export type TalentEffect = "cultivation" | "rerolls" | "fortune" | "stoneCarry" | "failLoss" | "breakthroughAid";
+export type TalentEffect = "cultivation" | "rerolls" | "fortune" | "stoneCarry" | "failLoss" | "breakthroughAid" | "keepArtifact";
 
 /** 輪迴天賦：每級效果 = perLevel，第 n 級的價格 = ceil(base × growth^(目前等級)) */
 export interface TalentDef {
@@ -346,6 +364,8 @@ export interface TextData {
     tribulationFail: string;
     /** 煉丹日誌（M29）：{item} 是產出的丹藥，stop 是材料不足而收爐 */
     alchemy: { done: string; fail: string; stop: string };
+    /** 煉器日誌（M30）：{item} 是煉成的法寶 */
+    forge: { done: string; fail: string };
     /** 宗門日誌（M25）：{sect} 填宗門名稱；promote 以位階 id 為鍵（外門以外的位階都要寫） */
     sect: { join: string; refuse: string; leave: string; promote: Record<string, string> };
     /** 閉關見聞：依閉關長短分檔，結束原因的補句接在後面（時間用完不補） */

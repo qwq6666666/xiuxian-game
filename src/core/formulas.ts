@@ -32,6 +32,8 @@ export interface CultivationParams {
   sectBonus?: number;
   /** 心法加成（M31），-0.04 代表 -4%；預設為 0 */
   methodBonus?: number;
+  /** 法寶加成（M30）；沒裝備為 0 */
+  artifactBonus?: number;
 }
 
 /** 每月修為 = 基礎 × 靈根 × (1 + 根骨 × 係數) × 境界 × 安排 × (1 + 出身) × (1 + 輪迴) */
@@ -45,7 +47,8 @@ export function cultivationPerMonth(p: CultivationParams): number {
     (1 + p.originBonus) *
     (1 + p.reincarnationBonus) *
     (1 + (p.sectBonus ?? 0)) *
-    (1 + (p.methodBonus ?? 0))
+    (1 + (p.methodBonus ?? 0)) *
+    (1 + (p.artifactBonus ?? 0))
   );
 }
 

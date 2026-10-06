@@ -18,8 +18,9 @@ const juqi = recipeOf("juqi_dan", data)!;
 
 describe("煉丹資料", () => {
   it("三個起步丹方：材料都是材料物品，產出不是材料", () => {
-    expect(data.recipes.recipes.map((r) => r.id)).toEqual(["juqi_dan", "huxin_dan", "bilei_fu"]);
-    for (const r of data.recipes.recipes) {
+    const brews = data.recipes.recipes.filter((r) => r.kind === "brew");
+    expect(brews.map((r) => r.id)).toEqual(["juqi_dan", "huxin_dan", "bilei_fu"]);
+    for (const r of brews) {
       for (const id of Object.keys(r.inputs)) expect(data.items.find((i) => i.id === id)!.effect.kind).toBe("material");
       expect(data.items.find((i) => i.id === r.output)!.effect.kind).not.toBe("material");
     }

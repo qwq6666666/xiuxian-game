@@ -22,6 +22,7 @@ import { fillSlots, type SlotValues } from "../data/slots";
 import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { sectPanel } from "./sectinfo";
+import { statPanel } from "./statinfo";
 import { methodRows } from "./methodinfo";
 import { alchemyPanel } from "./alchemyinfo";
 import { attributeGuide, recommendTalent, talentPreview, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
@@ -32,7 +33,7 @@ import { pillPower, splitAge, stageNeed, talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { CLEARED_FLAG, YUANYING_FLAG } from "../core/review";
 import { atBottleneck, lifespanYears, realmOf, scheduleOpen } from "../core/tick";
-import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
+import { ARTIFACT_SLOTS, ATTRIBUTE_KEYS, type ArtifactSlot, type GameData } from "../data/types";
 import {
   ATTR_LABEL,
   choiceBlockReason,
@@ -69,6 +70,9 @@ export interface UiHandlers {
   onTravel(targetId: string): void;
   onWave(choice: WaveChoice): void;
   onMethod(methodId: string): void;
+  onForge(recipeId: string): void;
+  onEquip(itemId: string): void;
+  onUnequip(slot: ArtifactSlot): void;
   onStartBrew(recipeId: string): void;
   onCancelBrew(): void;
   onJoinSect(): void;
@@ -684,7 +688,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
           <details class="fold s-goals" id="goalsFold"${wide ? " open" : ""}><summary>本世目標</summary><ul id="goals" class="goals"></ul><p id="goalHint" class="desc"></p><button id="goalGo" type="button" hidden></button></details>
-          <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}${guideHtml()}${identityHtml(state)}</details>
+          <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}<div id="statDetail" class="stat-detail"></div>${guideHtml()}${identityHtml(state)}</details>
           <details class="fold s-bag"${wide ? " open" : ""}><summary>背包</summary><ul id="bag" class="items"></ul></details>
           <details class="fold s-market"${wide ? " open" : ""}><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>查看世局原因</button></details>
         </aside>
@@ -834,10 +838,26 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
   function renderBag(state: GameState, e: LifeEls): void {
     const owned = data.items.filter((i) => (state.items[i.id] ?? 0) > 0);
-    const key = owned.map((i) => `${i.id}:${state.items[i.id]}:${canUseItem(state, i.id, data)}`).join("|");
+    const key = owned.map((i) => `${i.id}:${state.items[i.id]}:${canUseItem(state, i.id, data)}`).join("|") + `#${state.equipment.weapon}|${state.equipment.ward}`;
     if (key === bagKey) return;
     bagKey = key;
     e.bag.innerHTML = "";
+    // 身上裝備：兩個欄位，可卸下
+    const SLOT_LABEL = { weapon: "法器", ward: "護身" } as const;
+    for (const slot of ARTIFACT_SLOTS) {
+      const id = state.equipment[slot];
+      const li = document.createElement("li");
+      const name = id ? (data.items.find((i) => i.id === id)?.name ?? id) : "（空）";
+      li.innerHTML = `<div><strong>${SLOT_LABEL[slot]}</strong> ${name}</div>`;
+      if (id) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = "卸下";
+        b.addEventListener("click", () => handlers.onUnequip(slot));
+        li.appendChild(b);
+      }
+      e.bag.appendChild(li);
+    }
     if (owned.length === 0) {
       const li = document.createElement("li");
       li.className = "desc";
@@ -846,8 +866,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       return;
     }
     // 背包分「丹藥」「符籙」「材料」三段，每段第一項前放小標
-    const groupOf = (kind: string): number => (kind === "material" ? 2 : kind === "tribulationWard" ? 1 : 0);
-    const GROUP_NAMES = ["丹藥", "符籙", "材料"];
+    const groupOf = (kind: string): number => (kind === "material" ? 3 : kind === "artifact" ? 2 : kind === "tribulationWard" ? 1 : 0);
+    const GROUP_NAMES = ["丹藥", "符籙", "法寶", "材料"];
     let lastGroup = -1;
     for (const item of [...owned].sort((x, y) => groupOf(x.effect.kind) - groupOf(y.effect.kind))) {
       const group = groupOf(item.effect.kind);
@@ -866,6 +886,12 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         b.textContent = "服用";
         b.disabled = !canUseItem(state, item.id, data);
         b.addEventListener("click", () => handlers.onUseItem(item.id));
+        li.appendChild(b);
+      } else if (item.effect.kind === "artifact") {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.textContent = "裝備";
+        b.addEventListener("click", () => handlers.onEquip(item.id));
         li.appendChild(b);
       }
       e.bag.appendChild(li);
@@ -971,6 +997,35 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     box.append(actions);
   }
 
+  /** 當前數值：主要數字加每月修為的乘數明細；內容沒變就不重畫 */
+  let statKey = "";
+  function renderStatDetail(state: GameState): void {
+    const box = stageEl.querySelector<HTMLElement>("#statDetail");
+    if (!box) return;
+    const panel = statPanel(state, data);
+    const key = JSON.stringify(panel);
+    if (key === statKey && box.childElementCount > 0) return;
+    statKey = key;
+    // 重畫時保留「怎麼算」的展開狀態
+    const wasOpen = box.querySelector("details")?.open ?? false;
+    box.replaceChildren();
+    const dl = el("dl", "facts");
+    for (const r of panel.main) {
+      const row = el("div");
+      row.append(el("dt", undefined, r.label), el("dd", undefined, r.value));
+      dl.append(row);
+    }
+    box.append(dl);
+    const det = document.createElement("details");
+    det.className = "guide";
+    det.open = wasOpen;
+    det.append(el("summary", undefined, "每月修為怎麼算"));
+    const list = el("ul");
+    for (const r of panel.breakdown) list.append(el("li", undefined, `${r.label}　${r.value}`));
+    det.append(list);
+    box.append(det);
+  }
+
   /** 煉丹面板：內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
   let alchemyKey = "";
   function renderAlchemy(state: GameState, e: LifeEls): void {
@@ -1008,6 +1063,20 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       list.append(li);
     }
     box.append(list);
+    box.append(el("h2", undefined, "煉器"));
+    box.append(el("p", "desc", "花靈石與材料煉成法寶，裝備後提供被動加成；失敗退回一半材料，靈石不退。轉世時能否帶走，看輪迴天賦「本命」。"));
+    const forgeList = el("ul", "items");
+    for (const f of panel.forge) {
+      const li = document.createElement("li");
+      const need = f.inputs.map((i) => `${i.name} ${i.have}／${i.need}`).join("、");
+      const info = el("div");
+      info.append(el("strong", undefined, f.name), el("small", undefined, `${f.kind}：${f.effect}`), el("small", undefined, `${need}、靈石 ${f.stones}・成功率 ${f.ratePct}%${f.reason ? `　${f.reason}` : ""}`));
+      const go = button("煉製", () => handlers.onForge(f.id), true);
+      go.disabled = !f.canForge;
+      li.append(info, go);
+      forgeList.append(li);
+    }
+    box.append(forgeList);
   }
 
   function renderLife(state: GameState): void {
@@ -1113,6 +1182,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       hint.textContent = scheduleHints(state, sched, slotsOf(state), data).join("　");
       hint.hidden = hint.textContent === "";
     }
+    renderStatDetail(state);
     renderSect(state, e);
     renderAlchemy(state, e);
     renderTribulation(state, e);

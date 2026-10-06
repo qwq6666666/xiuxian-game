@@ -35,6 +35,48 @@
     "effect": { "kind": "failLossRelief", "value": 0.1 }
   },
   {
+    "id": "juling_pan",
+    "name": "聚靈盤",
+    "desc": "巴掌大的陣盤，擺在身側，吐納時靈氣聚得稍微齊整些。法器。",
+    "price": 0,
+    "effect": { "kind": "artifact", "slot": "weapon", "tier": 1, "bonus": { "cultivation": 0.03 } }
+  },
+  {
+    "id": "ningqi_zhu",
+    "name": "凝氣珠",
+    "desc": "含在舌下的靈珠，把散逸的靈氣收回幾分。法器。",
+    "price": 0,
+    "effect": { "kind": "artifact", "slot": "weapon", "tier": 2, "bonus": { "cultivation": 0.06 } }
+  },
+  {
+    "id": "yangyuan_ding",
+    "name": "養元鼎",
+    "desc": "一尊小鼎，鼎中不燃火，只養一口元氣。法器。",
+    "price": 0,
+    "effect": { "kind": "artifact", "slot": "weapon", "tier": 3, "bonus": { "cultivation": 0.09 } }
+  },
+  {
+    "id": "huxin_jing",
+    "name": "護心鏡",
+    "desc": "貼身的小銅鏡，闖關失敗時能替心脈擋去一點衝勁。護身。",
+    "price": 0,
+    "effect": { "kind": "artifact", "slot": "ward", "tier": 1, "bonus": { "failLoss": 0.03 } }
+  },
+  {
+    "id": "zhenhun_pei",
+    "name": "鎮魂佩",
+    "desc": "玉佩溫潤，戴著心神安穩，劫雲壓頂時也鎮得住幾分。護身。",
+    "price": 0,
+    "effect": { "kind": "artifact", "slot": "ward", "tier": 2, "bonus": { "failLoss": 0.05, "guardBonus": 0.02 } }
+  },
+  {
+    "id": "shouyi_huan",
+    "name": "守一環",
+    "desc": "一枚素環，據說戴久了，念頭便不容易散。護身。",
+    "price": 0,
+    "effect": { "kind": "artifact", "slot": "ward", "tier": 3, "bonus": { "failLoss": 0.06, "guardBonus": 0.04 } }
+  },
+  {
     "id": "ling_cao",
     "name": "靈草",
     "desc": "山裡採來的普通靈草，藥性溫和。煉丹的底料。",

@@ -1,6 +1,7 @@
 import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
 import { buyItem, renameCharacter, buyTalent, setSchedule, useItem, zuohua } from "./core/actions";
+import { equip, forge, unequip } from "./core/forge";
 import { setMethod } from "./core/method";
 import { cancelBrew, startBrew } from "./core/alchemy";
 import { attemptBreakthrough, faceWave } from "./core/breakthrough";
@@ -85,6 +86,9 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onBuyItem: (id) => update(buyItem(state, id, data)),
   onWave: (choice) => update(faceWave(state, choice, data)),
   onMethod: (id) => update(setMethod(state, id, data)),
+  onForge: (id) => update(forge(state, id, data)),
+  onEquip: (id) => update(equip(state, id, data)),
+  onUnequip: (slot) => update(unequip(state, slot)),
   onStartBrew: (id) => update(startBrew(state, id, data)),
   onCancelBrew: () => update(cancelBrew(state, data)),
   onJoinSect: () => update(joinSect(state, data)),
