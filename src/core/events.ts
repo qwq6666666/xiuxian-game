@@ -6,6 +6,7 @@ import { ATTRIBUTE_KEYS, type AttributeKey, type ChoiceDef, type Effects, type E
 import { availableFragments, drawFragment, grantFragment } from "./fragments";
 import { eventWeight, outcomeWeight, stageNeed } from "./formulas";
 import { addLog, atBottleneck, eventOf, realmOf, resolveStages, scheduleOf } from "./progress";
+import { methodEffect } from "./method";
 import { endLife } from "./review";
 import { nextInt, nextRandom, pickWeighted } from "./rng";
 import type { Attributes, Changes, GameState } from "./state";
@@ -143,7 +144,7 @@ function applyEffects(
     let id: string | null;
     if ("id" in effects.fragment) id = effects.fragment.id;
     else {
-      const chance = effects.fragment.chance ?? 1;
+      const chance = Math.min(1, (effects.fragment.chance ?? 1) * (1 + methodEffect(s, "fragmentChance", data)));
       let seed = s.rngSeed;
       let hit = true;
       if (chance < 1) {
@@ -241,7 +242,7 @@ export function setAutoChoice(state: GameState, enabled: boolean, data: GameData
  * 見聞直接寫入日誌；抉擇則暫停等待玩家（自動抉擇開啟時立即選第一個）。
  */
 export function advanceEvents(state: GameState, month: number, data: GameData = gameData): GameState {
-  const clock = state.eventClock + scheduleOf(state, data).eventRateMult;
+  const clock = state.eventClock + scheduleOf(state, data).eventRateMult * (1 + methodEffect(state, "eventRate", data));
   if (clock < state.eventThreshold) return { ...state, eventClock: clock };
 
   const [threshold, seed] = nextInt(state.rngSeed, data.config.eventIntervalMin, data.config.eventIntervalMax);

@@ -3,6 +3,7 @@ import { gameData } from "../data/load";
 import type { BreakthroughRule, GameData } from "../data/types";
 import { breakthroughFailLoss, breakthroughRate, talentBonus } from "./formulas";
 import { applyEndingAndContinue, endLife, endsLifeOnEntry } from "./review";
+import { methodEffect } from "./method";
 import { nextRandom } from "./rng";
 import type { GameState } from "./state";
 import { addLog, atBottleneck, nextRealm, realmOf } from "./tick";
@@ -26,7 +27,7 @@ export function currentFailLoss(state: GameState, data: GameData = gameData): nu
     state.attributes.mind,
     talentBonus(state.meta, data.talents, "failLoss"),
   );
-  return Math.max(0, base - (reliefItem(state, data)?.value ?? 0));
+  return Math.max(0, base - (reliefItem(state, data)?.value ?? 0) - methodEffect(state, "failLoss", data));
 }
 
 /** 突破還缺的天賦等級（目前等級不足門檻時回傳門檻），沒有缺則回傳 null */
@@ -134,7 +135,7 @@ export function waveChance(state: GameState, choice: WaveChoice, data: GameData 
   if (choice === "brace") return base;
   if (choice === "guard") {
     const g = data.tribulation.guard;
-    return Math.max(base, Math.min(cap, base + Math.min(g.max, state.attributes.mind * g.perMind)));
+    return Math.max(base, Math.min(cap, base + Math.min(g.max, state.attributes.mind * g.perMind) + methodEffect(state, "guardBonus", data)));
   }
   const ward = wardItem(data);
   if (!ward || (state.items[ward.id] ?? 0) <= 0) return 0;
