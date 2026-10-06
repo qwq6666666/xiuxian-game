@@ -1,6 +1,15 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：維諾格網向量地圖（M50 步驟 1–3，GDD 第 50 節，進行中）
+
+- 分支 `ai/claude-m50`（本機，已 push，最新 6663c0f）。M49 已合併 master（97affb1）並部署成功。步驟 1 `a4e7f9e`：`core/{noise,shape,heap,cells,terrain}.ts`（維諾格網約 3500 格、陸海、高程氣溫濕度、河、湖、12 生態區）；步驟 2 `407104a`：`core/frontier.ts` 改寫成「格子歸屬」（`territoryMapAt`、`regionFight`），新增 `core/provinces.ts`（國界格 30–100）；步驟 3 `6663c0f`：`ui/worldmap.ts` 重寫（canvas 底圖加 SVG 疊層）、`ui/mapart/*`、`mapinfo.ts`、`mapprefs.ts`、`styles/map.css`，刪除 `jiudu-map.webp`。資料：`map.json` 加 `view`、`territoryRules` 簡化；新增 `mapart.json`。存檔不動（v28）。
+- 判定層（`territoriesAt` 等）完全沒動，邏輯座標 400×520；顯示座標 520×400 靠固定仿射（`core/mapview.ts`）；距離一律在邏輯座標比。sim（simple／mixed 1、16 世、post 40）與基準逐字相同。
+- 驗證：`npm run verify` 通過；新增／改寫 `terrain`、`frontier`、`mapgeo`、`style` 測試。瀏覽器看過桌面與 375px（種子 3）。
+- 沒驗證：手機雙指縮放與動畫實際播放；其他世界種子的外觀；國界仍像橫向色帶（只有 5 個地域）、山地偏少。
+- 下一步（GDD 第 50.13）：步驟 4 國界格數滑桿檢查；**步驟 5 S1 宗門／國家關係**（`core/relations.ts`、`src/data/worldRelations.json`、`World.relations`、WorldChange kind "relation"、`deriveSeed(world.seed, 47)`、只排在既有變化之後；光暈色分互惠／世仇／兩者，選取時才畫關係線，資訊卡加關係行；GDD 第 15 節要寫例外）；步驟 6 介面精簡；步驟 7 文件、sim、verify、桌面與 375px 驗收。步驟 5 後是檢查點 2，請使用者看過再續。WORLD.md 補充（GDD 50.10）只是提案，需使用者同意，文字由 ChatGPT 起草。未確認的預設：關係每世 0–2 次變動、羊皮紙淺色主題、不做縮圖。
+- 給 ChatGPT：請看 `src/ui/` 的地圖視覺與手機操作（圖層鈕、資訊卡高度、縮放鈕、折疊區）。後續候選 M51（地域與國家脫鉤、國家數可調、存檔 v29）、M52、M53。
+
 
 ## 2026-10-07：疆界流變（M49，GDD 第 49 節）
 
