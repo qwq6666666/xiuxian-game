@@ -38,3 +38,15 @@ describe("一世開場文字（opening.json）", () => {
     for (const e of opening) expect(e.text.split(/[。！？]/).filter(Boolean).length).toBeLessThanOrEqual(3);
   });
 });
+
+describe("怪物多樣性（monsters.json）", () => {
+  it("凡人到元嬰每個境界至少四種怪，且同境界的平均戰力係數與獎勵相近", () => {
+    for (const realm of ["mortal", "lianqi", "zhuji", "jindan", "yuanying"]) {
+      const pool = data.monsters.monsters.filter((m) => m.realm === realm);
+      expect(pool.length).toBeGreaterThanOrEqual(4);
+      const meanPower = pool.reduce((a, m) => a + m.power, 0) / pool.length;
+      expect(meanPower).toBeGreaterThan(0.9);
+      expect(meanPower).toBeLessThan(1.25);
+    }
+  });
+});

@@ -3,6 +3,12 @@
 > 雲端工作階段專用，新的一筆寫在最上面；本機的紀錄在 `claude.md`。規則見 `AGENTS.md`「本機與雲端並行」。
 > 雲端只推 `ai/claude-cloud`，由本機整合者合併進 `master`。
 
+### 2026-10-06 怪物擴充（GDD 38.1）
+- 分支：master-mxid6d（PR #1）。`monsters.json` 新增 10 種怪（各境界 2 種，凡人到元嬰），格式不變；`tests/opening.test.ts` 加怪物池檢查。
+- 驗證：`npm run verify` 全過；`sim` mixed 單世／16 世、hunt 16 世（數字見 GDD 38.1）。對照：只還原 `monsters.json` 的 mixed 抉擇 16.1、首次金丹第 8 世、通關 4.6 小時。
+- 沒驗證：simple／post／herb／wander／alchemy／forge 沒再跑（不涉及歷練，預期只因亂數路徑微移）；遊戲內顯示；怪物圖（沒有圖）。
+- 注意：mixed 的抉擇 16.5 貼近上限 17，建議本機再跑 `post` 與 3 個種子確認。
+
 ### 2026-10-06 設計提案：怪物圖鑑、隔世重逢
 - 分支：master-mxid6d（PR #1）。只改文件：`docs/GDD.md` 新增 16.3（怪物圖鑑）與 16.4（隔世重逢的故人），`docs/TODO.md` 兩條待確認項目。沒動程式與存檔。
 - 驗證：只有文件，未跑測試。

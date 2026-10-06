@@ -47,6 +47,28 @@
       "win": "野豬撞在樹上，晃了兩晃，終究沒能再爬起來。"
     },
     {
+      "id": "bamboo_viper",
+      "name": "青竹蛇",
+      "realm": "mortal",
+      "power": 0.9,
+      "reward": 1,
+      "stones": { "min": 0, "max": 1 },
+      "drops": [],
+      "appear": "枯葉堆裡忽然一動，一條青竹蛇昂起頭，與你對上了眼。",
+      "win": "青竹蛇縮回草叢，再沒露頭。"
+    },
+    {
+      "id": "one_eyed_lynx",
+      "name": "獨眼山貓",
+      "realm": "mortal",
+      "power": 1.0,
+      "reward": 2,
+      "stones": { "min": 0, "max": 2 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.1 }],
+      "appear": "岩縫上伏著一隻獨眼山貓，尾巴一下一下掃著石面。",
+      "win": "山貓縱身躍上岩頂，回頭看了你一眼，走了。"
+    },
+    {
       "id": "mountain_imp",
       "name": "山魈",
       "realm": "lianqi",
@@ -78,6 +100,28 @@
       "drops": [{ "itemId": "ling_cao", "chance": 0.2 }, { "itemId": "ling_sha", "chance": 0.1 }],
       "appear": "一頭鐵背熊立起身來，背上的皮毛硬得像鐵片。",
       "win": "鐵背熊轟然倒地，震得落葉簌簌。你站了一會，等手不再發抖。"
+    },
+    {
+      "id": "mire_toad",
+      "name": "泥沼蟾",
+      "realm": "lianqi",
+      "power": 0.9,
+      "reward": 1,
+      "stones": { "min": 1, "max": 2 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.15 }],
+      "appear": "泥沼裡鼓起一個大泡，一隻泥沼蟾睜開了眼，喉囊脹得像面鼓。",
+      "win": "泥沼蟾哇的一聲沉回泥裡，只剩幾圈漣漪。"
+    },
+    {
+      "id": "hundred_foot_centipede",
+      "name": "百足蜈",
+      "realm": "lianqi",
+      "power": 1.2,
+      "reward": 3,
+      "stones": { "min": 2, "max": 4 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.15 }, { "itemId": "ling_cao", "chance": 0.1 }],
+      "appear": "石下鑽出一條百足蜈，數十隻腳同時叩擊地面，聲如細雨。",
+      "win": "百足蜈蜷成一團，抽搐了一陣才不動。"
     },
     {
       "id": "bone_spider",
@@ -113,6 +157,28 @@
       "win": "裂石獸崩成一地碎石，再不動彈。"
     },
     {
+      "id": "moon_shadow_wolf",
+      "name": "月影狼",
+      "realm": "zhuji",
+      "power": 0.9,
+      "reward": 1,
+      "stones": { "min": 2, "max": 5 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.2 }],
+      "appear": "月色下，一匹毛色如霜的狼自林間踱出，影子比牠的身形長了一倍。",
+      "win": "月影狼低嚎一聲，退入林影，影子慢了半拍才跟上。"
+    },
+    {
+      "id": "black_scale_python",
+      "name": "玄鱗蟒",
+      "realm": "zhuji",
+      "power": 1.2,
+      "reward": 3,
+      "stones": { "min": 4, "max": 7 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.2 }],
+      "appear": "枯井裡滑出一條玄鱗蟒，鱗片黑得不反光，纏過的地方草都伏了。",
+      "win": "玄鱗蟒鬆開盤勢，滑回井中，井口傳來一陣悶響。"
+    },
+    {
       "id": "deep_dragon",
       "name": "潛淵蛟",
       "realm": "jindan",
@@ -135,6 +201,28 @@
       "win": "焚羽禽墜入林中，火光漸熄，只餘一縷青煙。"
     },
     {
+      "id": "stele_tortoise",
+      "name": "負碑龜",
+      "realm": "jindan",
+      "power": 1.1,
+      "reward": 2,
+      "stones": { "min": 7, "max": 14 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.25 }],
+      "appear": "古道旁一塊石碑慢慢抬起頭來，原來是隻背著碑的老龜，碑上字跡早已磨平。",
+      "win": "負碑龜縮進殼裡，任你敲了半日也不再出聲。"
+    },
+    {
+      "id": "mist_mane_lion",
+      "name": "霧鬃獅",
+      "realm": "jindan",
+      "power": 1.25,
+      "reward": 3,
+      "stones": { "min": 9, "max": 18 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.3 }, { "itemId": "ling_cao", "chance": 0.2 }],
+      "appear": "山谷裡的霧忽然散開，一頭鬃毛如煙的獅子自霧中走出，身後的霧又合攏了。",
+      "win": "霧鬃獅甩了甩鬃毛，隱入濃霧，霧也跟著退了。"
+    },
+    {
       "id": "ancient_ape",
       "name": "古猿",
       "realm": "yuanying",
@@ -155,6 +243,28 @@
       "drops": [{ "itemId": "ling_sha", "chance": 0.4 }],
       "appear": "雲層裡悶雷滾過，一頭身帶雷紋的巨獸踏空而來。",
       "win": "雷紋獸帶著殘雷遁入雲中。地面焦黑一片，許久不見草長。"
+    },
+    {
+      "id": "cloud_splitting_roc",
+      "name": "裂雲鵬",
+      "realm": "yuanying",
+      "power": 1.1,
+      "reward": 2,
+      "stones": { "min": 14, "max": 26 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.3 }],
+      "appear": "雲層被一道長影劈開，裂雲鵬懸在你頭頂，兩翼遮去了半邊天光。",
+      "win": "裂雲鵬長鳴一聲，掠過雲海，天光重又落下。"
+    },
+    {
+      "id": "mountain_guard_beast",
+      "name": "鎮嶽猙",
+      "realm": "yuanying",
+      "power": 1.3,
+      "reward": 3,
+      "stones": { "min": 18, "max": 32 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.4 }],
+      "appear": "山腹深處傳來悶吼，一頭周身如岩的猙獸破壁而出，前爪壓得地面下陷。",
+      "win": "鎮嶽猙退入山腹，崩落的碎石慢慢停了。"
     }
   ]
 }
