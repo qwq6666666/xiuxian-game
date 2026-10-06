@@ -10,6 +10,7 @@
   "startRerolls": 1,
   "logLimit": 100,
   "breakthroughFailLoss": 0.3,
+  "cultivationBonusCap": 0.6,
   "mindLossReduction": 0.02,
   "priceRefItemId": "zhuji_dan",
   "eventIntervalMin": 16,

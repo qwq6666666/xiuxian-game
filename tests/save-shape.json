@@ -1,5 +1,5 @@
 {
-  "version": 19,
+  "version": 20,
   "shape": {
     "TravelState": [
       "locationId",
@@ -15,6 +15,7 @@
       "fragments",
       "goals",
       "huashen",
+      "keptArtifacts",
       "lastLife",
       "lives",
       "reached",
@@ -97,6 +98,7 @@
       "carriedStones",
       "cultivation",
       "cultivationBonus",
+      "equipment",
       "eventClock",
       "eventCounts",
       "eventThreshold",

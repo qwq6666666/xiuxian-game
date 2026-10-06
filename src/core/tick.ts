@@ -9,6 +9,7 @@ import type { GameState } from "./state";
 import { advanceTravel } from "./travel";
 import { sectBonus, stepSect } from "./sect";
 import { stepAlchemy } from "./alchemy";
+import { artifactBonus } from "./forge";
 import { methodEffect } from "./method";
 
 /** 材料掉落亂數的雜湊鹽值，與世界生成用的編號錯開 */
@@ -84,6 +85,7 @@ export function monthlyGain(state: GameState, sched: ScheduleDef, data: GameData
     reincarnationBonus: talentBonus(state.meta, data.talents, "cultivation"),
     sectBonus: sectBonus(state, data),
     methodBonus: methodEffect(state, "cultivation", data),
+    artifactBonus: artifactBonus(state, "cultivation", data),
   });
 }
 

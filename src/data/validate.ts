@@ -35,6 +35,8 @@ import {
   type ItemDef,
   type ItemEffect,
   ALCHEMY_SCHEDULE,
+  ARTIFACT_SLOTS,
+  type ArtifactSlot,
   type MethodDef,
   type RecipeDef,
   type RecipesData,
@@ -159,6 +161,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     startRerolls: num(o, "startRerolls", file, { min: 0, integer: true }),
     logLimit: num(o, "logLimit", file, { gt: 0, integer: true }),
     breakthroughFailLoss: num(o, "breakthroughFailLoss", file, { min: 0 }),
+    cultivationBonusCap: num(o, "cultivationBonusCap", file, { gt: 0 }),
     mindLossReduction: num(o, "mindLossReduction", file, { min: 0 }),
     priceRefItemId: str(o, "priceRefItemId", file),
     eventIntervalMin: eventMin,
@@ -331,15 +334,25 @@ export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
       effect = { kind, value: num(e, "value", ew, { gt: 0, max: 0.3 }) };
     } else if (kind === "material") {
       effect = { kind };
+    } else if (kind === "artifact") {
+      const slot = e.slot;
+      if (!(ARTIFACT_SLOTS as readonly unknown[]).includes(slot)) return fail(ew, "slot", `必須是 ${ARTIFACT_SLOTS.join("、")}，目前為 ${JSON.stringify(slot)}`);
+      const bw = `${ew} 欄位 bonus`;
+      const b = obj(e.bonus, bw);
+      for (const k of Object.keys(b)) if (!["cultivation", "failLoss", "guardBonus"].includes(k)) fail(bw, k, "不是法寶加成");
+      const opt = (key: string, max: number) => (b[key] !== undefined ? { [key]: num(b, key, bw, { gt: 0, max }) } : {});
+      const bonus = { ...opt("cultivation", 0.12), ...opt("failLoss", 0.1), ...opt("guardBonus", 0.1) };
+      if (Object.keys(bonus).length === 0) fail(ew, "bonus", "至少要有一項加成");
+      effect = { kind, slot: slot as ArtifactSlot, tier: num(e, "tier", ew, { min: 1, max: 3, integer: true }), bonus };
     } else {
-      return fail(ew, "kind", `必須是 cultivationFraction、lifespan、breakthrough、tribulationWard、failLossRelief 或 material，目前為 ${JSON.stringify(kind)}`);
+      return fail(ew, "kind", `必須是 cultivationFraction、lifespan、breakthrough、tribulationWard、failLossRelief、material 或 artifact，目前為 ${JSON.stringify(kind)}`);
     }
     return {
       id,
       name: str(o, "name", where),
       desc: str(o, "desc", where),
       // 材料不在坊市賣，價格固定為 0；其餘必須是正整數
-      price: effect.kind === "material" ? num(o, "price", where, { min: 0, max: 0, integer: true }) : num(o, "price", where, { gt: 0, integer: true }),
+      price: effect.kind === "material" || effect.kind === "artifact" ? num(o, "price", where, { min: 0, max: 0, integer: true }) : num(o, "price", where, { gt: 0, integer: true }),
       effect,
     };
   });
@@ -387,7 +400,12 @@ export function validateRecipes(raw: unknown, file = "recipes.json"): RecipesDat
     const inputs = intRecord(ro, "inputs", w, 1);
     if (Object.keys(inputs).length === 0) fail(w, "inputs", "至少要有一種材料");
     const baseRate = num(ro, "baseRate", w, { gt: 0, max: 1 });
-    return { id, output: str(ro, "output", w), inputs, months: num(ro, "months", w, { gt: 0, integer: true }), baseRate, realmMin: str(ro, "realmMin", w) };
+    const kind = ro.kind === undefined ? "brew" : ro.kind;
+    if (kind !== "brew" && kind !== "forge") fail(w, "kind", `必須是 brew 或 forge，目前為 ${JSON.stringify(kind)}`);
+    // 煉丹要經過數個月、不花靈石；煉器即時完成（月數為 0）、要花靈石
+    const months = kind === "brew" ? num(ro, "months", w, { gt: 0, integer: true }) : num(ro, "months", w, { min: 0, max: 0, integer: true });
+    const stones = kind === "forge" ? num(ro, "stones", w, { gt: 0, integer: true }) : ro.stones === undefined ? 0 : num(ro, "stones", w, { min: 0, max: 0, integer: true });
+    return { id, kind, stones, output: str(ro, "output", w), inputs, months, baseRate, realmMin: str(ro, "realmMin", w) };
   });
   uniqueIds(recipes, `${file} 欄位 recipes`);
   return { rules, recipes };
@@ -615,9 +633,10 @@ export function validateTalents(raw: unknown, file = "talents.json"): TalentDef[
       effect !== "fortune" &&
       effect !== "stoneCarry" &&
       effect !== "failLoss" &&
-      effect !== "breakthroughAid"
+      effect !== "breakthroughAid" &&
+      effect !== "keepArtifact"
     ) {
-      fail(where, "effect", `必須是 cultivation、rerolls、fortune、stoneCarry、failLoss 或 breakthroughAid，目前為 ${JSON.stringify(effect)}`);
+      fail(where, "effect", `必須是 cultivation、rerolls、fortune、stoneCarry、failLoss、breakthroughAid 或 keepArtifact，目前為 ${JSON.stringify(effect)}`);
     }
     const cost = obj(o.cost, `${where} 欄位 cost`);
     return {
@@ -719,6 +738,11 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
         const aw = `${where}.alchemy`;
         const ao = obj(log.alchemy, aw);
         return { done: str(ao, "done", aw), fail: str(ao, "fail", aw), stop: str(ao, "stop", aw) };
+      })(),
+      forge: (() => {
+        const fw = `${where}.forge`;
+        const fo = obj(log.forge, fw);
+        return { done: str(fo, "done", fw), fail: str(fo, "fail", fw) };
       })(),
       sect: (() => {
         const sw = `${where}.sect`;
@@ -1335,7 +1359,9 @@ export function validateGameData(data: GameData): GameData {
     const where = `recipes.json 第 ${i + 1} 筆（${rc.id}）`;
     has(itemIds, rc.output, `${where} 的 output`, "items.json");
     has(realmIds, rc.realmMin, `${where} 的 realmMin`, "realms.json");
-    if (data.items.find((x) => x.id === rc.output)?.effect.kind === "material") throw new Error(`${where} 的 output：${rc.output} 是材料，不能是產出`);
+    const outKind = data.items.find((x) => x.id === rc.output)?.effect.kind;
+    if (outKind === "material") throw new Error(`${where} 的 output：${rc.output} 是材料，不能是產出`);
+    if ((rc.kind === "forge") !== (outKind === "artifact")) throw new Error(`${where} 的 output：煉器（forge）只能產出法寶，煉丹（brew）不能產出法寶`);
     for (const id of Object.keys(rc.inputs)) {
       has(itemIds, id, `${where} 的 inputs`, "items.json");
       if (data.items.find((x) => x.id === id)?.effect.kind !== "material") throw new Error(`${where} 的 inputs：${id} 不是材料`);

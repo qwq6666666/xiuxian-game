@@ -1,6 +1,12 @@
 {
   "rules": { "insightPerPoint": 0.01, "maxRate": 0.95, "failRefund": 0.5 },
   "recipes": [
+    { "id": "forge_juling_pan", "kind": "forge", "stones": 60, "output": "juling_pan", "inputs": { "ling_sha": 2, "fu_zhi": 1 }, "months": 0, "baseRate": 0.8, "realmMin": "lianqi" },
+    { "id": "forge_ningqi_zhu", "kind": "forge", "stones": 200, "output": "ningqi_zhu", "inputs": { "ling_sha": 4, "fu_zhi": 2 }, "months": 0, "baseRate": 0.65, "realmMin": "zhuji" },
+    { "id": "forge_yangyuan_ding", "kind": "forge", "stones": 600, "output": "yangyuan_ding", "inputs": { "ling_sha": 8, "fu_zhi": 4 }, "months": 0, "baseRate": 0.5, "realmMin": "jindan" },
+    { "id": "forge_huxin_jing", "kind": "forge", "stones": 60, "output": "huxin_jing", "inputs": { "ling_sha": 2, "fu_zhi": 1 }, "months": 0, "baseRate": 0.8, "realmMin": "lianqi" },
+    { "id": "forge_zhenhun_pei", "kind": "forge", "stones": 200, "output": "zhenhun_pei", "inputs": { "ling_sha": 4, "fu_zhi": 2 }, "months": 0, "baseRate": 0.65, "realmMin": "zhuji" },
+    { "id": "forge_shouyi_huan", "kind": "forge", "stones": 600, "output": "shouyi_huan", "inputs": { "ling_sha": 8, "fu_zhi": 4 }, "months": 0, "baseRate": 0.5, "realmMin": "jindan" },
     { "id": "juqi_dan", "output": "juqi_dan", "inputs": { "ling_cao": 4 }, "months": 2, "baseRate": 0.7, "realmMin": "lianqi" },
     { "id": "huxin_dan", "output": "huxin_dan", "inputs": { "ling_cao": 3, "ling_sha": 1 }, "months": 3, "baseRate": 0.6, "realmMin": "lianqi" },
     { "id": "bilei_fu", "output": "bilei_fu", "inputs": { "fu_zhi": 2, "ling_sha": 1 }, "months": 2, "baseRate": 0.6, "realmMin": "zhuji" }

@@ -24,7 +24,7 @@ export function renameCharacter(state: GameState, input: string, data: GameData 
 
 export function canBuyItem(state: GameState, itemId: string, data: GameData = gameData): boolean {
   const item = data.items.find((i) => i.id === itemId);
-  if (!item || item.effect.kind === "material" || state.phase !== "living" || state.spiritStones < itemPrice(state, itemId, data)) return false;
+  if (!item || item.effect.kind === "material" || item.effect.kind === "artifact" || state.phase !== "living" || state.spiritStones < itemPrice(state, itemId, data)) return false;
   // 有每世上限的丹藥，買了用不掉就不讓買
   if (item.effect.kind === "lifespan") {
     return (state.items[itemId] ?? 0) + (state.itemsUsed[itemId] ?? 0) < item.effect.maxPerLife;
@@ -85,6 +85,7 @@ export function canUseItem(state: GameState, itemId: string, data: GameData = ga
     case "tribulationWard":
     case "failLossRelief":
     case "material":
+    case "artifact":
       return false;
   }
 }

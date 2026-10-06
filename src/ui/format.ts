@@ -52,6 +52,8 @@ export function describeTalent(talent: TalentDef, level: number): string {
       return `保留上一世 ${pct(talent.perLevel)} 的靈石`;
     case "failLoss":
       return `突破失敗的修為損失 −${pct(talent.perLevel)}`;
+    case "keepArtifact":
+      return `轉世時帶走 ${talent.perLevel * level} 件法寶`;
     case "breakthroughAid":
       return `衝擊大關之時用得上，等級愈高愈有把握（${level} 級）`;
   }
@@ -199,6 +201,12 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
       break;
     case "zuohua":
       template = log.zuohua;
+      break;
+    case "forgeDone":
+      template = log.forge.done;
+      break;
+    case "forgeFail":
+      template = log.forge.fail;
       break;
     case "alchemyDone":
       template = log.alchemy.done;

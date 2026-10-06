@@ -31,7 +31,7 @@ export function hasMaterials(state: GameState, recipe: RecipeDef): boolean {
 export function canStartBrew(state: GameState, recipeId: string, data: GameData = gameData): boolean {
   const recipe = recipeOf(recipeId, data);
   const sched = data.schedules.find((s) => s.id === ALCHEMY_SCHEDULE);
-  if (!recipe || !sched || state.phase !== "living" || state.alchemy !== null) return false;
+  if (!recipe || recipe.kind !== "brew" || !sched || state.phase !== "living" || state.alchemy !== null) return false;
   return recipeOpen(state, recipe, data) && hasMaterials(state, recipe);
 }
 

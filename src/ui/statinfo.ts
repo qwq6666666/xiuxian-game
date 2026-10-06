@@ -1,6 +1,7 @@
 // 「當前數值」面板的顯示資料：把影響修煉速度的每一項乘數攤開，只供顯示，全由核心函式與資料算出。
 import { currentBreakthroughRate, currentFailLoss } from "../core/breakthrough";
 import { talentBonus } from "../core/formulas";
+import { artifactBonus } from "../core/forge";
 import { methodEffect, methodOf } from "../core/method";
 import { scheduleOf } from "../core/progress";
 import { sectBonus } from "../core/sect";
@@ -40,6 +41,7 @@ export function statPanel(state: GameState, data: GameData): StatPanel {
     ["輪迴天賦", talentBonus(state.meta, data.talents, "cultivation")],
     ["宗門", sectBonus(state, data)],
     [`心法（${methodOf(state, data).name}）`, methodEffect(state, "cultivation", data)],
+    ["法寶", artifactBonus(state, "cultivation", data)],
   ];
   for (const [label, v] of extras) if (v !== 0) breakdown.push({ label, value: signed(v) });
 

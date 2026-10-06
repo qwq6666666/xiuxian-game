@@ -72,6 +72,15 @@
     }
   },
   {
+    "id": "benming",
+    "name": "本命",
+    "desc": "與器相伴日久，神魂與它有了牽連，轉世時可帶走幾件。",
+    "maxLevel": 3,
+    "effect": "keepArtifact",
+    "perLevel": 1,
+    "cost": { "base": 30, "growth": 2.5 }
+  },
+  {
     "id": "shenguang",
     "name": "神光",
     "desc": "道韻積得深了，神魂深處似乎有什麼在亮。",
