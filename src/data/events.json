@@ -815,7 +815,7 @@
     "highlight": 2,
     "title": "{wanderers}行腳客",
     "text": "一名行腳客借宿你處，自稱出身{wanderers}，夜裡與你聊到三更。",
-    "weight": 7,
+    "weight": 9,
     "tone": "neutral",
     "scheduleWeights": { "wander": 3 },
     "conditions": { "ageMin": 16, "fragmentAvailable": 3 },
@@ -875,7 +875,7 @@
     "highlight": 2,
     "title": "遺落的文書",
     "text": "山道上，一名身著{guard}外門服飾的弟子行色匆匆，包袱鬆了口，掉出一份文書。他渾然不覺，已走遠了。",
-    "weight": 7,
+    "weight": 9,
     "tone": "neutral",
     "conditions": { "realmMin": "lianqi", "fragmentAvailable": 3 },
     "choices": [
