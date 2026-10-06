@@ -90,6 +90,13 @@ export function canUseItem(state: GameState, itemId: string, data: GameData = ga
   }
 }
 
+/** 連續服用到不能再服為止（丹毒、瓶頸、用盡都會停）；一個也服不了時原樣回傳 */
+export function useAll(state: GameState, itemId: string, data: GameData = gameData): GameState {
+  let s = state;
+  while (canUseItem(s, itemId, data)) s = useItem(s, itemId, data);
+  return s;
+}
+
 export function useItem(state: GameState, itemId: string, data: GameData = gameData): GameState {
   if (!canUseItem(state, itemId, data)) return state;
   const item = data.items.find((i) => i.id === itemId)!;

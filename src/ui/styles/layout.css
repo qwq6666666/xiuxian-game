@@ -67,3 +67,14 @@
 .resbar { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin-top: var(--sp-2); }
 .resbar:empty { display: none; }
 .chip { min-height: 0; padding: 0 var(--sp-2); font-size: var(--fs-sm); border-radius: 999px; color: var(--text); }
+
+/* 煉丹進度條與煉製頁的結果回饋；分頁切換淡入；有新結果的分頁亮提示點 */
+.brew-bar { position: relative; height: 20px; margin: var(--sp-2) 0; background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-sm); overflow: hidden; }
+.brew-fill { height: 100%; background: var(--accent-dim); transition: width var(--dur-base) var(--ease); }
+.brew-bar span { position: absolute; inset: 0; text-align: center; font-size: var(--fs-sm); line-height: 20px; }
+.s-alchemy.flash-up { animation: flash-bg-up var(--dur-slow) var(--ease); }
+.s-alchemy.flash-down { animation: flash-bg-down var(--dur-slow) var(--ease); }
+@keyframes flash-bg-up { 0% { box-shadow: inset 0 0 0 2px var(--accent); } 100% { box-shadow: inset 0 0 0 2px transparent; } }
+@keyframes flash-bg-down { 0% { box-shadow: inset 0 0 0 2px var(--bad); } 100% { box-shadow: inset 0 0 0 2px transparent; } }
+.side > [data-tab] { animation: fold-in var(--dur-base) var(--ease); }
+.tabs button[data-badge]::after { content: " ●"; color: var(--accent); font-size: var(--fs-xs); }

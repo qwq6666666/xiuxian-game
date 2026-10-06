@@ -239,3 +239,17 @@ describe("護心丹", () => {
 
 /** 嘗試突破並把天劫每一道硬抗到結束 */
 const attemptAuto = (s: GameState): GameState => autoTribulation(attemptRaw(s, false), data);
+
+describe("連服", () => {
+  it("連續服用到丹毒上限為止；沒有丹藥或不能服時原樣回傳", async () => {
+    const { useAll } = await import("../src/core/actions");
+    const { pillsTaken } = await import("../src/core/actions");
+    const s = lianqi({ items: { juqi_dan: 9 }, cultivation: 0 });
+    const t = useAll(s, "juqi_dan", data);
+    const limit = (data.items.find((i) => i.id === "juqi_dan")!.effect as { falloff: number[] }).falloff.length;
+    expect(pillsTaken(t)).toBe(limit);
+    expect(t.items.juqi_dan).toBe(9 - limit);
+    expect(useAll(t, "juqi_dan", data)).toBe(t);
+    expect(useAll(lianqi(), "juqi_dan", data).items.juqi_dan ?? 0).toBe(0);
+  });
+});
