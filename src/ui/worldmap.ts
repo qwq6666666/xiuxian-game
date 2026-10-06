@@ -87,24 +87,28 @@ export function buildWorldMap(
   head.append(close);
   frag.append(head, html("p", "desc", "九渡洲。山河未改，行路的人已不同。"), layout);
 
-  const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "map-svg", role: "img", "aria-label": "九渡洲地圖" });
+  const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "map-svg", role: "group", "aria-label": "九渡洲地圖" });
 
-  // 標記共用：點選、放大點擊範圍（手機上好點）
+  // 標記共用：點選、鍵盤操作、放大點擊範圍（手機上好點）
   const interactive = (el: SVGElement, target: MapTarget, hit?: [number, number, number]): SVGElement => {
-    el.classList.add("map-hit");
-    if (sameTarget(selected, target)) el.classList.add("selected");
-    el.addEventListener("click", (ev) => {
+    const action = hit ? svg("g") : el;
+    if (hit) action.append(svg("circle", { cx: hit[0], cy: hit[1], r: hit[2], fill: "transparent" }), el);
+    action.classList.add("map-hit");
+    if (sameTarget(selected, target)) action.classList.add("selected");
+    action.setAttribute("role", "button");
+    action.setAttribute("tabindex", "0");
+    action.setAttribute("aria-label", describeTarget(target, world, snap, data).title);
+    const choose = (ev: Event) => {
       ev.stopPropagation();
       handlers.onSelect(target);
+    };
+    action.addEventListener("click", choose);
+    action.addEventListener("keydown", (ev) => {
+      if (ev.key !== "Enter" && ev.key !== " ") return;
+      ev.preventDefault();
+      choose(ev);
     });
-    if (!hit) return el;
-    const g = svg("g");
-    g.append(svg("circle", { cx: hit[0], cy: hit[1], r: hit[2], fill: "transparent" }), el);
-    g.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      handlers.onSelect(target);
-    });
-    return g;
+    return action;
   };
 
   // 地域底線與分區；國家易手後依世局年份逐步換色。

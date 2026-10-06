@@ -295,6 +295,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
   function buildMap(state: GameState): void {
     const focusedOnDestination = document.activeElement?.classList.contains("map-destination") ?? false;
+    const focusedMapLabel = document.activeElement?.classList.contains("map-hit")
+      ? document.activeElement.getAttribute("aria-label")
+      : null;
     const content = buildWorldMap(state, data, mapSelected, {
         onSelect(target) {
           mapSelected = target;
@@ -310,6 +313,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     if (state.phase !== "rolling") content.append(marketLink);
     mapCard.replaceChildren(content);
     if (focusedOnDestination) mapCard.querySelector<HTMLSelectElement>(".map-destination")?.focus({ preventScroll: true });
+    if (focusedMapLabel) {
+      Array.from(mapCard.querySelectorAll<SVGElement>(".map-hit"))
+        .find((el) => el.getAttribute("aria-label") === focusedMapLabel)
+        ?.focus({ preventScroll: true });
+    }
   }
 
   function openMap(): void {

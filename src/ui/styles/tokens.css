@@ -27,6 +27,8 @@
   --map-mountain: #6f7a6a;
   --map-fallen: #777777;
   --map-gray: #6a6f77;
+  --map-marker-outline: #101417;
+  --map-marker-focus: #f4ead2;
 
   /* 間距（4px 基準） */
   --sp-1: 4px;

@@ -45,6 +45,12 @@ describe("樣式 token", () => {
     expect(contrast(c.line, c.panel)).toBeLessThan(contrast(c.muted, c.panel));
   });
 
+  it("地圖標記填色與共用描邊的對比 ≥ 3:1", () => {
+    for (const marker of ["map-stairs", "map-ferry", "map-broken", "map-merchant", "map-mountain", "map-fallen", "map-gray"]) {
+      expect(contrast(c[marker], c["map-marker-outline"]), marker).toBeGreaterThanOrEqual(3);
+    }
+  });
+
   it("除了 tokens.css，介面樣式與程式都不寫死色碼", () => {
     const files = [
       ...readdirSync(join(UI, "styles")).filter((f) => f !== "tokens.css").map((f) => join(UI, "styles", f)),
@@ -110,5 +116,17 @@ describe("手機地圖旅行", () => {
     expect(mapText).toMatch(/\.map-destination\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%/);
     expect(mapText).toMatch(/\.map-travel-go\s*\{[^}]*width:\s*100%[^}]*min-height:\s*var\(--tap\)/);
     expect(worldMapText).toContain('"primary map-travel-go"');
+  });
+});
+
+describe("地圖鍵盤操作", () => {
+  it("每個可點標記可聚焦，並以 Enter 或空白鍵選取", () => {
+    expect(worldMapText).toContain('action.setAttribute("role", "button")');
+    expect(worldMapText).toContain('action.setAttribute("tabindex", "0")');
+    expect(worldMapText).toContain('action.setAttribute("aria-label", describeTarget(target, world, snap, data).title)');
+    expect(worldMapText).toContain('ev.key !== "Enter" && ev.key !== " "');
+    expect(renderText).toContain('document.activeElement?.classList.contains("map-hit")');
+    expect(renderText).toContain('el.getAttribute("aria-label") === focusedMapLabel');
+    expect(mapText).toMatch(/\.map-hit:focus-visible\s*\{[^}]*map-marker-focus/);
   });
 });
