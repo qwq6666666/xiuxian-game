@@ -28,7 +28,7 @@ export function applyOffline(
     state,
     summary: { months: 0, gained: 0, stop },
   });
-  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null) return idle("elapsed");
+  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null) return idle("elapsed");
   if (!(elapsedMs >= config.offlineMinSeconds * 1000)) return idle("elapsed");
 
   const capped = Math.min(elapsedMs, config.offlineMaxHours * 3_600_000);

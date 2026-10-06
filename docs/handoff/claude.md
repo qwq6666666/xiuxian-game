@@ -2,6 +2,13 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：歷練遇怪（M34，GDD 第 38 節）
+
+- 分支 `ai/claude-m34`。外出歷練每月 15% 遇怪（凡人到元嬰共 12 種，`src/data/monsters.json`），時間暫停，玩家選穩打、強攻、符籙（耗避雷符）或逃；3 回合內打倒得修為、靈石與靈砂／靈草，敗損 5% 修為，打滿平手。核心在 `src/core/encounter.ts`，亂數走派生種子；`monthlyGain` 抽到 `src/core/gain.ts` 避免循環匯入（`tick.ts` 仍匯出它）。存檔 v22 新增 `encounter`。介面：遭遇視窗（`render.ts` 的 `renderHunt`、`vignette.ts` 的 `huntVignetteHtml`）。
+- 驗證：`npm run verify` 全過（564 個測試，新增 `tests/encounter.test.ts` 17 個）；sim：`simple`／`herb`／`wander`／`alchemy` 與 master 逐位元相同，`mixed`、`post`、`focus`、`forge` 全 ✓（`post` 的第一世突破鈕 40 場樣本 27.5%，同策略 `mixed` 300 場 35.7%，視為抽樣誤差）；`hunt` 首次金丹第 12 世、通關 6.2 小時；瀏覽器桌面與 375px：遭遇視窗、氣血條、回合推進、結束後日誌（修為 −1）。
+- 沒驗證：玩家實際手感（強攻與穩打的取捨是否有意思）、勝率 58% 是否剛好；敗北在預設打法下為 0%（只穩打或逃），玩家手動強攻才會敗；怪物文字未經 ChatGPT 審稿；遇怪頻率（每 6–7 個月一次）在實際遊玩是否過密。
+- 給 ChatGPT（可選）：怪物文字（`monsters.json` 的 `appear`、`win`、`rules.text`）與遭遇視窗的視覺（怪物剪影、命中時的閃動）可再細修；`monsters.json` 在 `src/data/`，要改請在這裡提需求。
+
 ## 2026-10-06：視覺與操作感強化（M33，GDD 第 37 節）
 
 - 動態場景、圖示系統、事件配圖、運功（點擊加速，存檔 v21）、天劫凝神光圈；使用者回報純文字會疲乏，由他選定範圍。細節與數值見 GDD 37。

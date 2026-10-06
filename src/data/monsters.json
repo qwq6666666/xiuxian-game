@@ -1,0 +1,160 @@
+{
+  "rules": {
+    "schedule": "adventure",
+    "chance": 0.15,
+    "rounds": 3,
+    "realmPower": { "mortal": 6, "lianqi": 10, "zhuji": 18, "jindan": 32, "yuanying": 55, "huashen": 90 },
+    "stagePower": 0.06,
+    "bonePower": 0.04,
+    "ratioHit": 0.25,
+    "variance": 0.2,
+    "lossFrac": 0.05,
+    "flee": { "base": 0.55, "perRatio": 0.3, "perFortune": 0.02, "min": 0.15, "max": 0.9, "failLoss": 0.03 },
+    "autoMinRatio": 0.85,
+    "actions": {
+      "steady": { "name": "穩打", "hit": 0.8, "dmg": 0.4, "taken": 0.25 },
+      "fierce": { "name": "強攻", "hit": 0.65, "dmg": 0.7, "taken": 0.45 },
+      "ward": { "name": "符籙", "hit": 1, "dmg": 0.55, "taken": 0.1 }
+    },
+    "text": {
+      "lose": "{monster}占了上風，你負傷退下，損了些修為。",
+      "fleeOk": "你見勢不妙，抽身繞開了{monster}。",
+      "fleeFail": "{monster}追得很緊，你狼狽脫身，還是挨了一下。",
+      "draw": "{monster}纏鬥一陣，終究退入暗處，誰也沒討到好。"
+    }
+  },
+  "monsters": [
+    {
+      "id": "hungry_wolf",
+      "name": "餓狼",
+      "realm": "mortal",
+      "power": 0.8,
+      "reward": 1,
+      "stones": { "min": 0, "max": 1 },
+      "drops": [],
+      "appear": "山道上有雙綠眼盯著你，一匹餓狼正低頭逼近。",
+      "win": "你擊退了餓狼，牠夾著尾巴竄進林子。"
+    },
+    {
+      "id": "wild_boar",
+      "name": "野豬",
+      "realm": "mortal",
+      "power": 1.1,
+      "reward": 2,
+      "stones": { "min": 0, "max": 2 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.1 }],
+      "appear": "灌木裡一頭野豬埋頭衝出，獠牙上還掛著泥。",
+      "win": "野豬撞在樹上，沒能再爬起來。你在牠窩邊拾了些草藥。"
+    },
+    {
+      "id": "mountain_imp",
+      "name": "山魈",
+      "realm": "lianqi",
+      "power": 0.8,
+      "reward": 1,
+      "stones": { "min": 1, "max": 2 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.15 }],
+      "appear": "一隻山魈蹲在石上，朝你齜牙，爪子抓得石面直響。",
+      "win": "山魈吃了苦頭，尖叫著翻過山梁，丟下了些採來的靈草。"
+    },
+    {
+      "id": "red_tail_fox",
+      "name": "赤尾狐",
+      "realm": "lianqi",
+      "power": 1.0,
+      "reward": 2,
+      "stones": { "min": 1, "max": 3 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.1 }],
+      "appear": "林間閃過一抹赤紅，狐尾輕掃，像在引你過去。",
+      "win": "赤尾狐吃痛退走，原地留下一撮赤色砂礫。"
+    },
+    {
+      "id": "iron_back_bear",
+      "name": "鐵背熊",
+      "realm": "lianqi",
+      "power": 1.35,
+      "reward": 3,
+      "stones": { "min": 2, "max": 4 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.2 }, { "itemId": "ling_sha", "chance": 0.1 }],
+      "appear": "一頭鐵背熊立起身來，背上的皮毛硬得像鐵片。",
+      "win": "鐵背熊轟然倒地。你從牠踩出的洞裡翻出幾樣東西。"
+    },
+    {
+      "id": "bone_spider",
+      "name": "蝕骨蛛",
+      "realm": "zhuji",
+      "power": 0.8,
+      "reward": 1,
+      "stones": { "min": 2, "max": 4 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.15 }],
+      "appear": "洞頂垂下一縷細絲，蝕骨蛛無聲地落在你身後。",
+      "win": "蝕骨蛛的八條腿蜷成一團。你避開毒絲，取走了牠結的巢。"
+    },
+    {
+      "id": "ghost_owl",
+      "name": "鬼面梟",
+      "realm": "zhuji",
+      "power": 1.0,
+      "reward": 2,
+      "stones": { "min": 3, "max": 6 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.2 }],
+      "appear": "夜裡有張慘白的臉從枝頭轉過來，鬼面梟的眼睛亮了一亮。",
+      "win": "鬼面梟折翼墜地，叫聲淒厲。你在牠棲的樹下找到些東西。"
+    },
+    {
+      "id": "split_stone_beast",
+      "name": "裂石獸",
+      "realm": "zhuji",
+      "power": 1.35,
+      "reward": 3,
+      "stones": { "min": 4, "max": 8 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.25 }],
+      "appear": "亂石堆裡一塊岩石站了起來，裂石獸的每一步都踩出碎痕。",
+      "win": "裂石獸崩成一地碎石。碎石之間，有幾粒發紅的砂。"
+    },
+    {
+      "id": "deep_dragon",
+      "name": "潛淵蛟",
+      "realm": "jindan",
+      "power": 1.0,
+      "reward": 2,
+      "stones": { "min": 6, "max": 12 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.3 }],
+      "appear": "潭水忽然無風起浪，一條潛淵蛟探出頭來，盯著你。",
+      "win": "潛淵蛟翻入深潭，水面慢慢平了。岸邊留著牠褪下的鱗。"
+    },
+    {
+      "id": "fire_feather_bird",
+      "name": "焚羽禽",
+      "realm": "jindan",
+      "power": 1.35,
+      "reward": 3,
+      "stones": { "min": 8, "max": 16 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.3 }, { "itemId": "ling_cao", "chance": 0.25 }],
+      "appear": "半空一道火線掠下，焚羽禽的翅膀掃過處，草木都焦了。",
+      "win": "焚羽禽墜入林中，火光漸熄。你在灰裡撿到幾根沒燒盡的羽。"
+    },
+    {
+      "id": "ancient_ape",
+      "name": "古猿",
+      "realm": "yuanying",
+      "power": 1.0,
+      "reward": 2,
+      "stones": { "min": 12, "max": 24 },
+      "drops": [{ "itemId": "ling_cao", "chance": 0.3 }],
+      "appear": "山壁上垂下一隻古猿，雙眼渾濁，卻把你看得很清楚。",
+      "win": "古猿拍著胸口後退，終於讓開了路。你收拾了一番才走。"
+    },
+    {
+      "id": "thunder_qilin",
+      "name": "雷紋獸",
+      "realm": "yuanying",
+      "power": 1.4,
+      "reward": 3,
+      "stones": { "min": 16, "max": 30 },
+      "drops": [{ "itemId": "ling_sha", "chance": 0.4 }],
+      "appear": "雲層裡悶雷滾過，一頭身帶雷紋的巨獸踏空而來。",
+      "win": "雷紋獸帶著殘雷遁入雲中。地面焦黑，靈砂散了一片。"
+    }
+  ]
+}

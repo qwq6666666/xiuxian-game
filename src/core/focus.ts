@@ -11,6 +11,7 @@ export function canFocus(state: GameState, data: GameData = gameData): boolean {
     state.phase === "living" &&
     state.pendingEvent === null &&
     state.tribulation === null &&
+    state.encounter === null &&
     !atBottleneck(state, data) &&
     state.ageMonths - state.focusMonth >= data.config.focusCooldown
   );

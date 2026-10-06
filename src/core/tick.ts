@@ -1,20 +1,21 @@
 import { gameData } from "../data/load";
 import type { GameData, ScheduleDef } from "../data/types";
 import { advanceEvents } from "./events";
-import { cultivationPerMonth, lifespanMonths, talentBonus } from "./formulas";
+import { lifespanMonths } from "./formulas";
+import { monthlyGain } from "./gain";
+import { autoEncounter, maybeEncounter } from "./encounter";
 import { addLog, atBottleneck, realmOf, resolveStages, scheduleOf } from "./progress";
 import { endLife } from "./review";
 import { deriveSeed, nextInt, nextRandom } from "./rng";
 import type { GameState } from "./state";
 import { advanceTravel } from "./travel";
-import { sectBonus, stepSect } from "./sect";
+import { stepSect } from "./sect";
 import { stepAlchemy } from "./alchemy";
-import { artifactBonus } from "./forge";
-import { methodEffect } from "./method";
 
 /** 材料掉落亂數的雜湊鹽值，與世界生成用的編號錯開 */
 const DROP_SALT = 7_000_000;
 
+export { monthlyGain };
 // 其他模組一直從 tick 取用這些函式，維持原本的匯入路徑
 export { addLog, atBottleneck, lifespanYears, nextRealm, realmOf, resolveStages, scheduleOf, scheduleOpen } from "./progress";
 
@@ -70,25 +71,6 @@ function applySchedule(state: GameState, sched: ScheduleDef, month: number, data
   return s;
 }
 
-/** 依日常安排計算一個月的修為增量 */
-export function monthlyGain(state: GameState, sched: ScheduleDef, data: GameData): number {
-  const realm = realmOf(state, data);
-  const root = data.spiritRoots.find((r) => r.id === state.spiritRootId);
-  if (!root) throw new Error(`狀態：找不到靈根 ${state.spiritRootId}`);
-  return cultivationPerMonth({
-    config: data.config,
-    rootMult: root.mult,
-    bone: state.attributes.bone,
-    realmMult: realm.cultivationMult,
-    scheduleMult: sched.cultivationMult,
-    originBonus: state.cultivationBonus,
-    reincarnationBonus: talentBonus(state.meta, data.talents, "cultivation"),
-    sectBonus: sectBonus(state, data),
-    methodBonus: methodEffect(state, "cultivation", data),
-    artifactBonus: artifactBonus(state, "cultivation", data),
-  });
-}
-
 /** 累積一個月的修為並處理升級（呼叫前須確認未卡瓶頸） */
 export function addCultivation(state: GameState, sched: ScheduleDef, month: number, data: GameData): GameState {
   return resolveStages({ ...state, cultivation: state.cultivation + monthlyGain(state, sched, data) }, month, data);
@@ -109,7 +91,11 @@ function stepMonth(state: GameState, data: GameData): GameState {
     return endLife(died, "lifespan", data);
   }
   s = { ...s, travel: advanceTravel(s.travel) };
-  return advanceEvents(s, month, data);
+  s = advanceEvents(s, month, data);
+  // 外出歷練時可能遇怪：時間暫停等玩家選擇，自動抉擇時照預設打法一次打完
+  if (s.phase !== "living" || s.pendingEvent !== null) return s;
+  s = maybeEncounter(s, month, data);
+  return s.encounter !== null && s.autoChoice ? autoEncounter(s, data) : s;
 }
 
 /**
@@ -121,6 +107,6 @@ export function tick(state: GameState, months = 1, data: GameData = gameData): G
     throw new Error(`tick：months 必須是非負整數，目前為 ${months}`);
   }
   let s = state;
-  for (let i = 0; i < months && s.phase === "living" && s.pendingEvent === null && s.tribulation === null; i++) s = stepMonth(s, data);
+  for (let i = 0; i < months && s.phase === "living" && s.pendingEvent === null && s.tribulation === null && s.encounter === null; i++) s = stepMonth(s, data);
   return s;
 }

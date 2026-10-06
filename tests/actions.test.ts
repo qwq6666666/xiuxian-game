@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buyItem, canBuyItem, canUseItem, setSchedule, useItem } from "../src/core/actions";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
-import { lianqiNeed, living } from "./helpers";
+import { lianqiNeed, living, noHunt } from "./helpers";
 
 describe("日常安排", () => {
   it("可切換，未知的安排與非修行中會被忽略", () => {
@@ -29,7 +29,7 @@ describe("日常安排", () => {
 
   it("歷練會獲得靈石與丹藥（統計）", () => {
     const noDeath = {
-      ...gameData,
+      ...noHunt(),
       schedules: gameData.schedules.map((s) => (s.id === "adventure" ? { ...s, deathChance: 0 } : s)),
     };
     const base = setSchedule(living(5, { spiritStones: 0, lifespanBonus: 2000, items: {} }), "adventure", noDeath);

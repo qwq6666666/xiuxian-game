@@ -18,6 +18,7 @@
 // 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
 // 例：npm run sim -- 300 1 40 post
 import { focus } from "../src/core/focus";
+import { autoEncounter } from "../src/core/encounter";
 import { canStartBrew, startBrew } from "../src/core/alchemy";
 import { ALCHEMY_SCHEDULE } from "../src/data/types";
 import { beginTravel, placesAt, routeTo } from "../src/core/travel";
@@ -38,7 +39,7 @@ const lives = Number(process.argv[4] ?? 1);
 // method:<心法 id> 是 mixed 加上指定心法
 const forcedMethod = process.argv[5]?.startsWith("method:") ? process.argv[5].slice(7) : null;
 if (forcedMethod !== null && !gameData.methods.some((m) => m.id === forcedMethod)) throw new Error(`找不到心法 ${forcedMethod}`);
-const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : process.argv[5] === "forge" ? "forge" : process.argv[5] === "focus" ? "focus" : "simple";
+const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : process.argv[5] === "forge" ? "forge" : process.argv[5] === "focus" ? "focus" : process.argv[5] === "hunt" ? "hunt" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -48,6 +49,27 @@ function randomChoice(pendingId: string, state: GameState): number {
   const [v, next] = nextRandom(policySeed);
   policySeed = next;
   return options[Math.floor(v * options.length)];
+}
+
+/** 遇怪統計（hunt 策略專用）：各結果的次數 */
+const huntStats = { win: 0, lose: 0, flee: 0, fleeFail: 0, draw: 0, gain: 0 };
+
+/** 把進行中的遇怪用預設打法打完，並統計結果 */
+function settleEncounter(state: GameState): GameState {
+  if (state.encounter === null) return state;
+  const s = autoEncounter(state, gameData);
+  const last = s.log[s.log.length - 1];
+  if (last?.kind === "huntWin") { huntStats.win++; huntStats.gain += last.changes?.cultivation ?? 0; }
+  else if (last?.kind === "huntLose") huntStats.lose++;
+  else if (last?.kind === "huntDraw") huntStats.draw++;
+  else if (last?.kind === "huntFlee") { if (last.outcome === 1) huntStats.fleeFail++; else huntStats.flee++; }
+  return s;
+}
+
+/** 打怪策略的每月操作（上限檢查）：一直外出歷練，其餘照 mixed 買賣丹藥 */
+function huntActions(state: GameState): GameState {
+  const s = mixedActions(state);
+  return setSchedule(s, "adventure", gameData);
 }
 
 /** 混合策略的每月操作：換安排、買丹藥、吃丹藥 */
@@ -220,7 +242,9 @@ function playLife(start: GameState): GameState {
   let state = startLife(forcedMethod !== null ? { ...start, methodId: forcedMethod } : forgeStart, gameData);
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
-    if (strategy === "herb" && state.phase === "living") state = herbActions(state);
+    state = settleEncounter(state);
+    if (strategy === "hunt" && state.phase === "living") state = huntActions(state);
+    else if (strategy === "herb" && state.phase === "living") state = herbActions(state);
     else if (strategy === "wander" && state.phase === "living") state = wanderActions(state);
     else if (strategy === "alchemy" && state.phase === "living") state = alchemyActions(state);
     else if (strategy === "focus" && state.phase === "living") state = focus(mixedActions(state), gameData);
@@ -477,14 +501,14 @@ function campaigns(): void {
         yuanyingHours.push((months * gameData.config.msPerMonth) / 3_600_000);
       }
       // 把道韻優先花在宿慧
-      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation" || strategy === "alchemy" || strategy === "forge" || strategy === "focus") state = buyTalentsBalanced(state);
+      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation" || strategy === "alchemy" || strategy === "forge" || strategy === "focus" || strategy === "hunt") state = buyTalentsBalanced(state);
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹", forge: "法寶", focus: "運功" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹", forge: "法寶", focus: "運功", hunt: "打怪" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(
@@ -564,6 +588,14 @@ function campaigns(): void {
   if (forcedMethod !== null) {
     console.log(`對照第 35.4 節（心法 ${forcedMethod}）：`);
     console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世；與無相訣（mixed）相比不得慢超過 2 世）`);
+  }
+  if (strategy === "hunt") {
+    const n = huntStats.win + huntStats.lose + huntStats.flee + huntStats.fleeFail + huntStats.draw;
+    const pct = (v: number): string => (n > 0 ? ((v / n) * 100).toFixed(0) : "0");
+    console.log(`遇怪 ${n} 次：勝 ${pct(huntStats.win)}%、敗 ${pct(huntStats.lose)}%、平手 ${pct(huntStats.draw)}%、逃成 ${pct(huntStats.flee)}%、逃敗 ${pct(huntStats.fleeFail)}%；每勝平均修為 ${(huntStats.win > 0 ? huntStats.gain / huntStats.win : 0).toFixed(1)}`);
+    console.log("對照第 38 節（打怪，最壞情況：永遠外出歷練）：");
+    console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
+    console.log(`  ${ok(hours >= 3.5)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
   }
   if (strategy === "focus") {
     console.log("對照第 37 節（運功，最壞情況：每個月都點）：");

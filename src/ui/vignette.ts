@@ -101,8 +101,15 @@ function scene(theme: Theme, seed: number): string {
 
 /** 事件彈窗上方的配圖；境界決定色調，tone 為 bad 時壓暗 */
 export function vignetteHtml(ev: EventDef, realmId: string): string {
-  const seed = hash(ev.id);
-  const theme = themeOf(ev.id);
-  const dim = ev.tone === "bad" ? `<rect x="0" y="0" width="${W}" height="${H}" class="vg-dark" opacity=".3"/>` : "";
+  return frame(themeOf(ev.id), hash(ev.id), realmId, ev.tone === "bad");
+}
+
+/** 遇怪視窗的配圖：凡人與練氣在林間，築基以上在山裡；同一種怪每次畫同一幅 */
+export function huntVignetteHtml(monsterId: string, realmId: string): string {
+  return frame(realmId === "mortal" || realmId === "lianqi" ? "forest" : "mountain", hash(monsterId), realmId, true);
+}
+
+function frame(theme: Theme, seed: number, realmId: string, darken: boolean): string {
+  const dim = darken ? `<rect x="0" y="0" width="${W}" height="${H}" class="vg-dark" opacity=".3"/>` : "";
   return `<div class="vignette" data-realm="${realmId}" data-theme="${theme}" aria-hidden="true"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" focusable="false">${scene(theme, seed)}${dim}</svg></div>`;
 }

@@ -116,7 +116,7 @@ export function routeTo(state: GameState, targetId: string, data: GameData = gam
 }
 
 export function beginTravel(state: GameState, targetId: string, data: GameData = gameData): GameState {
-  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.travel.targetId !== null) return state;
+  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null || state.travel.targetId !== null) return state;
   const route = routeTo(state, targetId, data);
   if (!route) return state;
   return { ...state, travel: { ...state.travel, targetId, totalMonths: route.months, remainingMonths: route.months } };

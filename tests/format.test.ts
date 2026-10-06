@@ -99,7 +99,7 @@ describe("format", () => {
     for (const kind of kinds) {
       for (let month = 0; month < 8; month++) {
         const text = formatLogEntry(
-          { month: 1200 + month, kind, realmId: "lianqi", stage: 1, itemId: "juqi_dan", eventId: "mountain_001" },
+          { month: 1200 + month, kind, realmId: "lianqi", stage: 1, itemId: "juqi_dan", eventId: "mountain_001", monsterId: "hungry_wolf" },
           gameData,
         );
         expect(text).not.toMatch(/[{}]/);
