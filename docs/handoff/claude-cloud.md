@@ -3,6 +3,11 @@
 > 雲端工作階段專用，新的一筆寫在最上面；本機的紀錄在 `claude.md`。規則見 `AGENTS.md`「本機與雲端並行」。
 > 雲端只推 `ai/claude-cloud`，由本機整合者合併進 `master`。
 
+### 2026-10-06 M37 妖丹與妖丹配方（GDD 38.2）
+- `items.json`（`yao_dan`）、`monsters.json`（12 種怪掉妖丹）、`recipes.json`（5 個新配方＋選填 `label`）、`types.ts`／`validate.ts`（`label`）、`ui/alchemyinfo.ts`（面板名稱用 `label`）、`ui/icons.ts`（妖丹圖示 `core`）、測試。
+- 驗證：`npm run verify` 全過（579 測試）；`sim 300 1 16 forge|alchemy` 與加入前相同；`hunt` 首次金丹 11→10 世（來自 M36 見聞的亂數位移）。
+- 沒驗證：煉丹／煉器面板在有兩條同產出配方時的外觀；妖丹圖示的實際樣子。
+
 ### 2026-10-06 M36 練氣期見聞 12 則（GDD 39.1）
 - `src/data/events/lianqi.json` 12 則見聞，`load.ts` 登記，測試加在 `tests/opening.test.ts`；`tests/eventpool.test.ts` 抉擇占比下限 0.5→0.45。TODO 預約表已登記 v24、M36–M39（開場句與故人、掉落接煉丹煉器、遇怪風險感）。
 - 驗證：`npm run verify` 全過（578 測試）；`sim mixed 300 {1,2,3} 16` 全 ✓；單世 `simple` 13.5、`mixed` 14.3（每世抉擇）。

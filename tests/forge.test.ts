@@ -87,7 +87,7 @@ describe("煉器", () => {
     const panel = alchemyPanel(stocked({ attributes: { bone: 5, insight: 10, fortune: 5, mind: 5 } }), data)!;
     expect(panel.forge.find((f) => f.id === "forge_juling_pan")!.ratePct).toBe(90);
     expect(panel.forge.find((f) => f.id === "forge_ningqi_zhu")!.reason).toContain("築基");
-    expect(panel.recipes.every((r) => ["juqi_dan", "huxin_dan", "bilei_fu"].includes(r.id))).toBe(true);
+    expect(panel.recipes.every((r) => ["juqi_dan", "huxin_dan", "bilei_fu", "huxin_dan_yao", "bilei_fu_yao"].includes(r.id))).toBe(true);
   });
 });
 
@@ -183,5 +183,22 @@ describe("本命：轉世帶走法寶", () => {
     expect(Object.keys(gone.items).includes("ningqi_zhu")).toBe(false);
     expect(artifactOf("ningqi_zhu", data)!.effect.tier).toBe(2);
     expect(bonusText({ cultivation: 0.06 })).toBe("修煉速度 +6%");
+  });
+});
+
+describe("妖丹配方（M37）", () => {
+  it("妖丹只來自怪物掉落，配方產出與原版相同、成本不同，並有區分用的名稱", () => {
+    const yao = data.items.find((i) => i.id === "yao_dan")!;
+    expect(yao.effect.kind).toBe("material");
+    expect(data.monsters.monsters.some((m) => m.drops.some((d) => d.itemId === "yao_dan"))).toBe(true);
+    for (const s of data.schedules) expect((s.drops ?? []).some((d) => d.itemId === "yao_dan")).toBe(false);
+    const variants = data.recipes.recipes.filter((r) => "yao_dan" in r.inputs);
+    expect(variants.length).toBe(5);
+    for (const v of variants) {
+      expect(v.label).toContain("妖丹");
+      const base = data.recipes.recipes.find((r) => r.output === v.output && !("yao_dan" in r.inputs))!;
+      expect(base).toBeDefined();
+      expect(v.baseRate).toBeGreaterThan(base.baseRate - 0.001);
+    }
   });
 });

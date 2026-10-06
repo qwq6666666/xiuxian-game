@@ -413,7 +413,7 @@ export function validateRecipes(raw: unknown, file = "recipes.json"): RecipesDat
     // 煉丹要經過數個月、不花靈石；煉器即時完成（月數為 0）、要花靈石
     const months = kind === "brew" ? num(ro, "months", w, { gt: 0, integer: true }) : num(ro, "months", w, { min: 0, max: 0, integer: true });
     const stones = kind === "forge" ? num(ro, "stones", w, { gt: 0, integer: true }) : ro.stones === undefined ? 0 : num(ro, "stones", w, { min: 0, max: 0, integer: true });
-    return { id, kind, stones, output: str(ro, "output", w), inputs, months, baseRate, realmMin: str(ro, "realmMin", w) };
+    return { id, kind, stones, output: str(ro, "output", w), inputs, months, baseRate, realmMin: str(ro, "realmMin", w), ...(ro.label !== undefined ? { label: str(ro, "label", w) } : {}) };
   });
   uniqueIds(recipes, `${file} 欄位 recipes`);
   return { rules, recipes };

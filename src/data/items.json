@@ -96,5 +96,12 @@
     "desc": "質地細密的黃紙，能畫符。",
     "price": 0,
     "effect": { "kind": "material" }
+  },
+  {
+    "id": "yao_dan",
+    "name": "妖丹",
+    "desc": "異獸體內凝出的一顆內核，煉丹煉器都肯用它。",
+    "price": 0,
+    "effect": { "kind": "material" }
   }
 ]

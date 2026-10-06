@@ -193,6 +193,8 @@ export interface RecipeDef {
   baseRate: number;
   /** 達到這個境界才能煉 */
   realmMin: string;
+  /** 介面顯示名稱（選填）；同一件產出有多個配方時用來區分，沒寫就用產出物名稱 */
+  label?: string;
 }
 
 export interface AlchemyRules {

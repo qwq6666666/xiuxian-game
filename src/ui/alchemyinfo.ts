@@ -71,7 +71,7 @@ export function alchemyPanel(state: GameState, data: GameData): AlchemyPanel | n
     return {
       id: r.id,
       itemId: r.output,
-      name: itemName(r.output),
+      name: r.label ?? itemName(r.output),
       inputs: Object.entries(r.inputs).map(([id, need]) => ({ name: itemName(id), need, have: state.items[id] ?? 0 })),
       months: r.months,
       ratePct: Math.round(recipeRate(state, r, data) * 100),
@@ -125,7 +125,7 @@ function forgeRows(state: GameState, data: GameData, itemName: (id: string) => s
       return {
         id: r.id,
         itemId: r.output,
-        name: art.name,
+        name: r.label ?? art.name,
         kind: `${SLOT_NAME[art.effect.slot]}・${art.effect.tier} 階`,
         effect: bonusText(art.effect.bonus),
         inputs,
