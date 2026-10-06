@@ -7,8 +7,9 @@
 
 | 項目 | 佔用者 | 狀態 |
 |---|---|---|
-| 存檔版本 v28 | （未佔用） | 目前是 v27（M45 閉關見聞序號） |
-| 下一個里程碑編號 M46 | （未佔用） | M45 已完成 |
+| 存檔版本 v28 | Claude（本機） | M46 閉關疲勞（`retreatStreak`）與突破心得（`breakthroughStudy`）；目前是 v27 |
+| 里程碑 M46 | Claude（本機） | 動 `src/core/`、`src/data/`（schedules、config）、`scripts/`、`tests/`、GDD 第 13 與 48 節；ChatGPT 不要動 |
+| 下一個里程碑編號 M47 | （未佔用） | M46 進行中 |
 
 要動存檔結構或 `types.ts`、共用核心函式前，先把這張表改成自己佔用並 push，另一邊看到就不要同時動。
 
