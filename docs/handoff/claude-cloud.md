@@ -3,6 +3,12 @@
 > 雲端工作階段專用，新的一筆寫在最上面；本機的紀錄在 `claude.md`。規則見 `AGENTS.md`「本機與雲端並行」。
 > 雲端只推 `ai/claude-cloud`，由本機整合者合併進 `master`。
 
+### 2026-10-06 M35 怪物圖鑑（GDD 第 40 節，存檔 v23）
+- 分支：master-mxid6d（PR #1）。`state.ts`（`BestiaryEntry`、`Meta.bestiary`、v23）、`save.ts`（22→23 遷移與載入檢查）、`encounter.ts`（`finish` 記次數）、`review.ts`（跨世保留）、`types.ts`／`validate.ts`（怪物選填欄位）、`ui/format.ts`（`bestiarySummary`、各怪結局文字）、`ui/render.ts`（收藏視窗圖鑑、遭遇視窗見聞）、`monsters.json`（22 種都補 `lore` 與四種結局文字）、`tests/save-shape.json`、測試。TODO 預約表已更新為「v24、M36 未佔用」。
+- 驗證：`npm run verify` 全過（577 測試）；用 `/opt/pw-browsers/chromium` 開 `dist/index.html`，400px 寬打開收藏視窗，圖鑑段落正常顯示（22 筆「？？？」）、console 無錯誤。`sim hunt` 對照見下方。
+- 沒驗證：遇怪視窗實際顯示見聞（需先勝三次）；收藏視窗有紀錄時的外觀；手機多筆時的捲動手感。
+- 注意：`src/ui/` 是 ChatGPT 的區域，這次因額度用盡由雲端代做，請 ChatGPT 日後審視。本機合併時存檔版本與 `tests/save-shape.json` 可能與其他分支衝突，請確認。
+
 ### 2026-10-06 怪物擴充（GDD 38.1）
 - 分支：master-mxid6d（PR #1）。`monsters.json` 新增 10 種怪（各境界 2 種，凡人到元嬰），格式不變；`tests/opening.test.ts` 加怪物池檢查。
 - 驗證：`npm run verify` 全過；`sim` mixed 單世／16 世、hunt 16 世（數字見 GDD 38.1）。對照：只還原 `monsters.json` 的 mixed 抉擇 16.1、首次金丹第 8 世、通關 4.6 小時。

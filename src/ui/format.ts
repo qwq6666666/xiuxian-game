@@ -1,7 +1,7 @@
 import type { VersusLine } from "../core/goals";
 import { eraName } from "../core/era";
 import type { OfflineSummary } from "../core/offline";
-import type { Changes, LifeReview, LogEntry, Meta } from "../core/state";
+import type { BestiaryEntry, Changes, LifeReview, LogEntry, Meta } from "../core/state";
 import { DEFAULT_SLOTS, fillSlots, type SlotValues } from "../data/slots";
 import { ATTRIBUTE_KEYS, type AttributeKey, type ChoiceRequires, type GameData, type RealmDef, type TalentDef } from "../data/types";
 
@@ -245,7 +245,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
       const monster = data.monsters.monsters.find((m) => m.id === entry.monsterId);
       if (!monster) throw new Error(`日誌：找不到怪物 ${entry.monsterId}`);
       const t = data.monsters.rules.text;
-      const line = entry.kind === "huntWin" ? monster.win : entry.kind === "huntLose" ? t.lose : entry.kind === "huntDraw" ? t.draw : entry.outcome === 1 ? t.fleeFail : t.fleeOk;
+      const line = entry.kind === "huntWin" ? monster.win : entry.kind === "huntLose" ? (monster.loseText ?? t.lose) : entry.kind === "huntDraw" ? (monster.drawText ?? t.draw) : entry.outcome === 1 ? (monster.fleeFailText ?? t.fleeFail) : (monster.fleeOkText ?? t.fleeOk);
       template = line.replace("{monster}", monster.name);
       break;
     }
@@ -294,6 +294,29 @@ export function collectionSummary(meta: Meta, data: GameData): CollectionSummary
     rows,
     allCleared: rows.every((r) => r.count > 0),
   };
+}
+
+/** 勝滿幾次才解鎖怪物的見聞（lore） */
+export const BESTIARY_LORE_WINS = 3;
+
+export interface BestiarySummary {
+  seen: number;
+  rows: { id: string; name: string; realm: string; entry: BestiaryEntry | null; lore: string | null }[];
+}
+
+/** 怪物圖鑑：依境界與資料檔順序列出，沒遇過的只顯示境界；見聞勝滿三次才解鎖 */
+export function bestiarySummary(meta: Meta, data: GameData): BestiarySummary {
+  const rows = data.monsters.monsters.map((m) => {
+    const entry = meta.bestiary[m.id] ?? null;
+    return {
+      id: m.id,
+      name: m.name,
+      realm: data.realms.find((r) => r.id === m.realm)?.name ?? m.realm,
+      entry,
+      lore: entry !== null && entry.win >= BESTIARY_LORE_WINS && m.lore !== undefined ? m.lore : null,
+    };
+  });
+  return { seen: rows.filter((r) => r.entry !== null).length, rows };
 }
 
 /** 離線回歸提示，例如「閉關 3 年 2 個月，修為增加 360。」；沒有閉關則回傳空字串 */

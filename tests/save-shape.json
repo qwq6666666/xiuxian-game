@@ -1,5 +1,5 @@
 {
-  "version": 22,
+  "version": 23,
   "shape": {
     "TravelState": [
       "locationId",
@@ -9,6 +9,7 @@
       "trail"
     ],
     "Meta": [
+      "bestiary",
       "clears",
       "daoYun",
       "fastest",
@@ -22,6 +23,12 @@
       "sectBest",
       "talents",
       "yuanying"
+    ],
+    "BestiaryEntry": [
+      "draw",
+      "flee",
+      "lose",
+      "win"
     ],
     "LifeBrief": [
       "ageMonths",

@@ -17,6 +17,7 @@ import {
   type LogEntry,
   type LogKind,
   type OfflineStop,
+  type BestiaryEntry,
   type Meta,
   type Phase,
 } from "./state";
@@ -114,6 +115,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   // v20 沒有運功：補上還沒用過
   // v21 沒有遇怪：補上未在遇怪的狀態
   21: (d) => ({ ...d, version: 22, encounter: null }),
+  // v22 沒有圖鑑：舊檔遇過哪些怪無從回推，補上空的紀錄
+  22: (d) => ({ ...d, version: 23, meta: { ...obj(d.meta, "meta"), bestiary: {} } }),
   20: (d) => ({ ...d, version: 21, focusMonth: -1 }),
   19: (d) => ({ ...d, version: 20, equipment: { weapon: null, ward: null }, meta: { ...obj(d.meta, "meta"), keptArtifacts: [] } }),
   18: (d, gd) => ({ ...d, version: 19, methodId: gd.methods[0].id }),
@@ -287,8 +290,21 @@ function parseMeta(v: unknown, data: GameData): Meta {
     if (!data.goals.some((g) => g.id === id)) fail(`meta.goals.${id}`, `找不到目標 ${id}`);
     if (n < 1) fail(`meta.goals.${id}`, `必須是正整數，目前為 ${n}`);
   }
+  const bestiary: Record<string, BestiaryEntry> = {};
+  const rawBestiary = obj(o.bestiary, "meta.bestiary");
+  for (const id of Object.keys(rawBestiary)) {
+    if (!data.monsters.monsters.some((m) => m.id === id)) fail(`meta.bestiary.${id}`, `找不到怪物 ${id}`);
+    const e = obj(rawBestiary[id], `meta.bestiary.${id}`);
+    bestiary[id] = {
+      win: num(e, "win", { integer: true, min: 0 }, `meta.bestiary.${id}.win`),
+      lose: num(e, "lose", { integer: true, min: 0 }, `meta.bestiary.${id}.lose`),
+      flee: num(e, "flee", { integer: true, min: 0 }, `meta.bestiary.${id}.flee`),
+      draw: num(e, "draw", { integer: true, min: 0 }, `meta.bestiary.${id}.draw`),
+    };
+  }
   return {
     goals,
+    bestiary,
     lastLife: o.lastLife === null ? null : parseBrief(o.lastLife, "meta.lastLife", data),
     fragments,
     clears: originCounts("clears"),

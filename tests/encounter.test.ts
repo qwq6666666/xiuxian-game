@@ -5,6 +5,7 @@ import type { EncounterState, GameState } from "../src/core/state";
 import { atBottleneck, tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { validateMonsters } from "../src/data/validate";
+import { BESTIARY_LORE_WINS, bestiarySummary } from "../src/ui/format";
 import { lianqiNeed, living } from "./helpers";
 
 const realmIds = gameData.realms.map((r) => r.id);
@@ -215,5 +216,69 @@ describe("存檔", () => {
     old.version = 21;
     const loaded = deserialize(JSON.stringify(old));
     expect(loaded.encounter).toBeNull();
+  });
+});
+
+describe("怪物圖鑑（v23，GDD 16.3）", () => {
+  it("每場遇怪結束都記一次，逃跑成功與失敗都算逃", () => {
+    const done = autoEncounter(inFight("red_tail_fox"));
+    const e = done.meta.bestiary.red_tail_fox;
+    expect(e.win + e.lose + e.flee + e.draw).toBe(1);
+    const fled = huntChoose(inFight("red_tail_fox"), "flee");
+    expect(fled.meta.bestiary.red_tail_fox.flee).toBe(1);
+    const twice = huntChoose({ ...fled, encounter: enc("red_tail_fox") }, "flee");
+    expect(twice.meta.bestiary.red_tail_fox.flee).toBe(2);
+  });
+
+  it("只收藏，不影響其他怪物的紀錄", () => {
+    const s = autoEncounter(inFight("red_tail_fox"));
+    expect(Object.keys(s.meta.bestiary)).toEqual(["red_tail_fox"]);
+  });
+
+  it("存檔往返相同，舊版（v22）補上空圖鑑", () => {
+    const done = autoEncounter(inFight("red_tail_fox"));
+    expect(deserialize(serialize(done))).toEqual(done);
+    const old = JSON.parse(serialize(living(2)));
+    delete old.meta.bestiary;
+    old.version = 22;
+    expect(deserialize(JSON.stringify(old)).meta.bestiary).toEqual({});
+  });
+
+  it("載入時檢查怪物 id 與次數，錯誤訊息指出欄位", () => {
+    const bad = JSON.parse(serialize(living(2)));
+    bad.meta.bestiary = { nobody: { win: 1, lose: 0, flee: 0, draw: 0 } };
+    expect(() => deserialize(JSON.stringify(bad))).toThrow(/meta\.bestiary\.nobody/);
+    bad.meta.bestiary = { red_tail_fox: { win: -1, lose: 0, flee: 0, draw: 0 } };
+    expect(() => deserialize(JSON.stringify(bad))).toThrow(/meta\.bestiary\.red_tail_fox\.win/);
+  });
+
+  it("怪物自己的結局文字優先，沒寫就用共用句；選填欄位要是字串", () => {
+    const raw = JSON.parse(JSON.stringify(gameData.monsters));
+    raw.monsters[0].lore = 3;
+    expect(() => validateMonsters(raw, realmIds, itemIds)).toThrow(/lore/);
+  });
+});
+
+describe("圖鑑摘要（介面用）", () => {
+  it("沒遇過的只顯示境界，勝滿三次才解鎖見聞", () => {
+    const m = gameData.monsters.monsters.find((x) => x.lore !== undefined)!;
+    const meta = (win: number) => ({ ...living(1).meta, bestiary: { [m.id]: { win, lose: 0, flee: 0, draw: 0 } } });
+    const none = bestiarySummary(living(1).meta, gameData);
+    expect(none.seen).toBe(0);
+    expect(none.rows.every((r) => r.entry === null && r.lore === null)).toBe(true);
+    expect(none.rows).toHaveLength(gameData.monsters.monsters.length);
+    const two = bestiarySummary(meta(BESTIARY_LORE_WINS - 1), gameData);
+    expect(two.seen).toBe(1);
+    expect(two.rows.find((r) => r.id === m.id)!.lore).toBeNull();
+    expect(bestiarySummary(meta(BESTIARY_LORE_WINS), gameData).rows.find((r) => r.id === m.id)!.lore).toBe(m.lore);
+  });
+
+  it("每隻怪都有見聞與四種結局文字，各不超過三句", () => {
+    for (const m of gameData.monsters.monsters) {
+      for (const t of [m.lore, m.loseText, m.fleeOkText, m.fleeFailText, m.drawText]) {
+        expect(t, m.id).toBeTruthy();
+        expect(t!.split(/[。！？]/).filter(Boolean).length, m.id).toBeLessThanOrEqual(3);
+      }
+    }
   });
 });

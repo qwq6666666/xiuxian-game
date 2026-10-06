@@ -46,6 +46,8 @@ import {
   eraBorn,
   eraTransition,
   collectionSummary,
+  bestiarySummary,
+  BESTIARY_LORE_WINS,
   formatChanges,
   formatLogEntry,
   formatReviewSummary,
@@ -434,6 +436,27 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       desc.className = "fragment-text";
       desc.textContent = row.desc;
       art.append(name, count, desc);
+      box.append(art);
+    }
+    const bestiary = bestiarySummary(state.meta, data);
+    const beastHead = document.createElement("h3");
+    beastHead.textContent = `怪物圖鑑　已見 ${bestiary.seen}／${bestiary.rows.length} 種`;
+    box.append(beastHead);
+    for (const row of bestiary.rows) {
+      const art = document.createElement("article");
+      art.className = row.entry ? "fragment" : "fragment missing";
+      const name = document.createElement("strong");
+      name.textContent = row.entry ? row.name : "？？？";
+      const count = document.createElement("small");
+      count.className = "changes";
+      count.textContent = row.entry ? `${row.realm}　勝 ${row.entry.win}　敗 ${row.entry.lose}　逃 ${row.entry.flee}　平 ${row.entry.draw}` : `（${row.realm}，尚未遇見）`;
+      art.append(name, count);
+      if (row.lore) {
+        const lore = document.createElement("p");
+        lore.className = "fragment-text";
+        lore.textContent = row.lore;
+        art.append(lore);
+      }
       box.append(art);
     }
     const goalHead = document.createElement("h3");
@@ -1061,7 +1084,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const h = state.encounter;
     const talisman = huntTalisman(data);
     const have = talisman ? (state.items[talisman] ?? 0) : 0;
-    const key = h ? JSON.stringify([h, have, state.realmId, state.stage, state.attributes]) : "";
+    const key = h ? JSON.stringify([h, have, state.realmId, state.stage, state.attributes, state.meta.bestiary[h.monsterId]]) : "";
     if (key === huntKey) return;
     huntKey = key;
     e.huntModal.hidden = h === null;
@@ -1072,7 +1095,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const ratio = powerRatio(state, m, data);
     e.huntArt.innerHTML = huntVignetteHtml(m.id, state.realmId);
     e.huntTitle.textContent = `遭遇${m.name}`;
-    e.huntText.textContent = m.appear;
+    e.huntText.textContent = m.lore !== undefined && (state.meta.bestiary[m.id]?.win ?? 0) >= BESTIARY_LORE_WINS ? `${m.appear}${m.lore}` : m.appear;
     const bar = (label: string, hp: number, cls: string): string =>
       `<div class="hunt-bar ${cls}"><span>${label}</span><i><b style="width:${Math.max(0, Math.round(hp * 100))}%"></b></i></div>`;
     e.huntBars.innerHTML = bar(m.name, h.monsterHp, "foe") + bar("你", h.myHp, "me");

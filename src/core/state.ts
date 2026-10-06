@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 22;
+export const SAVE_VERSION = 23;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -38,8 +38,18 @@ export interface Meta {
   sectBest: number;
   /** 各目標達成的次數（目標 id → 次數），只收藏，不影響任何數值 */
   goals: Record<string, number>;
+  /** 歷練遇過的怪物（怪物 id → 各結局次數），只收藏，不影響任何數值（GDD 16.3） */
+  bestiary: Record<string, BestiaryEntry>;
   /** 上一世的簡要結果，供一生回顧比較；還沒走完過一世為 null */
   lastLife: LifeBrief | null;
+}
+
+/** 一種怪物的遭遇紀錄：勝、敗、逃（成功與失敗都算）、平手 */
+export interface BestiaryEntry {
+  win: number;
+  lose: number;
+  flee: number;
+  draw: number;
 }
 
 /** 一世的簡要結果，用來和下一世比較 */
@@ -51,7 +61,7 @@ export interface LifeBrief {
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, keptArtifacts: [], goals: {}, lastLife: null };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, keptArtifacts: [], goals: {}, bestiary: {}, lastLife: null };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */

@@ -5,7 +5,7 @@ import type { GameData, HuntAction, MonsterDef } from "../data/types";
 import { monthlyGain } from "./gain";
 import { addLog, atBottleneck, resolveStages } from "./progress";
 import { deriveSeed, nextRandom } from "./rng";
-import type { Changes, GameState } from "./state";
+import type { BestiaryEntry, Changes, GameState } from "./state";
 
 /** 遇怪亂數的雜湊鹽值，與材料掉落、世界生成用的編號錯開 */
 const HUNT_SALT = 8_000_000;
@@ -81,8 +81,11 @@ type HuntLog = "huntWin" | "huntLose" | "huntFlee" | "huntDraw";
 function finish(state: GameState, kind: HuntLog, data: GameData, extra: { outcome?: number; changes?: Changes } = {}): GameState {
   const e = state.encounter!;
   const hasChanges = extra.changes !== undefined && Object.keys(extra.changes).length > 0;
+  const field = { huntWin: "win", huntLose: "lose", huntFlee: "flee", huntDraw: "draw" }[kind] as keyof BestiaryEntry;
+  const seen = state.meta.bestiary[e.monsterId] ?? { win: 0, lose: 0, flee: 0, draw: 0 };
+  const meta = { ...state.meta, bestiary: { ...state.meta.bestiary, [e.monsterId]: { ...seen, [field]: seen[field] + 1 } } };
   return addLog(
-    { ...state, encounter: null },
+    { ...state, meta, encounter: null },
     {
       month: state.ageMonths,
       kind,

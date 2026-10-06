@@ -953,6 +953,7 @@ export function validateMonsters(raw: unknown, realmIds: string[], itemIds: stri
       drops,
       appear: str(m, "appear", w),
       win: str(m, "win", w),
+      ...Object.fromEntries((["lore", "loseText", "fleeOkText", "fleeFailText", "drawText"] as const).filter((k) => m[k] !== undefined).map((k) => [k, str(m, k, w)])),
     };
   });
   uniqueIds(monsters, file);

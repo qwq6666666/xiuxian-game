@@ -517,6 +517,13 @@ export interface MonsterDef {
   drops: { itemId: string; chance: number }[];
   appear: string;
   win: string;
+  /** 勝三次後解鎖的一句見聞（選填，GDD 16.3） */
+  lore?: string;
+  /** 各結局自己的文字（選填）；沒寫就用 rules.text 的共用句 */
+  loseText?: string;
+  fleeOkText?: string;
+  fleeFailText?: string;
+  drawText?: string;
 }
 
 export interface HuntActionDef {
