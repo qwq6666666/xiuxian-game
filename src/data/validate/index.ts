@@ -4,5 +4,5 @@ export { validateEventFiles, validateEvents } from "./events";
 export { validateAcquaintances, validateFragments, validateNames, validateText, validateWorldNames } from "./text";
 export { validateSects } from "./sect";
 export { validateMonsters, validateTribulation } from "./combat";
-export { validateMap, validateWorldEffects, validateWorldEvents } from "./world";
+export { validateMap, validateMapArt, validateWorldEffects, validateWorldEvents } from "./world";
 export { validateGameData } from "./game";

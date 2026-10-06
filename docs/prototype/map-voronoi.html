@@ -173,7 +173,7 @@ function genTerrain(seed, mode, cellsData) {
     if (!land[c.id]) continue; const { x, y } = c, inland = Math.max(0, dl[c.id]) * d;
     const bias = 0.55 + 0.9 * ((1 - y / H) * 0.6 + (1 - x / W) * 0.4), rn = fbm(x / 55, y / 55, seed + 11, 4), ridge = Math.pow(1 - Math.abs(2 * rn - 1), 2.2);
     E[c.id] = clamp(Math.min(1, inland / 70) * 0.3 + ridge * 0.62 * bias * Math.min(1, inland / 22) + (fbm(x / 17, y / 17, seed + 13, 3) - 0.5) * 0.14 + 0.06, 0, 1.2);
-    T[c.id] = clamp(1 - 0.88 * (y / H) + (fbm(x / 90, y / 90, seed + 17, 3) - 0.5) * 0.18 - Math.max(0, E[c.id] - 0.3) * 0.75, 0, 1);
+    T[c.id] = clamp(1 - 0.88 * (1 - y / H) + (fbm(x / 90, y / 90, seed + 17, 3) - 0.5) * 0.18 - Math.max(0, E[c.id] - 0.3) * 0.75, 0, 1);
     Mo[c.id] = clamp(0.22 + 0.5 * fbm(x / 70, y / 70, seed + 19, 4) + 0.38 * Math.exp(-inland / 48) + 0.22 * (y / H) + 0.18 * (x / W) - 0.2 + (E[c.id] > 0.55 ? 0.05 : 0), 0, 1);
     hn[c.id] = fbm(x / 11, y / 11, seed + 707, 3);
   }

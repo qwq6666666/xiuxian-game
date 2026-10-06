@@ -26,6 +26,7 @@ import spiritRootsJson from "./spiritRoots.json";
 import talentsJson from "./talents.json";
 import textJson from "./text.json";
 import mapJson from "./map.json";
+import mapartJson from "./mapart.json";
 import worldEffectsJson from "./worldEffects.json";
 import worldEventsJson from "./worldEvents.json";
 import worldNamesJson from "./worldNames.json";
@@ -51,6 +52,7 @@ import {
   validateSpiritRoots,
   validateTalents,
   validateMap,
+  validateMapArt,
   validateText,
   validateWorldEffects,
   validateWorldEvents,
@@ -92,6 +94,7 @@ export const gameData: GameData = validateGameData({
   fragments: validateFragments(fragmentsJson),
   worldNames: validateWorldNames(worldNamesJson),
   map: validateMap(mapJson),
+  mapart: validateMapArt(mapartJson),
   worldEvents: validateWorldEvents(worldEventsJson),
   worldEffects: validateWorldEffects(worldEffectsJson),
   goals: validateGoals(goalsJson),

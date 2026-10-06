@@ -569,9 +569,35 @@ export interface MapRegion {
   nodes?: Point[];
 }
 
+/** 顯示座標（橫向版面）與邏輯座標（判定用）的固定線性轉換 */
+export interface MapView {
+  size: [number, number];
+  scale: [number, number];
+}
+
+type Rgb = [number, number, number];
+
+/** 地圖的繪製與地形生成參數（只影響顯示） */
+export interface MapArtData {
+  cells: { count: number; min: number; max: number; jitter: number };
+  provinces: { count: number; min: number; max: number; minPerRegion: number };
+  edgeMargin: number;
+  markerRadius: number;
+  coast: { large: number; small: number; islandCutoff: number; islandNear: number; islandFar: number; islandStrength: number; edgePenalty: number };
+  relief: { inlandRange: number; inlandWeight: number; ridgeWeight: number; ridgeSharp: number; ridgeRamp: number; base: number; slope: number; north: number; west: number; detail: number; floor: number; smoothPasses: number };
+  climate: { base: number; noise: number; coast: number; coastRange: number; south: number; east: number; wetOffset: number; coldGradient: number; coldNoise: number; heightChill: number; chillStart: number };
+  river: { minAccumulation: number; lakeFillDelta: number; lakeMinAccumulation: number; jitter: number };
+  biome: { peak: number; warmPeak: number; snowTemp: number; coldTemp: number; coldWet: number; mountain: number; hill: number; hotTemp: number; dry: number; wetTemp: number; wet: number; swampHeight: number; forestWet: number; grassWet: number };
+  /** 依序對應 12 種生態區 */
+  biomes: { name: string; color: Rgb }[];
+  parchment: Rgb;
+}
+
 /** 世界骨架：每世都一樣 */
 export interface MapData {
   viewBox: [number, number];
+  /** 天下圖的顯示座標；邏輯座標乘上 scale 得到顯示座標 */
+  view: MapView;
   /** 國家顏色，依序分配 */
   palette: string[];
   territoryRules: { transitionYears: number; travelDelayMonths: number; marketMultiplier: number; greatReach: number; schoolReach: number; prosperReachMultiplier: number; declineReachMultiplier: number; frontWeight: number; frontOverlap: number; driftAmplitude: number; driftPeriodYears: number; strengthWindowYears: number; maxVertexStep: number };
@@ -820,6 +846,7 @@ export interface GameData {
   fragments: FragmentData;
   worldNames: WorldNames;
   map: MapData;
+  mapart: MapArtData;
   worldEvents: WorldEventDef[];
   worldEffects: WorldEffectDef[];
   goals: GoalDef[];

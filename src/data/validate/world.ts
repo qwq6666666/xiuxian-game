@@ -1,4 +1,5 @@
 import {
+  type MapArtData,
   type MapData,
   type MapRegion,
   type Point,
@@ -34,6 +35,14 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     return c as string;
   });
   if (palette.length < 6) fail(file, "palette", `至少需要 6 種顏色，目前 ${palette.length} 種`);
+  const viewObj = obj(o.view, `${file} 欄位 view`);
+  const viewSize = list(viewObj.size, `${file} 欄位 view.size`);
+  const viewScale = list(viewObj.scale, `${file} 欄位 view.scale`);
+  if (viewSize.length !== 2 || !viewSize.every((n) => typeof n === "number" && n > 0)) fail(file, "view.size", "必須是 [寬, 高] 兩個正數");
+  if (viewScale.length !== 2 || !viewScale.every((n) => typeof n === "number" && n > 0)) fail(file, "view.scale", "必須是 [x 倍率, y 倍率] 兩個正數");
+  if (box[0] * (viewScale[0] as number) > (viewSize[0] as number) || box[1] * (viewScale[1] as number) > (viewSize[1] as number)) {
+    fail(file, "view", `邏輯畫布 ${box[0]}×${box[1]} 乘上 scale 後超出顯示畫布 ${viewSize[0]}×${viewSize[1]}`);
+  }
   const rules = obj(o.territoryRules, `${file} 欄位 territoryRules`);
   const territoryRules = {
     transitionYears: num(rules, "transitionYears", `${file} 欄位 territoryRules`, { min: 1, integer: true }),
@@ -141,7 +150,7 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     market: blurb(bo.market, "market"),
     mountain: blurb(bo.mountain, "mountain"),
   } as MapData["blurbs"];
-  return { viewBox: box, palette, territoryRules, regions, adjacency, stairs, blurbs };
+  return { viewBox: box, view: { size: [viewSize[0] as number, viewSize[1] as number], scale: [viewScale[0] as number, viewScale[1] as number] }, palette, territoryRules, regions, adjacency, stairs, blurbs };
 }
 
 /** 世局候選池各種類允許的目標、欄位與模板欄位 */
@@ -243,4 +252,46 @@ export function validateWorldEvents(raw: unknown, file = "worldEvents.json"): Wo
   });
   uniqueIds(events, file);
   return events;
+}
+
+/** 逐欄檢查一組數值，缺欄或不在範圍內就指出是哪一個欄位 */
+function numGroup<T>(parent: Record<string, unknown>, key: string, file: string, spec: Record<string, { min?: number; max?: number; gt?: number; integer?: boolean }>): T {
+  const where = `${file} 欄位 ${key}`;
+  const g = obj(parent[key], where);
+  const out: Record<string, number> = {};
+  for (const [k, opts] of Object.entries(spec)) out[k] = num(g, k, where, opts);
+  return out as T;
+}
+
+function rgb(raw: unknown, where: string, field: string): [number, number, number] {
+  if (!Array.isArray(raw) || raw.length !== 3 || !raw.every((n) => typeof n === "number" && Number.isInteger(n) && n >= 0 && n <= 255)) {
+    fail(where, field, "必須是 [紅, 綠, 藍] 三個 0 到 255 的整數");
+  }
+  return raw as [number, number, number];
+}
+
+export function validateMapArt(raw: unknown, file = "mapart.json"): MapArtData {
+  const o = obj(raw, file);
+  const cells = numGroup<MapArtData["cells"]>(o, "cells", file, { count: { min: 100, integer: true }, min: { min: 100, integer: true }, max: { min: 100, integer: true }, jitter: { gt: 0, max: 1 } });
+  if (cells.min > cells.max || cells.count < cells.min || cells.count > cells.max) fail(file, "cells", `count 必須在 min 與 max 之間（目前 ${cells.min}、${cells.count}、${cells.max}）`);
+  const provinces = numGroup<MapArtData["provinces"]>(o, "provinces", file, { count: { min: 1, integer: true }, min: { min: 1, integer: true }, max: { min: 1, integer: true }, minPerRegion: { min: 1, integer: true } });
+  if (provinces.min > provinces.max || provinces.count < provinces.min || provinces.count > provinces.max) fail(file, "provinces", `count 必須在 min 與 max 之間（目前 ${provinces.min}、${provinces.count}、${provinces.max}）`);
+  const biomes = list(o.biomes, `${file} 欄位 biomes`).map((b, i) => {
+    const bo = obj(b, `${file} 第 ${i + 1} 種生態區`);
+    return { name: str(bo, "name", `${file} 第 ${i + 1} 種生態區`), color: rgb(bo.color, `${file} 第 ${i + 1} 種生態區`, "color") };
+  });
+  if (biomes.length !== 12) fail(file, "biomes", `必須剛好 12 種生態區，目前 ${biomes.length} 種`);
+  return {
+    cells,
+    provinces,
+    edgeMargin: num(o, "edgeMargin", file, { min: 0 }),
+    markerRadius: num(o, "markerRadius", file, { min: 0 }),
+    coast: numGroup(o, "coast", file, { large: { min: 0 }, small: { min: 0 }, islandCutoff: { min: 0, max: 1 }, islandNear: { min: 0 }, islandFar: { min: 0 }, islandStrength: { min: 0 }, edgePenalty: { min: 0 } }),
+    relief: numGroup(o, "relief", file, { inlandRange: { gt: 0 }, inlandWeight: { min: 0 }, ridgeWeight: { min: 0 }, ridgeSharp: { gt: 0 }, ridgeRamp: { gt: 0 }, base: { min: 0 }, slope: { min: 0 }, north: { min: 0 }, west: { min: 0 }, detail: { min: 0 }, floor: { min: 0 }, smoothPasses: { min: 0, integer: true } }),
+    climate: numGroup(o, "climate", file, { base: {}, noise: { min: 0 }, coast: { min: 0 }, coastRange: { gt: 0 }, south: { min: 0 }, east: { min: 0 }, wetOffset: {}, coldGradient: { min: 0 }, coldNoise: { min: 0 }, heightChill: { min: 0 }, chillStart: { min: 0 } }),
+    river: numGroup(o, "river", file, { minAccumulation: { gt: 0 }, lakeFillDelta: { min: 0 }, lakeMinAccumulation: { min: 0 }, jitter: { min: 0 } }),
+    biome: numGroup(o, "biome", file, { peak: { min: 0 }, warmPeak: { min: 0 }, snowTemp: { min: 0 }, coldTemp: { min: 0 }, coldWet: { min: 0 }, mountain: { min: 0 }, hill: { min: 0 }, hotTemp: { min: 0 }, dry: { min: 0 }, wetTemp: { min: 0 }, wet: { min: 0 }, swampHeight: { min: 0 }, forestWet: { min: 0 }, grassWet: { min: 0 } }),
+    biomes,
+    parchment: rgb(o.parchment, file, "parchment"),
+  };
 }
