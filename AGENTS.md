@@ -134,6 +134,19 @@ docs/
 - 開工前先 `git fetch && git rebase origin/master`；`.gitattributes` 已強制 LF，不要手動改行尾。
 - 合併者要確認分支內沒有 `live.html` 這類建置產物或暫存檔。
 
+## 本機與雲端並行（Claude Code）
+
+同一位助手（Claude）同時在本機與雲端工作階段做事時，視為兩個獨立的工作者，只透過 `origin` 交換：
+
+- 本機是整合者：唯一合併並推 `master` 的地方；本機開發用 `ai/claude-local`（或沿用 `ai/claude-m<編號>` 的功能分支）。
+- 雲端只推自己的分支 `ai/claude-cloud`，不推 `master`，不合併。
+- 開工前 `git fetch && git rebase origin/master`；收工前 `git push origin <自己的分支>`，不要把 commit 只留在其中一邊。
+- 交接檔分開寫：本機 `docs/handoff/claude.md`，雲端 `docs/handoff/claude-cloud.md`，各改各的。
+- 動存檔結構（`SAVE_VERSION`、`tests/save-shape.json`）、`src/core/` 共用函式或 `types.ts` 前，先在 `docs/TODO.md` 的「並行預約表」登記，另一邊不得同時動。
+- 建議分區：雲端做 `src/data/` 內容、文件、測試與 sim 調數值；本機做存檔結構、核心邏輯與介面。
+- 雲端沒有瀏覽器預覽，改了畫面的內容要在合併前由本機看過。
+- 合併前（本機）：`git fetch --all`、`git log master..origin/ai/claude-cloud` 看內容、合併、`npm run verify`、推 `master`、查 GitHub Actions 部署結果。
+
 ## 並行作業流程（git worktree）
 
 兩個以上的助手同時做事時，各自在獨立的工作目錄與分支，互不影響檔案：
