@@ -3,6 +3,12 @@
 > 雲端工作階段專用，新的一筆寫在最上面；本機的紀錄在 `claude.md`。規則見 `AGENTS.md`「本機與雲端並行」。
 > 雲端只推 `ai/claude-cloud`，由本機整合者合併進 `master`。
 
+### 2026-10-06 M38 開場句分流與隔世重逢的故人（GDD 第 41 節，存檔 v24）
+- 核心：`state.ts`（`MetEntry`、`Meta.met`、`LogEntry.originId/spiritRootId`、v24）、`save.ts`（23→24 遷移、`met` 與日誌欄位載入檢查）、`life.ts`（開場日誌帶欄位）、`events.ts`（條件 `acquaintance`、抽到時記錄）、`review.ts`（跨世保留）。資料：`acquaintances.json`、`events/reunion.json`、`text.json` 的 `era.origin/root`、`types.ts`／`validate.ts`／`load.ts`。介面：`ui/format.ts`（開場句、`acquaintanceRows`）、`ui/render.ts`（收藏視窗「故人」）。測試：`tests/reunion.test.ts`；`tests/save-shape.json` 升 v24。
+- 驗證：`npm run verify` 全過（588 測試）；sim 結果與判讀見 GDD 41.3。**請本機補跑 `... 100 post` 與多個種子**：40 場樣本太小，`f01 與 f02`、元嬰累計時間在邊緣上下跳，我無法分辨是否真有偏移；我已把新增事件的權重壓低（開場 8、練氣見聞 2、故人 3）。
+- 沒驗證：遊戲內的開場句、故人事件與收藏視窗外觀；第 15 節例外依使用者在對話中選擇「隔世重逢的故人」而寫入，請本機確認這個決定。
+- 注意：`src/ui/` 由雲端代做，請 ChatGPT 日後審視；存檔版本與 `tests/save-shape.json` 可能與其他分支衝突。
+
 ### 2026-10-06 M37 妖丹與妖丹配方（GDD 38.2）
 - `items.json`（`yao_dan`）、`monsters.json`（12 種怪掉妖丹）、`recipes.json`（5 個新配方＋選填 `label`）、`types.ts`／`validate.ts`（`label`）、`ui/alchemyinfo.ts`（面板名稱用 `label`）、`ui/icons.ts`（妖丹圖示 `core`）、測試。
 - 驗證：`npm run verify` 全過（579 測試）；`sim 300 1 16 forge|alchemy` 與加入前相同；`hunt` 首次金丹 11→10 世（來自 M36 見聞的亂數位移）。

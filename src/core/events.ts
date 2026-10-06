@@ -37,6 +37,14 @@ export function eventAvailable(state: GameState, ev: EventDef, data: GameData = 
   if (c.livesMax !== undefined && state.meta.lives > c.livesMax) return false;
   if (c.sect !== undefined && (state.sect !== null) !== c.sect) return false;
   if (c.sectRankMin !== undefined && (state.sect === null || state.sect.rank < c.sectRankMin)) return false;
+  if (c.acquaintance) {
+    const seen = state.meta.met[c.acquaintance.id];
+    // 每位故人每世最多遇一次；沒遇過算相隔 0 世
+    if (seen && seen.lastLife >= state.meta.lives) return false;
+    const gap = seen ? state.meta.lives - seen.firstLife : 0;
+    if (c.acquaintance.gapMin !== undefined && gap < c.acquaintance.gapMin) return false;
+    if (c.acquaintance.gapMax !== undefined && gap > c.acquaintance.gapMax) return false;
+  }
   if (c.origins && !c.origins.includes(state.originId)) return false;
   if (c.roots && !c.roots.includes(state.spiritRootId)) return false;
   if (c.bottleneck !== undefined && atBottleneck(state, data) !== c.bottleneck) return false;
@@ -253,6 +261,12 @@ export function advanceEvents(state: GameState, month: number, data: GameData = 
   s = { ...s, rngSeed: seed2 };
   if (!ev) return s;
   s = { ...s, eventCounts: { ...s.eventCounts, [ev.id]: (s.eventCounts[ev.id] ?? 0) + 1 } };
+  const who = ev.conditions.acquaintance?.id;
+  if (who !== undefined) {
+    const lives = s.meta.lives;
+    const seen = s.meta.met[who];
+    s = { ...s, meta: { ...s.meta, met: { ...s.meta.met, [who]: { firstLife: seen?.firstLife ?? lives, lastLife: lives } } } };
+  }
 
   if (ev.type === "anecdote") {
     s = runAnecdote(s, ev, month, data);

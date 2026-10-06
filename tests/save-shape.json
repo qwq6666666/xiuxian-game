@@ -1,5 +1,5 @@
 {
-  "version": 23,
+  "version": 24,
   "shape": {
     "TravelState": [
       "locationId",
@@ -19,10 +19,15 @@
       "keptArtifacts",
       "lastLife",
       "lives",
+      "met",
       "reached",
       "sectBest",
       "talents",
       "yuanying"
+    ],
+    "MetEntry": [
+      "firstLife",
+      "lastLife"
     ],
     "BestiaryEntry": [
       "draw",
@@ -70,11 +75,13 @@
       "kind",
       "monsterId",
       "month",
+      "originId",
       "outcome",
       "rank",
       "realmId",
       "retreatMonths",
       "sectName",
+      "spiritRootId",
       "stage",
       "stop",
       "wave"

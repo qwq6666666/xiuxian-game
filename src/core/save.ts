@@ -18,6 +18,7 @@ import {
   type LogKind,
   type OfflineStop,
   type BestiaryEntry,
+  type MetEntry,
   type Meta,
   type Phase,
 } from "./state";
@@ -117,6 +118,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   21: (d) => ({ ...d, version: 22, encounter: null }),
   // v22 沒有圖鑑：舊檔遇過哪些怪無從回推，補上空的紀錄
   22: (d) => ({ ...d, version: 23, meta: { ...obj(d.meta, "meta"), bestiary: {} } }),
+  // v23 沒有故人紀錄：補上空的紀錄；舊的開場日誌沒有出身欄位，顯示時退回通用句
+  23: (d) => ({ ...d, version: 24, meta: { ...obj(d.meta, "meta"), met: {} } }),
   20: (d) => ({ ...d, version: 21, focusMonth: -1 }),
   19: (d) => ({ ...d, version: 20, equipment: { weapon: null, ward: null }, meta: { ...obj(d.meta, "meta"), keptArtifacts: [] } }),
   18: (d, gd) => ({ ...d, version: 19, methodId: gd.methods[0].id }),
@@ -217,6 +220,14 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
   if (kind.startsWith("hunt") && entry.monsterId === undefined) fail(`${p}.monsterId`, "遇怪日誌必須有 monsterId");
   if (eo.rank !== undefined) entry.rank = num(eo, "rank", { integer: true, min: 0 }, `${p}.rank`);
   if (eo.eraIndex !== undefined) entry.eraIndex = num(eo, "eraIndex", { integer: true, min: 0 }, `${p}.eraIndex`);
+  if (eo.originId !== undefined) {
+    entry.originId = str(eo, "originId", `${p}.originId`);
+    if (!data.origins.some((x) => x.id === entry.originId)) fail(`${p}.originId`, `找不到出身 ${entry.originId}`);
+  }
+  if (eo.spiritRootId !== undefined) {
+    entry.spiritRootId = str(eo, "spiritRootId", `${p}.spiritRootId`);
+    if (!data.spiritRoots.some((x) => x.id === entry.spiritRootId)) fail(`${p}.spiritRootId`, `找不到靈根 ${entry.spiritRootId}`);
+  }
   if (kind === "era" && entry.eraIndex === undefined) fail(p, "開場日誌必須有 eraIndex");
   if (kind === "retreat" && (entry.retreatMonths === undefined || entry.stop === undefined)) {
     fail(p, "閉關見聞必須有 retreatMonths 與 stop");
@@ -302,9 +313,20 @@ function parseMeta(v: unknown, data: GameData): Meta {
       draw: num(e, "draw", { integer: true, min: 0 }, `meta.bestiary.${id}.draw`),
     };
   }
+  const met: Record<string, MetEntry> = {};
+  const rawMet = obj(o.met, "meta.met");
+  for (const id of Object.keys(rawMet)) {
+    if (!data.acquaintances.some((a) => a.id === id)) fail(`meta.met.${id}`, `找不到故人 ${id}`);
+    const e = obj(rawMet[id], `meta.met.${id}`);
+    const firstLife = num(e, "firstLife", { integer: true, min: 0 }, `meta.met.${id}.firstLife`);
+    const lastLife = num(e, "lastLife", { integer: true, min: 0 }, `meta.met.${id}.lastLife`);
+    if (lastLife < firstLife) fail(`meta.met.${id}.lastLife`, `不可小於 firstLife（${firstLife}），目前為 ${lastLife}`);
+    met[id] = { firstLife, lastLife };
+  }
   return {
     goals,
     bestiary,
+    met,
     lastLife: o.lastLife === null ? null : parseBrief(o.lastLife, "meta.lastLife", data),
     fragments,
     clears: originCounts("clears"),

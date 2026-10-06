@@ -10,6 +10,8 @@ import zhujiEventsJson from "./events/zhuji.json";
 import fragmentsJson from "./fragments.json";
 import itemsJson from "./items.json";
 import erasJson from "./eras.json";
+import acquaintancesJson from "./acquaintances.json";
+import reunionEventsJson from "./events/reunion.json";
 import namesJson from "./names.json";
 import methodsJson from "./methods.json";
 import originsJson from "./origins.json";
@@ -29,6 +31,7 @@ import worldNamesJson from "./worldNames.json";
 import type { GameData } from "./types";
 import {
   validateConfig,
+  validateAcquaintances,
   validateEras,
   validateEventFiles,
   validateFragments,
@@ -75,6 +78,7 @@ export const gameData: GameData = validateGameData({
     { file: "events/intro.json", raw: introEventsJson },
     { file: "events/opening.json", raw: openingEventsJson },
     { file: "events/lianqi.json", raw: lianqiEventsJson },
+    { file: "events/reunion.json", raw: reunionEventsJson },
     { file: "events/sect.json", raw: sectEventsJson },
     { file: "events/zhuji.json", raw: zhujiEventsJson },
   ]),
@@ -92,6 +96,7 @@ export const gameData: GameData = validateGameData({
   sects: validateSects(sectsJson),
   tribulation: validateTribulation(tribulationJson),
   eras: validateEras(erasJson),
+  acquaintances: validateAcquaintances(acquaintancesJson),
 });
 
 export const config = gameData.config;

@@ -1,6 +1,7 @@
 import { SLOT_NAMES, slotProblems } from "./slots";
 import {
   ATTRIBUTE_KEYS,
+  type AcquaintanceDef,
   type AttributeKey,
   ENDING_CAUSES,
   ENDS_LIFE,
@@ -493,6 +494,15 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   c.worldNot = optStrList(o, "worldNot", where);
   c.origins = optStrList(o, "origins", where);
   c.roots = optStrList(o, "roots", where);
+  if (o.acquaintance !== undefined) {
+    const aw = `${where} 欄位 acquaintance`;
+    const a = obj(o.acquaintance, aw);
+    c.acquaintance = { id: str(a, "id", aw) };
+    if (a.gapMin !== undefined) c.acquaintance.gapMin = num(a, "gapMin", aw, { min: 0, integer: true });
+    if (a.gapMax !== undefined) c.acquaintance.gapMax = num(a, "gapMax", aw, { min: 0, integer: true });
+    if (c.acquaintance.gapMin !== undefined && c.acquaintance.gapMax !== undefined && c.acquaintance.gapMin > c.acquaintance.gapMax) fail(aw, "gapMin", "不可大於 gapMax");
+    for (const k of Object.keys(a)) if (!["id", "gapMin", "gapMax"].includes(k)) fail(aw, k, "不是合法的欄位");
+  }
   if (o.territoryConflict !== undefined) {
     if (typeof o.territoryConflict !== "boolean") fail(where, "territoryConflict", "必須是 true 或 false");
     c.territoryConflict = o.territoryConflict;
@@ -516,7 +526,7 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   }
   for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
   for (const k of Object.keys(o)) {
-    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin", "livesMax", "origins", "roots"].includes(k)) {
+    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin", "livesMax", "origins", "roots", "acquaintance"].includes(k)) {
       fail(where, k, "不是合法的條件");
     }
   }
@@ -778,6 +788,8 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       opening: strList(era, "opening", `${file} 欄位 era`),
       transition: str(era, "transition", `${file} 欄位 era`),
       born: str(era, "born", `${file} 欄位 era`),
+      origin: strListRecord(era, "origin", `${file} 欄位 era`),
+      root: strListRecord(era, "root", `${file} 欄位 era`),
     },
     breakthroughGate: str(o, "breakthroughGate", file),
     talentAdvice: (() => {
@@ -1306,6 +1318,26 @@ export function validateWorldEvents(raw: unknown, file = "worldEvents.json"): Wo
   return events;
 }
 
+/** 物件的每個值都是非空字串陣列（開場句依出身、靈根分流用） */
+function strListRecord(o: Obj, key: string, where: string): Record<string, string[]> {
+  const r = obj(o[key], `${where}.${key}`);
+  const out: Record<string, string[]> = {};
+  for (const k of Object.keys(r)) out[k] = strList(r, k, `${where}.${key}`);
+  return out;
+}
+
+/** 隔世重逢的故人（acquaintances.json） */
+export function validateAcquaintances(raw: unknown, file = "acquaintances.json"): AcquaintanceDef[] {
+  const list_ = list(raw, file).map((r, i): AcquaintanceDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const w = `${file} 第 ${i + 1} 筆（${id}）`;
+    return { id, name: str(o, "name", w), desc: str(o, "desc", w) };
+  });
+  uniqueIds(list_, file);
+  return list_;
+}
+
 export function validateEras(raw: unknown, file = "eras.json"): string[] {
   const o = obj(raw, file);
   const names = strList(o, "names", file);
@@ -1487,6 +1519,7 @@ export function validateGameData(data: GameData): GameData {
     for (const s of c.schedules ?? []) has(scheduleIds, s, `${from} 的 conditions.schedules`, "schedules.json");
     for (const id of c.origins ?? []) has(originIds, id, `${from} 的 conditions.origins`, "origins.json");
     for (const id of c.roots ?? []) has(rootIds, id, `${from} 的 conditions.roots`, "spiritRoots.json");
+    if (c.acquaintance) has(new Set(data.acquaintances.map((a) => a.id)), c.acquaintance.id, `${from} 的 conditions.acquaintance`, "acquaintances.json");
     for (const s of Object.keys(ev.scheduleWeights ?? {})) has(scheduleIds, s, `${from} 的 scheduleWeights`, "schedules.json");
     // 要求的旗標必須有某個結果會設定，抓拼字錯誤
     for (const f of c.flags ?? []) {
@@ -1535,4 +1568,6 @@ export function validateGameData(data: GameData): GameData {
     }
   });
   return data;
+  for (const id of Object.keys(data.text.era.origin)) has(originIds, id, "text.json 的 era.origin", "origins.json");
+  for (const id of Object.keys(data.text.era.root)) has(rootIds, id, "text.json 的 era.root", "spiritRoots.json");
 }

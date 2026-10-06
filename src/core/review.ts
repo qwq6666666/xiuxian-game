@@ -216,6 +216,7 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       sectBest: Math.max(state.meta.sectBest, state.sectPeak),
       goals,
       bestiary: state.meta.bestiary,
+      met: state.meta.met,
       lastLife: lifeBrief(state),
     },
   };

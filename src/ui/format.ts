@@ -251,6 +251,12 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
     }
     case "era":
       template = pickBy(data.text.era.opening, entry.eraIndex ?? 0);
+      {
+        // 開場句再接一句出身或靈根的話：偶數世講出身，奇數世講靈根（舊檔沒有欄位就只有通用句）
+        const idx = entry.eraIndex ?? 0;
+        const extra = idx % 2 === 0 ? data.text.era.origin[entry.originId ?? ""] : data.text.era.root[entry.spiritRootId ?? ""];
+        if (extra && extra.length > 0) template += pickBy(extra, Math.floor(idx / 2));
+      }
       break;
     case "event": {
       const ev = data.events.find((e) => e.id === entry.eventId);
@@ -317,6 +323,24 @@ export function bestiarySummary(meta: Meta, data: GameData): BestiarySummary {
     };
   });
   return { seen: rows.filter((r) => r.entry !== null).length, rows };
+}
+
+export interface AcquaintanceRow {
+  id: string;
+  name: string;
+  desc: string;
+  /** 初遇是第幾世（從 1 起算）；沒遇過為 null */
+  firstLife: number | null;
+  /** 這一世與初遇相隔幾世 */
+  gap: number | null;
+}
+
+/** 故人收藏：遇過的顯示名字與初遇世數，沒遇過的只留空位 */
+export function acquaintanceRows(meta: Meta, data: GameData): AcquaintanceRow[] {
+  return data.acquaintances.map((a) => {
+    const seen = meta.met[a.id];
+    return { id: a.id, name: a.name, desc: a.desc, firstLife: seen ? seen.firstLife + 1 : null, gap: seen ? meta.lives - seen.firstLife : null };
+  });
 }
 
 /** 離線回歸提示，例如「閉關 3 年 2 個月，修為增加 360。」；沒有閉關則回傳空字串 */

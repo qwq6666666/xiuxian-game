@@ -260,6 +260,8 @@ export interface EventConditions {
   origins?: string[];
   /** 限定的靈根 id（spiritRoots.json） */
   roots?: string[];
+  /** 隔世重逢的故人（GDD 第 41 節）：gap 是「這一世與初遇相隔幾世」，沒遇過算 0；每位故人每世最多遇一次 */
+  acquaintance?: { id: string; gapMin?: number; gapMax?: number };
 }
 
 export interface OutcomeDef {
@@ -305,6 +307,13 @@ export interface EventDef {
   /** 見聞的效果 */
   effects?: Effects;
   choices?: ChoiceDef[];
+}
+
+/** 隔世重逢的故人：名字固定；事件寫在 events/ 底下，用 conditions.acquaintance 指向它 */
+export interface AcquaintanceDef {
+  id: string;
+  name: string;
+  desc: string;
 }
 
 export interface SpiritRootDef {
@@ -387,7 +396,7 @@ export interface TextData {
     };
   };
   /** 年號相關文字：開場日誌（依世數挑）、換世句、回顧的出生句 */
-  era: { opening: string[]; transition: string; born: string };
+  era: { opening: string[]; transition: string; born: string; origin: Record<string, string[]>; root: Record<string, string[]> };
   /** 金丹卡瓶頸但缺少突破所需的天賦時顯示 */
   breakthroughGate: string;
   /** 擲骰畫面與角色區的說明；# 由介面依 config 填入百分比 */
@@ -720,4 +729,6 @@ export interface GameData {
   tribulation: TribulationData;
   /** 年號清單，依世數循環使用 */
   eras: string[];
+  /** 隔世重逢的故人 */
+  acquaintances: AcquaintanceDef[];
 }

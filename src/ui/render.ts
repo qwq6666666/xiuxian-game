@@ -46,6 +46,7 @@ import {
   eraBorn,
   eraTransition,
   collectionSummary,
+  acquaintanceRows,
   bestiarySummary,
   BESTIARY_LORE_WINS,
   formatChanges,
@@ -456,6 +457,27 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         lore.className = "fragment-text";
         lore.textContent = row.lore;
         art.append(lore);
+      }
+      box.append(art);
+    }
+    const folk = acquaintanceRows(state.meta, data);
+    const folkHead = document.createElement("h3");
+    folkHead.textContent = `故人　已識 ${folk.filter((r) => r.firstLife !== null).length}／${folk.length} 位`;
+    box.append(folkHead);
+    for (const row of folk) {
+      const art = document.createElement("article");
+      art.className = row.firstLife !== null ? "fragment" : "fragment missing";
+      const name = document.createElement("strong");
+      name.textContent = row.firstLife !== null ? row.name : "？？？";
+      const note = document.createElement("small");
+      note.className = "changes";
+      note.textContent = row.firstLife !== null ? `初遇於第 ${row.firstLife} 世${row.gap! > 0 ? `，至今隔了 ${row.gap} 世` : ""}` : "（尚未遇見）";
+      art.append(name, note);
+      if (row.firstLife !== null) {
+        const desc = document.createElement("p");
+        desc.className = "fragment-text";
+        desc.textContent = row.desc;
+        art.append(desc);
       }
       box.append(art);
     }

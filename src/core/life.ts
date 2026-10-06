@@ -141,6 +141,8 @@ export function startLife(state: GameState, data: GameData = gameData): GameStat
     realmId: state.realmId,
     stage: state.stage,
     eraIndex: lifeIndex(state),
+    originId: state.originId,
+    spiritRootId: state.spiritRootId,
   };
   return { ...state, log: [...state.log, opening].slice(-data.config.logLimit), phase: "living", eventThreshold, eventClock: 0, rngSeed };
 }

@@ -1,0 +1,144 @@
+[
+  {
+    "id": "reunion_gu_yuanzhou_1",
+    "type": "anecdote",
+    "title": "山道錯身",
+    "text": "山道上，一名背劍的青年與你錯身而過，築基修為，腰間水囊空了一半。他問前面有沒有水，聽了答案便道謝，說自己叫顧遠舟。",
+    "weight": 3,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 14,
+      "acquaintance": {
+        "id": "gu_yuanzhou",
+        "gapMin": 0,
+        "gapMax": 0
+      }
+    }
+  },
+  {
+    "id": "reunion_gu_yuanzhou_2",
+    "type": "anecdote",
+    "title": "茶棚舊客",
+    "text": "茶棚裡坐著一位鬢邊微霜的修士，金丹氣象，見你進來便抬了抬眼。他說你有些面善，又自己笑了，說走得遠了，誰都面善。",
+    "weight": 3,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 14,
+      "acquaintance": {
+        "id": "gu_yuanzhou",
+        "gapMin": 1,
+        "gapMax": 3
+      }
+    }
+  },
+  {
+    "id": "reunion_gu_yuanzhou_3",
+    "type": "anecdote",
+    "title": "石階上的老者",
+    "text": "老者拄著劍鞘慢慢走過石階，每一步都要先試一試。你認出那是顧遠舟，他看了你一眼，沒有認出，只說了句天涼了。",
+    "weight": 3,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 14,
+      "acquaintance": {
+        "id": "gu_yuanzhou",
+        "gapMin": 4,
+        "gapMax": 8
+      }
+    }
+  },
+  {
+    "id": "reunion_gu_yuanzhou_4",
+    "type": "anecdote",
+    "title": "無字碑",
+    "text": "路旁多了一塊無字的石碑，碑腳壓著半片舊水囊。茶棚老闆說，那是個走得很遠的人留下的，沒人問過名字。",
+    "weight": 3,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 14,
+      "acquaintance": {
+        "id": "gu_yuanzhou",
+        "gapMin": 9
+      }
+    }
+  },
+  {
+    "id": "reunion_su_banxia_1",
+    "type": "anecdote",
+    "title": "爐前學徒",
+    "text": "丹房的小學徒蘇半夏蹲在爐前，扇火扇得滿臉通紅。師傅叫了她三次，她才聽見，轉頭時鼻尖上還沾著灰。",
+    "weight": 3,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 14,
+      "acquaintance": {
+        "id": "su_banxia",
+        "gapMin": 0,
+        "gapMax": 0
+      }
+    }
+  },
+  {
+    "id": "reunion_su_banxia_2",
+    "type": "anecdote",
+    "title": "新開的藥鋪",
+    "text": "路邊新開了一間藥鋪，掌櫃是個神色沉靜的丹師。她抬頭看你一眼，說你的氣色像久坐不動的人，隨手遞過一小包藥。",
+    "weight": 3,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 14,
+      "acquaintance": {
+        "id": "su_banxia",
+        "gapMin": 1,
+        "gapMax": 3
+      }
+    }
+  },
+  {
+    "id": "reunion_su_banxia_3",
+    "type": "anecdote",
+    "title": "老丹師",
+    "text": "老丹師的手有些抖，稱藥時仍分毫不差。她說一輩子煉過的丹，多半被人吃了就忘，只有失敗的那幾爐，個個記得。",
+    "weight": 3,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 14,
+      "acquaintance": {
+        "id": "su_banxia",
+        "gapMin": 4,
+        "gapMax": 8
+      }
+    }
+  },
+  {
+    "id": "reunion_su_banxia_4",
+    "type": "anecdote",
+    "title": "換了招牌",
+    "text": "藥鋪的招牌換了名字，櫃檯後是個陌生的年輕人。你問起舊掌櫃，他想了想，說只聽過這裡以前有位丹師，丹煉得好，脾氣更好。",
+    "weight": 3,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 14,
+      "acquaintance": {
+        "id": "su_banxia",
+        "gapMin": 9
+      }
+    }
+  }
+]

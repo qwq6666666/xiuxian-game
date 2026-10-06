@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 23;
+export const SAVE_VERSION = 24;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -40,8 +40,16 @@ export interface Meta {
   goals: Record<string, number>;
   /** 歷練遇過的怪物（怪物 id → 各結局次數），只收藏，不影響任何數值（GDD 16.3） */
   bestiary: Record<string, BestiaryEntry>;
+  /** 遇過的故人（故人 id → 初遇與最近一次遇見的世數），只收藏，不影響任何數值（GDD 第 41 節） */
+  met: Record<string, MetEntry>;
   /** 上一世的簡要結果，供一生回顧比較；還沒走完過一世為 null */
   lastLife: LifeBrief | null;
+}
+
+/** 一位故人的相遇紀錄：世數是「已走完的世數」，第一世為 0 */
+export interface MetEntry {
+  firstLife: number;
+  lastLife: number;
 }
 
 /** 一種怪物的遭遇紀錄：勝、敗、逃（成功與失敗都算）、平手 */
@@ -61,7 +69,7 @@ export interface LifeBrief {
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, keptArtifacts: [], goals: {}, bestiary: {}, lastLife: null };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, keptArtifacts: [], goals: {}, bestiary: {}, met: {}, lastLife: null };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
@@ -164,6 +172,9 @@ export interface LogEntry {
   stop?: OfflineStop;
   /** 開場日誌：這一世是第幾世（從 0 起算），年號由它算出 */
   eraIndex?: number;
+  /** 開場日誌：這一世的出身與靈根（M38；舊檔沒有，顯示時退回通用開場句） */
+  originId?: string;
+  spiritRootId?: string;
   /** 宗門日誌：當時的宗門名稱（日誌存名字，之後世局再變也不影響）與位階索引 */
   sectName?: string;
   rank?: number;
