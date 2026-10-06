@@ -42,6 +42,7 @@
 .log li .log-mark { display: inline-block; margin-right: var(--sp-2); padding: 0 var(--sp-1); border: 1px solid currentColor; border-radius: var(--r-sm); font-size: var(--fs-xs); }
 .log li.log-cost .log-mark { color: var(--bad); }
 .log li.log-follow:not(.log-cost) .log-mark, .log li.log-rare:not(.log-cost) .log-mark { color: var(--accent); }
+.log li.log-retreat-summary { color: var(--muted); font-size: var(--fs-md); }
 .side > * + * { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
 
 /* 新日誌淡入；數值變動浮字（aria-hidden，不進螢幕閱讀器） */

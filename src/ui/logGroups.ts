@@ -24,6 +24,40 @@ export interface LogGroup {
   entries: LogEntry[];
 }
 
+export type LogRow = { kind: "entry"; entry: LogEntry } | { kind: "retreats"; entries: LogEntry[]; label: string };
+
+const routineRetreat = (entry: LogEntry, data: GameData): boolean => entry.kind === "retreat" && !composeRetreat(entry, data).startsWith("【偶得】");
+
+/**
+ * 只在顯示層把相鄰的例行閉關見聞收成一行；事件、突破與「偶得」都會中斷。
+ * 呼叫端以十年分組後再傳入，所以摘要不會跨越年代小標。
+ */
+export function collapseRoutineRetreats(entries: readonly LogEntry[], data: GameData): LogRow[] {
+  const rows: LogRow[] = [];
+  for (let i = 0; i < entries.length; ) {
+    const entry = entries[i];
+    if (!routineRetreat(entry, data)) {
+      rows.push({ kind: "entry", entry });
+      i++;
+      continue;
+    }
+    let end = i + 1;
+    while (end < entries.length && routineRetreat(entries[end], data)) end++;
+    const run = entries.slice(i, end);
+    if (run.length === 1) rows.push({ kind: "entry", entry });
+    else {
+      const years = run.map(entryYears);
+      const oldest = Math.min(...years);
+      const newest = Math.max(...years);
+      const span = oldest === newest ? `${toChineseNumber(oldest)}歲` : `${toChineseNumber(oldest)}至${toChineseNumber(newest)}歲`;
+      const count = run.length === 2 ? "兩" : toChineseNumber(run.length);
+      rows.push({ kind: "retreats", entries: run, label: `${span}，閉關${count}次` });
+    }
+    i = end;
+  }
+  return rows;
+}
+
 /** 依歲數每十年分段；輸入順序即輸出順序（日誌由新到舊就由新到舊），同一段連續的才併在一起 */
 export function groupByDecade(entries: readonly LogEntry[]): LogGroup[] {
   const groups: LogGroup[] = [];
