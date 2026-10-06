@@ -4,6 +4,8 @@ import { execSync } from "node:child_process";
 
 const SCOPES = {
   "ai/chatgpt": {
+    // 例外：src/data/events/ 底下的 .json 事件檔交給 ChatGPT 寫（載入清單 load.ts 與驗證仍由 Claude 管）
+    allowed: [/^src\/data\/events\/[^/]+\.json$/],
     forbidden: ["src/core/", "src/data/", "scripts/", ".github/", "package.json", "package-lock.json", "vite.config.ts", "AGENTS.md", "CLAUDE.md", "tests/save-shape.json"],
   },
 };
@@ -35,7 +37,7 @@ if (messages.includes("[scope-ok]")) {
   process.exit(0);
 }
 
-const bad = files.filter((f) => scope.forbidden.some((p) => f === p || f.startsWith(p)));
+const bad = files.filter((f) => !(scope.allowed ?? []).some((re) => re.test(f)) && scope.forbidden.some((p) => f === p || f.startsWith(p)));
 if (bad.length > 0) {
   console.error(`分支 ${branch} 動到了不在負責範圍內的檔案：\n${bad.map((f) => `  ${f}`).join("\n")}`);
   console.error("這些由 Claude 負責。若確實需要，請先跟整合者討論，並在 commit 訊息加上 [scope-ok]。");

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   validateConfig,
+  validateEventFiles,
   validateEvents,
   validateGameData,
   validateItems,
@@ -185,5 +186,19 @@ describe("階段 3 資料格式", () => {
     eff[0].mapRef = "sky";
     expect(() => validateWorldEffects(eff)).toThrow("mapRef");
     expect(() => validateConfig({ ...gameData.config, priceRefItemId: undefined })).toThrow("priceRefItemId");
+  });
+});
+
+describe("事件分檔載入", () => {
+  const first = gameData.events[0];
+  it("擴充檔可以是空陣列，主檔不行", () => {
+    expect(validateEventFiles([{ file: "events.json", raw: [first] }, { file: "events/x.json", raw: [] }])).toHaveLength(1);
+    expect(() => validateEventFiles([{ file: "events.json", raw: [] }])).toThrow("非空");
+  });
+  it("跨檔案 id 重複時報錯", () => {
+    expect(() => validateEventFiles([{ file: "events.json", raw: [first] }, { file: "events/x.json", raw: [first] }])).toThrow("重複");
+  });
+  it("擴充檔的格式錯誤以該檔檔名回報", () => {
+    expect(() => validateEventFiles([{ file: "events.json", raw: [first] }, { file: "events/x.json", raw: [{ ...first, id: "other", type: "?" }] }])).toThrow("events/x.json");
   });
 });

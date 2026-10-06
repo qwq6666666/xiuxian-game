@@ -25,7 +25,7 @@ npm run build   # 正式建置
 ```
 src/
   core/      遊戲邏輯，純函式，不得碰 DOM、不得讀取時間
-  data/      JSON 資料：境界、事件、物品、輪迴天賦、設定
+  data/      JSON 資料：境界、事件（主檔 events.json 與 events/ 擴充檔）、物品、輪迴天賦、設定
   ui/        畫面繪製與事件綁定
   main.ts    進入點，負責計時與串接 core 和 ui
 scripts/
@@ -100,13 +100,30 @@ docs/
 - 沒有瀏覽器預覽工具的助手，驗收時用 `npm run dev` 自己開頁面操作，或請人看。
 - 驗證時若要手動改 localStorage 的存檔（`xiuxian-save`），頁面卸載會用目前狀態覆蓋它；改用遊戲內的「匯入存檔」。
 
+## 兩位助手的職責（Claude／ChatGPT）
+
+原則：按**檔案區域**分，不按功能分；同一個檔案同時只有一位負責，就不需要檔案鎖。
+
+| | Claude（核心與整合者） | ChatGPT（介面與內容） |
+|---|---|---|
+| 負責寫 | `src/core/`、`src/data/` 的結構與數值（`types.ts`、`validate.ts`、`load.ts`、各 JSON）、`scripts/`、`tests/`、`.github/`、`AGENTS.md`、`docs/GDD.md` | `src/ui/`、圖片資產、`src/data/events/*.json` 的事件文字 |
+| 負責做 | 里程碑設計與實作計畫、存檔升版與遷移、`npm run sim` 與數值調整、審查與合併進 `master`、部署 | 畫面、樣式、動畫、地圖繪製、手機與鍵盤實測、事件與日誌文字草稿 |
+| 只提案不直接改 | — | `docs/WORLD.md`、`docs/GDD.md`、`src/data/` 結構檔 |
+
+- **互審**：誰寫的不自己合併。ChatGPT 的分支由 Claude 審後合併；Claude 動到 `src/ui/` 時請 ChatGPT 看一眼。
+- **交接紀錄**：每位助手維護自己的 `docs/handoff/<名字>.md`（`claude.md`、`chatgpt.md`），完成一段就**在最上面**追加一筆：分支與 commit、改了什麼與為什麼、**怎麼驗證的**（跑了哪些指令、有沒有開瀏覽器、什麼寬度與速度）、**沒驗證的**、下一步與需要對方注意的事。開工先讀對方的檔案與 `docs/TODO.md`。只改自己的檔案，避免衝突。
+- **UI 需要新資料欄位**：ChatGPT 在交接檔寫需求，Claude 加欄位與驗證並回報，ChatGPT 再畫。兩邊不要同時動。
+- **事件分檔**：`src/data/events.json` 是主檔，只有 Claude 改。新事件寫在 `src/data/events/*.json`（目前有 `yuanying.json`，元嬰期事件，起初是空陣列），格式與主檔相同，id 全域不得重複，載入時逐筆檢查。新增檔案要在 `src/data/load.ts` 的 `validateEventFiles` 清單加一行，這步由 Claude 做。ChatGPT 只能改 `events/` 底下已存在的 `.json`；`check-scope` 對這個路徑放行。事件文字仍受「語言規則」約束，Claude 審稿時會對照 `docs/GDD.md` 第 17 節與 `docs/WORLD.md`。
+- 需要跨區域時（例如畫面改動必須小改 `core/`）：先在交接檔提計畫，經 Claude 同意，commit 訊息再加 `[scope-ok]`。
+- 數值、存檔、sim 的疑問一律歸 Claude。不確定時先問使用者，不要順手改對方的檔案。
+
 ## 多助手的整合與部署
 
 - 各助手做完一小段就 `git push origin <自己的分支>`（`ai/claude`、`ai/chatgpt`），不要只留在本機；推分支不會部署，GitHub 會自動跑 `verify`。
 - 整合者（使用者指定一位，預設是 Claude Code）負責合併進 `master`：`git fetch --all`、`git log master..origin/<分支>` 看新內容、合併、解衝突、跑 `npm run verify`，通過後**一次**推上 `master`。其他助手不直接推 `master`。
 - 部署只由 `master` 的推送觸發。連續推 `master` 會讓排隊中的部署被後一次取代，整合完再推一次即可。
 - 開工前先在 `docs/TODO.md` 預約下一個里程碑編號與章節編號（寫上助手名），避免兩邊撞號。
-- 範圍由 CI 檢查（`scripts/check-scope.mjs`）：`ai/chatgpt` 不得動 `src/core/`、`src/data/`、`scripts/`、`.github/`、`package.json`、`AGENTS.md`、`tests/save-shape.json`；確實需要時，先在 `docs/TODO.md` 或對話提出計畫並經整合者同意，再於 commit 訊息加 `[scope-ok]`。
+- 範圍由 CI 檢查（`scripts/check-scope.mjs`）：`ai/chatgpt` 不得動 `src/core/`、`src/data/`（`src/data/events/*.json` 除外）、`scripts/`、`.github/`、`package.json`、`AGENTS.md`、`tests/save-shape.json`；確實需要時，先在 `docs/TODO.md` 或對話提出計畫並經整合者同意，再於 commit 訊息加 `[scope-ok]`。
 - 架構規則由 `tests/architecture.test.ts` 守住：`core/` 不得使用 `Math.random`、`Date.now`、DOM、不得 import `ui/`；改存檔欄位必須升 `SAVE_VERSION`、寫遷移函式並更新 `tests/save-shape.json`。
 - `docs/GDD.md`、`docs/TODO.md` 最容易衝突：只在自己的章節新增內容，不整檔改寫、不改換行符號。
 - 新增圖片要壓縮（JPEG／WebP，寬度不超過實際顯示的兩倍）；圖會被內嵌進單一 `index.html`，`verify` 在超過 1500 KB 時會失敗。

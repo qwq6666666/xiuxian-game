@@ -1,6 +1,7 @@
 import configJson from "./config.json";
 import goalsJson from "./goals.json";
 import eventsJson from "./events.json";
+import yuanyingEventsJson from "./events/yuanying.json";
 import fragmentsJson from "./fragments.json";
 import itemsJson from "./items.json";
 import erasJson from "./eras.json";
@@ -19,7 +20,7 @@ import type { GameData } from "./types";
 import {
   validateConfig,
   validateEras,
-  validateEvents,
+  validateEventFiles,
   validateFragments,
   validateGameData,
   validateGoals,
@@ -42,7 +43,11 @@ export const gameData: GameData = validateGameData({
   realms: validateRealms(realmsJson),
   schedules: validateSchedules(schedulesJson),
   items: validateItems(itemsJson),
-  events: validateEvents(eventsJson),
+  // 新增事件檔：在 src/data/events/ 放 json，並在這裡加一行（只有整合者改這個檔）
+  events: validateEventFiles([
+    { file: "events.json", raw: eventsJson },
+    { file: "events/yuanying.json", raw: yuanyingEventsJson },
+  ]),
   talents: validateTalents(talentsJson),
   spiritRoots: validateSpiritRoots(spiritRootsJson),
   origins: validateOrigins(originsJson),

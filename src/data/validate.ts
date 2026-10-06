@@ -457,6 +457,20 @@ function parseChoice(raw: unknown, where: string): ChoiceDef {
   return choice;
 }
 
+/**
+ * 事件分檔載入：主檔 events.json 必須非空，src/data/events/ 底下的擴充檔可以是空陣列。
+ * 各檔用自己的檔名回報錯誤，id 在所有檔案之間不得重複；順序依傳入順序（影響亂數結果，主檔在前）。
+ */
+export function validateEventFiles(files: { file: string; raw: unknown }[]): EventDef[] {
+  const all: EventDef[] = [];
+  files.forEach(({ file, raw }, i) => {
+    if (i > 0 && Array.isArray(raw) && raw.length === 0) return;
+    all.push(...validateEvents(raw, file));
+  });
+  uniqueIds(all, "events（所有事件檔）");
+  return all;
+}
+
 export function validateEvents(raw: unknown, file = "events.json"): EventDef[] {
   const events = list(raw, file).map((r, i): EventDef => {
     const o = obj(r, `${file} 第 ${i + 1} 筆`);

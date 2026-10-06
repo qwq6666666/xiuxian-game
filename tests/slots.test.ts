@@ -45,6 +45,14 @@ describe("資料檔不得寫死參考名", () => {
     }
   });
 
+  it("src/data/events/ 底下的事件檔同樣不得寫死參考名", () => {
+    const dir = new URL("../src/data/events/", import.meta.url);
+    for (const f of readdirSync(dir).filter((x) => x.endsWith(".json"))) {
+      const text = readFileSync(new URL(f, dir), "utf8");
+      for (const name of REFERENCE_NAMES) expect(text.includes(name), `events/${f} 直接寫了 ${name}`).toBe(false);
+    }
+  });
+
   it("名庫裡才有參考名（名庫本來就是它們的來源）", () => {
     const all = Object.values(data.worldNames).flat();
     for (const name of REFERENCE_NAMES) expect(all, name).toContain(name);
