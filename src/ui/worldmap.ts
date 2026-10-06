@@ -189,10 +189,7 @@ export function buildWorldMap(
   close.type = "button";
   close.addEventListener("click", handlers.onClose);
   head.append(close);
-  const ferryScene = html("div", "scene-art scene-art-ferry");
-  ferryScene.setAttribute("role", "img");
-  ferryScene.setAttribute("aria-label", "晨霧江面上，一葉渡船泊在古渡旁");
-  frag.append(head, html("p", "desc map-sub", "九渡洲。山河未改，行路的人已不同。"), ferryScene);
+  frag.append(head, html("p", "desc map-sub", "九渡洲。山河未改，行路的人已不同。"));
 
   // ---- 地圖：canvas 底圖加 SVG 疊層 ----
   const wrap = html("div", "map-zoomwrap");

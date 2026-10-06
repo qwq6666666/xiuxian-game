@@ -86,8 +86,8 @@
   .map-card { min-width: 0; overflow-x: hidden; }
   .map-zoomwrap { max-width: 100%; touch-action: none; }
   .map-zoom { display: flex; }
-  /* 手機首屏只留地圖、圖層鈕與資訊卡：渡口插畫與副標收起來 */
-  .map-card > .scene-art-ferry, .map-card > .map-sub { display: none; }
+  /* 手機首屏只留地圖、圖層鈕與資訊卡：副標收起來 */
+  .map-card > .map-sub { display: none; }
   .map-destination { min-width: 0; max-width: 100%; }
   .map-travel-status { overflow-wrap: anywhere; }
   .map-travel-go { width: 100%; min-height: var(--tap); }

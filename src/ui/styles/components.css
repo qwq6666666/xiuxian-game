@@ -5,7 +5,6 @@
 .scene-art-opening { background-image: url('../images/scene-opening.webp'); }
 .scene-art-wilderness { background-image: url('../images/scene-wilderness.webp'); }
 .scene-art-market { background-image: url('../images/scene-market.webp'); }
-.scene-art-ferry { background-image: url('../images/scene-ferry.webp'); }
 .scene-art-breakthrough { background-image: url('../images/scene-breakthrough.webp'); }
 .scene-art-reincarnation { background-image: url('../images/scene-reincarnation.webp'); }
 .review .scene-art, .map-card > .scene-art { max-width: 480px; }

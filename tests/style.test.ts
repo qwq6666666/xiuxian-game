@@ -117,7 +117,7 @@ describe("手機回顧彈窗", () => {
 describe("手機地圖旅行", () => {
   it("手機首屏只留地圖、圖層鈕與資訊卡，選單不溢出且啟程鈕可單手點擊", () => {
     expect(mapText).toMatch(/\.map-pane\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
-    expect(mapText).toMatch(/@media \(max-width: 760px\)[\s\S]*\.map-card > \.scene-art-ferry[^{]*\{[^}]*display:\s*none/);
+    expect(mapText).toMatch(/@media \(max-width: 760px\)[\s\S]*\.map-card > \.map-sub[^{]*\{[^}]*display:\s*none/);
     expect(mapText).toMatch(/\.map-chip-toggle span\s*\{[^}]*min-height:\s*var\(--tap\)/);
     expect(mapText).toMatch(/\.map-destination\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%/);
     expect(mapText).toMatch(/\.map-travel-go\s*\{[^}]*width:\s*100%[^}]*min-height:\s*var\(--tap\)/);
