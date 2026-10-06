@@ -1,5 +1,5 @@
 {
-  "version": 15,
+  "version": 16,
   "shape": {
     "TravelState": [
       "locationId",
@@ -11,6 +11,7 @@
     "Meta": [
       "clears",
       "daoYun",
+      "fastest",
       "fragments",
       "goals",
       "huashen",

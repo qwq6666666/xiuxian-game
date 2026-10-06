@@ -240,7 +240,7 @@ export interface CollectionSummary {
   yuanyingTotal: number;
   /** 化神總次數 */
   huashenTotal: number;
-  rows: { id: string; name: string; desc: string; count: number; yuanying: number; huashen: number }[];
+  rows: { id: string; name: string; desc: string; count: number; yuanying: number; huashen: number; fastest: { cleared?: number; yuanying?: number; huashen?: number } }[];
   /** 每種出身都至少通關一次 */
   allCleared: boolean;
 }
@@ -254,6 +254,7 @@ export function collectionSummary(meta: Meta, data: GameData): CollectionSummary
     count: meta.clears[o.id] ?? 0,
     yuanying: meta.yuanying[o.id] ?? 0,
     huashen: meta.huashen[o.id] ?? 0,
+    fastest: { cleared: meta.fastest[`cleared:${o.id}`], yuanying: meta.fastest[`yuanying:${o.id}`], huashen: meta.fastest[`huashen:${o.id}`] },
   }));
   return {
     total: rows.reduce((sum, r) => sum + r.count, 0),

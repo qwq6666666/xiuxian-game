@@ -4,7 +4,7 @@ import type { EndingCause, GameData, RealmDef, ReviewCause } from "../data/types
 import { CLEAR_FRAGMENT_ID, grantFragment } from "./fragments";
 import { goalStatuses, lifeBrief } from "./goals";
 import { eventOf, realmOf } from "./progress";
-import type { GameState, LifeReview, LogEntry } from "./state";
+import type { GameState, LifeReview, LogEntry, Meta } from "./state";
 
 /** 通關後仍繼續活著的那一世，用旗標標示（只在介面顯示「已通關」） */
 export const CLEARED_FLAG = "cleared";
@@ -29,12 +29,20 @@ export function endsLifeOnEntry(realm: RealmDef, state: GameState): boolean {
   return realm.endsLife === "untilYuanying" && totalYuanying(state) === 0;
 }
 
+/** 記下某個終局的最快年齡：該出身這個終局的紀錄沒有，或這次比較快，就更新 */
+export function withFastest(meta: Meta, kind: "cleared" | "yuanying" | "huashen", originId: string, ageMonths: number): Meta {
+  const key = `${kind}:${originId}`;
+  const old = meta.fastest[key];
+  return old !== undefined && old <= ageMonths ? meta : { ...meta, fastest: { ...meta.fastest, [key]: ageMonths } };
+}
+
 /** 記一次元嬰：該出身次數加一。結束這一世與繼續活著的元嬰都走這裡。 */
 export function applyYuanying(state: GameState): GameState {
   return {
     ...state,
     meta: {
       ...state.meta,
+      ...withFastest(state.meta, "yuanying", state.originId, state.ageMonths),
       yuanying: { ...state.meta.yuanying, [state.originId]: (state.meta.yuanying[state.originId] ?? 0) + 1 },
     },
   };
@@ -46,6 +54,7 @@ export function applyHuashen(state: GameState): GameState {
     ...state,
     meta: {
       ...state.meta,
+      ...withFastest(state.meta, "huashen", state.originId, state.ageMonths),
       huashen: { ...state.meta.huashen, [state.originId]: (state.meta.huashen[state.originId] ?? 0) + 1 },
     },
   };
@@ -65,6 +74,7 @@ export function applyClear(state: GameState): GameState {
     ...withFragment,
     meta: {
       ...withFragment.meta,
+      ...withFastest(withFragment.meta, "cleared", state.originId, state.ageMonths),
       clears: { ...state.meta.clears, [state.originId]: (state.meta.clears[state.originId] ?? 0) + 1 },
     },
   };
@@ -197,6 +207,10 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       lives: state.meta.lives + 1,
       fragments: earned.meta.fragments,
       clears: earned.meta.clears,
+      fastest: {
+        ...state.meta.fastest,
+        ...(cause === "cleared" ? earned.meta.fastest : cause === "yuanying" ? applyYuanying(state).meta.fastest : cause === "huashen" ? applyHuashen(state).meta.fastest : {}),
+      },
       yuanying,
       huashen,
       sectBest: Math.max(state.meta.sectBest, state.sectPeak),

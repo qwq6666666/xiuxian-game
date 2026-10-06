@@ -104,6 +104,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   // v13 沒有化神紀錄：補上空的紀錄
   13: (d) => ({ ...d, version: 14, meta: { ...obj(d.meta, "meta"), huashen: {} } }),
   // v14 沒有宗門：補上未入宗的狀態，跨世與回顧補上最高位階 0
+  // v15 沒有最快年齡：舊存檔沒記下過去的年齡，無從回推，補上空的紀錄
+  15: (d) => ({ ...d, version: 16, meta: { ...obj(d.meta, "meta"), fastest: {} } }),
   14: (d) => ({
     ...d,
     version: 15,
@@ -214,6 +216,18 @@ function parseBrief(v: unknown, path: string, data: GameData): LifeBrief {
   return { ageMonths: num(o, "ageMonths", { integer: true, min: 0 }, `${path}.ageMonths`), realmId, stage, originId };
 }
 
+/** 各出身最快達成各終局的年齡：鍵是「終局:出身 id」 */
+function parseFastest(o: Obj, data: GameData): Record<string, number> {
+  const raw = intRecord(o, "fastest", "meta.fastest");
+  for (const [key, age] of Object.entries(raw)) {
+    const [kind, originId] = key.split(":");
+    if (!["cleared", "yuanying", "huashen"].includes(kind) || !originId) fail(`meta.fastest.${key}`, "鍵必須是「cleared、yuanying、huashen」加冒號加出身 id");
+    if (!data.origins.some((x) => x.id === originId)) fail(`meta.fastest.${key}`, `找不到出身 ${originId}`);
+    if (age < 1) fail(`meta.fastest.${key}`, `必須是正整數，目前為 ${age}`);
+  }
+  return raw;
+}
+
 function parseMeta(v: unknown, data: GameData): Meta {
   const o = obj(v, "meta");
   const talents = intRecord(o, "talents", "meta.talents");
@@ -252,6 +266,7 @@ function parseMeta(v: unknown, data: GameData): Meta {
     clears: originCounts("clears"),
     yuanying: originCounts("yuanying"),
     huashen: originCounts("huashen"),
+    fastest: parseFastest(o, data),
     sectBest: num(o, "sectBest", { integer: true, min: 0 }, "meta.sectBest"),
     daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
     talents,

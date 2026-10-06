@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 15;
+export const SAVE_VERSION = 16;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -30,6 +30,8 @@ export interface Meta {
   yuanying: Record<string, number>;
   /** 各出身化神大成的次數（出身 id → 次數），只收藏，不影響任何數值 */
   huashen: Record<string, number>;
+  /** 各出身最快達成各終局的年齡（月）；鍵是「終局:出身 id」，終局為 cleared、yuanying、huashen，只收藏 */
+  fastest: Record<string, number>;
   /** 歷代在宗門裡到過的最高位階（1 外門到 4 長老，0 沒入過宗），只收藏 */
   sectBest: number;
   /** 各目標達成的次數（目標 id → 次數），只收藏，不影響任何數值 */
@@ -47,7 +49,7 @@ export interface LifeBrief {
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, goals: {}, lastLife: null };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, goals: {}, lastLife: null };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
