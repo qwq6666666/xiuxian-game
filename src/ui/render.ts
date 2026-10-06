@@ -22,6 +22,7 @@ import { fillSlots, type SlotValues } from "../data/slots";
 import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { sectPanel } from "./sectinfo";
+import { methodRows } from "./methodinfo";
 import { alchemyPanel } from "./alchemyinfo";
 import { attributeGuide, recommendTalent, talentPreview, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
 import type { MapTarget } from "./mapinfo";
@@ -67,6 +68,7 @@ export interface UiHandlers {
   onZuohua(): void;
   onTravel(targetId: string): void;
   onWave(choice: WaveChoice): void;
+  onMethod(methodId: string): void;
   onStartBrew(recipeId: string): void;
   onCancelBrew(): void;
   onJoinSect(): void;
@@ -535,8 +537,19 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   let rollKey = "";
   let currentName = "";
 
+  /** 擲骰畫面的心法選擇：未解鎖的列出條件，已選的標示 */
+  function methodHtml(state: GameState): string {
+    const rows = methodRows(state, data)
+      .map(
+        (m) =>
+          `<button type="button" data-method="${m.id}" aria-pressed="${m.selected}" class="${m.selected ? "active" : ""}"${m.unlocked ? "" : " disabled"}><strong>${m.name}</strong><small>${m.desc}</small><small>${m.effectText}</small>${m.unlocked ? "" : `<small>${m.lockText}</small>`}</button>`,
+      )
+      .join("");
+    return `<section class="methods"><h2>心法</h2><p class="desc">一世只能用一種，開始修行後不能更換。</p><div class="choices">${rows}</div></section>`;
+  }
+
   function renderRoll(state: GameState): void {
-    const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
+    const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.methodId}|${state.meta.fragments.length}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
     if (built === "roll" && key === rollKey) return;
     built = "roll";
     rollKey = key;
@@ -554,6 +567,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         ${identityHtml(state)}
         ${birthHtml(state)}
         ${goalsHtml(state)}
+        ${methodHtml(state)}
         <div class="actions">
           <button id="reroll" type="button" ${state.rerolls > 0 ? "" : "disabled"}>重擲（剩 ${state.rerolls} 次）</button>
           <button id="start" type="button" class="primary">開始修行</button>
@@ -566,6 +580,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       handlers.onRename(nameInput.value);
       nameInput.value = currentName;
     });
+    stageEl.querySelectorAll<HTMLButtonElement>("[data-method]").forEach((b) => b.addEventListener("click", () => handlers.onMethod(b.dataset.method!)));
     stageEl.querySelector("#reroll")!.addEventListener("click", () => handlers.onReroll());
     stageEl.querySelector("#start")!.addEventListener("click", () => handlers.onStart());
   }

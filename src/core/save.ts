@@ -109,6 +109,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   16: (d) => ({ ...d, version: 17, tribulation: null }),
   // v17 沒有煉丹：補上未在煉丹的狀態
   17: (d) => ({ ...d, version: 18, alchemy: null }),
+  // v18 沒有心法：補上預設的無相訣（第一個心法）
+  18: (d, gd) => ({ ...d, version: 19, methodId: gd.methods[0].id }),
   15: (d) => ({ ...d, version: 16, meta: { ...obj(d.meta, "meta"), fastest: {} } }),
   14: (d) => ({
     ...d,
@@ -425,6 +427,8 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   } else if (o.alchemy === undefined) {
     fail("alchemy", "不可缺少（沒有煉丹時為 null）");
   }
+  const methodId = str(o, "methodId");
+  if (!data.methods.some((m) => m.id === methodId)) fail("methodId", `找不到心法 ${methodId}`);
   const sectRaw = o.sect === null ? null : obj(o.sect, "sect");
   if (sectRaw !== null) {
     const sid = str(sectRaw, "id", "sect.id");
@@ -465,6 +469,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     startFragments: num(o, "startFragments", { integer: true, min: 0 }),
     tribulation,
     alchemy,
+    methodId,
     sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
     sectsTried: o.sectsTried as string[],
     sectPeak: num(o, "sectPeak", { integer: true, min: 0 }),

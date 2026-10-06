@@ -1,5 +1,5 @@
 {
-  "version": 18,
+  "version": 19,
   "shape": {
     "TravelState": [
       "locationId",
@@ -107,6 +107,7 @@
       "lifespanBonus",
       "log",
       "meta",
+      "methodId",
       "name",
       "nameCustom",
       "originId",

@@ -1,0 +1,30 @@
+[
+  {
+    "id": "wuxiang",
+    "name": "無相訣",
+    "desc": "不偏不倚的吐納法門，沒有長處，也沒有短處。",
+    "effects": {},
+    "unlock": { "fragments": 0 }
+  },
+  {
+    "id": "wenjin",
+    "name": "穩進訣",
+    "desc": "一口氣分三口吐，慢是慢了些，闖關時不容易傷根本。",
+    "effects": { "cultivation": -0.04, "failLoss": 0.06, "guardBonus": 0.03 },
+    "unlock": { "fragments": 4 }
+  },
+  {
+    "id": "jixing",
+    "name": "疾行訣",
+    "desc": "氣走得快，也走得直，路上少了許多閒雜事，連機緣也一併少了。",
+    "effects": { "cultivation": 0.06, "eventRate": -0.15 },
+    "unlock": { "fragments": 8 }
+  },
+  {
+    "id": "youchen",
+    "name": "遊塵訣",
+    "desc": "吐納隨塵而動，修得慢，卻總在人堆裡撞見些奇事。",
+    "effects": { "cultivation": -0.05, "eventRate": 0.2, "fragmentChance": 0.2 },
+    "unlock": { "fragments": 12 }
+  }
+]

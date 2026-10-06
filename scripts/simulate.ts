@@ -12,6 +12,7 @@
 // 天劫策略（tribulation，第 5 個參數）：同 mixed，另外突破前買避雷符，天劫每一道用符籙或護體，量測各境界天劫的成功率（GDD 第 31 節）。其他策略的天劫每一道都硬抗，結果與一鍵突破相同。
 // 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
 // 煉丹策略（alchemy，第 5 個參數）：同 herb（永遠採藥、有錢就買丹），另外材料攢夠就開爐煉聚氣丹與護心丹，量測煉丹有沒有讓這條最划算的路線快過閉關（GDD 第 32 節）。
+// 心法策略（method:穩進訣 id，第 5 個參數，如 method:wenjin）：同 mixed，但每世用指定的心法（無視殘卷解鎖），量測心法有沒有讓首次金丹過快或過慢（GDD 第 35 節）。
 // 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
 // 例：npm run sim -- 300 1 40 post
 import { canStartBrew, startBrew } from "../src/core/alchemy";
@@ -31,7 +32,10 @@ import { realmLabel } from "../src/ui/format";
 const runs = Number(process.argv[2] ?? 1000);
 const baseSeed = Number(process.argv[3] ?? 1);
 const lives = Number(process.argv[4] ?? 1);
-const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : "simple";
+// method:<心法 id> 是 mixed 加上指定心法
+const forcedMethod = process.argv[5]?.startsWith("method:") ? process.argv[5].slice(7) : null;
+if (forcedMethod !== null && !gameData.methods.some((m) => m.id === forcedMethod)) throw new Error(`找不到心法 ${forcedMethod}`);
+const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -209,7 +213,7 @@ function playLife(start: GameState): GameState {
   let yuanyingEntered: number | null = null;
   let jindanEntered: number | null = null;
   let jindanLeft: number | null = null;
-  let state = startLife(start, gameData);
+  let state = startLife(forcedMethod !== null ? { ...start, methodId: forcedMethod } : start, gameData);
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
     if (strategy === "herb" && state.phase === "living") state = herbActions(state);
@@ -551,6 +555,10 @@ function campaigns(): void {
     console.log(`  各世最高位階：未入宗 ${pct(sectStats.peaks[0])}、外門 ${pct(sectStats.peaks[1])}、內門 ${pct(sectStats.peaks[2])}、執事 ${pct(sectStats.peaks[3])}、長老 ${pct(sectStats.peaks[4])}`);
     console.log(`  ${ok(cMed >= 7)} 入宗路線首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
     console.log(`  ${ok(hours >= 3.5)} 入宗路線通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
+  }
+  if (forcedMethod !== null) {
+    console.log(`對照第 35.4 節（心法 ${forcedMethod}）：`);
+    console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世；與無相訣（mixed）相比不得慢超過 2 世）`);
   }
   if (strategy === "alchemy") {
     console.log("對照第 32.4 節（煉丹）：");

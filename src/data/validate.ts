@@ -35,6 +35,7 @@ import {
   type ItemDef,
   type ItemEffect,
   ALCHEMY_SCHEDULE,
+  type MethodDef,
   type RecipeDef,
   type RecipesData,
   type OriginDef,
@@ -344,6 +345,29 @@ export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
   });
   uniqueIds(items, file);
   return items;
+}
+
+export function validateMethods(raw: unknown, file = "methods.json"): MethodDef[] {
+  const methods = list(raw, file).map((r, i): MethodDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const where = `${file} 第 ${i + 1} 筆（${id}）`;
+    const ew = `${where} 欄位 effects`;
+    const e = obj(o.effects, ew);
+    for (const k of Object.keys(e)) {
+      if (!["cultivation", "eventRate", "failLoss", "guardBonus", "fragmentChance"].includes(k)) fail(ew, k, "不是心法效果");
+    }
+    const opt = (key: string, min: number, max: number) => (e[key] !== undefined ? { [key]: num(e, key, ew, { min, max }) } : {});
+    const effects = { ...opt("cultivation", -0.5, 0.5), ...opt("eventRate", -0.9, 1), ...opt("failLoss", 0, 0.3), ...opt("guardBonus", 0, 0.2), ...opt("fragmentChance", 0, 1) };
+    const uw = `${where} 欄位 unlock`;
+    return { id, name: str(o, "name", where), desc: str(o, "desc", where), effects, unlock: { fragments: num(obj(o.unlock, uw), "fragments", uw, { min: 0, integer: true }) } };
+  });
+  uniqueIds(methods, file);
+  const first = methods[0];
+  if (first.unlock.fragments !== 0 || Object.keys(first.effects).length > 0) {
+    fail(`${file} 第 1 筆（${first.id}）`, "effects", "第一個心法是預設，必須沒有任何效果且不需解鎖");
+  }
+  return methods;
 }
 
 export function validateRecipes(raw: unknown, file = "recipes.json"): RecipesData {

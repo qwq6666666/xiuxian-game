@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -208,6 +208,8 @@ export interface GameState {
   pillCount: number;
   /** 延壽丹累積的壽元上限（年） */
   lifespanBonus: number;
+  /** 這一世選的心法（M31）；只能在擲骰階段更換 */
+  methodId: string;
   /** 目前的日常安排 */
   schedule: string;
   realmId: string;

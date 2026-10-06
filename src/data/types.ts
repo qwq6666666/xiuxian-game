@@ -135,6 +135,29 @@ export interface ItemDef {
   effect: ItemEffect;
 }
 
+/** 心法（M31）的效果：全是比例，0.06 代表 +6%；省略代表 0 */
+export interface MethodEffects {
+  /** 修煉速度 */
+  cultivation?: number;
+  /** 事件頻率 */
+  eventRate?: number;
+  /** 突破失敗損失的比例減免（絕對值，0.06 代表損失少 6 個百分點） */
+  failLoss?: number;
+  /** 天劫護體每一道額外增加的成功率 */
+  guardBonus?: number;
+  /** 殘卷事件的觸發機率增幅（只作用在機率小於 1 的殘卷效果） */
+  fragmentChance?: number;
+}
+
+export interface MethodDef {
+  id: string;
+  name: string;
+  desc: string;
+  effects: MethodEffects;
+  /** 殘卷錄集到這麼多份才能選 */
+  unlock: { fragments: number };
+}
+
 /** 煉丹用的日常安排 id */
 export const ALCHEMY_SCHEDULE = "alchemy";
 
@@ -581,6 +604,7 @@ export interface GameData {
   schedules: ScheduleDef[];
   items: ItemDef[];
   recipes: RecipesData;
+  methods: MethodDef[];
   events: EventDef[];
   talents: TalentDef[];
   spiritRoots: SpiritRootDef[];

@@ -57,7 +57,8 @@
 - [x] M32 內容（Claude 代 ChatGPT，額度因素）：`src/data/events/intro.json` 開場引路事件；狀態卡「再 N 層可衝擊築基」提示。
 - [x] M28 天劫（存檔 v17；sim 全不變；天劫路線 ✓）。
 - [x] M29 煉丹（存檔 v18；材料掉落用衍生亂數，sim 全不變；`alchemy` 策略 ✓；GDD 32.6）。
-- [ ] M31 心法、[ ] M30 煉器與法寶：依序由 Claude 做核心。
+- [x] M31 心法（存檔 v19；sim 全不變；`method:*` 策略 ✓；GDD 35.6）。
+- [ ] M30 煉器與法寶：由 Claude 做核心。
 
 ## M25–M27：加入宗門（GDD 第 29 節）
 

@@ -82,6 +82,7 @@ export function createInitialState(
       spiritStones: 0,
       items: {},
       itemsUsed: {},
+      methodId: data.methods[0].id,
       pillStage: "",
       pillCount: 0,
       lifespanBonus: 0,
@@ -144,5 +145,7 @@ export function newLife(state: GameState, data: GameData = gameData): GameState 
     ...createInitialState(state.rngSeed, data, state.meta, carried),
     speed: state.speed,
     autoChoice: state.autoChoice,
+    // 心法沿用上一世的選擇，擲骰時仍可更換
+    methodId: state.methodId,
   };
 }
