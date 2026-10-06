@@ -225,6 +225,7 @@ export function createPanels(ctx: PanelContext): Panels {
 
   /** 遇怪視窗：時間暫停，選穩打、強攻、符籙或逃。內容沒變就不重畫 */
   let huntKey = "";
+  let lastHuntHealth: { monsterId: string; monsterHp: number; myHp: number } | null = null;
   function renderHunt(state: GameState, e: LifeEls): void {
     const h = state.encounter;
     const talisman = huntTalisman(data);
@@ -234,16 +235,28 @@ export function createPanels(ctx: PanelContext): Panels {
     huntKey = key;
     e.huntModal.hidden = h === null;
     e.huntChoices.replaceChildren();
-    if (!h) return;
+    if (!h) {
+      lastHuntHealth = null;
+      return;
+    }
     const rules = data.monsters.rules;
     const m = monsterOf(h.monsterId, data);
     const ratio = powerRatio(state, m, data);
     e.huntArt.innerHTML = huntVignetteHtml(m.id, state.realmId);
     e.huntTitle.textContent = `遭遇${m.name}`;
     e.huntText.textContent = m.lore !== undefined && (state.meta.bestiary[m.id]?.win ?? 0) >= BESTIARY_LORE_WINS ? `${m.appear}${m.lore}` : m.appear;
-    const bar = (label: string, hp: number, cls: string): string =>
-      `<div class="hunt-bar ${cls}"><span>${esc(label)}</span><i><b style="width:${Math.max(0, Math.round(hp * 100))}%"></b></i></div>`;
-    e.huntBars.innerHTML = bar(m.name, h.monsterHp, "foe") + bar("你", h.myHp, "me");
+    const previous = lastHuntHealth?.monsterId === h.monsterId ? lastHuntHealth : null;
+    const bar = (label: string, hp: number, before: number | undefined, cls: string): string => {
+      const pct = Math.max(0, Math.round(hp * 100));
+      const beforePct = Math.max(pct, Math.round((before ?? hp) * 100));
+      const loss = Math.max(0, beforePct - pct);
+      return `<div class="hunt-bar ${cls}${loss > 0 ? " hit" : ""}"><span>${esc(label)}</span><i><b style="width:${beforePct}%" data-next="${pct}"></b></i>${loss > 0 ? `<em class="hunt-damage" aria-hidden="true">−${loss}</em>` : ""}</div>`;
+    };
+    e.huntBars.innerHTML = bar(m.name, h.monsterHp, previous?.monsterHp, "foe") + bar("你", h.myHp, previous?.myHp, "me");
+    for (const fill of Array.from(e.huntBars.querySelectorAll<HTMLElement>(".hunt-bar.hit b"))) {
+      requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = `${fill.dataset.next}%`)));
+    }
+    lastHuntHealth = { monsterId: h.monsterId, monsterHp: h.monsterHp, myHp: h.myHp };
     const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";
     e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・勝了有修為與靈石，打不贏可以逃。`;
     const pct = (v: number): string => `${Math.round(v * 100)}%`;

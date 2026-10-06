@@ -104,10 +104,14 @@
 
 /* 遇怪：雙方氣血條 */
 .hunt-bars { display: flex; flex-direction: column; gap: 6px; margin: var(--sp-2) 0; }
-.hunt-bar { display: grid; grid-template-columns: 4.5em 1fr; align-items: center; gap: var(--sp-2); font-size: 0.9rem; }
-.hunt-bar i { display: block; height: 8px; border-radius: 4px; background: var(--sunken); overflow: hidden; }
+.hunt-bar { position: relative; display: grid; grid-template-columns: 4.5em 1fr; align-items: center; gap: var(--sp-2); font-size: 0.9rem; }
+.hunt-bar i { position: relative; display: block; height: 8px; border-radius: 4px; background: var(--sunken); overflow: hidden; }
 .hunt-bar b { display: block; height: 100%; background: var(--warn); transition: width var(--dur-base) var(--ease); }
 .hunt-bar.me b { background: var(--good); }
+.hunt-bar.hit i::after { content: ""; position: absolute; inset: 0; background: var(--text); animation: hunt-impact var(--dur-fast) var(--ease) forwards; }
+.hunt-damage { position: absolute; right: var(--sp-1); top: 50%; color: var(--bad); font-style: normal; font-weight: bold; pointer-events: none; animation: hunt-damage var(--dur-slow) var(--ease) forwards; }
+@keyframes hunt-impact { from { opacity: 0.9; transform: scaleX(0.18); } to { opacity: 0; transform: scaleX(1); } }
+@keyframes hunt-damage { from { opacity: 1; transform: translateY(-25%); } to { opacity: 0; transform: translateY(-150%); } }
 
 /* 天劫光圈：外圈收攏到靶圈時（約一輪的一半到八成）選擇，算凝神 */
 .trib-ring { position: relative; width: 84px; height: 84px; margin: var(--sp-2) auto; }
