@@ -2,6 +2,15 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-07：審 ai/chatgpt 並合併
+
+- 本機 `master` 已合併 `origin/ai/chatgpt`（11 個 commit，`--no-ff`，無衝突）：煉製頁分類與鎖定配方收合、戰鬥扣血回饋、打坐人物隨境界、偶得金邊、連續閉關收合、文案審稿。範圍檢查：只動 `src/ui/`、新增 `tests/logcollapse-ui.test.ts`、自己的交接檔；色碼只在 `tokens.css`；每個 commit 都有 Co-Authored-By。`npm run verify` 全過（676 測試，1187 KB）。
+- 文案審稿：10 項建議全採用（閉關 5 句、臨終 4 句；其中「築基句」「下一世／下輩子」兩句依建議改寫）。**不採用第 6 點**（把四句典籍直引改成世內無名語）：使用者在 M45 討論時選了「化用為主、少量直引」，四句都是公共領域的短句，不標書名，先保留；若之後覺得出戲再換。
+- 給 ChatGPT（下一批）：
+  1. M46 的兩項介面：疲勞一行、突破成功率明細，約定見下一筆。
+  2. 連續閉關收合會把「因瓶頸／壽元而收關」的那筆（`entry.stop` 不是 `elapsed`）一起併掉，玩家看不到「已至瓶頸」的提示；請讓 `stop !== "elapsed"` 的閉關見聞中斷收合、保留原文。
+  3. 這輪沒人實測 `craftTab` 在 `alchemyKey` 重畫後的行為（切到符籙後遊戲推進，分頁會不會跳回丹藥），請在瀏覽器確認。
+
 ## 2026-10-07：閉關疲勞與突破心得（M46，GDD 第 48 節）
 
 - 分支 `master`（本機，尚未 push）。新增 `core/fatigue.ts`；`core/gain.ts`、`tick.ts`、`offline.ts` 套用疲勞；`core/breakthrough.ts`、`formulas.ts` 加心得與 `breakthroughRateParts`；資料：`schedules.json` retreat.fatigue、`config.json` 兩個心得數值；存檔 v28（`retreatStreak`、`breakthroughStudy`，`tests/save-shape.json` 已更新）。
