@@ -5,7 +5,11 @@ import { describe, expect, it } from "vitest";
 const UI = join(__dirname, "..", "src", "ui");
 const tokensText = readFileSync(join(UI, "styles", "tokens.css"), "utf8");
 const responsiveText = readFileSync(join(UI, "styles", "responsive.css"), "utf8");
-const renderText = readFileSync(join(UI, "render.ts"), "utf8");
+// render.ts 拆檔後，畫面程式分散在 ui/ 下多個檔案，一併當作畫面原始碼檢查
+const renderText = readdirSync(UI)
+  .filter((f) => f.endsWith(".ts") && f !== "worldmap.ts")
+  .map((f) => readFileSync(join(UI, f), "utf8"))
+  .join("\n");
 const mapText = readFileSync(join(UI, "styles", "map.css"), "utf8");
 const worldMapText = readFileSync(join(UI, "worldmap.ts"), "utf8");
 
