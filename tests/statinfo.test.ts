@@ -9,7 +9,7 @@ describe("當前數值面板", () => {
   it("每月修為與核心公式一致；明細的乘數連乘等於它", () => {
     const s = living(3, { realmId: "lianqi", stage: 2, methodId: "jixing", cultivationBonus: 0.1 });
     const p = statPanel(s, data);
-    expect(p.main[0].label).toBe("每月修為");
+    expect(p.main[1].label).toBe("每月修為");
     const gain = monthlyGain(s, scheduleOf(s, data), data);
     let product = 1;
     for (const r of p.breakdown) {
