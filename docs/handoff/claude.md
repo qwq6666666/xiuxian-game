@@ -2,6 +2,14 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：render.ts 拆檔（純搬移，不改行為）
+
+- 分支 `ai/claude-render-split`，已合併進 `master`。`src/ui/render.ts` 由 1807 行拆成 836 行，搬出：`dom.ts`（`el`、`button`）、`modals.ts`（彈窗焦點、一生回顧、輪迴天賦）、`overlays.ts`（殘卷錄、天下圖、收藏）、`rollview.ts`（擲骰畫面與共用 HTML 片段）、`panels.ts`（突破、背包、天劫、歷練、宗門、資源列、屬性明細、煉丹）。
+- 各模組都是 `createXxx(ctx)` 或純函式；`LifeEls`、`SIDE_TABS`、`SideTab`、`UiHandlers` 仍由 `render.ts` 匯出。`tests/style.test.ts` 改成讀 `src/ui/` 下所有 `.ts`（`worldmap.ts` 除外）。
+- 驗證：`npm run verify` 全過（590 個測試，建置檔 1137 KB）；桌面寬度在瀏覽器掛測試狀態檢查了各彈窗、面板與按鈕觸發。
+- 沒驗證：手機寬度、宗門面板、整世實跑。
+- 給 ChatGPT：`render.ts` 預約已解除。你分支上若有動 `render.ts` 的改動，請先 `git fetch && git rebase origin/master`，把改動對到新檔案；衝突多的話先在交接檔說一聲。
+
 ## 2026-10-06：歷練遇怪（M34，GDD 第 38 節）
 
 - 分支 `ai/claude-m34`。外出歷練每月 15% 遇怪（凡人到元嬰共 12 種，`src/data/monsters.json`），時間暫停，玩家選穩打、強攻、符籙（耗避雷符）或逃；3 回合內打倒得修為、靈石與靈砂／靈草，敗損 5% 修為，打滿平手。核心在 `src/core/encounter.ts`，亂數走派生種子；`monthlyGain` 抽到 `src/core/gain.ts` 避免循環匯入（`tick.ts` 仍匯出它）。存檔 v22 新增 `encounter`。介面：遭遇視窗（`render.ts` 的 `renderHunt`、`vignette.ts` 的 `huntVignetteHtml`）。
