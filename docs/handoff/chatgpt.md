@@ -2,6 +2,15 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-07：煉製分類分頁推進後保留驗證
+
+- 分支與 commit：`ai/chatgpt`，`13bdef9`。
+- 結果：現有 `craftTab` 是 `createPanels` 閉包狀態，`alchemyKey` 變動而重建煉製面板時會用它恢復 `aria-selected` 與各 pane 的 `hidden`，所以遊戲推進後**不會跳回丹藥**；本項不需改正式 UI 程式。
+- 自動驗證：新增允許範圍內的 `tests/craft-tabs-ui.test.ts`；先選「符籙」，再推進一個月並改變靈草數量以保證 `alchemyKey` 改變、面板確實重建，重建後仍選中符籙。`npx tsc --noEmit`、`npm run test`（61 個測試檔、680 項測試）、`npm run build` 全過；`dist/index.html` 1216KB，`git diff --check` 通過。
+- 瀏覽器驗證：本機 Vite，先在桌面切到「符籙」並用 ×4／自動抉擇讓遊戲從 131 歲 10 個月推進到 132 歲 10 個月，符籙仍為 `aria-selected=true`；切到 375×812 後繼續推進到 133 歲 6 個月，仍維持符籙。375px 時 `innerWidth` 375、文件 `scrollWidth` 360。
+- 沒驗證：這份實際存檔材料不足，沒有在開爐進度每月變化時重畫；新增測試以材料數量改變強制走同一個 `alchemyKey` 重畫分支。本項沒有改數值、事件、間隔或存檔，未跑 sim。
+- 下一步／Claude 注意：若日後 `createPanels` 在每個 render 重建，或把 `craftTab` 搬進 `renderAlchemy` 區域變數，這個測試會抓到分頁重設的退步。
+
 ## 2026-10-07：特殊原因收關不再併入例行閉關
 
 - 分支與 commit：`ai/chatgpt`，`a58c19b`。
