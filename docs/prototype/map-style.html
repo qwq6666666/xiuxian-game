@@ -105,7 +105,7 @@ const REGIONS_RAW = [
   "M68,382 C94,384 117,364 148,372 C190,382 229,365 264,372 C286,383 313,376 338,384 C340,413 333,450 312,494 C270,506 243,483 208,495 C172,485 139,502 96,494 C78,471 73,416 68,382 Z"
 ];
 // 橫向版：把直版輪廓拉寬 1.3 倍、壓扁到 0.77 倍，北方仍在上方
-const REGIONS = REGIONS_RAW.map(d => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (m, x, y) => (x * 1.3).toFixed(1) + "," + (y * 400 / 520).toFixed(1)));
+const REGIONS = REGIONS_RAW.map(d => d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (m, x, y) => (x * 1.28).toFixed(1) + "," + (y * 0.74).toFixed(1)));
 const BIOMES = [
   { id: 0, name: "雪原",   c: [236, 241, 243] },
   { id: 1, name: "苔原",   c: [186, 195, 168] },
@@ -190,6 +190,7 @@ function genTerrain(seed, mode) {
       const isl = fbm(x / 22, y / 22, seed + 303, 3);
       sd = Math.max(sd, (isl - 0.7) * 70);
     }
+    sd -= Math.max(0, 28 - Math.min(x, W - 1 - x, y, H - 1 - y)) * 4; // 離外框太近的一律變海
     F[i] = sd;
   }
   const land = new Uint8Array(N); let landCount = 0;
