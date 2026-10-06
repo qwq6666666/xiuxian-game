@@ -61,7 +61,7 @@
 
 - [x] M25 核心（Claude）：`sects.json`、入宗、離宗、晉升、差事、月例、同門、存檔 v15、sim `sect` 策略；全部 ✓。
 - [x] M26 介面（Claude 代 ChatGPT，額度因素）：宗門面板、地圖山門「求入宗」、回顧「宗門：外門 → 內門」、收藏的歷代最高位階。介面介面見 GDD 29.12。
-- [ ] M27 宗門事件（ChatGPT，Claude 審稿）：`src/data/events/sect.json`，約 12–16 則；任務用 `contribution` 效果，同門用 `{peer}`、`{steward}`、`{elder}`，閉山或覆滅接 `sect_collapse` 旗標。
+- [x] M27 宗門事件（Claude 代 ChatGPT，額度因素；ChatGPT 日後可審稿與擴充）：`src/data/events/sect.json`，約 12–16 則；任務用 `contribution` 效果，同門用 `{peer}`、`{steward}`、`{elder}`，閉山或覆滅接 `sect_collapse` 旗標。
 
 ## 階段 5（選做）：少量場景插畫
 

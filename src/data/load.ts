@@ -3,6 +3,7 @@ import goalsJson from "./goals.json";
 import eventsJson from "./events.json";
 import yuanyingEventsJson from "./events/yuanying.json";
 import introEventsJson from "./events/intro.json";
+import sectEventsJson from "./events/sect.json";
 import fragmentsJson from "./fragments.json";
 import itemsJson from "./items.json";
 import erasJson from "./eras.json";
@@ -51,6 +52,7 @@ export const gameData: GameData = validateGameData({
     { file: "events.json", raw: eventsJson },
     { file: "events/yuanying.json", raw: yuanyingEventsJson },
     { file: "events/intro.json", raw: introEventsJson },
+    { file: "events/sect.json", raw: sectEventsJson },
   ]),
   talents: validateTalents(talentsJson),
   spiritRoots: validateSpiritRoots(spiritRootsJson),

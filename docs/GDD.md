@@ -1138,6 +1138,7 @@ M6 事件擴充到 40 個之後重跑（種子 1–4）：
 - **存檔 v15**：`sect`、`sectsTried`、`sectPeak`、`meta.sectBest`、`review.sectPeak`、日誌的 `sectName` 與 `rank`；v14 遷移補上未入宗。日誌新增 `sectJoin`、`sectRefuse`、`sectLeave`、`sectPromote`。
 - **數值（經 sim 調整）**：修煉加成與庫房折扣對節奏的影響很小；**月例才是關鍵**。這個經濟裡 20 靈石就能買一顆聚氣丹（立得階段需求的 25%），原草案每月 1／3／10／30 讓入宗路線的首次金丹中位數落到第 5 世、2.6 小時。改成「入宗滿一年起每年一次」並降到 2／4／8／16 後：入宗路線首次金丹第 8 世、通關 4.1 小時（`mixed` 為第 9 世、4.5 小時），符合 29.10 的目標（不低於第 7 世、不少於 3.5 小時）。
 - **sim**：`simple`、`mixed`（1 與 16 世）、`herb`、`wander`、`post`（40 世）與 M25 之前逐字相同。新增 `sect` 策略（`npm run sim -- 300 1 16 sect`）：練氣三層起去最近的開放宗門求入宗，試煉成功率約 59%，各世最高位階為外門 26%、內門 55%、執事 18%（`sect` 策略只玩到金丹，看不到長老）。
+- **M26／M27 實作（Claude 代 ChatGPT 完成）**：介面見 `src/ui/sectinfo.ts`、`render.ts` 的宗門面板、`worldmap.ts` 的求入宗；宗門事件 12 則在 `src/data/events/sect.json`（差事、考校、藏經閣、供奉、同門借錢、長老問話、閉山後的一則；用 `contribution` 效果與 `{peer}`、`{steward}`、`{elder}` 欄位）。旗標 `sect_collapse` 由 `leaveSect(…, collapsed = true)` 設定，驗證器的 `systemFlags` 允許事件條件引用它。
 - **給 M26／M27 的介面**：讀 `core/sect.ts` 的 `localSect`、`canJoinSect`、`joinRate`、`joinSect`、`leaveSect`、`canPromoteSect`、`promoteSect`、`nextRank`、`sectBonus`、`sectStipend`、`companionsOf`、`slotsFor`（名稱欄位請用它，不要用 `worldSlots`）；介面還沒有任何宗門面板，是 M26 的工作。
 
 ## 30. 修仙要素擴充總則（M28–M32 草案，待審）

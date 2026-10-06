@@ -1,0 +1,232 @@
+[
+  {
+    "id": "sect_sweep_001",
+    "type": "choice",
+    "title": "山道積葉",
+    "text": "秋後山道落葉積了半尺，執事說今日誰有空，誰就去掃。{peer}正好在遠處看天。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 3,
+    "conditions": { "sect": true },
+    "scheduleWeights": { "sectDuty": 1.5 },
+    "choices": [
+      {
+        "text": "拿起掃帚",
+        "outcomes": [{ "weight": 100, "text": "你一路掃到山腰，手心磨出了繭。執事看了看路，點了點頭，什麼也沒說。", "effects": { "contribution": 20 } }]
+      },
+      {
+        "text": "說自己正在吐納",
+        "outcomes": [{ "weight": 100, "text": "執事沒有戳破，只是第二天把這一段路記在了{peer}的名下。", "effects": { "contribution": -5 } }]
+      }
+    ]
+  },
+  {
+    "id": "sect_tea_001",
+    "type": "anecdote",
+    "title": "廊下一盞茶",
+    "text": "{peer}在廊下煮了壺茶，說是從山外帶來的。你喝了一口，又苦又澀，還是喝完了。",
+    "weight": 7,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "sect": true },
+    "effects": { "contribution": 5 }
+  },
+  {
+    "id": "sect_night_watch_001",
+    "type": "choice",
+    "title": "藥圃守夜",
+    "text": "{steward}把你叫到案前，說藥圃缺人手，要有人守一個月的夜。理由很正當，語氣也沒給你留商量的餘地。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "sect": true },
+    "scheduleWeights": { "sectDuty": 1.5 },
+    "choices": [
+      {
+        "text": "接下這一個月",
+        "outcomes": [{ "weight": 100, "text": "你守了三十個夜，數過幾千顆星。{steward}月底翻了翻簿子，替你多記了一筆。", "effects": { "contribution": 40, "cultivation": -0.03 } }]
+      },
+      {
+        "text": "請{peer}代班",
+        "outcomes": [{ "weight": 100, "text": "{peer}嘆了口氣，還是去了。人情欠下了，貢獻自然也記在他名下。", "effects": {} }]
+      },
+      {
+        "text": "婉言推辭",
+        "outcomes": [{ "weight": 100, "text": "{steward}沒有勉強，只是在簿子上落了一個字。那個字你看不懂，但知道不是誇你。", "effects": { "contribution": -10 } }]
+      }
+    ]
+  },
+  {
+    "id": "sect_exam_001",
+    "type": "choice",
+    "title": "月底考校",
+    "text": "月底門內考校，題目是默寫一段吐納口訣，錯一個字便要重抄。你看著那張紙，覺得它比任何關隘都有耐心。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 3,
+    "highlight": 1.2,
+    "conditions": { "sect": true },
+    "choices": [
+      {
+        "text": "凝神默寫",
+        "outcomes": [
+          { "weight": 40, "weightPerAttribute": { "insight": 6 }, "text": "你一氣寫完，連標點都沒錯。主考抬頭看了你一眼，這在宗門裡算是很高的評價。", "effects": { "contribution": 60 } },
+          { "weight": 60, "text": "寫到第三十七個字，你的手停了。重抄的那一遍，倒是記得格外牢。", "effects": { "contribution": 10 } }
+        ]
+      },
+      {
+        "text": "照著{peer}的筆記背",
+        "outcomes": [
+          { "weight": 55, "text": "筆記是對的，你也背對了。只是主考臨走時多看了{peer}一眼，似乎想起了什麼。", "effects": { "contribution": 25 } },
+          { "weight": 45, "text": "{peer}的筆記裡有一處錯字，你原樣抄了下去。他的名字和你的並排掛在了榜末。", "effects": { "contribution": -10 } }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sect_herb_garden_001",
+    "type": "anecdote",
+    "title": "藥圃長勢",
+    "text": "藥圃裡的靈草長得比往年好，管圃的老僕說是今年雨水勻。他說這話時，順手把一株雜草拔了。",
+    "weight": 6,
+    "tone": "good",
+    "maxPerLife": 2,
+    "conditions": { "sect": true },
+    "effects": { "contribution": 8 }
+  },
+  {
+    "id": "sect_duty_night_001",
+    "type": "anecdote",
+    "title": "子時輪值",
+    "text": "值夜的弟子輪班，你守的是子時。山裡太靜，連自己的呼吸都顯得多餘。",
+    "weight": 9,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "sect": true, "schedules": ["sectDuty"] },
+    "effects": { "contribution": 8 }
+  },
+  {
+    "id": "sect_scripture_001",
+    "type": "choice",
+    "title": "藏經閣底層",
+    "text": "你在藏經閣最底層翻到一冊無人認領的雜記，紙頁都脆了。看管的老者站在三步之外，不說可以，也不說不可以。",
+    "weight": 7,
+    "tone": "good",
+    "maxPerLife": 1,
+    "highlight": 1.5,
+    "conditions": { "sect": true, "sectRankMin": 1, "fragmentAvailable": 1 },
+    "choices": [
+      {
+        "text": "小心抄錄",
+        "outcomes": [
+          { "weight": 60, "text": "你抄到天黑，老者替你添了盞燈。抄完時，你覺得自己讀懂了一小段不屬於這一代的話。", "effects": { "contribution": 10, "fragment": { "maxTier": 1 } } },
+          { "weight": 40, "text": "雜記大半是前人的賬目與抱怨，你抄了半天，只得到一些別人早已解決的煩惱。", "effects": { "contribution": 10 } }
+        ]
+      },
+      {
+        "text": "原樣放回",
+        "outcomes": [{ "weight": 100, "text": "你把雜記推回原處。老者微微點頭，像是這一關你已經過了很多年。", "effects": { "contribution": 5 } }]
+      }
+    ]
+  },
+  {
+    "id": "sect_rumor_001",
+    "type": "anecdote",
+    "title": "山門閒話",
+    "text": "山門裡近來傳聞，說某位長老閉關已久，出關時鬚髮全白。傳話的人說得繪聲繪色，{peer}說他上個月才見過那位長老在廊下喝茶。",
+    "weight": 6,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "conditions": { "sect": true }
+  },
+  {
+    "id": "sect_tribute_001",
+    "type": "choice",
+    "title": "年度供奉",
+    "text": "宗門年度供奉，各位弟子依例上繳靈石。數目不大，但{steward}會把每個人的名字念一遍。",
+    "weight": 7,
+    "tone": "neutral",
+    "maxPerLife": 3,
+    "conditions": { "sect": true, "sectRankMin": 1 },
+    "choices": [
+      {
+        "text": "如數繳足",
+        "requires": { "spiritStones": 20 },
+        "outcomes": [{ "weight": 100, "text": "你把靈石放進木盤，聲音清脆。{steward}念到你的名字時，語氣比念別人時平穩一些。", "effects": { "spiritStones": -20, "contribution": 30 } }]
+      },
+      {
+        "text": "只繳一半",
+        "requires": { "spiritStones": 10 },
+        "outcomes": [{ "weight": 100, "text": "{steward}沒說什麼，只是把你的名字念得快了些。", "effects": { "spiritStones": -10, "contribution": 8 } }]
+      },
+      {
+        "text": "說手頭緊，緩一年",
+        "outcomes": [{ "weight": 100, "text": "{steward}說宗門體諒，下不為例。這句話你聽得出分量。", "effects": { "contribution": -15 } }]
+      }
+    ]
+  },
+  {
+    "id": "sect_loan_001",
+    "type": "choice",
+    "title": "同門借靈石",
+    "text": "{peer}紅著臉來找你，說家裡捎信要錢，開口借十五塊靈石。他保證月底就還，保證的語氣和每一個借錢的人一樣誠懇。",
+    "weight": 6,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "sect": true },
+    "choices": [
+      {
+        "text": "借他",
+        "requires": { "spiritStones": 15 },
+        "outcomes": [
+          { "weight": 70, "text": "月底{peer}果然還了，還多添了一小包山外的茶葉。你開始懷疑自己看人的準頭其實不錯。", "effects": { "spiritStones": 5, "contribution": 8 } },
+          { "weight": 30, "text": "月底{peer}沒來，下個月也沒來。你們在廊下碰見時，他先看了看天。", "effects": { "spiritStones": -15 } }
+        ]
+      },
+      {
+        "text": "說自己也不寬裕",
+        "outcomes": [{ "weight": 100, "text": "{peer}點點頭，沒有怨言，只是之後見到你時多了一分客氣。", "effects": {} }]
+      }
+    ]
+  },
+  {
+    "id": "sect_elder_ask_001",
+    "type": "choice",
+    "title": "長老一問",
+    "text": "{elder}在院中忽然問你，修行這麼多年，最怕的是什麼。四周沒有別人，這個問題似乎也不需要標準答案。",
+    "weight": 7,
+    "tone": "good",
+    "maxPerLife": 1,
+    "highlight": 1.5,
+    "conditions": { "sect": true, "sectRankMin": 2 },
+    "choices": [
+      {
+        "text": "怕來不及",
+        "outcomes": [{ "weight": 100, "text": "{elder}笑了笑，說誰都怕，只是有人怕了就快，有人怕了就停。你當晚多坐了兩個時辰。", "effects": { "contribution": 40, "cultivation": 0.05 } }]
+      },
+      {
+        "text": "怕走錯",
+        "outcomes": [{ "weight": 100, "text": "{elder}沉默了一會兒，說走錯的路也有風景，只是不一定值得看。這話聽起來像在安慰，又不全是。", "effects": { "contribution": 40, "attributes": { "mind": 1 } } }]
+      },
+      {
+        "text": "不怕，只是嫌麻煩",
+        "outcomes": [
+          { "weight": 50, "text": "{elder}愣了一下，大笑起來，說這是他這個月聽過最誠實的一句話。", "effects": { "contribution": 60 } },
+          { "weight": 50, "text": "{elder}的笑容淡了下去，說你的態度很有意思，然後換了話題。", "effects": { "contribution": -20 } }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sect_collapse_001",
+    "type": "anecdote",
+    "title": "山門寂然",
+    "text": "你回頭望了一眼，那座山門已經安靜得像從沒有人進出過。山裡的鐘聲停了，你這才發現自己一直在數它。",
+    "weight": 100,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 2,
+    "conditions": { "sect": false, "flags": ["sect_collapse"] },
+    "effects": { "attributes": { "mind": 1 } }
+  }
+]

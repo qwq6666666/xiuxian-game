@@ -1252,7 +1252,9 @@ export function validateGameData(data: GameData): GameData {
     ...(ev.effects ? [ev.effects] : []),
     ...(ev.choices ?? []).flatMap((c) => c.outcomes.map((o) => o.effects)),
   ];
-  const setFlags = new Set(data.events.flatMap((ev) => allEffects(ev).flatMap((e) => e.flags ?? [])));
+  // 由程式設定的旗標（不經事件效果）：宗門閉山或覆滅時自動離宗（core/sect.ts 的 leaveSect）
+  const systemFlags = ["sect_collapse"];
+  const setFlags = new Set([...systemFlags, ...data.events.flatMap((ev) => allEffects(ev).flatMap((e) => e.flags ?? []))]);
   data.events.forEach((ev, i) => {
     const from = `events.json 第 ${i + 1} 筆（${ev.id}）`;
     const c = ev.conditions;
