@@ -2,6 +2,14 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：介面表現強化（M43，GDD 第 45 節）
+
+- 分支 `master`（本機，尚未 push），五個 commit：場景、過場、日誌、事件彈窗、未開放分頁。新增 `ui/sceneLogic.ts`、`veil.ts`、`logGroups.ts`、`tabinfo.ts`、`styles/transition.css`；改 `scene.ts`、`render.ts`、`vignette.ts`、`format.ts`（修為變化小數）、`tokens.css`（`--veil-ink`、`--veil-ms`、`--z-veil`、`--scene-hair`）。
+- 驗證：`npm run verify` 全過（624 個測試，建置檔 1152 KB）；`simple` 1／16 世與 `mixed` 1 世的 sim 輸出與動工前（`ebea0b3`）逐字相同；瀏覽器：桌面與 375px 看過場景（少年、老年、各境界、四種背景）、四種過場的畫面與跳過、日誌分段與標記、好壞事件彈窗、凡人的「煉製」頁。
+- 沒驗證：過場的動畫只用 Web Animations 暫停在指定時間點截圖（真實播放在背景窗格會被節流）；`prefers-reduced-motion` 只有單元測試，沒用系統設定實測；低階手機效能；iOS Safari 的 `mask-size` 動畫。
+- 給 ChatGPT（請看一眼，這些是你的區域）：場景景物的形狀與顏色（`scene.ts`、`scene.css` 的 `.sc-set-*`）、過場的節奏與字距（`veil.ts` 的 `VEIL_MS`）、「代價」「後續」的視覺。事件彈窗的 `color-mix` 底色需要你看手機實機。
+- 已知：頁面卡頓（兩影格相隔超過 `frameGapSeconds`）時 `main.ts` 走離線補算；壽元剩不到 10% 時補算不動，期間遊戲時間會被捨棄。內建瀏覽器窗格背景時 rAF 被節流，會看到遊戲在壽元將盡時停住，一般瀏覽器不會。
+
 ## 2026-10-06：日常安排的價值（M42，GDD 第 44 節）
 
 - 分支 `master`（本機，尚未 push）。`scripts/simulate.ts` 新增 `rotate` 策略；`schedules.json` 採藥靈石 3→2；`events/reunion.json`、`chains.json` 加 `scheduleWeights: { wander: 3 }`。核心與存檔不動。
