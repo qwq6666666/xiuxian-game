@@ -62,6 +62,10 @@ describe("format", () => {
       ),
     ).toEqual(["修為 +45", "靈石 −30", "壽元上限 −5 年", "根骨 −1", "心性 +1", "聚氣丹 +2"]);
     expect(formatChanges({ spiritStones: 0 }, gameData)).toEqual([]);
+    // 修為變化是實數：不顯示一長串小數，太小的不顯示
+    expect(formatChanges({ cultivation: -0.2831420943732524 }, gameData)).toEqual(["修為 −0.3"]);
+    expect(formatChanges({ cultivation: 12.6 }, gameData)).toEqual(["修為 +13"]);
+    expect(formatChanges({ cultivation: 0.01 }, gameData)).toEqual([]);
   });
 
   it("選項前提不足時說明缺什麼", () => {

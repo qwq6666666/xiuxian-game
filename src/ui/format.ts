@@ -13,15 +13,22 @@ export const ATTR_LABEL: Record<AttributeKey, string> = {
   mind: "心性",
 };
 
+/** 小數（修為變化是比例換算出的實數）：不到 10 留一位，之後取整，免得顯示一長串小數 */
+function shown(n: number): string {
+  const a = Math.abs(n);
+  if (Number.isInteger(a)) return String(a);
+  return a < 10 ? a.toFixed(1) : String(Math.round(a));
+}
+
 function signed(n: number): string {
-  return `${n > 0 ? "+" : "−"}${Math.abs(n)}`;
+  return `${n > 0 ? "+" : "−"}${shown(n)}`;
 }
 
 /** 事件造成的數值變化，由介面另外顯示，不寫進敘述文字 */
 export function formatChanges(changes: Changes | undefined, data: GameData, slots: SlotValues = DEFAULT_SLOTS): string[] {
   if (!changes) return [];
   const out: string[] = [];
-  if (changes.cultivation) out.push(`修為 ${signed(changes.cultivation)}`);
+  if (changes.cultivation && Math.abs(changes.cultivation) >= 0.05) out.push(`修為 ${signed(changes.cultivation)}`);
   if (changes.spiritStones) out.push(`靈石 ${signed(changes.spiritStones)}`);
   if (changes.lifespan) out.push(`壽元上限 ${signed(changes.lifespan)} 年`);
   if (changes.contribution) out.push(`貢獻 ${signed(changes.contribution)}`);

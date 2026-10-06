@@ -16,6 +16,7 @@ import { slotsFor } from "../core/sect";
 import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { createVeil } from "./veil";
+import { groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
 import { esc } from "./dom";
 import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./rollview";
 import { createPanels } from "./panels";
@@ -703,9 +704,16 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       if (last) e.live.textContent = formatLogEntry(last, data, state.name, slotsOf(state));
       e.log.innerHTML = "";
       let shown = 0;
-      for (const entry of [...state.log].reverse()) {
+      for (const group of groupByDecade([...state.log].reverse())) {
+      const heading = document.createElement("li");
+      heading.className = "log-decade";
+      heading.textContent = group.label;
+      e.log.appendChild(heading);
+      for (const entry of group.entries) {
         const li = document.createElement("li");
         if (shown++ < fresh) li.className = "log-new";
+        const marks = logMarks(entry, data);
+        for (const m of marks) li.classList.add(`log-${m}`);
         li.textContent = formatLogEntry(entry, data, state.name, slotsOf(state));
         const changes = formatChanges(entry.changes, data, slotsOf(state));
         if (changes.length > 0) {
@@ -730,7 +738,15 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             li.append(history);
           }
         }
+        // 標記不只靠顏色：文字也寫出來
+        if (marks.length > 0) {
+          const tag = document.createElement("small");
+          tag.className = "log-mark";
+          tag.textContent = marks.map((m) => MARK_LABEL[m]).join("・");
+          li.prepend(tag);
+        }
         e.log.appendChild(li);
+      }
       }
     }
 
