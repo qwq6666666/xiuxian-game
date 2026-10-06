@@ -15,6 +15,8 @@ import { marketTerritory } from "../core/travel";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
 import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
+import { slotsFor } from "../core/sect";
+import { sectPanel } from "./sectinfo";
 import { attributeGuide, recommendTalent, talentPreview, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
 import type { MapTarget } from "./mapinfo";
 import { buildWorldMap, mapStamp } from "./worldmap";
@@ -58,6 +60,9 @@ export interface UiHandlers {
   onBuyItem(itemId: string): void;
   onZuohua(): void;
   onTravel(targetId: string): void;
+  onJoinSect(): void;
+  onLeaveSect(): void;
+  onPromoteSect(): void;
 }
 
 export interface Ui {
@@ -305,6 +310,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         },
         onClose: closeMap,
         onTravel(targetId) { handlers.onTravel(targetId); },
+        onJoinSect() { handlers.onJoinSect(); },
       });
     const marketLink = document.createElement("button");
     marketLink.type = "button";
@@ -351,7 +357,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const head = document.createElement("div");
     head.className = "codex-head";
     const title = document.createElement("h2");
-    title.textContent = `收藏　通關 ${sum.total} 次${sum.yuanyingTotal > 0 ? `　元嬰 ${sum.yuanyingTotal} 次` : ""}${sum.huashenTotal > 0 ? `　化神 ${sum.huashenTotal} 次` : ""}`;
+    title.textContent = `收藏　通關 ${sum.total} 次${sum.yuanyingTotal > 0 ? `　元嬰 ${sum.yuanyingTotal} 次` : ""}${sum.huashenTotal > 0 ? `　化神 ${sum.huashenTotal} 次` : ""}${state.meta.sectBest > 0 ? `　宗門最高 ${data.sects.ranks[state.meta.sectBest - 1].name}` : ""}`;
     const close = document.createElement("button");
     close.type = "button";
     close.textContent = "關閉";
@@ -372,6 +378,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         (row.count > 0 ? `通關 ${row.count} 次` : `（${data.text.collection.empty}）`) +
         (row.yuanying > 0 ? `　元嬰 ${row.yuanying} 次` : "") +
         (row.huashen > 0 ? `　化神 ${row.huashen} 次` : "");
+      const fastest = [["通關", row.fastest.cleared], ["結嬰", row.fastest.yuanying], ["化神", row.fastest.huashen]]
+        .filter((x): x is [string, number] => x[1] !== undefined)
+        .map(([k, months]) => `最快 ${Math.floor(months / 12)} 歲${k}`);
+      if (fastest.length > 0) count.textContent += `　${fastest.join("、")}`;
       const desc = document.createElement("p");
       desc.className = "fragment-text";
       desc.textContent = row.desc;
@@ -438,7 +448,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   });
 
   /** 當世的名稱欄位值，用來填入事件、殘卷、日誌裡的名稱 */
-  const slotsOf = (state: GameState): SlotValues => worldSlots(worldFor(state.worldSeed, data));
+  // 名稱欄位含入宗者的同門名字，所以走 slotsFor
+  const slotsOf = (state: GameState): SlotValues => slotsFor(state, data);
 
   const itemName = (id: string) => data.items.find((i) => i.id === id)?.name ?? id;
 
@@ -581,6 +592,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     modalBody: HTMLElement;
     schedules: { id: string; b: HTMLButtonElement; facts: HTMLElement; hint: HTMLElement }[];
     zuohuaBox: HTMLElement;
+    sectBox: HTMLElement;
     zuohuaInfo: HTMLElement;
     btSection: HTMLElement;
     btInfo: HTMLElement;
@@ -606,6 +618,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   function buildLife(state: GameState): void {
     built = "life";
     logKey = "";
+    sectKey = "";
     logLen = 0;
     prevStones = null;
     prevCultivation = null;
@@ -632,6 +645,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <label id="pillRow" hidden><input type="checkbox" id="pill" /> <span id="pillText"></span></label>
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
           </section>
+          <section id="sectBox" class="s-sect" hidden></section>
           <section id="zuohuaBox" class="s-zuohua" hidden>
             <h2>閉關坐化</h2>
             <p id="zuohuaInfo" class="desc"></p>
@@ -714,6 +728,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       modalBody: q("#modalBody"),
       schedules,
       zuohuaBox: q("#zuohuaBox"),
+      sectBox: q("#sectBox"),
       zuohuaInfo: q("#zuohuaInfo"),
       btSection: q("#btSection"),
       btInfo: q("#btInfo"),
@@ -819,6 +834,50 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     setTimeout(() => span.remove(), 1200);
   }
 
+  /** 宗門面板：只有入宗者才顯示；內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
+  let sectKey = "";
+  function renderSect(state: GameState, e: LifeEls): void {
+    const panel = sectPanel(state, data);
+    const key = JSON.stringify(panel);
+    if (key === sectKey) return;
+    sectKey = key;
+    e.sectBox.hidden = panel === null;
+    e.sectBox.replaceChildren();
+    if (!panel) return;
+    const box = e.sectBox;
+    box.append(el("h2", undefined, "宗門"));
+    box.append(el("p", undefined, `${panel.sectName}（${panel.stateText}）・${panel.rankName}`));
+    const facts = el("dl", "facts");
+    for (const [k, v] of [
+      ["貢獻", String(panel.contribution)],
+      ["修煉加成", `+${panel.bonusPct}%`],
+      ["年度月例", `${panel.stipend} 靈石`],
+    ] as const) {
+      const row = el("div");
+      row.append(el("dt", undefined, k), el("dd", undefined, v));
+      facts.append(row);
+    }
+    box.append(facts);
+    const names = slotsOf(state);
+    box.append(el("p", "desc", `同門：${names.peer}、執事${names.steward}、長老${names.elder}。`));
+    if (panel.next) {
+      const n = panel.next;
+      box.append(el("p", "desc", `晉升${n.name}：需${n.realmName}${n.realmMet ? "（已達）" : ""}、貢獻 ${n.contribution}${n.contributionMet ? "（已達）" : `（還差 ${n.contribution - panel.contribution}）`}。`));
+    } else {
+      box.append(el("p", "desc", "在這個宗門裡已無更高的位階。"));
+    }
+    box.append(el("p", "desc", "貢獻靠「宗門差事」安排與宗門事件累積；離宗會失去身分與貢獻，這一世也不能再入同一宗。"));
+    const actions = el("div", "actions");
+    const promote = button("晉升", () => handlers.onPromoteSect(), true);
+    promote.disabled = !panel.canPromote || panel.next === null;
+    const leave = button("離宗", () => {
+      if (confirm(`確定要離開${panel.sectName}嗎？會失去身分與貢獻，這一世不能再入同一宗。`)) handlers.onLeaveSect();
+    });
+    leave.classList.add("danger");
+    actions.append(promote, leave);
+    box.append(actions);
+  }
+
   function renderLife(state: GameState): void {
     if (built !== "life" || !els) buildLife(state);
     const e = els!;
@@ -876,7 +935,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
     const pace = paceHint(state, data);
     if (pace.kind === "eta") {
-      e.pace.textContent = `每月約 +${formatGain(pace.perMonth)} 修為，約 ${formatDuration(pace.seconds)}後進入下一階段（依目前安排與速度估算）。`;
+      const lianqi = data.realms.find((r) => r.id === "lianqi")!;
+      // 練氣階段提示離突破還差幾層（M32：讓前期有看得見的目標）
+      const toBreakthrough = state.realmId === lianqi.id ? lianqi.stageNames.length - 1 - state.stage : 0;
+      const tail = toBreakthrough > 0 ? `再 ${toBreakthrough} 層可衝擊築基。` : "";
+      e.pace.textContent = `每月約 +${formatGain(pace.perMonth)} 修為，約 ${formatDuration(pace.seconds)}後進入下一階段（依目前安排與速度估算）。${tail}`;
     } else if (pace.kind === "bottleneck") {
       e.pace.textContent = "修為已圓滿，不再增長，要靠突破才能再進一步。";
     } else {
@@ -918,6 +981,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       hint.textContent = scheduleHints(state, sched, slotsOf(state), data).join("　");
       hint.hidden = hint.textContent === "";
     }
+    renderSect(state, e);
     e.zuohuaBox.hidden = !canZuohua(state, data);
     if (!e.zuohuaBox.hidden) {
       e.zuohuaInfo.textContent = `把剩餘壽元一次坐完，結束這一世，額外換得道韻 +${zuohuaDaoYun(state, data)}。已達階段的道韻照常結算。`;
@@ -1114,6 +1178,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       ] as const) {
         const row = el("div");
         row.append(el("dt", undefined, k), el("dd", undefined, v));
+        facts.append(row);
+      }
+      if (review.sectPeak > 0) {
+        const row = el("div");
+        row.append(el("dt", undefined, "宗門"), el("dd", undefined, `最高到${data.sects.ranks[review.sectPeak - 1].name}`));
         facts.append(row);
       }
       box.append(facts);

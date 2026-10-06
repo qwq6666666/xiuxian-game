@@ -8,6 +8,7 @@ import { createInitialState, newLife, reroll, startLife } from "./core/life";
 import { deserialize, importSave, serialize } from "./core/save";
 import type { GameState } from "./core/state";
 import { tick } from "./core/tick";
+import { joinSect, leaveSect, promoteSect } from "./core/sect";
 import { beginTravel } from "./core/travel";
 import { gameData as data } from "./data/load";
 import { formatOffline } from "./ui/format";
@@ -80,6 +81,9 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onZuohua: () => update(zuohua(state, data)),
   onTravel: (targetId) => update(beginTravel(state, targetId, data)),
   onBuyItem: (id) => update(buyItem(state, id, data)),
+  onJoinSect: () => update(joinSect(state, data)),
+  onLeaveSect: () => update(leaveSect(state, data)),
+  onPromoteSect: () => update(promoteSect(state, data)),
   onExport() {
     const text = serialize(state);
     navigator.clipboard.writeText(text).then(

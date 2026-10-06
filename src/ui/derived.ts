@@ -69,6 +69,8 @@ export interface ScheduleFacts {
   refYears: number | null;
   refName: string;
   refPrice: number;
+  /** 宗門差事每月得到的貢獻；其他安排沒有 */
+  contributionPerMonth?: number;
   /** 每月身亡機率不為零時才有，供顯示「兇險」 */
   risky: boolean;
 }
@@ -88,6 +90,7 @@ export function scheduleFacts(state: GameState, sched: ScheduleDef, data: GameDa
     refName: data.items.find((i) => i.id === priceRefItemId)?.name ?? priceRefItemId,
     refPrice,
     risky: sched.deathChance > 0,
+    ...(sched.id === data.sects.dutySchedule && state.sect ? { contributionPerMonth: data.sects.ranks[state.sect.rank].duty } : {}),
   };
 }
 
@@ -98,6 +101,7 @@ export function scheduleFactLines(f: ScheduleFacts): string[] {
   if (f.stonesPerMonth > 0) {
     lines.push(`靈石約 ${f.stonesPerMonth.toFixed(1)}／月，攢一顆${f.refName}（${f.refPrice}）約 ${Math.ceil(f.refYears!)} 年`);
   }
+  if (f.contributionPerMonth !== undefined) lines.push(`貢獻 +${f.contributionPerMonth}／月（用來晉升）`);
   if (f.risky) lines.push("有性命之憂");
   return lines;
 }

@@ -15,7 +15,7 @@ describe("前期體驗（M32）", () => {
     expect(eventAvailable(living(1, { meta: { ...emptyMeta(), lives: 1 } }), intro, data)).toBe(false);
   });
   it("必出的事件先於其他事件，不耗亂數", () => {
-    const withIntro = { ...data, events: [...data.events, intro] };
+    const withIntro = { ...data, events: [...data.events.filter((e) => !e.guaranteed), intro] };
     const s = living(5);
     const [ev, seed] = pickEvent(s, withIntro);
     expect(ev?.id).toBe("intro_test");
@@ -49,5 +49,19 @@ describe("前期體驗（M32）", () => {
     const needs = lianqi.stageNames.map((_, i) => Math.round(lianqi.need.base * lianqi.need.growth ** i));
     expect(needs.reduce((a, b) => a + b, 0)).toBeLessThan(2200);
     for (let i = 1; i < needs.length; i++) expect(needs[i]).toBeGreaterThan(needs[i - 1]);
+  });
+});
+
+describe("正式的開場引路事件", () => {
+  const real = data.events.find((e) => e.id === "intro_guide_001")!;
+  it("只在第一世、前幾年、一定先出", () => {
+    expect(real.guaranteed).toBe(true);
+    expect(real.conditions).toEqual({ ageMax: 14, livesMax: 0 });
+    expect(pickEvent(living(9), data)[0]?.id).toBe("intro_guide_001");
+    expect(eventAvailable(living(9, { meta: { ...emptyMeta(), lives: 1 } }), real, data)).toBe(false);
+  });
+  it("每個選項都有一個固定結果，且都是小獎勵", () => {
+    expect(real.choices).toHaveLength(3);
+    for (const c of real.choices!) expect(c.outcomes).toHaveLength(1);
   });
 });

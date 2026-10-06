@@ -4,6 +4,7 @@ import { localTerritory, marketTerritory, placesAt, routeTo, type TravelPlace } 
 import { polityLabel, worldAt, worldFor } from "../core/world";
 import { sectReach, territoriesAt, territoryForPoint } from "../core/territory";
 import type { GameData, MapRegion } from "../data/types";
+import { joinInfo } from "./sectinfo";
 import { activeEffectsAt, describeEffect, describeTarget, effectsForTarget, legendOf, mapAgeYears, sectMarker, type MapTarget } from "./mapinfo";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -93,6 +94,10 @@ function worldMapCacheKey(state: GameState, selected: MapTarget | null): string 
     targetId: state.travel.targetId,
     totalMonths: state.travel.totalMonths,
     trail: state.travel.trail,
+    // 求入宗的資訊會隨所屬宗門、已試過的宗門與修為變
+    sect: state.sect,
+    sectsTried: state.sectsTried,
+    realm: `${state.realmId}:${state.stage}`,
   });
 }
 
@@ -107,7 +112,7 @@ export function buildWorldMap(
   state: GameState,
   data: GameData,
   selected: MapTarget | null,
-  handlers: { onSelect(target: MapTarget | null): void; onClose(): void; onTravel(targetId: string): void },
+  handlers: { onSelect(target: MapTarget | null): void; onClose(): void; onTravel(targetId: string): void; onJoinSect(): void },
 ): DocumentFragment {
   const cacheKey = worldMapCacheKey(state, selected);
   if (worldMapCache?.key === cacheKey && worldMapCache.nodes.every((node) => node.ownerDocument === document)) {
@@ -451,6 +456,22 @@ export function buildWorldMap(
       if (territory) {
         const owner = polityById(territory.ownerId);
         info.append(html("p", "map-effect-line", `所在地：${owner ? polityLabel(owner) : "諸部"}${territory.contested ? "；邊界正在推移" : ""}。`));
+      }
+    }
+    if (selected.kind === "sect" && state.phase === "living") {
+      const join = joinInfo(state, selected.id, data);
+      if (join) {
+        const box = html("div", "map-join");
+        box.append(html("p", "map-effect-line", `求入宗試煉成功率約 ${Math.round(join.rate * 100)}%（看悟性、根骨與靈根；每個宗門每世只能叩一次）。`));
+        if (join.canJoin) {
+          const go = html("button", "primary map-join-go", "求入宗");
+          go.type = "button";
+          go.addEventListener("click", () => handlers.onJoinSect());
+          box.append(go);
+        } else if (join.reason) {
+          box.append(html("p", "desc", join.reason));
+        }
+        info.append(box);
       }
     }
     for (const e of effectsForTarget(selected, snap, data)) {
