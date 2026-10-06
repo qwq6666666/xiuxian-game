@@ -175,6 +175,9 @@ export function validateGameData(data: GameData): GameData {
       if (c.stage !== undefined && c.stage >= realm.stageNames.length) throw new Error(`${w}：condition.stage ${c.stage} 超出 ${realm.name} 的階段數`);
     }
     if (c.kind === "flag" && !setFlags.has(c.flagId)) throw new Error(`${w}：condition.flagId ${c.flagId} 沒有任何事件結果會設定它`);
+    for (const id of g.tilt?.eventIds ?? []) has(new Set(data.events.map((ev) => ev.id)), id, `${w} 的 tilt.eventIds`, "events");
+    for (const f of g.tilt?.flags ?? []) if (!setFlags.has(f)) throw new Error(`${w}：tilt.flags 的 ${f} 沒有任何事件結果會設定它`);
+    for (const id of g.tilt?.acquaintances ?? []) has(new Set(data.acquaintances.map((a) => a.id)), id, `${w} 的 tilt.acquaintances`, "acquaintances.json");
   });
   for (const k of Object.keys(data.text.log.stageMilestone)) {
     const [rid, st] = k.split(":");

@@ -1,5 +1,37 @@
 [
   {
+    "id": "zeshen",
+    "name": "擇身",
+    "desc": "輪迴之際多得一份備選命盤，兩相比較，擇一而行。",
+    "maxLevel": 2,
+    "effect": "chartChoice",
+    "perLevel": 1,
+    "cost": {
+      "base": 20,
+      "growth": 3
+    },
+    "advice": {
+      "upTo": 1,
+      "reason": "多一個命盤可挑，開局不必全憑運氣。"
+    }
+  },
+  {
+    "id": "tianjuan",
+    "name": "天眷",
+    "desc": "天道垂憐，開局可多擲一次命盤。",
+    "maxLevel": 5,
+    "effect": "rerolls",
+    "perLevel": 1,
+    "cost": {
+      "base": 8,
+      "growth": 2
+    },
+    "advice": {
+      "upTo": 1,
+      "reason": "多一次重擲，少賭一點開局的運氣。"
+    }
+  },
+  {
     "id": "suhui",
     "name": "宿慧",
     "desc": "前世的修行烙在神魂裡，今生吐納更為順暢。",
@@ -16,19 +48,51 @@
     }
   },
   {
-    "id": "tianjuan",
-    "name": "天眷",
-    "desc": "天道垂憐，開局可多擲一次命盤。",
+    "id": "lingxi",
+    "name": "靈犀",
+    "desc": "臨事之前，心頭偶有一絲感應，吉凶似有先兆。",
     "maxLevel": 5,
-    "effect": "rerolls",
+    "effect": "omen",
     "perLevel": 1,
     "cost": {
-      "base": 8,
+      "base": 15,
+      "growth": 1.8
+    },
+    "advice": {
+      "upTo": 1,
+      "reason": "抉擇之前能窺看一個選項的吉凶，不再全憑運氣。"
+    }
+  },
+  {
+    "id": "suyuan",
+    "name": "夙願",
+    "desc": "心頭有一件放不下的事，這一世便朝它走去。",
+    "maxLevel": 2,
+    "effect": "wish",
+    "perLevel": 1,
+    "cost": {
+      "base": 12,
+      "growth": 2.5
+    },
+    "advice": {
+      "upTo": 1,
+      "reason": "指定這一世的目標，讓際遇往你在意的方向偏一些。"
+    }
+  },
+  {
+    "id": "daoxin",
+    "name": "道心",
+    "desc": "道心愈堅，衝關失敗時所損愈少。",
+    "maxLevel": 4,
+    "effect": "failLoss",
+    "perLevel": 0.05,
+    "cost": {
+      "base": 12,
       "growth": 2
     },
     "advice": {
       "upTo": 2,
-      "reason": "多一次重擲，少賭一點開局的運氣。"
+      "reason": "衝關失敗時少折損一些，築基丹的錢才不白花。"
     }
   },
   {
@@ -56,29 +120,16 @@
     }
   },
   {
-    "id": "daoxin",
-    "name": "道心",
-    "desc": "道心愈堅，衝關失敗時所損愈少。",
-    "maxLevel": 4,
-    "effect": "failLoss",
-    "perLevel": 0.05,
-    "cost": {
-      "base": 12,
-      "growth": 2
-    },
-    "advice": {
-      "upTo": 2,
-      "reason": "衝關失敗時少折損一些，築基丹的錢才不白花。"
-    }
-  },
-  {
     "id": "benming",
     "name": "本命",
     "desc": "與器相伴日久，神魂與它有了牽連，轉世時可帶走幾件。",
     "maxLevel": 3,
     "effect": "keepArtifact",
     "perLevel": 1,
-    "cost": { "base": 30, "growth": 2.5 }
+    "cost": {
+      "base": 30,
+      "growth": 2.5
+    }
   },
   {
     "id": "shenguang",

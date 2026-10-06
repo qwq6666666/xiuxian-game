@@ -70,7 +70,8 @@ describe("隔世重逢：存檔與內容", () => {
       }
       for (const e of evs) {
         expect(e.type).toBe("anecdote");
-        expect(e.effects).toBeUndefined();
+        // 只有「遇見故人」目標要用的旗標，沒有任何數值效果
+        expect(e.effects).toEqual({ flags: ["reunion_met"] });
         expect(e.text.split(/[。！？]/).filter(Boolean).length).toBeLessThanOrEqual(3);
       }
     }

@@ -64,6 +64,12 @@ export function describeTalent(talent: TalentDef, level: number): string {
       return `轉世時帶走 ${talent.perLevel * level} 件法寶`;
     case "breakthroughAid":
       return `衝擊大關之時用得上，等級愈高愈有把握（${level} 級）`;
+    case "chartChoice":
+      return `擲命盤時多得 ${talent.perLevel * level} 份功率相近的備選，擇一而行`;
+    case "wish":
+      return level >= 2 ? "可從已解鎖的全部目標中指定夙願" : "可從這一世的目標中指定夙願";
+    case "omen":
+      return `每世可窺看 ${talent.perLevel * level} 次抉擇的吉凶`;
   }
 }
 

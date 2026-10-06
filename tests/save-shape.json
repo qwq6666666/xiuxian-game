@@ -1,5 +1,5 @@
 {
-  "version": 25,
+  "version": 26,
   "shape": {
     "TravelState": [
       "locationId",
@@ -111,9 +111,26 @@
       "joinedAge",
       "rank"
     ],
+    "Chart": [
+      "attributes",
+      "cultivationBonus",
+      "goalIds",
+      "items",
+      "name",
+      "originId",
+      "rngSeed",
+      "spiritRootId",
+      "spiritStones",
+      "worldSeed"
+    ],
+    "OmenEntry": [
+      "choice",
+      "omen"
+    ],
     "GameState": [
       "ageMonths",
       "alchemy",
+      "altCharts",
       "attributes",
       "autoChoice",
       "breakthroughs",
@@ -137,6 +154,8 @@
       "methodId",
       "name",
       "nameCustom",
+      "omen",
+      "omenLeft",
       "originId",
       "pendingEvent",
       "phase",
@@ -158,6 +177,7 @@
       "travel",
       "tribulation",
       "version",
+      "wishId",
       "worldSeed"
     ]
   }

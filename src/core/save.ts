@@ -1,6 +1,6 @@
 import { checkNum, checkStr, isPlainObject, type Obj } from "../data/check";
 import { gameData } from "../data/load";
-import { ARTIFACT_SLOTS, ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "../data/types";
+import { ARTIFACT_SLOTS, ATTRIBUTE_KEYS, OMENS, REVIEW_CAUSES, type GameData, type Omen, type ReviewCause } from "../data/types";
 import { pickGoals } from "./goals";
 import { createInitialState } from "./life";
 import { deriveSeed, nextInt } from "./rng";
@@ -12,6 +12,8 @@ import {
   SAVE_VERSION,
   type Attributes,
   type Changes,
+  type Chart,
+  type OmenEntry,
   type GameState,
   type LifeBrief,
   type LifeReview,
@@ -120,6 +122,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   22: (d) => ({ ...d, version: 23, meta: { ...obj(d.meta, "meta"), bestiary: {} } }),
   // v23 沒有故人紀錄：補上空的紀錄；舊的開場日誌沒有出身欄位，顯示時退回通用句
   23: (d) => ({ ...d, version: 24, meta: { ...obj(d.meta, "meta"), met: {} } }),
+  // v25 沒有擇身、夙願、靈犀：補上沒有備選命盤、沒指定夙願、沒有靈犀次數
+  25: (d) => ({ ...d, version: 26, altCharts: [], wishId: null, omenLeft: 0, omen: [] }),
   // v24 運功是冷卻制：冷卻已過的舊檔補一次存量，起點移到現在；還在冷卻的維持原計時
   24: (d, gd) => {
     const age = d.ageMonths as number;
@@ -385,6 +389,37 @@ function parseReview(v: unknown, data: GameData): LifeReview | null {
   };
 }
 
+/** 擇身的備選命盤：欄位與目前命盤相同，逐項檢查 */
+function parseChart(raw: unknown, path: string, data: GameData): Chart {
+  const c = obj(raw, path);
+  const attrRaw = obj(c.attributes, `${path}.attributes`);
+  const attributes = {} as Attributes;
+  for (const k of ATTRIBUTE_KEYS) attributes[k] = num(attrRaw, k, { integer: true }, `${path}.attributes.${k}`);
+  const spiritRootId = str(c, "spiritRootId", `${path}.spiritRootId`);
+  if (!data.spiritRoots.some((r) => r.id === spiritRootId)) fail(`${path}.spiritRootId`, `找不到靈根 ${spiritRootId}`);
+  const originId = str(c, "originId", `${path}.originId`);
+  if (!data.origins.some((r) => r.id === originId)) fail(`${path}.originId`, `找不到出身 ${originId}`);
+  if (!Array.isArray(c.goalIds)) fail(`${path}.goalIds`, "必須是字串陣列");
+  const goalIds = c.goalIds.map((id, i) => {
+    if (typeof id !== "string" || !data.goals.some((g) => g.id === id)) fail(`${path}.goalIds[${i}]`, `找不到目標 ${String(id)}`);
+    return id;
+  });
+  const name = str(c, "name", `${path}.name`);
+  if (name === "") fail(`${path}.name`, "不可為空");
+  return {
+    rngSeed: num(c, "rngSeed", { integer: true }, `${path}.rngSeed`),
+    worldSeed: num(c, "worldSeed", { integer: true, min: 0 }, `${path}.worldSeed`),
+    goalIds,
+    name,
+    attributes,
+    spiritRootId,
+    originId,
+    cultivationBonus: num(c, "cultivationBonus", { min: 0 }, `${path}.cultivationBonus`),
+    spiritStones: num(c, "spiritStones", { integer: true, min: 0 }, `${path}.spiritStones`),
+    items: intRecord(c, "items", `${path}.items`),
+  };
+}
+
 /** 讀取存檔，格式錯誤時丟出指出欄位的錯誤 */
 export function deserialize(text: string, data: GameData = gameData): GameState {
   let raw: unknown;
@@ -441,11 +476,27 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     if (!data.goals.some((g) => g.id === id)) fail(`goalIds[${i}]`, `找不到目標 ${id}`);
     return id;
   });
+  // 夙願：null 或這一世目標裡的一個
+  if (o.wishId !== null && (typeof o.wishId !== "string" || !goalIds.includes(o.wishId))) fail("wishId", `必須是 null 或這一世目標之一，目前為 ${JSON.stringify(o.wishId)}`);
+  if (!Array.isArray(o.altCharts)) fail("altCharts", "必須是陣列");
+  const altCharts = o.altCharts.map((c, i) => parseChart(c, `altCharts[${i}]`, data));
+  if (altCharts.length > 0 && phase !== "rolling") fail("altCharts", "只有擲骰階段會有備選命盤");
   const pendingEvent = o.pendingEvent;
   if (pendingEvent !== null) {
     if (typeof pendingEvent !== "string") fail("pendingEvent", `必須是字串或 null，目前為 ${JSON.stringify(pendingEvent)}`);
     if (!data.events.some((e) => e.id === pendingEvent)) fail("pendingEvent", `找不到事件 ${pendingEvent}`);
   }
+  // 靈犀：已窺看的選項要對得上目前等待中的抉擇
+  if (!Array.isArray(o.omen)) fail("omen", "必須是陣列");
+  const pendingDef = typeof pendingEvent === "string" ? data.events.find((e) => e.id === pendingEvent) : undefined;
+  const omen = o.omen.map((raw, i): OmenEntry => {
+    const e = obj(raw, `omen[${i}]`);
+    const choice = num(e, "choice", { integer: true, min: 0 }, `omen[${i}].choice`);
+    if (!pendingDef || choice >= (pendingDef.choices?.length ?? 0)) fail(`omen[${i}].choice`, "沒有等待中的抉擇，或選項不存在");
+    const tendency = str(e, "omen", `omen[${i}].omen`);
+    if (!(OMENS as readonly string[]).includes(tendency)) fail(`omen[${i}].omen`, `必須是 good、neutral 或 bad，目前為 ${JSON.stringify(tendency)}`);
+    return { choice, omen: tendency as Omen };
+  });
   if (typeof o.autoChoice !== "boolean") fail("autoChoice", `必須是 true 或 false，目前為 ${JSON.stringify(o.autoChoice)}`);
 
   const travelRaw = obj(o.travel, "travel");
@@ -559,6 +610,10 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     methodId,
     focusMonth: num(o, "focusMonth", { integer: true, min: -1 }),
     focusStored: num(o, "focusStored", { integer: true, min: 0 }),
+    altCharts,
+    wishId: o.wishId as string | null,
+    omenLeft: num(o, "omenLeft", { integer: true, min: 0 }),
+    omen,
     equipment,
     sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
     sectsTried: o.sectsTried as string[],

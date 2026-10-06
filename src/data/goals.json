@@ -86,6 +86,32 @@
     "condition": {
       "kind": "flag",
       "flagId": "child_grown"
+    },
+    "tilt": {
+      "eventIds": [
+        "orphan_001"
+      ],
+      "flags": [
+        "orphan_adopted",
+        "child_grown"
+      ]
+    }
+  },
+  {
+    "id": "meet_old_friend",
+    "name": "遇見故人",
+    "desc": "路上遇見一位叫得出名字的人。",
+    "group": "story",
+    "minLives": 0,
+    "condition": {
+      "kind": "flag",
+      "flagId": "reunion_met"
+    },
+    "tilt": {
+      "acquaintances": [
+        "gu_yuanzhou",
+        "su_banxia"
+      ]
     }
   }
 ]

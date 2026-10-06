@@ -26,6 +26,12 @@ export interface GameConfig {
   focusCooldown: number;
   /** 運功最多積蓄幾次（M40）；一次運功得到的修為 × 積蓄次數，整體加成仍受 focusBonus 限制 */
   focusMaxCharges: number;
+  /** 夙願（M44）：被指定的目標有掛鉤的事件，抽事件時的權重倍率 */
+  wishWeightMult: number;
+  /** 擇身（M44）：備選命盤與目前命盤的修煉功率相差不得超過這個比例（0.15 即 ±15%） */
+  chartPowerTolerance: number;
+  /** 靈犀（M44）：結果的靈石損失達到這個數字以上才算凶 */
+  omenLossStones: number;
   /** 每點心性減少的損失比例 */
   mindLossReduction: number;
   /** 安排資訊面拿來換算「攢多久買得起」的參考物品 id */
@@ -280,10 +286,16 @@ export interface EventConditions {
   acquaintance?: { id: string; gapMin?: number; gapMax?: number };
 }
 
+/** 靈犀窺看到的結局傾向 */
+export type Omen = "good" | "neutral" | "bad";
+export const OMENS: readonly Omen[] = ["good", "neutral", "bad"];
+
 export interface OutcomeDef {
   weight: number;
   text: string;
   effects: Effects;
+  /** 靈犀看到的傾向；沒寫就由效果推出（死亡、損失為凶，有收穫為吉） */
+  omen?: Omen;
   /** 每點屬性額外增加的權重 */
   weightPerAttribute?: Partial<Record<AttributeKey, number>>;
 }
@@ -352,7 +364,7 @@ export interface OriginDef {
 }
 
 /** breakthroughAid（神光）本身不加數值，只被 breakthroughRule 的 requiresTalent、talentRate 引用 */
-export type TalentEffect = "cultivation" | "rerolls" | "fortune" | "stoneCarry" | "failLoss" | "breakthroughAid" | "keepArtifact";
+export type TalentEffect = "cultivation" | "rerolls" | "fortune" | "stoneCarry" | "failLoss" | "breakthroughAid" | "keepArtifact" | "chartChoice" | "wish" | "omen";
 
 /** 輪迴天賦：每級效果 = perLevel，第 n 級的價格 = ceil(base × growth^(目前等級)) */
 export interface TalentDef {
@@ -721,6 +733,15 @@ export interface GoalDef {
   /** 已走完至少這麼多世才會抽到 */
   minLives: number;
   condition: GoalCondition;
+  /** 夙願（M44）：被指定為夙願時，下列事件的權重乘上 wishWeightMult；沒寫就只是標記，不影響事件 */
+  tilt?: GoalTilt;
+}
+
+/** 夙願偏向的事件：直接點名、要求或設定某旗標、或與某位故人相關，符合任一項即算 */
+export interface GoalTilt {
+  eventIds?: string[];
+  flags?: string[];
+  acquaintances?: string[];
 }
 
 export interface GameData {

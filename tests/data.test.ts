@@ -68,7 +68,7 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
   });
 
   it("talents", () => {
-    const t = gameData.talents[0];
+    const t = gameData.talents.find((x) => x.id === "suhui")!;
     expect(() => validateTalents([{ ...t, effect: "luck" }])).toThrow("第 1 筆（suhui）：欄位 effect");
     expect(() => validateTalents([{ ...t, maxLevel: 0 }])).toThrow("maxLevel");
     expect(() => validateTalents([{ ...t, perLevel: 0 }])).toThrow("perLevel");

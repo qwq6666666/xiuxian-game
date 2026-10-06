@@ -9,6 +9,7 @@ import { addLog, atBottleneck, eventOf, realmOf, resolveStages, scheduleOf } fro
 import { methodEffect } from "./method";
 import { forceBreakthrough, forceBreakthroughFail } from "./breakthrough";
 import { endLife } from "./review";
+import { wishWeightMult } from "./wish";
 import { lifespanMonths } from "./formulas";
 import { nextInt, nextRandom, pickWeighted } from "./rng";
 import type { Attributes, Changes, GameState } from "./state";
@@ -72,7 +73,7 @@ export function pickEvent(state: GameState, data: GameData = gameData): [EventDe
       state.attributes.fortune,
       ev.scheduleWeights?.[state.schedule] ?? 1,
       data.config,
-    ),
+    ) * wishWeightMult(state, ev, data),
   }));
   const [idx, seed] = pickWeighted(state.rngSeed, weighted);
   return [weighted[idx].ev, seed];
@@ -208,6 +209,19 @@ function runAnecdote(state: GameState, ev: EventDef, month: number, data: GameDa
   );
 }
 
+/** 這個選項實際會落到哪個結果：由目前的 rngSeed 決定，同一個狀態下每個選項的結果都是定的 */
+export function pickOutcome(state: GameState, choice: ChoiceDef): [number, number] {
+  const weights = choice.outcomes.map((o) => ({
+    weight: outcomeWeight(o.weight, o.weightPerAttribute, state.attributes),
+  }));
+  return pickWeighted(state.rngSeed, weights);
+}
+
+/** 同上，只取結果的索引（靈犀窺看用，不動亂數） */
+export function outcomeIndexOf(state: GameState, choice: ChoiceDef): number {
+  return pickOutcome(state, choice)[0];
+}
+
 /** 玩家（或自動抉擇）選定選項：抽結果、套用效果、寫日誌，時間恢復 */
 export function chooseEvent(state: GameState, choiceIndex: number, data: GameData = gameData): GameState {
   if (state.phase !== "living" || state.pendingEvent === null) return state;
@@ -215,14 +229,11 @@ export function chooseEvent(state: GameState, choiceIndex: number, data: GameDat
   const choice = ev.choices?.[choiceIndex];
   if (!choice || !canChoose(state, choice)) return state;
 
-  const weights = choice.outcomes.map((o) => ({
-    weight: outcomeWeight(o.weight, o.weightPerAttribute, state.attributes),
-  }));
-  const [outcomeIdx, seed] = pickWeighted(state.rngSeed, weights);
+  const [outcomeIdx, seed] = pickOutcome(state, choice);
   const outcome = choice.outcomes[outcomeIdx];
   const month = state.ageMonths;
 
-  const applied = applyEffects({ ...state, rngSeed: seed, pendingEvent: null }, outcome.effects, month, data);
+  const applied = applyEffects({ ...state, rngSeed: seed, pendingEvent: null, omen: [] }, outcome.effects, month, data);
   let s = addLog(
     applied.state,
     {

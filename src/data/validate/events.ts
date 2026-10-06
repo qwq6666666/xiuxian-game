@@ -1,4 +1,6 @@
 import {
+  OMENS,
+  type Omen,
   type ChoiceDef,
   type Effects,
   type EventConditions,
@@ -114,6 +116,11 @@ export function parseChoice(raw: unknown, where: string): ChoiceDef {
         text: str(oo, "text", ow),
         effects: oo.effects === undefined ? {} : parseEffects(oo.effects, `${ow} 欄位 effects`),
       };
+      if (oo.omen !== undefined) {
+        const om = str(oo, "omen", ow);
+        if (!(OMENS as readonly string[]).includes(om)) fail(ow, "omen", `必須是 good、neutral 或 bad，目前為 ${JSON.stringify(om)}`);
+        outcome.omen = om as Omen;
+      }
       if (oo.weightPerAttribute !== undefined) {
         outcome.weightPerAttribute = attrRecord(oo, "weightPerAttribute", ow);
       }

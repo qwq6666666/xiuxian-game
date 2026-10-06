@@ -1,6 +1,6 @@
-import type { ArtifactSlot, AttributeKey, ReviewCause } from "../data/types";
+import type { ArtifactSlot, AttributeKey, Omen, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 25;
+export const SAVE_VERSION = 26;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -218,6 +218,26 @@ export interface SectMembership {
   joinedAge: number;
 }
 
+/** 擲骰時的一份命盤（M44 擇身）：目前命盤的欄位就在 GameState 上，備選命盤存在 altCharts */
+export interface Chart {
+  rngSeed: number;
+  worldSeed: number;
+  goalIds: string[];
+  name: string;
+  attributes: Attributes;
+  spiritRootId: string;
+  originId: string;
+  cultivationBonus: number;
+  spiritStones: number;
+  items: Record<string, number>;
+}
+
+/** 靈犀（M44）：目前抉擇裡某個選項被窺看到的傾向 */
+export interface OmenEntry {
+  choice: number;
+  omen: Omen;
+}
+
 export interface GameState {
   version: number;
   rngSeed: number;
@@ -250,6 +270,14 @@ export interface GameState {
   lifespanBonus: number;
   /** 身上裝備的法寶（M30）：每格最多一件，裝備中的不在背包裡 */
   equipment: Record<ArtifactSlot, string | null>;
+  /** 擇身（M44）：擲骰階段的備選命盤，修行中為空 */
+  altCharts: Chart[];
+  /** 夙願（M44）：這一世指定的目標 id（goalIds 之一），沒指定為 null */
+  wishId: string | null;
+  /** 靈犀（M44）：這一世還能窺看幾次抉擇的傾向 */
+  omenLeft: number;
+  /** 靈犀（M44）：目前等待中的抉擇裡已窺看的選項；抉擇結算後清空 */
+  omen: OmenEntry[];
   /** 運功積蓄的計時起點（ageMonths）：每滿 focusCooldown 個月存一次，起點隨之前進；-1 表示從出生起算 */
   focusMonth: number;
   /** 已積蓄的運功次數（M40）；玩家一次用掉全部，上限 config.focusMaxCharges */

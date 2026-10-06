@@ -119,9 +119,13 @@ describe("天賦頁的推薦與預覽", () => {
   const talent = (id: string) => gameData.talents.find((t) => t.id === id)!;
 
   it("新玩家被推薦第一個有 advice 的天賦，等級夠了就換下一個", () => {
-    expect(recommendTalent(emptyMeta(), gameData)?.talentId).toBe("suhui");
-    const upTo = talent("suhui").advice!.upTo;
-    expect(recommendTalent({ ...emptyMeta(), talents: { suhui: upTo } }, gameData)?.talentId).toBe("tianjuan");
+    // 推薦順序：擇身 1、天眷 1、宿慧到 8、靈犀 1、夙願 1、道心 2
+    const order = ["zeshen", "tianjuan", "suhui", "lingxi", "suyuan", "daoxin"];
+    let talents: Record<string, number> = {};
+    for (const id of order) {
+      expect(recommendTalent({ ...emptyMeta(), talents }, gameData)?.talentId, `輪到 ${id}`).toBe(id);
+      talents = { ...talents, [id]: talent(id).advice!.upTo };
+    }
   });
 
   it("走到金丹卻缺神光時，優先推薦神光並說出還差幾級；夠了就不再優先", () => {

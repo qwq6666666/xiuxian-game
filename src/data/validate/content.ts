@@ -9,6 +9,7 @@ import {
   type GameConfig,
   type GoalCondition,
   type GoalDef,
+  type GoalTilt,
   type ItemDef,
   type ItemEffect,
   ARTIFACT_SLOTS,
@@ -22,7 +23,7 @@ import {
   type SpiritRootDef,
   type TalentDef,
 } from "../types";
-import { fail, obj, list, num, str, strList, numRecord, uniqueIds, tierYears, intRecord } from "./common";
+import { fail, obj, list, num, optStrList, str, strList, numRecord, uniqueIds, tierYears, intRecord } from "./common";
 import { validateWhen } from "./world";
 
 export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
@@ -54,6 +55,9 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     focusBonus: num(o, "focusBonus", file, { min: 0, max: 0.5 }),
     focusCooldown: num(o, "focusCooldown", file, { min: 1, max: 24, integer: true }),
     focusMaxCharges: num(o, "focusMaxCharges", file, { min: 1, max: 30, integer: true }),
+    wishWeightMult: num(o, "wishWeightMult", file, { min: 1, max: 10 }),
+    chartPowerTolerance: num(o, "chartPowerTolerance", file, { gt: 0, max: 1 }),
+    omenLossStones: num(o, "omenLossStones", file, { min: 1, integer: true }),
     mindLossReduction: num(o, "mindLossReduction", file, { min: 0 }),
     priceRefItemId: str(o, "priceRefItemId", file),
     eventIntervalMin: eventMin,
@@ -318,9 +322,12 @@ export function validateTalents(raw: unknown, file = "talents.json"): TalentDef[
       effect !== "stoneCarry" &&
       effect !== "failLoss" &&
       effect !== "breakthroughAid" &&
-      effect !== "keepArtifact"
+      effect !== "keepArtifact" &&
+      effect !== "chartChoice" &&
+      effect !== "wish" &&
+      effect !== "omen"
     ) {
-      fail(where, "effect", `必須是 cultivation、rerolls、fortune、stoneCarry、failLoss、breakthroughAid 或 keepArtifact，目前為 ${JSON.stringify(effect)}`);
+      fail(where, "effect", `必須是 cultivation、rerolls、fortune、stoneCarry、failLoss、breakthroughAid、keepArtifact、chartChoice、wish 或 omen，目前為 ${JSON.stringify(effect)}`);
     }
     const cost = obj(o.cost, `${where} 欄位 cost`);
     return {
@@ -388,6 +395,18 @@ export function validateOrigins(raw: unknown, file = "origins.json"): OriginDef[
   return origins;
 }
 
+function parseTilt(raw: unknown, where: string): GoalTilt {
+  const o = obj(raw, where);
+  const tilt: GoalTilt = {};
+  for (const k of ["eventIds", "flags", "acquaintances"] as const) {
+    const list = optStrList(o, k, where);
+    if (list !== undefined) tilt[k] = list;
+  }
+  for (const k of Object.keys(o)) if (!["eventIds", "flags", "acquaintances"].includes(k)) fail(where, k, "不是合法的欄位");
+  if (Object.keys(tilt).length === 0) fail(where, "（根）", "至少要有 eventIds、flags、acquaintances 其中一項");
+  return tilt;
+}
+
 export function validateGoals(raw: unknown, file = "goals.json"): GoalDef[] {
   const goals = list(raw, file).map((r, i): GoalDef => {
     const o = obj(r, `${file} 第 ${i + 1} 筆`);
@@ -415,6 +434,7 @@ export function validateGoals(raw: unknown, file = "goals.json"): GoalDef[] {
       group: str(o, "group", w),
       minLives: num(o, "minLives", w, { min: 0, integer: true }),
       condition,
+      ...(o.tilt !== undefined ? { tilt: parseTilt(o.tilt, `${w} 欄位 tilt`) } : {}),
     };
   });
   uniqueIds(goals, file);

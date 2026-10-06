@@ -3,59 +3,21 @@ import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
 import { lifeIndex } from "./era";
 import { talentBonus } from "./formulas";
-import { pickGoals } from "./goals";
-import { deriveSeed, nextInt, pickWeighted } from "./rng";
+import { nextInt } from "./rng";
 import { artifactsToKeep } from "./forge";
+import { chartChoiceLevel, drawAlternates, drawChart } from "./chart";
 import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type LogEntry, type Meta } from "./state";
 
-/** 出身的物品加上帶來的法寶 */
-function keptItems(kept: string[], base: Record<string, number>): Record<string, number> {
-  const items = { ...base };
-  for (const id of kept) items[id] = (items[id] ?? 0) + 1;
-  return items;
-}
-
-/** 重新擲出屬性、靈根、出身，並套用出身效果 */
+/** 重新擲出屬性、靈根、出身，並套用出身效果；有擇身天賦時再多抽備選命盤。夙願跟著目標走，重擲後要重選。 */
 export function rollLife(state: GameState, data: GameData = gameData): GameState {
-  const { attributeMin, attributeMax } = data.config;
-  let seed = state.rngSeed;
-  const attributes = {} as Attributes;
-  for (const key of ATTRIBUTE_KEYS) {
-    const [v, s] = nextInt(seed, attributeMin, attributeMax);
-    attributes[key] = v;
-    seed = s;
-  }
-  const [rootIdx, s1] = pickWeighted(seed, data.spiritRoots);
-  const [originIdx, s2] = pickWeighted(s1, data.origins);
-  let seed2 = s2;
-  const origin = data.origins[originIdx];
-  for (const key of ATTRIBUTE_KEYS) attributes[key] += origin.attributes[key] ?? 0;
-  // 姓名：玩家沒改過就跟著命盤重新抽
-  let name = state.name;
-  if (!state.nameCustom) {
-    const [si, s3] = nextInt(s2, 0, data.names.surnames.length - 1);
-    const [gi, s4] = nextInt(s3, 0, data.names.given.length - 1);
-    name = data.names.surnames[si] + data.names.given[gi];
-    seed2 = s4;
-  }
-  // 福緣天賦：氣運加成
-  attributes.fortune += talentBonus(state.meta, data.talents, "fortune");
+  const chart = drawChart(state.rngSeed, state, data);
+  const count = chartChoiceLevel(state, data);
   return {
     ...state,
-    rngSeed: seed2,
-    // 世界種子由最後的亂數狀態雜湊而來，不消耗亂數；重擲會得到另一個世界
-    worldSeed: deriveSeed(seed2, 1),
-    // 目標跟著命盤抽：由最後的亂數狀態雜湊而來，不消耗亂數
-    goalIds: pickGoals(seed2, state.meta.lives, data),
-    name,
-    attributes,
-    spiritRootId: data.spiritRoots[rootIdx].id,
-    originId: origin.id,
-    cultivationBonus: origin.cultivationBonus,
-    // 遺澤天賦帶來的靈石一併算進初始靈石
-    spiritStones: origin.spiritStones + state.carriedStones,
-    // 轉世帶來的法寶（本命天賦）一併放進背包，重擲也不會丟
-    items: keptItems(state.meta.keptArtifacts, origin.items),
+    ...chart,
+    altCharts: count > 0 ? drawAlternates(chart, state, count, data) : [],
+    wishId: null,
+    cultivationBonus: chart.cultivationBonus,
   };
 }
 
@@ -94,6 +56,10 @@ export function createInitialState(
       methodId: data.methods[0].id,
       focusMonth: data.config.startAgeYears * 12,
       focusStored: 0,
+      altCharts: [],
+      wishId: null,
+      omenLeft: 0,
+      omen: [],
       equipment: { weapon: null, ward: null },
       pillStage: "",
       pillCount: 0,
@@ -145,7 +111,15 @@ export function startLife(state: GameState, data: GameData = gameData): GameStat
     originId: state.originId,
     spiritRootId: state.spiritRootId,
   };
-  return { ...state, log: [...state.log, opening].slice(-data.config.logLimit), phase: "living", eventThreshold, eventClock: 0, rngSeed };
+  return { ...state, log: [...state.log, opening].slice(-data.config.logLimit), phase: "living",
+    eventThreshold,
+    eventClock: 0,
+    rngSeed,
+    // 備選命盤只在擲骰階段有；靈犀的次數依天賦等級，每世重新給
+    altCharts: [],
+    omenLeft: Math.max(0, Math.round(talentBonus(state.meta, data.talents, "omen"))),
+    omen: [],
+  };
 }
 
 /**
