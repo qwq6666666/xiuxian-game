@@ -51,6 +51,12 @@
 - [x] 規則寫入 `AGENTS.md`「兩位助手的職責」，交接檔在 `docs/handoff/`，事件可分檔載入（`src/data/events/`）。
 - 目前指派：Claude → M20 化神；ChatGPT → 動畫第三批、階段 5 插畫、手機實測（詳見 `docs/handoff/chatgpt.md`）。
 
+## M28–M32：修仙要素擴充（GDD 第 30–36 節，使用者已同意開工）
+
+- [x] M32 前期體驗（Claude）：練氣／築基／金丹需求調整、第 13 節新規格、`livesMax`／`guaranteed` 事件欄位、里程碑日誌句、sim 量測；全部 ✓。
+- [ ] M32 內容（ChatGPT）：`src/data/events/intro.json` 開場引路事件；狀態卡「距離突破還差 N 層」提示。
+- [ ] M28 天劫、[ ] M29 煉丹、[ ] M31 心法、[ ] M30 煉器與法寶：依序由 Claude 做核心。
+
 ## M25–M27：加入宗門（GDD 第 29 節）
 
 - [x] M25 核心（Claude）：`sects.json`、入宗、離宗、晉升、差事、月例、同門、存檔 v15、sim `sect` 策略；全部 ✓。

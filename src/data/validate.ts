@@ -407,6 +407,7 @@ function parseConditions(raw: unknown, where: string): EventConditions {
     if (typeof o.sectInfluence !== "boolean") fail(where, "sectInfluence", "必須是 true 或 false");
     c.sectInfluence = o.sectInfluence;
   }
+  if (o.livesMax !== undefined) c.livesMax = num(o, "livesMax", where, { min: 0, integer: true });
   if (o.sect !== undefined) {
     if (typeof o.sect !== "boolean") fail(where, "sect", "必須是 true 或 false");
     c.sect = o.sect;
@@ -421,7 +422,7 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   }
   for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
   for (const k of Object.keys(o)) {
-    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin"].includes(k)) {
+    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin", "livesMax"].includes(k)) {
       fail(where, k, "不是合法的條件");
     }
   }
@@ -505,6 +506,14 @@ export function validateEvents(raw: unknown, file = "events.json"): EventDef[] {
       conditions: parseConditions(o.conditions, `${where} 欄位 conditions`),
     };
     if (o.highlight !== undefined) ev.highlight = num(o, "highlight", where, { min: 0 });
+    if (o.guaranteed !== undefined) {
+      if (typeof o.guaranteed !== "boolean") fail(where, "guaranteed", "必須是 true 或 false");
+      if (o.guaranteed) {
+        if (ev.maxPerLife !== 1) fail(where, "guaranteed", "必出的事件 maxPerLife 必須是 1");
+        if (ev.conditions.ageMax === undefined) fail(where, "guaranteed", "必出的事件必須設 conditions.ageMax，否則錯過時機也會硬出");
+        ev.guaranteed = true;
+      }
+    }
     if (o.scheduleWeights !== undefined) {
       const sw = obj(o.scheduleWeights, `${where} 欄位 scheduleWeights`);
       ev.scheduleWeights = {};
@@ -638,6 +647,7 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       find: strList(log, "find", where),
       adventureDeath: str(log, "adventureDeath", where),
       zuohua: str(log, "zuohua", where),
+      stageMilestone: strRecord("stageMilestone"),
       sect: (() => {
         const sw = `${where}.sect`;
         const so = obj(log.sect, sw);
@@ -1272,6 +1282,13 @@ export function validateGameData(data: GameData): GameData {
     }
     if (c.kind === "flag" && !setFlags.has(c.flagId)) throw new Error(`${w}：condition.flagId ${c.flagId} 沒有任何事件結果會設定它`);
   });
+  for (const k of Object.keys(data.text.log.stageMilestone)) {
+    const [rid, st] = k.split(":");
+    const realm = data.realms.find((r) => r.id === rid);
+    if (!realm || !/^\d+$/.test(st ?? "") || Number(st) >= realm.stageNames.length) {
+      throw new Error(`text.json：log.stageMilestone 的鍵 ${k} 必須是「境界 id:階段索引」且存在於 realms.json`);
+    }
+  }
   for (const r of sj.ranks.slice(1)) {
     if (!data.text.log.sect.promote[r.id]) throw new Error(`text.json：log.sect.promote 缺少位階 ${r.id} 的文字`);
   }

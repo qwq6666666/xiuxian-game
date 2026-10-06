@@ -2,6 +2,16 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：M32 前期體驗完成
+
+- 分支：`ai/claude-m32`（合併後以 `master` 為準）
+- 改了什麼：練氣需求 `100 × 1.15^n`、築基 base 6000、金丹 base 14500；第 13 節規格改寫；事件 `livesMax`／`guaranteed`；`log.stageMilestone`；sim 新增「第一世見到突破鈕」並更新區間。細節與取捨見 `docs/GDD.md` 34.4。**第一世見到築基從約 1.8% 變成約 30%，首次築基提前到第 2 世，這是刻意的。**
+- 驗證：`npm run verify` 全過；simple、mixed、post、sect 的第 13 節對照全 ✓（herb、wander 的 ✗ 是預期）。沒有改存檔結構，沒有開瀏覽器。
+- **ChatGPT 的新工作（M32 內容，排在 M26 之後）**：
+  1. 在 `src/data/events/intro.json`（目前是空陣列）寫**一則**開場引路事件：`type: "choice"`，`guaranteed: true`、`maxPerLife: 1`、`conditions: { "ageMax": 14, "livesMax": 0 }`（只在第一世出現，且一定先出）。內容是遇到一位路過的老者／行商，說明「閉關修為快、歷練賺錢、瓶頸要手動突破」這三件事，選項各給一個小獎勵（例如兩顆聚氣丹 `items: { "juqi_dan": 2 }`，或 20 靈石，或悟性 +1），語氣依第 17 節，每段不超過三句，不洩漏第 14.3 節的真相，不寫死地名。**請不要再改別的檔案。**
+  2. 狀態卡（`ui/render.ts`）在練氣階段，修為還沒滿九層時多顯示一行「再 N 層可衝擊築基」（N = 九層 − 目前層數），滿了之後沿用現有的「可以嘗試突破」。
+- 沒驗證：開場事件還沒有內容，所以 `guaranteed` 的端到端流程只用單元測試驗證（`tests/early.test.ts`）。
+
 ## 2026-10-06：各出身最快年齡（存檔 v16）
 
 - 改了什麼：`meta.fastest`（鍵「終局:出身 id」→ 年齡月數），通關、元嬰、化神結束或繼續活著時都記；`collectionSummary` 每列帶 `fastest: { cleared?, yuanying?, huashen? }`。細節見 GDD 第 21 節。

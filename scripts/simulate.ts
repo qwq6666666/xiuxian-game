@@ -138,14 +138,14 @@ function buyTalentsBalanced(state: GameState, targets: Record<string, number> = 
 }
 
 /** 最近一世的量測：金丹期的結嬰嘗試次數與停留月數（沒進金丹為 0） */
-let lifeStats = { attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: false, zuohua: false, huashenAttempts: 0, yuanyingMonths: 0, huashenReady: false };
+let lifeStats = { button: false, attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: false, zuohua: false, huashenAttempts: 0, yuanyingMonths: 0, huashenReady: false };
 
 /** 從開局玩到這一世結束（死亡、通關或元嬰大成） */
 function playLife(start: GameState): GameState {
   const need = gameData.realms.find((r) => r.id === "jindan")?.breakthroughRule?.requiresTalent;
   const hgate = gameData.realms.find((r) => r.id === "yuanying")?.breakthroughRule?.requiresTalent;
   lifeStats = {
-    attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: !need || (start.meta.talents[need.id] ?? 0) >= need.level, zuohua: false,
+    button: false, attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: !need || (start.meta.talents[need.id] ?? 0) >= need.level, zuohua: false,
     huashenAttempts: 0, yuanyingMonths: 0, huashenReady: !hgate || (start.meta.talents[hgate.id] ?? 0) >= hgate.level,
   };
   let yuanyingEntered: number | null = null;
@@ -159,6 +159,8 @@ function playLife(start: GameState): GameState {
     else if (strategy !== "simple" && state.phase === "living") state = mixedActions(state);
     if (state.pendingEvent !== null) state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
     if (strategy === "sect" && state.phase === "living" && state.pendingEvent === null) state = sectActions(state);
+    // 練氣九層圓滿、卡在瓶頸：玩家看得到「突破」鈕
+    if (!lifeStats.button && state.realmId === "lianqi" && atBottleneck(state, gameData)) lifeStats.button = true;
     // 卡在瓶頸時反覆嘗試突破，直到成功或老死
     while (state.phase === "living" && atBottleneck(state, gameData) && canBreakthrough(state, gameData)) {
       if (state.realmId === "jindan") lifeStats.attempts++;
@@ -269,9 +271,9 @@ function singleLives(): void {
   const advDeath = adventure ? 1 - (1 - adventure.deathChance) ** (lianqi.lifespan * 12 - gameData.config.startAgeYears * 12) : 0;
   const ok = (pass: boolean): string => (pass ? "✓" : "✗");
   console.log("對照第 13 節：");
-  console.log(`  ${ok(minutes >= 20 && minutes <= 25)} 第一世時長：${minutes.toFixed(1)} 分鐘（目標 20–25）`);
-  console.log(`  ${ok(avgProgress >= 5 && avgProgress <= 7)} 第一世平均止步：練氣 ${avgProgress.toFixed(1)} 層（目標 5–7）`);
-  console.log(`  ${ok(avgChoices >= 8 && avgChoices <= 15)} 每世抉擇事件：${avgChoices.toFixed(1)} 個（目標 8–15）`);
+  console.log(`  ${ok(minutes >= 20 && minutes <= 28)} 第一世時長：${minutes.toFixed(1)} 分鐘（目標 20–28）`);
+  console.log(`  ${ok(avgProgress >= 7 && avgProgress <= 9)} 第一世平均止步：練氣 ${avgProgress.toFixed(1)} 層（目標 7–9）`);
+  console.log(`  ${ok(avgChoices >= 8 && avgChoices <= 17)} 每世抉擇事件：${avgChoices.toFixed(1)} 個（目標 8–17）`);
   console.log(`  ${ok(advDeath <= 0.05)} 歷練身亡（整世都在歷練的最壞情況）：${(advDeath * 100).toFixed(1)}%（目標 ≤ 5%）`);
   console.log("各事件平均每世出現次數：");
   for (const [id, n] of [...eventTotals.entries()].sort((a, b) => b[1] - a[1])) {
@@ -293,6 +295,7 @@ function campaigns(): void {
     const e = s.log.find((x) => x.kind === "stageUp" && x.realmId === "lianqi" && x.stage === 4);
     return e ? (e.month - gameData.config.startAgeYears * 12) / 12 : null;
   };
+  let firstButton = 0;
   const firstZhuji = new Map<number, number>();
   const firstClear = new Map<number, number>();
   /** 每場戰役首次築基、首次金丹的世數（沒達成為 Infinity），以及到首次金丹為止的遊玩分鐘數（×1 速度） */
@@ -338,6 +341,7 @@ function campaigns(): void {
       row.suhui += state.meta.talents.suhui ?? 0;
       const start = state.ageMonths;
       state = playLife(state);
+      if (k === 0 && lifeStats.button) firstButton++;
       if (k < 5) earlyFragments += state.meta.fragments.length - fragmentsBefore;
       if (!gotBoth && state.meta.fragments.includes("f01") && state.meta.fragments.includes("f02")) {
         gotBoth = true;
@@ -433,7 +437,7 @@ function campaigns(): void {
     const all = [...done, ...Array<number>(runs - done.length).fill(Infinity)].sort((a, b) => a - b);
     return all[Math.floor(runs / 2)];
   };
-  const [zLo, zHi] = [3, 5];
+  const [zLo, zHi] = [2, 3];
   const [cLo, cHi] = [8, 12];
   const zMed = median(zhujiLives);
   const cMed = median(clearLives);
@@ -443,6 +447,8 @@ function campaigns(): void {
   console.log(`  ${ok(zMed >= zLo && zMed <= zHi)} 首次築基：中位數第 ${zMed} 世（目標第 ${zLo}–${zHi} 世）`);
   console.log(`  ${ok(cMed >= cLo && cMed <= cHi)} 首次金丹：中位數第 ${cMed} 世（目標第 ${cLo}–${cHi} 世）`);
   console.log(`  ${ok(hours >= 4 && hours <= 6)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（目標 4–6 小時，僅計已通關者）`);
+  const buttonPct = (firstButton / runs) * 100;
+  console.log(`  ${ok(buttonPct >= 30)} 第一世見到突破鈕（練氣九層圓滿）：${buttonPct.toFixed(1)}%（目標至少 30%，GDD 第 34 節）`);
   const fragPerLife = earlyFragments / runs / Math.min(5, lives);
   const bothMed = median(bothLives);
   const allMed = median(allLives);

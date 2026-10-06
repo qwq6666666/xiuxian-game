@@ -165,6 +165,8 @@ export interface EventConditions {
   sectInfluence?: boolean;
   /** 是否正在宗門中（宗門事件用；寫了同門欄位的事件必須設為 true） */
   sect?: boolean;
+  /** 已走完的世數不超過此值（0 表示只在第一世出現；開場引路事件用） */
+  livesMax?: number;
   /** 在宗門中且位階不低於此索引（0 外門、1 內門、2 執事、3 長老） */
   sectRankMin?: number;
 }
@@ -207,6 +209,8 @@ export interface EventDef {
   conditions: EventConditions;
   /** 依日常安排調整權重的倍率 */
   scheduleWeights?: Record<string, number>;
+  /** 為 true 的事件只要條件符合，下一次抽事件時一定先出（開場引路事件用，必須設 ageMax 與 maxPerLife 為 1） */
+  guaranteed?: boolean;
   /** 見聞的效果 */
   effects?: Effects;
   choices?: ChoiceDef[];
@@ -273,6 +277,8 @@ export interface TextData {
     adventureDeath: string;
     /** 閉關坐化的日誌 */
     zuohua: string;
+    /** 小階段升級的里程碑句：鍵是「境界 id:階段索引」，沒有的階段用一般的升級句 */
+    stageMilestone: Record<string, string>;
     /** 宗門日誌（M25）：{sect} 填宗門名稱；promote 以位階 id 為鍵（外門以外的位階都要寫） */
     sect: { join: string; refuse: string; leave: string; promote: Record<string, string> };
     /** 閉關見聞：依閉關長短分檔，結束原因的補句接在後面（時間用完不補） */

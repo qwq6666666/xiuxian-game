@@ -33,6 +33,7 @@ export function eventAvailable(state: GameState, ev: EventDef, data: GameData = 
   }
   if (c.territoryConflict !== undefined && Boolean(localTerritory(state, data)?.contested) !== c.territoryConflict) return false;
   if (c.sectInfluence !== undefined && localSectInfluence(state, data) !== c.sectInfluence) return false;
+  if (c.livesMax !== undefined && state.meta.lives > c.livesMax) return false;
   if (c.sect !== undefined && (state.sect !== null) !== c.sect) return false;
   if (c.sectRankMin !== undefined && (state.sect === null || state.sect.rank < c.sectRankMin)) return false;
   if (c.bottleneck !== undefined && atBottleneck(state, data) !== c.bottleneck) return false;
@@ -44,6 +45,9 @@ export function eventAvailable(state: GameState, ev: EventDef, data: GameData = 
 export function pickEvent(state: GameState, data: GameData = gameData): [EventDef | null, number] {
   const candidates = data.events.filter((ev) => eventAvailable(state, ev, data));
   if (candidates.length === 0) return [null, state.rngSeed];
+  // 必出的事件（開場引路）先出，不抽權重也不耗亂數
+  const forced = candidates.find((ev) => ev.guaranteed);
+  if (forced) return [forced, state.rngSeed];
   const weighted = candidates.map((ev) => ({
     ev,
     weight: eventWeight(

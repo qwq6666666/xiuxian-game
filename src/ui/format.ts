@@ -168,7 +168,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
   let template: string;
   switch (entry.kind) {
     case "stageUp":
-      template = pick(log.stageUp);
+      template = log.stageMilestone[`${entry.realmId}:${entry.stage}`] ?? pick(log.stageUp);
       break;
     case "realmUp":
       template = log.realmUp[entry.realmId] ?? log.stageUp[0];
