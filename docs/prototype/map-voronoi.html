@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地圖原型（維諾圖格網）</title>
+<style>
+  :root { --bg:#16181d; --panel:#1f232b; --line:#343a46; --text:#e6e2d6; --muted:#9aa0ac; --accent:#d8b45a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.6 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif; }
+  .wrap { max-width:760px; margin:0 auto; padding:12px 14px 40px; }
+  .wrap > * { margin-bottom:10px; }
+  h1 { font-size:16px; margin:0 0 4px; }
+  canvas { display:block; width:100%; max-width:100%; height:auto; border-radius:6px; cursor:crosshair; }
+  label { display:flex; align-items:center; gap:8px; margin:4px 0; color:var(--text); }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  input[type=number], select { background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 8px; font:inherit; }
+  button { background:var(--accent); color:#1b1b1b; border:0; border-radius:6px; padding:8px 12px; font:inherit; font-weight:700; cursor:pointer; min-height:38px; }
+  button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; }
+  .tg { margin:0; }
+  .tg input { position:absolute; opacity:0; pointer-events:none; }
+  .tg span { display:inline-block; padding:8px 14px; min-height:40px; border:1px solid var(--line); border-radius:999px; background:var(--panel); color:var(--muted); cursor:pointer; user-select:none; }
+  .tg input:checked + span { background:#3a3220; border-color:var(--accent); color:var(--text); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-height:7.2em; }
+  .card .it { font-size:17px; font-weight:700; margin-bottom:2px; }
+  .card small { font-weight:400; color:var(--muted); font-size:13px; }
+  .card .g { color:#d6a428; font-weight:700; }
+  .card .r { color:#d25046; font-weight:700; }
+  details { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+  summary { cursor:pointer; color:var(--accent); min-height:28px; }
+  .gen { display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px 10px; }
+  .mini { display:flex; flex-direction:column; gap:2px; margin:0; font-size:12px; color:var(--muted); }
+  .mini input[type=number] { width:96px; } .mini select { width:112px; }
+  .mini.wide { flex:1 1 150px; } .mini.wide input { width:100%; }
+  .legend { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; font-size:13px; }
+  .chip { display:flex; align-items:center; gap:6px; }
+  .sw { width:14px; height:14px; border-radius:3px; border:1px solid #0006; flex:none; }
+  .muted { color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>九渡洲（維諾圖格網原型，不在遊戲內）</h1>
+  <p class="muted" style="margin:0">地形、省、國家全部是同一批維諾格的集合；河流沿格邊流向鄰格；邊緣加雜訊與細分，讓稜角變成有機的線。</p>
+  <div class="gen">
+    <label class="mini">種子<input id="seed" type="number" value="7"></label>
+    <button id="roll">重擲</button>
+    <label class="mini">輪廓<select id="mode"><option value="fixed">九渡洲</option><option value="random">隨機大陸</option></select></label>
+    <label class="mini wide">國家數：<b id="pv">6</b><input id="p" type="range" min="3" max="8" step="1" value="6"></label>
+    <label class="mini wide">省數（國界格）：<b id="nv">80</b><input id="n" type="range" min="30" max="100" step="10" value="80"></label>
+    <label class="mini wide">地形格數：<b id="cv">3500</b><input id="c" type="range" min="1500" max="6000" step="500" value="3500"></label>
+  </div>
+  <canvas id="map"></canvas>
+  <div class="bar">
+    <label class="tg"><input type="checkbox" id="L_nation" checked><span>國家</span></label>
+    <label class="tg"><input type="checkbox" id="L_terrain" checked><span>地形</span></label>
+    <label class="tg"><input type="checkbox" id="L_river" checked><span>河流</span></label>
+    <label class="tg"><input type="checkbox" id="L_sect" checked><span>宗門靈脈</span></label>
+    <label class="tg"><input type="checkbox" id="L_symbol" checked><span>山林符號</span></label>
+    <label class="tg"><input type="checkbox" id="L_cells"><span>顯示格線</span></label>
+  </div>
+  <div class="card" id="info"></div>
+  <details><summary>圖例與統計</summary><div class="legend" id="legend" style="margin:8px 0"></div><div class="muted" id="stat"></div></details>
+</div>
+<script>
+"use strict";
+const W = 400, H = 520, S = 2, M = 24, OW = W * S, OH = H * S, CW = OW + 2 * M, CH = OH + 2 * M;
+const REGIONS = [
+  "M44,88 C73,101 98,88 138,98 C175,85 208,98 244,91 C275,100 307,84 344,92 C357,125 355,159 345,197 C315,189 295,205 262,196 C226,204 185,187 151,197 C120,189 87,205 55,196 C46,166 40,130 44,88 Z",
+  "M55,196 C87,205 120,189 151,197 C157,229 145,253 153,284 C143,316 154,342 148,372 C117,364 94,384 68,382 C43,355 33,325 30,290 C36,253 45,223 55,196 Z",
+  "M151,197 C185,187 226,204 262,196 C254,229 271,256 261,283 C272,311 256,341 264,372 C229,365 190,382 148,372 C154,342 143,316 153,284 C145,253 157,229 151,197 Z",
+  "M262,196 C295,205 315,189 345,197 C359,221 357,254 372,300 C369,334 351,361 338,384 C313,376 286,383 264,372 C256,341 272,311 261,283 C271,256 254,229 262,196 Z",
+  "M68,382 C94,384 117,364 148,372 C190,382 229,365 264,372 C286,383 313,376 338,384 C340,413 333,450 312,494 C270,506 243,483 208,495 C172,485 139,502 96,494 C78,471 73,416 68,382 Z"
+];
+const BIOMES = [
+  { name: "雪原", c: [236, 241, 243] }, { name: "苔原", c: [186, 195, 168] }, { name: "針葉林", c: [104, 144, 110] }, { name: "高山", c: [158, 150, 138] },
+  { name: "山地", c: [172, 156, 128] }, { name: "丘陵", c: [190, 170, 118] }, { name: "闊葉林", c: [128, 164, 92] }, { name: "草原", c: [190, 208, 126] },
+  { name: "乾草原", c: [214, 192, 134] }, { name: "荒漠", c: [224, 198, 140] }, { name: "雨林", c: [78, 140, 90] }, { name: "沼澤", c: [116, 142, 118] }
+];
+const POL_COLORS = [[217,96,74],[79,154,152],[224,180,58],[143,111,176],[127,176,79],[216,124,154],[95,127,176],[201,138,90]];
+const NAMES = ["白澤","朔雲","定陵","臨江","西陵","洛川","玄朔","青陽","岐城","廣陵","落霞","滄浪"];
+const CITIES = ["嶺安","澄波","望舒","雲臺","長汀","觀瀾","霜橋","石梁"];
+const SECT_NAMES = ["靖天宗","逐日宗","玄鶴觀","落霞派","栖梧閣","聽潮門","滄浪宗","玉簫門"];
+const PARCH = [233, 215, 166], GOLD = [236,192,70], COLD = [86,104,196], INK = [120,96,64];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+const css = c => `rgb(${c[0] | 0},${c[1] | 0},${c[2] | 0})`;
+const cssA = (c, a) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hash(ix, iy, s) { let h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
+function vnoise(x, y, s) { const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy); const a = hash(ix, iy, s), b = hash(ix + 1, iy, s), c = hash(ix, iy + 1, s), d = hash(ix + 1, iy + 1, s); return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v; }
+function fbm(x, y, s, oct = 4) { let sum = 0, amp = 1, f = 1, norm = 0; for (let i = 0; i < oct; i++) { sum += amp * vnoise(x * f, y * f, s + i * 31); norm += amp; amp *= 0.5; f *= 2; } return sum / norm; }
+const hashPt = (x, y, s) => hash(Math.round(x * 64), Math.round(y * 64), s);
+
+// ---------- 一、維諾格網：抖動方格＋只和附近 24 格比較 ----------
+function clipPoly(poly, a, b, c, label) {
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i], q = poly[(i + 1) % poly.length], f = a * p.x + b * p.y - c, t = a * q.x + b * q.y - c;
+    if (f <= 0) { out.push({ x: p.x, y: p.y, l: f === 0 && t > 0 ? label : p.l }); if (f < 0 && t > 0) { const r = f / (f - t); out.push({ x: p.x + (q.x - p.x) * r, y: p.y + (q.y - p.y) * r, l: label }); } }
+    else if (t < 0) { const r = f / (f - t); out.push({ x: p.x + (q.x - p.x) * r, y: p.y + (q.y - p.y) * r, l: p.l }); }
+  }
+  return out;
+}
+function genCells(seed, count) {
+  const t0 = performance.now();
+  const d = Math.sqrt(W * H / count), cols = Math.ceil(W / d) + 2, rows = Math.ceil(H / d) + 2, r = rng(seed * 3 + 1);
+  const sites = [], grid = new Int32Array(cols * rows);
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) { grid[j * cols + i] = sites.length; sites.push([(i - 1 + 0.5 + (r() - 0.5) * 0.85) * d, (j - 1 + 0.5 + (r() - 0.5) * 0.85) * d, i, j]); }
+  const cells = [], idOf = new Int32Array(sites.length).fill(-1);
+  const raw = [];
+  for (let si = 0; si < sites.length; si++) {
+    const [sx, sy, i, j] = sites[si];
+    if (sx < -d || sy < -d || sx > W + d || sy > H + d) continue;
+    let poly = [{ x: sx - 2.4 * d, y: sy - 2.4 * d, l: -1 }, { x: sx + 2.4 * d, y: sy - 2.4 * d, l: -1 }, { x: sx + 2.4 * d, y: sy + 2.4 * d, l: -1 }, { x: sx - 2.4 * d, y: sy + 2.4 * d, l: -1 }];
+    for (let jj = j - 2; jj <= j + 2; jj++) for (let ii = i - 2; ii <= i + 2; ii++) {
+      if ((ii === i && jj === j) || ii < 0 || jj < 0 || ii >= cols || jj >= rows) continue;
+      const o = grid[jj * cols + ii], [ox, oy] = sites[o];
+      poly = clipPoly(poly, 2 * (ox - sx), 2 * (oy - sy), ox * ox + oy * oy - sx * sx - sy * sy, o); if (!poly.length) break;
+    }
+    if (!poly.length) continue;
+    poly = clipPoly(poly, -1, 0, 0, -1); poly = clipPoly(poly, 1, 0, W, -1); poly = clipPoly(poly, 0, -1, 0, -1); poly = clipPoly(poly, 0, 1, H, -1);
+    if (poly.length < 3) continue;
+    idOf[si] = cells.length; raw.push(poly);
+    cells.push({ id: cells.length, x: sx, y: sy, si, nb: [] });
+  }
+  cells.forEach((c, k) => { c.poly = raw[k].map(v => [v.x, v.y]); c.nbEdge = raw[k].map(v => (v.l >= 0 ? idOf[v.l] : -1)); c.nb = [...new Set(c.nbEdge.filter(n => n >= 0))]; });
+  return { cells, d, ms: performance.now() - t0 };
+}
+
+// ---------- 二、距離與地形（在格網上） ----------
+function rasterMask() { const cv = document.createElement("canvas"); cv.width = W; cv.height = H; const g = cv.getContext("2d"); g.fillStyle = "#000"; for (const p of REGIONS) g.fill(new Path2D(p)); const data = g.getImageData(0, 0, W, H).data; const m = new Uint8Array(W * H); for (let i = 0; i < m.length; i++) m[i] = data[i * 4 + 3] > 128 ? 1 : 0; return m; }
+function chamfer(src) { const d = new Float32Array(W * H); for (let i = 0; i < d.length; i++) d[i] = src[i] ? 0 : 1e9; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; let v = d[i]; if (x > 0) v = Math.min(v, d[i - 1] + 1); if (y > 0) { v = Math.min(v, d[i - W] + 1); if (x > 0) v = Math.min(v, d[i - W - 1] + 1.414); if (x < W - 1) v = Math.min(v, d[i - W + 1] + 1.414); } d[i] = v; } for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) { const i = y * W + x; let v = d[i]; if (x < W - 1) v = Math.min(v, d[i + 1] + 1); if (y < H - 1) { v = Math.min(v, d[i + W] + 1); if (x < W - 1) v = Math.min(v, d[i + W + 1] + 1.414); if (x > 0) v = Math.min(v, d[i + W - 1] + 1.414); } d[i] = v; } return d; }
+let MASKCACHE = null;
+function bfs(cells, sources, through) {
+  const dist = new Int32Array(cells.length).fill(-1), q = [];
+  for (const s of sources) { dist[s] = 0; q.push(s); }
+  for (let h = 0; h < q.length; h++) { const c = q[h]; for (const n of cells[c].nb) if (dist[n] < 0 && through(n)) { dist[n] = dist[c] + 1; q.push(n); } }
+  return dist;
+}
+function genTerrain(seed, mode, cellsData) {
+  const t0 = performance.now(), { cells, d } = cellsData, N = cells.length;
+  let sdAt = () => 0;
+  if (mode === "fixed") {
+    if (!MASKCACHE) { const base = rasterMask(), inv = base.map(v => 1 - v); MASKCACHE = { base, dIn: chamfer(inv), dOut: chamfer(base) }; }
+    const { base, dIn, dOut } = MASKCACHE;
+    sdAt = (x, y) => { const i = clamp(Math.round(y), 0, H - 1) * W + clamp(Math.round(x), 0, W - 1); return base[i] ? dIn[i] : -dOut[i]; };
+  }
+  const land = new Uint8Array(N);
+  for (const c of cells) {
+    const { x, y } = c; let v;
+    if (mode === "fixed") {
+      let sd = sdAt(x, y) + (fbm(x / 26, y / 26, seed + 101, 3) - 0.5) * 33 + (fbm(x / 8, y / 8, seed + 202, 2) - 0.5) * 7;
+      if (sd < -9 && sd > -80) sd = Math.max(sd, (fbm(x / 22, y / 22, seed + 303, 3) - 0.7) * 70);
+      v = sd;
+    } else {
+      const dx = (x - 200) / 170, dy = (y - 275) / 225;
+      v = (fbm(x / 95, y / 95, seed + 5, 5) * 0.95 + 0.62 - (dx * dx + dy * dy) * 1.05 - 0.5) * 60;
+      if (v < -9 && v > -80) v = Math.max(v, (fbm(x / 22, y / 22, seed + 303, 3) - 0.7) * 70);
+    }
+    land[c.id] = v > 0 ? 1 : 0;
+  }
+  // 孤立的內陸水格併回陸地（太小的湖由河流模型決定）
+  const dl = bfs(cells, cells.filter(c => !land[c.id] || c.nbEdge.includes(-1) && false).map(c => c.id), n => land[n]);
+  const ds = bfs(cells, cells.filter(c => land[c.id]).map(c => c.id), n => !land[n]);
+  const E = new Float32Array(N), T = new Float32Array(N), Mo = new Float32Array(N), hn = new Float32Array(N);
+  for (const c of cells) {
+    if (!land[c.id]) continue; const { x, y } = c, inland = Math.max(0, dl[c.id]) * d;
+    const bias = 0.55 + 0.9 * ((1 - y / H) * 0.6 + (1 - x / W) * 0.4), rn = fbm(x / 55, y / 55, seed + 11, 4), ridge = Math.pow(1 - Math.abs(2 * rn - 1), 2.2);
+    E[c.id] = clamp(Math.min(1, inland / 70) * 0.3 + ridge * 0.62 * bias * Math.min(1, inland / 22) + (fbm(x / 17, y / 17, seed + 13, 3) - 0.5) * 0.14 + 0.06, 0, 1.2);
+    T[c.id] = clamp(1 - 0.88 * (y / H) + (fbm(x / 90, y / 90, seed + 17, 3) - 0.5) * 0.18 - Math.max(0, E[c.id] - 0.3) * 0.75, 0, 1);
+    Mo[c.id] = clamp(0.22 + 0.5 * fbm(x / 70, y / 70, seed + 19, 4) + 0.38 * Math.exp(-inland / 48) + 0.22 * (y / H) + 0.18 * (x / W) - 0.2 + (E[c.id] > 0.55 ? 0.05 : 0), 0, 1);
+    hn[c.id] = fbm(x / 11, y / 11, seed + 707, 3);
+  }
+  // 平滑兩輪：相鄰格取平均，讓生態區連成片，不要一格一色
+  for (let pass = 0; pass < 2; pass++) for (const arr of [E, T, Mo]) { const cp = arr.slice(); for (const c of cells) { if (!land[c.id]) continue; let s = cp[c.id] * 2, w = 2; for (const n of c.nb) if (land[n]) { s += cp[n]; w++; } arr[c.id] = s / w; } }
+  // 河流：沿格邊流向鄰格（優先洪填，從海邊開始）
+  const EF = new Float32Array(N); for (const c of cells) EF[c.id] = E[c.id] + (fbm(c.x / 7, c.y / 7, seed + 33, 3) - 0.5) * 0.05;
+  const dir = new Int32Array(N).fill(-1), fill = new Float32Array(N), seen = new Uint8Array(N), order = [], heap = [];
+  const push = (k, i) => { heap.push([k, i]); let c = heap.length - 1; while (c > 0) { const p = (c - 1) >> 1; if (heap[p][0] <= heap[c][0]) break; [heap[p], heap[c]] = [heap[c], heap[p]]; c = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let c = 0; for (;;) { const l = 2 * c + 1, r = l + 1; let m = c; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === c) break; [heap[m], heap[c]] = [heap[c], heap[m]]; c = m; } } return top; };
+  for (const c of cells) if (land[c.id] && c.nb.some(n => !land[n])) { seen[c.id] = 1; fill[c.id] = EF[c.id]; dir[c.id] = -2; push(EF[c.id], c.id); }
+  while (heap.length) { const [, i] = pop(); order.push(i); for (const j of cells[i].nb) if (land[j] && !seen[j]) { seen[j] = 1; dir[j] = i; fill[j] = Math.max(EF[j], fill[i] + 1e-4); push(fill[j], j); } }
+  const acc = new Float32Array(N); for (let k = order.length - 1; k >= 0; k--) { const i = order[k]; acc[i] += 0.5 + Mo[i]; if (dir[i] >= 0) acc[dir[i]] += acc[i]; }
+  const lake = new Uint8Array(N); for (const c of cells) if (land[c.id] && fill[c.id] - EF[c.id] > 0.035 && acc[c.id] > 14) lake[c.id] = 1;
+  const shade = new Float32Array(N); for (const c of cells) { if (!land[c.id]) continue; let best = null, bd = -2; for (const n of c.nb) { const dx = cells[n].x - c.x, dy = cells[n].y - c.y, w = -(dx + dy) / Math.hypot(dx, dy); if (w > bd) { bd = w; best = n; } } shade[c.id] = clamp(((best != null && land[best] ? E[best] : E[c.id]) - E[c.id]) * -3.2, -0.3, 0.3); }
+  return { seed, mode, land, dl, ds, E, T, Mo, hn, dir, acc, lake, shade, ms: performance.now() - t0 };
+}
+function biomeOf(e, t, m) {
+  if (e > 0.82) return t < 0.5 ? 0 : 3; if (t < 0.2) return 0; if (t < 0.36) return m > 0.42 ? 2 : 1; if (e > 0.62) return 4; if (e > 0.46) return 5;
+  if (t > 0.6 && m < 0.28) return 9; if (m > 0.7 && t > 0.52) return e < 0.22 ? 11 : 10; if (m > 0.5) return 6; if (m > 0.32) return 7; return 8;
+}
+const climateWord = t => t < 0.22 ? "極寒" : t < 0.38 ? "寒冷" : t < 0.62 ? "溫和" : t < 0.8 ? "溫暖" : "炎熱";
+const wetWord = m => m < 0.3 ? "乾燥" : m < 0.55 ? "適中" : m < 0.75 ? "濕潤" : "潮濕";
+
+// ---------- 三、省與國：都是「一群格」 ----------
+function minheap() { const h = []; return { push(k, v) { h.push([k, v]); let c = h.length - 1; while (c > 0) { const p = (c - 1) >> 1; if (h[p][0] <= h[c][0]) break; [h[p], h[c]] = [h[c], h[p]]; c = p; } }, pop() { const top = h[0], last = h.pop(); if (h.length) { h[0] = last; let c = 0; for (;;) { const l = 2 * c + 1, r = l + 1; let m = c; if (l < h.length && h[l][0] < h[m][0]) m = l; if (r < h.length && h[r][0] < h[m][0]) m = r; if (m === c) break; [h[m], h[c]] = [h[c], h[m]]; c = m; } } return top; }, get size() { return h.length; } }; }
+function genPolitics(CD, T, nProv, nPol) {
+  const t0 = performance.now(), { cells, d } = CD, rand = rng(T.seed * 7 + nProv), landIds = cells.filter(c => T.land[c.id]).map(c => c.id);
+  const area = landIds.length * d * d; let r = Math.sqrt(area / nProv) * 0.8, seeds = [];
+  for (let round = 0; round < 14 && seeds.length < nProv; round++) { seeds = []; for (let k = 0; k < nProv * 120 && seeds.length < nProv; k++) { const c = cells[landIds[(rand() * landIds.length) | 0]]; if (seeds.every(s => (cells[s].x - c.x) ** 2 + (cells[s].y - c.y) ** 2 > r * r)) seeds.push(c.id); } r *= 0.92; }
+  // 省：多源最短路，山脊讓路變難，所以省界傾向落在山脊
+  const prov = new Int32Array(cells.length).fill(-1), dist = new Float64Array(cells.length).fill(1e18), pq = minheap();
+  seeds.forEach((s, i) => { prov[s] = i; dist[s] = 0; pq.push(0, s); });
+  while (pq.size) { const [dd, a] = pq.pop(); if (dd > dist[a]) continue; for (const b of cells[a].nb) { if (!T.land[b]) continue; const len = Math.hypot(cells[a].x - cells[b].x, cells[a].y - cells[b].y), nd = dd + len * (1 + 3.2 * Math.max(0, Math.max(T.E[a], T.E[b]) - 0.5) + rand() * 0.25); if (nd < dist[b]) { dist[b] = nd; prov[b] = prov[a]; pq.push(nd, b); } } }
+  // 孤島（沒接到任何種子）：各自成省，或併入最近的省
+  for (const c of cells) if (T.land[c.id] && prov[c.id] < 0) { let b = 0, bd = 1e18; seeds.forEach((s, i) => { const q = (cells[s].x - c.x) ** 2 + (cells[s].y - c.y) ** 2; if (q < bd) { bd = q; b = i; } }); prov[c.id] = b; }
+  const n = seeds.length, padj = Array.from({ length: n }, () => new Set()), pe = new Float64Array(n), pc = new Float64Array(n);
+  for (const c of cells) { if (!T.land[c.id]) continue; const p = prov[c.id]; pe[p] += T.E[c.id]; pc[p]++; for (const m of c.nb) if (T.land[m] && prov[m] !== p) { padj[p].add(prov[m]); padj[prov[m]].add(p); } }
+  for (let k = 0; k < n; k++) pe[k] = pc[k] ? pe[k] / pc[k] : 0;
+  // 主大陸省集合
+  const comp = new Int32Array(n).fill(-1); const sizes = []; for (let k = 0; k < n; k++) if (comp[k] < 0) { const st = [k]; comp[k] = sizes.length; let cnt = 0; while (st.length) { const a = st.pop(); cnt += pc[a]; for (const b of padj[a]) if (comp[b] < 0) { comp[b] = sizes.length; st.push(b); } } sizes.push(cnt); }
+  const main = sizes.indexOf(Math.max(...sizes)), cand = []; for (let k = 0; k < n; k++) if (comp[k] === main) cand.push(k);
+  const low = cand.filter(k => pe[k] < 0.5), pool = low.length >= nPol ? low : cand, pos = k => [cells[seeds[k]].x, cells[seeds[k]].y], caps = [pool[(rand() * pool.length) | 0]];
+  while (caps.length < Math.min(nPol, pool.length)) { let best = -1, bd = -1; for (const k of pool) { if (caps.includes(k)) continue; const dd = Math.min(...caps.map(c => (pos(c)[0] - pos(k)[0]) ** 2 + (pos(c)[1] - pos(k)[1]) ** 2)); if (dd > bd) { bd = dd; best = k; } } caps.push(best); }
+  const owner = new Int32Array(n).fill(-1), pd = new Float64Array(n).fill(1e18), pq2 = minheap(); caps.forEach((c, i) => { owner[c] = i; pd[c] = 0; pq2.push(0, c); });
+  while (pq2.size) { const [dd, a] = pq2.pop(); if (dd > pd[a]) continue; for (const b of padj[a]) { const len = Math.hypot(pos(a)[0] - pos(b)[0], pos(a)[1] - pos(b)[1]), nd = dd + len * (1 + 1.7 * Math.max(pe[a], pe[b]) + rand() * 0.35); if (nd < pd[b]) { pd[b] = nd; owner[b] = owner[a]; pq2.push(nd, b); } } }
+  for (let k = 0; k < n; k++) if (owner[k] < 0) { let b = 0, bd = 1e18; caps.forEach((c, i) => { const q = (pos(c)[0] - pos(k)[0]) ** 2 + (pos(c)[1] - pos(k)[1]) ** 2; if (q < bd) { bd = q; b = i; } }); owner[k] = b; }
+  const o1 = [...NAMES.keys()].sort((a, b) => hash(a, 1, T.seed) - hash(b, 1, T.seed)), o2 = [...CITIES.keys()].sort((a, b) => hash(a, 2, T.seed) - hash(b, 2, T.seed));
+  const polities = caps.map((c, i) => ({ id: i, cap: c, color: POL_COLORS[i % POL_COLORS.length], name: NAMES[o1[i]] + (i % 3 === 2 ? "聯盟" : "國"), city: CITIES[o2[i % CITIES.length]] }));
+  const cellPol = new Int32Array(cells.length).fill(-1); for (const c of cells) if (T.land[c.id]) cellPol[c.id] = owner[prov[c.id]];
+  // 宗門與關係
+  const sr = rng(T.seed * 13 + 5), sects = [], used = new Set(), north = cand.filter(k => pe[k] > 0.3).sort((a, b) => pos(a)[1] - pos(b)[1])[0] ?? cand[0], picks = [north]; used.add(north);
+  for (let tries = 0; picks.length < 8 && tries < 600; tries++) { const k = cand[(sr() * cand.length) | 0]; if (used.has(k)) continue; if (sr() > (pe[k] + 0.15) ** 1.5 * 1.6) continue; if (picks.some(q => Math.hypot(pos(q)[0] - pos(k)[0], pos(q)[1] - pos(k)[1]) < 42)) continue; used.add(k); picks.push(k); }
+  const roll = () => { const v = sr(); return v < 0.3 ? "prosper" : v < 0.72 ? "stable" : v < 0.92 ? "decline" : v < 0.97 ? "closed" : "fallen"; }, REACH = { great: 34, school: 21 }, MULT = { prosper: 1.3, stable: 1, decline: 0.65, closed: 0, fallen: 0 };
+  picks.forEach((k, i) => { const rank = i < 3 ? "great" : "school", state = i === 0 ? (sr() < 0.65 ? "prosper" : "stable") : roll(), [x, y] = pos(k), cid = seeds[k]; sects.push({ id: i, name: SECT_NAMES[i], rank, guard: i === 0, state, x, y, cell: cid, host: owner[k], reach: REACH[rank] * MULT[state], e: T.E[cid], ally: -1, feud: -1 }); });
+  for (const s of sects) {
+    if (s.reach <= 0) continue;
+    const cd = polities.map((pol, id) => { let md = 1e9; for (let k = 0; k < n; k++) if (owner[k] === id) md = Math.min(md, Math.hypot(pos(k)[0] - s.x, pos(k)[1] - s.y)); return { id, md }; }).filter(o => o.md <= REACH[s.rank] * 2.4 + 25).sort((a, b) => a.md - b.md);
+    if (cd.length && sr() < 0.65) s.ally = (sr() < 0.55 ? cd[0] : cd[(sr() * cd.length) | 0]).id;
+    const rest = cd.filter(o => o.id !== s.ally); if (rest.length && sr() < 0.5) s.feud = rest[(sr() * rest.length) | 0].id;
+    // 靈脈範圍：中心距離在半徑內的格（邊緣加雜訊，山脊方向收縮）
+    s.cover = new Set(cells.filter(c => T.land[c.id]).filter(c => Math.hypot(c.x - s.x, c.y - s.y) <= s.reach * (0.8 + 0.55 * T.hn[c.id]) * (1 - clamp((T.E[c.id] - s.e) * 0.55, 0, 0.32))).map(c => c.id));
+  }
+  return { seeds, prov, owner, cellPol, polities, sects, n, ms: performance.now() - t0 };
+}
+
+// ---------- 四、有機邊緣：扭曲頂點、細分邊並加位移（兩側算出同一條線） ----------
+let WARP = null;
+function warpPt(p, CD, seed) {
+  const [x, y] = p, amp = 0.32 * CD.d; let nx = x, ny = y;
+  if (x > 0.01 && x < W - 0.01) nx = x + (fbm(x / 22, y / 22, seed + 1, 3) - 0.5) * 2 * amp;
+  if (y > 0.01 && y < H - 0.01) ny = y + (fbm(x / 22, y / 22, seed + 2, 3) - 0.5) * 2 * amp;
+  return [nx, ny];
+}
+function edgePts(a, b, seed, rough) {
+  if (a[0] > b[0] || (a[0] === b[0] && a[1] > b[1])) return edgePts(b, a, seed, rough).reverse();
+  const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, out = [a];
+  for (const t of [1 / 3, 2 / 3]) { const off = (hashPt(a[0] + b[0], a[1] + b[1], seed + (t < 0.5 ? 5 : 6)) - 0.5) * rough * len; out.push([a[0] + dx * t + nx * off, a[1] + dy * t + ny * off]); }
+  out.push(b); return out;
+}
+function buildRings(CD, seed) {
+  for (const c of CD.cells) {
+    const pts = c.poly.map(p => warpPt(p, CD, seed)), n = pts.length; c.ringEdges = [];
+    for (let i = 0; i < n; i++) { const a = pts[i], b = pts[(i + 1) % n], onBox = c.nbEdge[i] < 0; c.ringEdges.push(onBox ? [a, b] : edgePts(a, b, seed, 0.55)); }
+  }
+}
+
+// ---------- 五、繪製 ----------
+const canvas = document.getElementById("map"); canvas.width = CW; canvas.height = CH; const ctx = canvas.getContext("2d");
+const BASE = document.createElement("canvas"); BASE.width = CW; BASE.height = CH;
+let CD = null, TER = null, POL = null, sel = null, R = null;
+const layer = id => document.getElementById("L_" + id).checked;
+const X = v => M + v * S;
+function tracePoly(g, c) { g.beginPath(); c.ringEdges.forEach((e, i) => { if (i === 0) g.moveTo(X(e[0][0]), X(e[0][1])); for (let k = 1; k < e.length; k++) g.lineTo(X(e[k][0]), X(e[k][1])); }); g.closePath(); }
+function strokeEdge(g, e) { g.beginPath(); g.moveTo(X(e[0][0]), X(e[0][1])); for (let k = 1; k < e.length; k++) g.lineTo(X(e[k][0]), X(e[k][1])); g.stroke(); }
+
+function renderBase() {
+  const t0 = performance.now(), g = BASE.getContext("2d"), cells = CD.cells, T = TER, P = POL, L = { nation: layer("nation"), terrain: layer("terrain"), river: layer("river"), sect: layer("sect"), symbol: layer("symbol"), cells: layer("cells") };
+  // 羊皮紙
+  const img = g.createImageData(CW, CH), px = img.data;
+  for (let y = 0; y < CH; y++) for (let x = 0; x < CW; x++) { const p = (y * CW + x) * 4, mott = (fbm(x / 70, y / 70, 901, 3) - 0.5) * 0.16 + (hash(x, y, 77) - 0.5) * 0.045, vx = (x / CW - 0.5) * 2, vy = (y / CH - 0.5) * 2, vig = Math.pow(Math.max(Math.abs(vx), Math.abs(vy)), 4) * 0.2 + (vx * vx + vy * vy) * 0.05; px[p] = PARCH[0] * (1 + mott - vig); px[p + 1] = PARCH[1] * (1 + mott - vig); px[p + 2] = PARCH[2] * (1 + mott - vig); px[p + 3] = 255; }
+  g.putImageData(img, 0, 0);
+  g.lineJoin = "round"; g.lineCap = "round";
+  // 近海淺色暈染
+  for (const c of cells) { if (T.land[c.id] || T.ds[c.id] < 1 || T.ds[c.id] > 2) continue; tracePoly(g, c); g.fillStyle = T.ds[c.id] === 1 ? "rgba(140,160,150,.22)" : "rgba(140,160,150,.1)"; g.fill(); }
+  // 陸地：生態區色疊國色，格內加極小的色差，邊緣以同色描邊吃掉接縫
+  for (const c of cells) {
+    if (!T.land[c.id]) continue;
+    const b = biomeOf(T.E[c.id], T.T[c.id], T.Mo[c.id]); let col = L.terrain ? BIOMES[b].c : [205, 190, 140];
+    const pol = P.polities[P.cellPol[c.id]]; if (L.nation && pol) col = L.terrain ? mix(pol.color, col, 0.3) : mix(col, pol.color, 0.85);
+    const sh = L.terrain ? T.shade[c.id] * 0.55 : 0, jit = (hashPt(c.x, c.y, 9) - 0.5) * 0.025;
+    col = mix([col[0] * (1 + sh + jit), col[1] * (1 + sh + jit), col[2] * (1 + sh + jit)], PARCH, 0.1);
+    if (T.lake[c.id]) col = [92, 150, 168];
+    tracePoly(g, c); g.fillStyle = css(col); g.fill(); g.lineWidth = 0.9; g.strokeStyle = css(col); g.stroke();
+  }
+  if (L.sect) for (const s of P.sects) { if (s.reach <= 0) continue; const base = s.ally >= 0 ? GOLD : s.feud >= 0 ? COLD : INK; for (const id of s.cover) { tracePoly(g, cells[id]); g.fillStyle = cssA(base, 0.14); g.fill(); } }
+  // 經緯格線
+  g.strokeStyle = "rgba(90,110,100,.22)"; g.lineWidth = 1; g.beginPath(); for (let x = 0; x <= OW; x += 80) { g.moveTo(M + x, M); g.lineTo(M + x, M + OH); } for (let y = 0; y <= OH; y += 80) { g.moveTo(M, M + y); g.lineTo(M + OW, M + y); } g.stroke();
+  // 內部格線（顯示維諾格本身）
+  if (L.cells) { g.strokeStyle = "rgba(60,40,20,.35)"; g.lineWidth = 0.6; for (const c of cells) c.ringEdges.forEach((e, i) => { if (c.nbEdge[i] > c.id || c.nbEdge[i] < 0) strokeEdge(g, e); }); }
+  // 淺海虛線：離陸地 2、4 格處的格邊
+  g.setLineDash([6, 5]); for (const [k, a, w] of [[2, 0.55, 1.2], [4, 0.28, 1]]) { g.strokeStyle = cssA([110, 96, 70], a); g.lineWidth = w; for (const c of cells) { if (T.land[c.id] || T.ds[c.id] !== k) continue; c.ringEdges.forEach((e, i) => { const n = c.nbEdge[i]; if (n >= 0 && !T.land[n] && T.ds[n] === k + 1) strokeEdge(g, e); }); } } g.setLineDash([]);
+  // 海岸、省界、國界
+  for (const c of cells) {
+    if (!T.land[c.id]) continue;
+    c.ringEdges.forEach((e, i) => {
+      const n = c.nbEdge[i];
+      if (n >= 0 && !T.land[n]) { g.strokeStyle = "rgba(70,52,36,.9)"; g.lineWidth = 1.7; strokeEdge(g, e); }
+      else if (n > c.id && T.land[n]) {
+        if (P.cellPol[n] !== P.cellPol[c.id]) { g.strokeStyle = "rgba(70,50,36,.85)"; g.lineWidth = 2.1; strokeEdge(g, e); }
+        else if (P.prov[n] !== P.prov[c.id]) { g.strokeStyle = "rgba(90,74,52,.35)"; g.lineWidth = 0.9; strokeEdge(g, e); }
+      }
+    });
+  }
+  // 靈脈邊緣：覆蓋集合的邊界
+  if (L.sect) for (const s of P.sects) { if (s.reach <= 0) continue; g.lineWidth = 2.1; for (const id of s.cover) { const c = cells[id]; c.ringEdges.forEach((e, i) => { const n = c.nbEdge[i]; if (n >= 0 && s.cover.has(n)) return; g.strokeStyle = s.ally >= 0 && s.feud >= 0 ? ((c.id + i) % 2 ? cssA(GOLD, 0.9) : cssA(COLD, 0.9)) : cssA(s.ally >= 0 ? GOLD : s.feud >= 0 ? COLD : INK, 0.85); g.setLineDash(s.feud >= 0 && s.ally < 0 ? [5, 4] : []); strokeEdge(g, e); }); } g.setLineDash([]); }
+  // 河流：從格心到下游格心，用二次曲線帶一點彎
+  if (L.river) {
+    for (const c of cells) {
+      const a = T.acc[c.id], j = T.dir[c.id]; if (!T.land[c.id] || a < 22 || j < 0) continue; const d2 = cells[j];
+      const mx = (c.x + d2.x) / 2, my = (c.y + d2.y) / 2, dx = d2.x - c.x, dy = d2.y - c.y, off = (hashPt(c.x, c.y, 55) - 0.5) * 0.7;
+      g.strokeStyle = "rgba(48,118,142,.92)"; g.lineWidth = clamp(0.5 + Math.sqrt(a) * 0.1, 0.6, 3.2) * S * 0.6;
+      g.beginPath(); g.moveTo(X(c.x), X(c.y)); g.quadraticCurveTo(X(mx - dy * off), X(my + dx * off), X(d2.x), X(d2.y)); g.stroke();
+    }
+  }
+  // 符號：每格最多一個
+  if (L.symbol) {
+    for (const c of cells) {
+      if (!T.land[c.id] || T.lake[c.id] || T.ds.length === 0 || T.dl[c.id] < 1) continue;
+      const e = T.E[c.id], b = biomeOf(e, T.T[c.id], T.Mo[c.id]), roll = hashPt(c.x, c.y, 12), px0 = X(c.x + (hashPt(c.x, c.y, 13) - 0.5) * 4), py0 = X(c.y + (hashPt(c.x, c.y, 14) - 0.5) * 4);
+      g.lineWidth = 1.1;
+      if (b === 3 || b === 4 || (b === 0 && e > 0.62)) { if (roll > 0.55) continue; const s = (3 + (e - 0.55) * 6) * S * 0.6; g.strokeStyle = "rgba(70,56,44,.8)"; g.beginPath(); g.moveTo(px0 - s, py0 + s * 0.7); g.lineTo(px0, py0 - s * 0.9); g.lineTo(px0 + s, py0 + s * 0.7); g.stroke(); }
+      else if (b === 5) { if (roll > 0.2) continue; g.strokeStyle = "rgba(90,70,48,.45)"; g.beginPath(); g.arc(px0, py0 + 2, 5, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); }
+      else if (b === 2) { if (roll > 0.6) continue; const s = 3.6 * S * 0.6; g.strokeStyle = "rgba(30,70,44,.8)"; g.beginPath(); g.moveTo(px0, py0 - s); g.lineTo(px0 - s * 0.7, py0 + s * 0.6); g.lineTo(px0 + s * 0.7, py0 + s * 0.6); g.closePath(); g.stroke(); }
+      else if (b === 6 || b === 10) { if (roll > 0.45) continue; const s = 3 * S * 0.6; g.strokeStyle = b === 10 ? "rgba(24,76,40,.85)" : "rgba(52,84,36,.75)"; g.beginPath(); g.arc(px0, py0 - s * 0.4, s, 0, Math.PI * 2); g.moveTo(px0, py0 + s * 0.6); g.lineTo(px0, py0 + s * 1.7); g.stroke(); }
+      else if (b === 7 || b === 8) { if (roll > 0.3) continue; g.strokeStyle = "rgba(96,110,52,.65)"; g.beginPath(); g.moveTo(px0 - 3, py0 + 2); g.lineTo(px0 - 2, py0 - 2); g.moveTo(px0, py0 + 2); g.lineTo(px0, py0 - 3); g.moveTo(px0 + 3, py0 + 2); g.lineTo(px0 + 2, py0 - 2); g.stroke(); }
+      else if (b === 11) { if (roll > 0.5) continue; g.strokeStyle = "rgba(48,84,70,.8)"; g.beginPath(); g.moveTo(px0 - 4, py0 + 2); g.lineTo(px0 + 4, py0 + 2); g.moveTo(px0 - 1, py0 + 2); g.lineTo(px0 - 1, py0 - 3); g.stroke(); }
+      else if (b === 0) { if (roll > 0.4) continue; g.fillStyle = "rgba(255,255,255,.9)"; g.fillRect(px0, py0, 2, 2); }
+      else if (b === 9) { if (roll > 0.3) continue; g.strokeStyle = "rgba(150,110,60,.5)"; g.beginPath(); g.arc(px0, py0, 5, Math.PI, 0); g.stroke(); }
+    }
+  }
+  R = { t0, ms: performance.now() - t0 };
+  overlay();
+}
+
+const STATE_NAME = { prosper: "興盛", stable: "尋常", decline: "衰微", closed: "閉山", fallen: "覆滅" }, rankName = s => s.guard ? "守梯大宗" : s.rank === "great" ? "大宗" : "門派";
+function overlay() {
+  const g = ctx, P = POL, L = { sect: layer("sect") };
+  g.clearRect(0, 0, CW, CH); g.drawImage(BASE, 0, 0); g.lineJoin = "round"; g.lineCap = "round";
+  if (L.sect) {
+    for (const s of P.sects) {
+      if (s.reach <= 0 || !sel) continue;
+      for (const [pid, kind] of [[s.ally, "ally"], [s.feud, "feud"]]) {
+        if (pid < 0 || (sel.type === "sect" ? sel.id !== s.id : sel.id !== pid)) continue;
+        const cp = CD.cells[P.seeds[P.polities[pid].cap]], x1 = X(s.x), y1 = X(s.y), x2 = X(cp.x), y2 = X(cp.y), mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, bend = kind === "ally" ? 0.14 : -0.14;
+        g.beginPath(); g.moveTo(x1, y1); g.quadraticCurveTo(mx - dy * bend, my + dx * bend, x2, y2); g.setLineDash(kind === "ally" ? [] : [7, 5]); g.lineWidth = kind === "ally" ? 2.6 : 2.2; g.strokeStyle = kind === "ally" ? "rgba(200,150,30,.95)" : "rgba(176,48,40,.9)"; g.stroke(); g.setLineDash([]);
+        g.fillStyle = kind === "ally" ? "rgba(200,150,30,1)" : "rgba(176,48,40,1)"; g.beginPath(); g.arc(x2, y2, 4, 0, Math.PI * 2); g.fill();
+      }
+    }
+    for (const s of P.sects) {
+      const px0 = X(s.x), py0 = X(s.y), r = (s.rank === "great" ? 7 : 5) * S * 0.8;
+      if (sel && sel.type === "sect" && sel.id === s.id) { g.beginPath(); g.arc(px0, py0, r + 9, 0, Math.PI * 2); g.lineWidth = 2.5; g.strokeStyle = "rgba(200,150,30,1)"; g.stroke(); }
+      g.strokeStyle = "rgba(44,32,22,.95)"; if (s.guard) { g.beginPath(); g.arc(px0, py0, r + 4, 0, Math.PI * 2); g.lineWidth = 1.3; g.stroke(); }
+      g.lineWidth = 2; g.beginPath(); g.arc(px0, py0, r, 0, Math.PI * 2); g.fillStyle = s.state === "prosper" ? "rgba(44,32,22,.95)" : s.state === "closed" ? "rgba(140,140,140,.95)" : "rgba(244,232,196,.95)"; g.setLineDash(s.state === "decline" ? [3, 3] : []); g.fill(); g.stroke(); g.setLineDash([]);
+      if (s.state === "fallen") { g.strokeStyle = "rgba(160,40,32,1)"; g.beginPath(); g.moveTo(px0 - r, py0 - r); g.lineTo(px0 + r, py0 + r); g.moveTo(px0 + r, py0 - r); g.lineTo(px0 - r, py0 + r); g.stroke(); }
+      g.font = '600 12px "Noto Serif TC","Songti TC",serif'; g.textAlign = "left"; g.textBaseline = "middle"; g.letterSpacing = "0px"; g.lineWidth = 3; g.strokeStyle = "rgba(240,226,184,.85)"; g.strokeText(s.name, px0 + r + 5, py0); g.fillStyle = "rgba(44,32,22,.95)"; g.fillText(s.name, px0 + r + 5, py0);
+    }
+  }
+  // 國名與都城
+  const sx = new Float64Array(P.polities.length), sy = new Float64Array(P.polities.length), sn = new Float64Array(P.polities.length);
+  for (const c of CD.cells) { const k = P.cellPol[c.id]; if (k < 0) continue; sx[k] += c.x; sy[k] += c.y; sn[k]++; }
+  g.textAlign = "center"; g.textBaseline = "middle";
+  P.polities.forEach((pol, k) => {
+    if (!sn[k]) return; let cx = sx[k] / sn[k], cy = sy[k] / sn[k], best = null, bd = 1e9;
+    for (const c of CD.cells) if (P.cellPol[c.id] === k) { const q = (c.x - cx) ** 2 + (c.y - cy) ** 2; if (q < bd) { bd = q; best = c; } } if (best) { cx = best.x; cy = best.y; }
+    const sz = clamp(13 + Math.sqrt(sn[k] * CD.d * CD.d * 4) / 3.4, 20, 50);
+    g.font = `700 ${sz}px "Noto Serif TC","Songti TC","PMingLiU",serif`; g.letterSpacing = sz * 0.14 + "px"; g.lineWidth = 4; g.strokeStyle = "rgba(240,226,184,.65)"; g.strokeText(pol.name, X(cx), X(cy)); g.fillStyle = `rgba(${pol.color[0] * 0.38 | 0},${pol.color[1] * 0.3 | 0},${pol.color[2] * 0.3 | 0},.9)`; g.fillText(pol.name, X(cx), X(cy));
+    const cc = CD.cells[P.seeds[pol.cap]]; g.letterSpacing = "0px"; g.fillStyle = "rgba(50,38,28,.95)"; g.beginPath(); g.arc(X(cc.x), X(cc.y), 3.2, 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(X(cc.x), X(cc.y), 6, 0, Math.PI * 2); g.strokeStyle = "rgba(50,38,28,.8)"; g.lineWidth = 1.2; g.stroke();
+    g.font = '600 13px "Noto Serif TC","Songti TC",serif'; g.lineWidth = 3; g.strokeStyle = "rgba(240,226,184,.8)"; g.strokeText(pol.city, X(cc.x), X(cc.y) + 17); g.fillStyle = "rgba(50,38,28,.95)"; g.fillText(pol.city, X(cc.x), X(cc.y) + 17);
+  });
+  // 外框與刻度
+  g.strokeStyle = "rgba(40,30,20,.9)"; g.lineWidth = 2; g.strokeRect(M, M, OW, OH); g.lineWidth = 1; g.strokeRect(M - 7, M - 7, OW + 14, OH + 14); g.strokeRect(M - 11, M - 11, OW + 22, OH + 22);
+  g.fillStyle = "rgba(60,46,32,.85)"; g.font = "10px serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.letterSpacing = "0px";
+  for (let x = 0; x <= OW; x += 80) { const v = (-90 + x / OW * 180).toFixed(1) + "°"; g.fillText(v, M + x, 8); g.fillText(v, M + x, CH - 8); }
+  for (let y = 0; y <= OH; y += 80) { const v = (47 - y / OH * 94).toFixed(1) + "°"; g.save(); g.translate(8, M + y); g.rotate(-Math.PI / 2); g.fillText(v, 0, 0); g.restore(); g.save(); g.translate(CW - 8, M + y); g.rotate(Math.PI / 2); g.fillText(v, 0, 0); g.restore(); }
+  updateInfo();
+}
+
+// ---------- 六、資訊卡與點選 ----------
+function strengthOf(id) { const own = POL.owner.filter(o => o === id).length, al = POL.sects.filter(s => s.ally === id && s.reach > 0); return (own / POL.n * 10 + al.filter(s => s.state === "prosper").length + al.filter(s => s.state !== "prosper").length * 0.5).toFixed(1); }
+function updateInfo() {
+  const el = document.getElementById("info"), pn = id => POL.polities[id].name, gold = t => `<span class="g">互惠</span> ${t}`, red = t => `<span class="r">世仇</span> ${t}`;
+  if (!sel) { el.innerHTML = `<div class="it">九渡洲<small>　${POL.polities.length} 國・${POL.sects.length} 宗門</small></div><div>點選國家、宗門或任一格，看詳情。</div><div class="muted">互惠 ${POL.sects.filter(s => s.ally >= 0).length} 組・世仇 ${POL.sects.filter(s => s.feud >= 0).length} 組</div>`; return; }
+  if (sel.type === "sect") { const s = POL.sects[sel.id]; el.innerHTML = `<div class="it">${s.name}<small>　${rankName(s)}・${STATE_NAME[s.state]}</small></div><div>位於${pn(s.host)}境內</div><div>${s.ally >= 0 ? gold(pn(s.ally)) : "互惠 —"}　${s.feud >= 0 ? red(pn(s.feud)) : "世仇 —"}</div>`; return; }
+  const c = CD.cells[sel.cell], pol = POL.polities[sel.id], mine = POL.sects.filter(s => s.host === pol.id).length, al = POL.sects.filter(s => s.ally === pol.id).map(s => s.name).join("、") || "—", fe = POL.sects.filter(s => s.feud === pol.id).map(s => s.name).join("、") || "—";
+  const e = TER.E[c.id], t = TER.T[c.id], m = TER.Mo[c.id];
+  el.innerHTML = `<div class="it">${pol.name}<small>　國勢 ${strengthOf(pol.id)}・境內宗門 ${mine} 家</small></div><div>${gold(al)}</div><div>${red(fe)}</div><div class="muted">格 #${c.id}（省 #${POL.prov[c.id]}）：${TER.lake[c.id] ? "湖泊" : BIOMES[biomeOf(e, t, m)].name}・${climateWord(t)}${wetWord(m)}・海拔約 ${Math.round(e * 2800)} 公尺・${TER.acc[c.id] > 22 ? "有河流經過" : "遠離大河"}</div>`;
+}
+canvas.addEventListener("click", ev => {
+  if (!CD) return; const r = canvas.getBoundingClientRect(), sc = CW / r.width, gx = ((ev.clientX - r.left) * sc - M) / S, gy = ((ev.clientY - r.top) * sc - M) / S; let next = null;
+  if (gx >= 0 && gy >= 0 && gx < W && gy < H) {
+    let best = null, bd = 1e9; for (const s of POL.sects) { const d = Math.hypot(gx - s.x, gy - s.y), near = d <= 9, inside = s.reach > 0 && d <= s.reach; if ((near || inside) && (near ? d - 100 : d) < bd) { bd = near ? d - 100 : d; best = s; } }
+    if (best) next = { type: "sect", id: best.id };
+    else { let bc = null, cd = 1e9; for (const c of CD.cells) { const q = (c.x - gx) ** 2 + (c.y - gy) ** 2; if (q < cd) { cd = q; bc = c; } } if (bc && TER.land[bc.id]) next = { type: "polity", id: POL.cellPol[bc.id], cell: bc.id }; }
+  }
+  sel = sel && next && sel.type === next.type && sel.id === next.id && sel.cell === next.cell ? null : next; overlay();
+});
+
+// ---------- 七、控制 ----------
+function generate(full) {
+  const seed = +document.getElementById("seed").value | 0, mode = document.getElementById("mode").value, count = +document.getElementById("c").value;
+  const t0 = performance.now();
+  if (full || !CD || CD.count !== count || CD.seed !== seed) { CD = genCells(seed, count); CD.count = count; CD.seed = seed; buildRings(CD, seed); }
+  TER = genTerrain(seed, mode, CD); POL = genPolitics(CD, TER, +document.getElementById("n").value, +document.getElementById("p").value); sel = null;
+  renderBase();
+  document.getElementById("stat").textContent = `格網 ${CD.ms.toFixed(0)} ms ・ 地形 ${TER.ms.toFixed(0)} ms ・ 省與國 ${POL.ms.toFixed(0)} ms ・ 繪製 ${R.ms.toFixed(0)} ms ・ 合計 ${(performance.now() - t0).toFixed(0)} ms ・ ${CD.cells.length} 格（陸地 ${TER.land.reduce((a, b) => a + b, 0)}）・ ${POL.n} 省`;
+}
+const legend = document.getElementById("legend"); for (const b of BIOMES) { const d = document.createElement("div"); d.className = "chip"; d.innerHTML = `<span class="sw" style="background:rgb(${b.c})"></span>${b.name}`; legend.append(d); }
+document.getElementById("roll").onclick = () => { document.getElementById("seed").value = (Math.random() * 99999) | 0; generate(true); };
+document.getElementById("mode").onchange = () => generate(false);
+document.getElementById("seed").onchange = () => generate(true);
+for (const [id, out] of [["n", "nv"], ["p", "pv"], ["c", "cv"]]) { const el = document.getElementById(id); el.oninput = e => { document.getElementById(out).textContent = e.target.value; }; el.onchange = () => generate(id === "c"); }
+for (const id of ["nation", "terrain", "river", "sect", "symbol", "cells"]) document.getElementById("L_" + id).onchange = () => renderBase();
+generate(true);
+</script>
+</body>
+</html>
