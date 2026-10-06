@@ -1,3 +1,4 @@
+import { checkNum, checkStr, isPlainObject, type NumOpts, type Obj } from "./check";
 import { SLOT_NAMES, slotProblems } from "./slots";
 import {
   ATTRIBUTE_KEYS,
@@ -59,7 +60,6 @@ import {
   type TextData,
 } from "./types";
 
-type Obj = Record<string, unknown>;
 
 /** worldEvents 的 note 有自己的模板欄位，檢查參考名時先拿掉 */
 const SLOT_PATTERN_FOR_NOTE = /\{[^}]*\}/g;
@@ -69,10 +69,8 @@ function fail(where: string, field: string, msg: string): never {
 }
 
 function obj(raw: unknown, where: string): Obj {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
-    throw new Error(`${where}：內容必須是物件`);
-  }
-  return raw as Obj;
+  if (!isPlainObject(raw)) throw new Error(`${where}：內容必須是物件`);
+  return raw;
 }
 
 function list(raw: unknown, where: string): unknown[] {
@@ -82,31 +80,12 @@ function list(raw: unknown, where: string): unknown[] {
   return raw;
 }
 
-interface NumOpts {
-  min?: number;
-  gt?: number;
-  max?: number;
-  integer?: boolean;
-}
-
 function num(o: Obj, key: string, where: string, opts: NumOpts = {}): number {
-  const v = o[key];
-  if (typeof v !== "number" || !Number.isFinite(v)) {
-    fail(where, key, `必須是數字，目前為 ${JSON.stringify(v)}`);
-  }
-  if (opts.integer && !Number.isInteger(v)) fail(where, key, `必須是整數，目前為 ${v}`);
-  if (opts.min !== undefined && v < opts.min) fail(where, key, `必須 ≥ ${opts.min}，目前為 ${v}`);
-  if (opts.gt !== undefined && v <= opts.gt) fail(where, key, `必須 > ${opts.gt}，目前為 ${v}`);
-  if (opts.max !== undefined && v > opts.max) fail(where, key, `必須 ≤ ${opts.max}，目前為 ${v}`);
-  return v;
+  return checkNum(o[key], key, opts, (f, m) => fail(where, f, m));
 }
 
 function str(o: Obj, key: string, where: string, allowEmpty = false): string {
-  const v = o[key];
-  if (typeof v !== "string" || (!allowEmpty && v === "")) {
-    fail(where, key, `必須是${allowEmpty ? "" : "非空"}字串，目前為 ${JSON.stringify(v)}`);
-  }
-  return v;
+  return checkStr(o[key], key, allowEmpty, (f, m) => fail(where, f, m));
 }
 
 function strList(o: Obj, key: string, where: string, allowEmptyItem = false): string[] {

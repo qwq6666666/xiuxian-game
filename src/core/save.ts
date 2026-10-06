@@ -1,3 +1,4 @@
+import { checkNum, checkStr, isPlainObject, type Obj } from "../data/check";
 import { gameData } from "../data/load";
 import { ARTIFACT_SLOTS, ATTRIBUTE_KEYS, REVIEW_CAUSES, type GameData, type ReviewCause } from "../data/types";
 import { pickGoals } from "./goals";
@@ -23,7 +24,6 @@ import {
   type Phase,
 } from "./state";
 
-type Obj = Record<string, unknown>;
 
 export function serialize(state: GameState): string {
   return JSON.stringify(state);
@@ -140,22 +140,16 @@ function fail(field: string, msg: string): never {
 }
 
 function num(o: Obj, key: string, opts: { integer?: boolean; min?: number } = {}, path = key): number {
-  const v = o[key];
-  if (typeof v !== "number" || !Number.isFinite(v)) fail(path, `必須是數字，目前為 ${JSON.stringify(v)}`);
-  if (opts.integer && !Number.isInteger(v)) fail(path, `必須是整數，目前為 ${v}`);
-  if (opts.min !== undefined && v < opts.min) fail(path, `必須 ≥ ${opts.min}，目前為 ${v}`);
-  return v;
+  return checkNum(o[key], path, opts, fail);
 }
 
 function str(o: Obj, key: string, path = key): string {
-  const v = o[key];
-  if (typeof v !== "string") fail(path, `必須是字串，目前為 ${JSON.stringify(v)}`);
-  return v;
+  return checkStr(o[key], path, true, fail);
 }
 
 function obj(v: unknown, path: string): Obj {
-  if (typeof v !== "object" || v === null || Array.isArray(v)) fail(path, "必須是物件");
-  return v as Obj;
+  if (!isPlainObject(v)) fail(path, "必須是物件");
+  return v;
 }
 
 function intRecord(o: Obj, key: string, path = key): Record<string, number> {
