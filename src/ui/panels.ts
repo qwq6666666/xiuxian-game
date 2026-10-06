@@ -225,6 +225,7 @@ export function createPanels(ctx: PanelContext): Panels {
 
   /** 遇怪視窗：時間暫停，選穩打、強攻、符籙或逃。內容沒變就不重畫 */
   let huntKey = "";
+  let lastHuntHealth: { monsterId: string; monsterHp: number; myHp: number } | null = null;
   function renderHunt(state: GameState, e: LifeEls): void {
     const h = state.encounter;
     const talisman = huntTalisman(data);
@@ -234,16 +235,28 @@ export function createPanels(ctx: PanelContext): Panels {
     huntKey = key;
     e.huntModal.hidden = h === null;
     e.huntChoices.replaceChildren();
-    if (!h) return;
+    if (!h) {
+      lastHuntHealth = null;
+      return;
+    }
     const rules = data.monsters.rules;
     const m = monsterOf(h.monsterId, data);
     const ratio = powerRatio(state, m, data);
     e.huntArt.innerHTML = huntVignetteHtml(m.id, state.realmId);
     e.huntTitle.textContent = `遭遇${m.name}`;
     e.huntText.textContent = m.lore !== undefined && (state.meta.bestiary[m.id]?.win ?? 0) >= BESTIARY_LORE_WINS ? `${m.appear}${m.lore}` : m.appear;
-    const bar = (label: string, hp: number, cls: string): string =>
-      `<div class="hunt-bar ${cls}"><span>${esc(label)}</span><i><b style="width:${Math.max(0, Math.round(hp * 100))}%"></b></i></div>`;
-    e.huntBars.innerHTML = bar(m.name, h.monsterHp, "foe") + bar("你", h.myHp, "me");
+    const previous = lastHuntHealth?.monsterId === h.monsterId ? lastHuntHealth : null;
+    const bar = (label: string, hp: number, before: number | undefined, cls: string): string => {
+      const pct = Math.max(0, Math.round(hp * 100));
+      const beforePct = Math.max(pct, Math.round((before ?? hp) * 100));
+      const loss = Math.max(0, beforePct - pct);
+      return `<div class="hunt-bar ${cls}${loss > 0 ? " hit" : ""}"><span>${esc(label)}</span><i><b style="width:${beforePct}%" data-next="${pct}"></b></i>${loss > 0 ? `<em class="hunt-damage" aria-hidden="true">−${loss}</em>` : ""}</div>`;
+    };
+    e.huntBars.innerHTML = bar(m.name, h.monsterHp, previous?.monsterHp, "foe") + bar("你", h.myHp, previous?.myHp, "me");
+    for (const fill of Array.from(e.huntBars.querySelectorAll<HTMLElement>(".hunt-bar.hit b"))) {
+      requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = `${fill.dataset.next}%`)));
+    }
+    lastHuntHealth = { monsterId: h.monsterId, monsterHp: h.monsterHp, myHp: h.myHp };
     const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";
     e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・勝了有修為與靈石，打不贏可以逃。`;
     const pct = (v: number): string => `${Math.round(v * 100)}%`;
@@ -385,6 +398,7 @@ export function createPanels(ctx: PanelContext): Panels {
 
   /** 煉丹面板：內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
   let alchemyKey = "";
+  let craftTab: "pill" | "talisman" | "artifact" = "pill";
   function renderAlchemy(state: GameState, e: LifeEls): void {
     const panel = alchemyPanel(state, data);
     const key = JSON.stringify(panel);
@@ -394,7 +408,7 @@ export function createPanels(ctx: PanelContext): Panels {
     e.alchemyBox.replaceChildren();
     if (!panel) return;
     const box = e.alchemyBox;
-    box.append(el("h2", undefined, "煉丹"));
+    box.append(el("h2", undefined, "煉製"));
     const b = panel.brewing;
     if (b) {
       box.append(el("p", undefined, `爐中：${b.name}・成功率 ${b.ratePct}%`));
@@ -413,11 +427,55 @@ export function createPanels(ctx: PanelContext): Panels {
       const actions = el("div", "actions");
       actions.append(off);
       box.append(actions);
-    } else {
-      box.append(el("p", "desc", "備齊材料即可開爐。"));
     }
-    const list = el("ul", "items");
-    for (const r of panel.recipes) {
+
+    type CraftTab = typeof craftTab;
+    const tabs: { id: CraftTab; label: string }[] = [
+      { id: "pill", label: "丹藥" },
+      { id: "talisman", label: "符籙" },
+      { id: "artifact", label: "法器" },
+    ];
+    const tabBar = el("nav", "craft-tabs");
+    tabBar.setAttribute("role", "tablist");
+    tabBar.setAttribute("aria-label", "煉製種類");
+    const panes = new Map<CraftTab, HTMLElement>();
+    const tabButtons = new Map<CraftTab, HTMLButtonElement>();
+    const selectTab = (id: CraftTab): void => {
+      craftTab = id;
+      for (const tab of tabs) {
+        tabButtons.get(tab.id)?.setAttribute("aria-selected", String(tab.id === id));
+        const pane = panes.get(tab.id);
+        if (pane) pane.hidden = tab.id !== id;
+      }
+    };
+    for (const tab of tabs) {
+      const tabButton = button(tab.label, () => selectTab(tab.id));
+      tabButton.setAttribute("role", "tab");
+      tabButton.setAttribute("aria-selected", String(tab.id === craftTab));
+      tabButtons.set(tab.id, tabButton);
+      tabBar.append(tabButton);
+      const pane = el("div", "craft-pane");
+      pane.setAttribute("role", "tabpanel");
+      pane.hidden = tab.id !== craftTab;
+      panes.set(tab.id, pane);
+    }
+    box.append(tabBar);
+
+    const appendLocked = <T extends { unlockRealm: string }>(pane: HTMLElement, rows: T[], renderRow: (row: T) => HTMLLIElement): void => {
+      const byRealm = new Map<string, T[]>();
+      for (const row of rows) byRealm.set(row.unlockRealm, [...(byRealm.get(row.unlockRealm) ?? []), row]);
+      for (const [realm, locked] of byRealm) {
+        const fold = document.createElement("details");
+        fold.className = "locked-recipes fold";
+        fold.append(el("summary", undefined, `${realm}後解鎖 ${locked.length} 種配方`));
+        const lockedList = el("ul", "items");
+        for (const row of locked) lockedList.append(renderRow(row));
+        fold.append(lockedList);
+        pane.append(fold);
+      }
+    };
+
+    const renderBrewRow = (r: (typeof panel.recipes)[number]): HTMLLIElement => {
       const li = document.createElement("li");
       const need = r.inputs.map((i) => `${i.name} ${i.have}／${i.need}`).join("、");
       const info = el("div");
@@ -425,13 +483,21 @@ export function createPanels(ctx: PanelContext): Panels {
       const start = button("開爐", () => handlers.onStartBrew(r.id), true);
       start.disabled = !r.canStart;
       li.append(info, start);
-      list.append(li);
+      return li;
+    };
+    for (const category of ["pill", "talisman"] as const) {
+      const pane = panes.get(category)!;
+      pane.append(el("p", "desc", category === "pill" ? "備齊材料即可開爐。" : "符成出爐，也需守著爐火。"));
+      const rows = panel.recipes.filter((r) => r.category === category);
+      const list = el("ul", "items");
+      for (const r of rows.filter((r) => r.open)) list.append(renderBrewRow(r));
+      pane.append(list);
+      appendLocked(pane, rows.filter((r) => !r.open), renderBrewRow);
     }
-    box.append(list);
-    box.append(el("h2", undefined, "煉器"));
-    box.append(el("p", "desc", "靈石加材料，即時煉成。失敗退回一半材料。"));
-    const forgeList = el("ul", "items");
-    for (const f of panel.forge) {
+
+    const artifactPane = panes.get("artifact")!;
+    artifactPane.append(el("p", "desc", "靈石加材料，即時煉成。失敗退回一半材料。"));
+    const renderForgeRow = (f: (typeof panel.forge)[number]): HTMLLIElement => {
       const li = document.createElement("li");
       const need = f.inputs.map((i) => `${i.name} ${i.have}／${i.need}`).join("、");
       const info = el("div");
@@ -439,9 +505,14 @@ export function createPanels(ctx: PanelContext): Panels {
       const go = button("煉製", () => handlers.onForge(f.id), true);
       go.disabled = !f.canForge;
       li.append(info, go);
-      forgeList.append(li);
-    }
-    box.append(forgeList);
+      return li;
+    };
+    const forgeList = el("ul", "items");
+    for (const f of panel.forge.filter((f) => f.open)) forgeList.append(renderForgeRow(f));
+    artifactPane.append(forgeList);
+    appendLocked(artifactPane, panel.forge.filter((f) => !f.open), renderForgeRow);
+
+    for (const tab of tabs) box.append(panes.get(tab.id)!);
   }
 
   function reset(): void {

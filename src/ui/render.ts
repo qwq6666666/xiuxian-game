@@ -17,7 +17,7 @@ import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { createVeil } from "./veil";
 import { canPeek } from "../core/omen";
-import { groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
+import { collapseRoutineRetreats, groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
 import { lockedNote } from "./tabinfo";
 import { esc } from "./dom";
 import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./rollview";
@@ -735,9 +735,18 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       heading.className = "log-decade";
       heading.textContent = group.label;
       e.log.appendChild(heading);
-      for (const entry of group.entries) {
+      for (const row of collapseRoutineRetreats(group.entries, data)) {
         const li = document.createElement("li");
-        if (shown++ < fresh) li.className = "log-new";
+        const rowLength = row.kind === "retreats" ? row.entries.length : 1;
+        if (shown < fresh) li.className = "log-new";
+        shown += rowLength;
+        if (row.kind === "retreats") {
+          li.classList.add("log-retreat-summary");
+          li.textContent = row.label;
+          e.log.appendChild(li);
+          continue;
+        }
+        const entry = row.entry;
         const marks = logMarks(entry, data);
         for (const m of marks) li.classList.add(`log-${m}`);
         li.textContent = formatLogEntry(entry, data, state.name, slotsOf(state));

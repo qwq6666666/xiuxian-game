@@ -10,6 +10,7 @@
 .sc-mid { fill: var(--scene-mid); }
 .sc-near { fill: var(--scene-near); }
 .sc-seat, .sc-body, .sc-head { fill: var(--scene-figure); }
+.sc-body, .sc-head { stroke: transparent; transition: stroke var(--dur-slow) var(--ease), stroke-width var(--dur-slow) var(--ease); }
 .sc-aura { fill: none; stroke: var(--scene-qi); stroke-width: 0.8; opacity: 0; }
 .sc-body { transform-box: fill-box; transform-origin: 50% 100%; animation: sc-breathe 4s ease-in-out infinite; }
 .sc-qi { fill: var(--scene-qi); opacity: 0; animation: sc-rise 3.6s ease-out infinite; animation-delay: var(--d); }
@@ -41,10 +42,14 @@
 .sc-burst { fill: none; stroke: var(--scene-qi); stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; }
 .scene.burst .sc-burst { animation: sc-burst 1.3s ease-out; }
 .scene[data-sched="alchemy"] .sc-furnace, .scene[data-sched="herb"] .sc-herbs, .scene[data-sched="sectDuty"] .sc-banner, .scene[data-sched="wander"] .sc-boat { display: block; }
-/* 靈氣光圈：閉關與煉丹最明顯，境界越高越亮；凡人沒有靈氣 */
-.scene[data-sched="retreat"] .sc-aura, .scene[data-sched="alchemy"] .sc-aura { opacity: 0.35; }
-.scene[data-realm="zhuji"] .sc-aura { opacity: 0.5; }
-.scene[data-realm="jindan"] .sc-aura, .scene[data-realm="yuanying"] .sc-aura, .scene[data-realm="huashen"] .sc-aura { opacity: 0.7; stroke-width: 1.2; }
+/* 打坐人物隨境界進化：練氣仍是單色剪影，築基才有淡金輪廓，金丹以上加重並多一圈。 */
+.scene[data-qi="1"] .sc-aura { display: none; }
+.scene[data-qi="2"] .sc-body, .scene[data-qi="2"] .sc-head { stroke: var(--scene-qi); stroke-width: 0.3; }
+.scene[data-qi="2"] .sc-aura { opacity: 0.45; }
+.scene[data-qi="3"] .sc-body, .scene[data-qi="3"] .sc-head,
+.scene[data-qi="4"] .sc-body, .scene[data-qi="4"] .sc-head,
+.scene[data-qi="5"] .sc-body, .scene[data-qi="5"] .sc-head { stroke: var(--scene-qi); stroke-width: 0.65; }
+.scene[data-qi="3"] .sc-aura, .scene[data-qi="4"] .sc-aura, .scene[data-qi="5"] .sc-aura { opacity: 0.78; stroke-width: 1.25; }
 .scene[data-realm="mortal"] .sc-aura, .scene[data-realm="mortal"] .sc-qi { display: none; }
 /* 靈氣粒子隨境界增加（練氣 3 顆、築基 5 顆、金丹以上 8 顆），金丹以上多一圈外光，化神更亮 */
 .scene[data-qi="1"] .sc-qi:nth-child(n+4), .scene[data-qi="2"] .sc-qi:nth-child(n+6) { display: none; }

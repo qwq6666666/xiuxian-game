@@ -38,10 +38,11 @@
 .log li:last-child { border-bottom: 0; }
 .log li.log-decade { position: sticky; top: 0; z-index: 1; padding: var(--sp-1) 0; border-bottom: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: var(--fs-sm); letter-spacing: 0.15em; }
 .log li.log-cost { border-left: 2px solid var(--bad); padding-left: var(--sp-2); }
-.log li.log-follow { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
+.log li.log-follow, .log li.log-rare { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
 .log li .log-mark { display: inline-block; margin-right: var(--sp-2); padding: 0 var(--sp-1); border: 1px solid currentColor; border-radius: var(--r-sm); font-size: var(--fs-xs); }
 .log li.log-cost .log-mark { color: var(--bad); }
-.log li.log-follow:not(.log-cost) .log-mark { color: var(--accent); }
+.log li.log-follow:not(.log-cost) .log-mark, .log li.log-rare:not(.log-cost) .log-mark { color: var(--accent); }
+.log li.log-retreat-summary { color: var(--muted); font-size: var(--fs-md); }
 .side > * + * { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
 
 /* 新日誌淡入；數值變動浮字（aria-hidden，不進螢幕閱讀器） */
@@ -87,6 +88,13 @@
 .tabs button[data-locked="true"] { color: var(--muted); }
 .side > [data-tab] { animation: fold-in var(--dur-base) var(--ease); }
 .tabs button[data-badge]::after { content: " ●"; color: var(--accent); font-size: var(--fs-xs); }
+.craft-tabs { display: flex; gap: var(--sp-1); margin: var(--sp-3) 0; border-bottom: 1px solid var(--line); }
+.craft-tabs button { flex: 1 1 0; border-color: transparent; border-bottom: 2px solid transparent; border-radius: var(--r-sm) var(--r-sm) 0 0; background: transparent; color: var(--muted); }
+.craft-tabs button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--accent); font-weight: bold; }
+.craft-pane[hidden] { display: none; }
+.locked-recipes { margin-top: var(--sp-2); border-top: 1px solid var(--line); }
+.locked-recipes > summary { font-size: var(--fs-sm); }
+.locked-recipes .items { padding: var(--sp-2) 0 var(--sp-1) var(--sp-3); opacity: 0.8; }
 
 /* 運功鈕與場景點擊回饋 */
 .focus-btn { border-color: var(--accent); color: var(--accent); min-height: 0; padding: 0 var(--sp-3); }
@@ -97,10 +105,14 @@
 
 /* 遇怪：雙方氣血條 */
 .hunt-bars { display: flex; flex-direction: column; gap: 6px; margin: var(--sp-2) 0; }
-.hunt-bar { display: grid; grid-template-columns: 4.5em 1fr; align-items: center; gap: var(--sp-2); font-size: 0.9rem; }
-.hunt-bar i { display: block; height: 8px; border-radius: 4px; background: var(--sunken); overflow: hidden; }
+.hunt-bar { position: relative; display: grid; grid-template-columns: 4.5em 1fr; align-items: center; gap: var(--sp-2); font-size: 0.9rem; }
+.hunt-bar i { position: relative; display: block; height: 8px; border-radius: 4px; background: var(--sunken); overflow: hidden; }
 .hunt-bar b { display: block; height: 100%; background: var(--warn); transition: width var(--dur-base) var(--ease); }
 .hunt-bar.me b { background: var(--good); }
+.hunt-bar.hit i::after { content: ""; position: absolute; inset: 0; background: var(--text); animation: hunt-impact var(--dur-fast) var(--ease) forwards; }
+.hunt-damage { position: absolute; right: var(--sp-1); top: 50%; color: var(--bad); font-style: normal; font-weight: bold; pointer-events: none; animation: hunt-damage var(--dur-slow) var(--ease) forwards; }
+@keyframes hunt-impact { from { opacity: 0.9; transform: scaleX(0.18); } to { opacity: 0; transform: scaleX(1); } }
+@keyframes hunt-damage { from { opacity: 1; transform: translateY(-25%); } to { opacity: 0; transform: translateY(-150%); } }
 
 /* 天劫光圈：外圈收攏到靶圈時（約一輪的一半到八成）選擇，算凝神 */
 .trib-ring { position: relative; width: 84px; height: 84px; margin: var(--sp-2) auto; }
