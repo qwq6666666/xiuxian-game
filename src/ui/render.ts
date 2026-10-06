@@ -85,7 +85,26 @@ export interface Ui {
   notice(message: string): void;
 }
 
+/** 側欄的分頁；每個區塊以 data-tab 歸屬其中一頁 */
+const SIDE_TABS = [
+  { id: "play", label: "修行" },
+  { id: "make", label: "煉製" },
+  { id: "pack", label: "行囊" },
+  { id: "me", label: "角色" },
+] as const;
+type SideTab = (typeof SIDE_TABS)[number]["id"];
+
 export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers): Ui {
+  /** 目前的側欄分頁；重建畫面（轉世、匯入）後沿用 */
+  let sideTab: SideTab = "play";
+  function showSideTab(tab: SideTab): void {
+    sideTab = tab;
+    const side = root.querySelector<HTMLElement>(".side");
+    if (!side) return;
+    side.dataset.active = tab;
+    side.querySelectorAll<HTMLElement>("#sideTabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.go === tab)));
+  }
+
   root.innerHTML = `
     <header class="bar">
       <div class="bar-left">
@@ -507,13 +526,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   const goalsHtml = (state: GameState): string => {
     const items = goalStatuses(state, data);
     if (items.length === 0) return "";
-    return `<section class="goals-box"><h3>這一世的目標</h3><ul class="goals">${items.map((g) => `<li>${goalLine(g)}</li>`).join("")}</ul><p class="desc">不強求，達成了記進收藏，沒達成也無妨。</p></section>`;
+    return `<section class="goals-box"><h3>這一世的目標</h3><ul class="goals">${items.map((g) => `<li>${goalLine(g)}</li>`).join("")}</ul><p class="desc">只記入收藏，不強求。</p></section>`;
   };
 
   /** 屬性與靈根各自影響什麼，收在可展開的說明裡 */
   const guideHtml = (): string => {
     const g = attributeGuide(data);
-    return `<details class="guide"><summary>屬性與靈根有什麼用</summary><ul>${ATTRIBUTE_KEYS.map(
+    return `<details class="guide"><summary>屬性說明</summary><ul>${ATTRIBUTE_KEYS.map(
       (k) => `<li><strong>${g.attributes[k].label}</strong>　${g.attributes[k].text}</li>`,
     ).join("")}<li><strong>靈根</strong>　${g.spiritRoot}</li></ul></details>`;
   };
@@ -555,7 +574,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           `<button type="button" data-method="${m.id}" aria-pressed="${m.selected}" class="${m.selected ? "active" : ""}"${m.unlocked ? "" : " disabled"}><strong>${m.name}</strong><small>${m.desc}</small><small>${m.effectText}</small>${m.unlocked ? "" : `<small>${m.lockText}</small>`}</button>`,
       )
       .join("");
-    return `<section class="methods"><h2>心法</h2><p class="desc">一世只能用一種，開始修行後不能更換。</p><div class="choices">${rows}</div></section>`;
+    return `<section class="methods"><h2>心法</h2><p class="desc">每世選一種，開始後不可換。</p><div class="choices">${rows}</div></section>`;
   }
 
   function renderRoll(state: GameState): void {
@@ -568,7 +587,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     stageEl.innerHTML = `
       <main class="card roll">
         <h1>一念輪迴</h1>
-        <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲，是好是壞，且看天意。</p>
+        <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲。</p>
         ${eraTransition(lifeIndex(state), data) !== "" ? `<p class="desc">${eraTransition(lifeIndex(state), data)}</p>` : ""}
         <label class="namebox">姓名 <input id="name" type="text" maxlength="${data.config.nameMaxLength}" /></label>
         ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
@@ -666,37 +685,38 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     prevStageKey = "";
     bagKey = "";
     eventKey = "";
-    // 桌面：日誌在左、側欄在右；手機（≤640px）改單欄，順序由 CSS 排：安排、突破、坐化、日誌、角色、背包、坊市。
-    // 日誌、角色、背包、坊市可收合；桌面預設全開，手機只開日誌。
-    const wide = window.matchMedia("(min-width: 641px)").matches;
+    // 桌面：日誌在左、側欄在右；手機（≤640px）改單欄，日誌在前、分頁區塊在後。
+    // 側欄分四頁（修行、煉製、行囊、角色），一次只顯示一頁；分頁列在手機固定在畫面底部。
     stageEl.innerHTML = `
       <section class="status" aria-label="狀態">
         <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
         <p id="pace" class="pace"></p>
+        <div id="resbar" class="resbar" aria-label="隨身"></div>
         <div id="todo" class="todo" hidden><span id="todoText"></span><button id="todoGo" type="button" class="primary">前往突破</button></div>
       </section>
       <div class="sr-only" id="live" aria-live="polite"></div>
       <div class="cols">
-        <details class="log fold" id="foldLog" open><summary>修仙日誌</summary><ul id="log"></ul></details>
-        <aside class="side">
-          <section id="schedSection" class="s-sched"><h2>日常安排</h2><div id="schedules" class="choices"></div></section>
-          <section id="btSection" class="s-bt"><h2>突破</h2>
+        <details class="log fold" id="foldLog" open><summary>日誌</summary><ul id="log"></ul></details>
+        <aside class="side" data-active="play">
+          <nav id="sideTabs" class="tabs" role="tablist" aria-label="分頁">${SIDE_TABS.map((t) => `<button type="button" role="tab" data-go="${t.id}" aria-selected="${t.id === "play"}">${t.label}</button>`).join("")}</nav>
+          <section id="schedSection" class="s-sched" data-tab="play"><h2>日常安排</h2><div id="schedules" class="choices"></div></section>
+          <section id="btSection" class="s-bt" data-tab="play"><h2>突破</h2>
             <p id="btInfo" class="desc"></p>
             <label id="pillRow" hidden><input type="checkbox" id="pill" /> <span id="pillText"></span></label>
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
           </section>
-          <section id="sectBox" class="s-sect" hidden></section>
-          <section id="alchemyBox" class="s-alchemy" hidden></section>
-          <section id="zuohuaBox" class="s-zuohua" hidden>
+          <section id="sectBox" class="s-sect" data-tab="play" hidden></section>
+          <section id="alchemyBox" class="s-alchemy" data-tab="make" hidden></section>
+          <section id="zuohuaBox" class="s-zuohua" data-tab="play" hidden>
             <h2>閉關坐化</h2>
             <p id="zuohuaInfo" class="desc"></p>
             <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
-          <details class="fold s-goals" id="goalsFold"${wide ? " open" : ""}><summary>本世目標</summary><ul id="goals" class="goals"></ul><p id="goalHint" class="desc"></p><button id="goalGo" type="button" hidden></button></details>
-          <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}<div id="statDetail" class="stat-detail"></div>${guideHtml()}${identityHtml(state)}</details>
-          <details class="fold s-bag"${wide ? " open" : ""}><summary>背包</summary><ul id="bag" class="items"></ul></details>
-          <details class="fold s-market"${wide ? " open" : ""}><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>查看世局原因</button></details>
+          <details class="fold s-goals" id="goalsFold" data-tab="me" open><summary>目標</summary><ul id="goals" class="goals"></ul><p id="goalHint" class="desc"></p><button id="goalGo" type="button" hidden></button></details>
+          <details class="fold s-role" data-tab="me" open><summary>角色</summary>${statsHtml(state)}<div id="statDetail" class="stat-detail"></div>${guideHtml()}${identityHtml(state)}</details>
+          <details class="fold s-bag" data-tab="pack" open><summary>背包</summary><ul id="bag" class="items"></ul></details>
+          <details class="fold s-market" data-tab="pack" open><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>世局</button></details>
         </aside>
       </div>
       <div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" hidden>
@@ -800,6 +820,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       marketLink: q<HTMLButtonElement>("#marketLink"),
     };
     els.btButton.addEventListener("click", () => handlers.onBreakthrough(els!.pill.checked));
+    stageEl.querySelectorAll<HTMLButtonElement>("#sideTabs button").forEach((b) => b.addEventListener("click", () => showSideTab(b.dataset.go as SideTab)));
+    showSideTab(sideTab);
     els.marketLink.addEventListener("click", openMap);
     els.travelOpen.addEventListener("click", openMap);
     els.goalGo.addEventListener("click", () => {
@@ -828,17 +850,17 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const hasPill = pillAvailable(state, data);
     e.pillRow.hidden = !pillId || !hasPill;
     if (!hasPill) e.pill.checked = false;
-    if (pillId) e.pillText.textContent = `服用${itemName(pillId)}（持有 ${state.items[pillId] ?? 0} 顆）`;
+    if (pillId) e.pillText.textContent = `服用${itemName(pillId)}（持有 ${state.items[pillId] ?? 0}）`;
     e.btButton.disabled = !can;
     if (can) {
       const rate = Math.round(currentBreakthroughRate(state, e.pill.checked, data) * 100);
       const loss = Math.round(currentFailLoss(state, data) * 100);
       const waves = breakthroughRuleOf(state, data)?.tribulation?.waves;
-      e.btInfo.textContent = `成功率 ${rate}%，失敗將損失 ${loss}% 修為。${waves ? `需度過 ${waves} 道天劫，每一道都能做準備，備得好，整體把握會更高。` : ""}`;
+      e.btInfo.textContent = `成功率 ${rate}%・失敗損失 ${loss}%${waves ? `・${waves} 道天劫，可逐道準備` : ""}`;
     } else if (atBottleneck(state, data) && missingTalent(state, data) !== null) {
       e.btInfo.textContent = breakthroughRuleOf(state, data)?.gateText ?? data.text.breakthroughGate;
     } else {
-      e.btInfo.textContent = "修為圓滿，遇上瓶頸時方可突破。";
+      e.btInfo.textContent = "修為圓滿後可突破。";
     }
   }
 
@@ -941,13 +963,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const image = waveImage(state, data);
     e.tribTitle.textContent = `${image.name}劫・第 ${t.wave + 1} 道，共 ${t.waves} 道`;
     e.tribText.textContent = image.arrive;
-    e.tribInfo.textContent = t.wave === 0 ? "劫雲已聚，這一道只能面對。備得好，把握就大一些；失敗只損失一部分修為，不致喪命。" : `已度過 ${t.wave} 道。`;
+    e.tribInfo.textContent = t.wave === 0 ? "劫雲已聚。備得好把握更大，失敗只損修為。" : `已度過 ${t.wave} 道。`;
     const pct = (c: WaveChoice): string => `${Math.round(waveChance(state, c, data) * 100)}%`;
     const ward = wardItem(data);
     const rows: { choice: WaveChoice; name: string; note: string }[] = [
       { choice: "brace", name: "硬抗", note: `這一道的把握約 ${pct("brace")}` },
-      { choice: "guard", name: "運功護體", note: `把握約 ${pct("guard")}（看心性）；若在這一道倒下，額外損失 ${Math.round(data.tribulation.guard.extraLoss * 100)}% 修為` },
-      { choice: "ward", name: `祭出${ward ? itemName(ward.id) : "符籙"}`, note: have > 0 ? `把握約 ${pct("ward")}，用掉一張（持有 ${have}）` : "沒有符籙可用，坊市可以買" },
+      { choice: "guard", name: "運功護體", note: `把握約 ${pct("guard")}・失敗多損 ${Math.round(data.tribulation.guard.extraLoss * 100)}%` },
+      { choice: "ward", name: `祭出${ward ? itemName(ward.id) : "符籙"}`, note: have > 0 ? `把握約 ${pct("ward")}・持有 ${have}` : "沒有符籙，坊市可買" },
     ];
     for (const r of rows) {
       const b = document.createElement("button");
@@ -991,7 +1013,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     } else {
       box.append(el("p", "desc", "在這個宗門裡已無更高的位階。"));
     }
-    box.append(el("p", "desc", "貢獻靠「宗門差事」安排與宗門事件累積；離宗會失去身分與貢獻，這一世也不能再入同一宗。"));
+    box.append(el("p", "desc", "貢獻來自差事與宗門事件。離宗後這一世不可再入。"));
     const actions = el("div", "actions");
     const promote = button("晉升", () => handlers.onPromoteSect(), true);
     promote.disabled = !panel.canPromote || panel.next === null;
@@ -1001,6 +1023,38 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     leave.classList.add("danger");
     actions.append(promote, leave);
     box.append(actions);
+  }
+
+  /** 常駐資源列：靈石、常用丹藥、法寶、材料、爐火，點一下跳到對應分頁 */
+  let resKey = "";
+  function renderResources(state: GameState): void {
+    const box = stageEl.querySelector<HTMLElement>("#resbar");
+    if (!box) return;
+    const name = (id: string): string => data.items.find((i) => i.id === id)?.name ?? id;
+    const chips: { text: string; tab: SideTab }[] = [];
+    for (const id of ["juqi_dan", "zhuji_dan", "huxin_dan", "bilei_fu"]) {
+      const n = state.items[id] ?? 0;
+      if (n > 0) chips.push({ text: `${name(id)} ${n}`, tab: "pack" });
+    }
+    const worn = ARTIFACT_SLOTS.map((s) => state.equipment[s]).filter((x): x is string => x !== null);
+    if (worn.length > 0) chips.push({ text: worn.map(name).join("、"), tab: "pack" });
+    const mats = data.items.filter((i) => i.effect.kind === "material").reduce((n, i) => n + (state.items[i.id] ?? 0), 0);
+    if (mats > 0) chips.push({ text: `材料 ${mats}`, tab: "make" });
+    if (state.alchemy) {
+      const r = data.recipes.recipes.find((x) => x.id === state.alchemy!.recipeId);
+      chips.push({ text: `煉${name(r?.output ?? "")} ${state.alchemy.progress}／${r?.months ?? 0}`, tab: "make" });
+    }
+    const method = data.methods.find((m) => m.id === state.methodId);
+    if (method && method.id !== data.methods[0].id) chips.push({ text: method.name, tab: "me" });
+    const key = JSON.stringify(chips);
+    if (key === resKey) return;
+    resKey = key;
+    box.replaceChildren();
+    for (const c of chips) {
+      const b = button(c.text, () => showSideTab(c.tab));
+      b.className = "chip";
+      box.append(b);
+    }
   }
 
   /** 當前數值：主要數字加每月修為的乘數明細；內容沒變就不重畫 */
@@ -1025,7 +1079,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const det = document.createElement("details");
     det.className = "guide";
     det.open = wasOpen;
-    det.append(el("summary", undefined, "每月修為怎麼算"));
+    det.append(el("summary", undefined, "明細"));
     const list = el("ul");
     for (const r of panel.breakdown) list.append(el("li", undefined, `${r.label}　${r.value}`));
     det.append(list);
@@ -1048,14 +1102,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     if (b) {
       const stage = b.paid ? `第 ${b.progress} ／ ${b.months} 個月` : "材料下個月投入";
       box.append(el("p", undefined, `爐中：${b.name}（${stage}），成功率 ${b.ratePct}%。`));
-      if (b.paused) box.append(el("p", "desc", "爐火暫歇，在日常安排切回「閉關煉丹」即可接著煉。"));
+      if (b.paused) box.append(el("p", "desc", "爐火暫歇，切回「煉丹」即可續煉。"));
       const off = button("熄爐", () => handlers.onCancelBrew());
       off.classList.add("danger");
       const actions = el("div", "actions");
       actions.append(off);
       box.append(actions);
     } else {
-      box.append(el("p", "desc", "備齊材料開爐，煉丹期間修行較緩、事件較少。材料靠採藥、歷練與走訪渡口時偶然拾得。"));
+      box.append(el("p", "desc", "備齊材料即可開爐。"));
     }
     const list = el("ul", "items");
     for (const r of panel.recipes) {
@@ -1070,7 +1124,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     }
     box.append(list);
     box.append(el("h2", undefined, "煉器"));
-    box.append(el("p", "desc", "花靈石與材料煉成法寶，裝備後提供被動加成；失敗退回一半材料，靈石不退。轉世時能否帶走，看輪迴天賦「本命」。"));
+    box.append(el("p", "desc", "靈石加材料，即時煉成。失敗退回一半材料。"));
     const forgeList = el("ul", "items");
     for (const f of panel.forge) {
       const li = document.createElement("li");
@@ -1145,8 +1199,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const lianqi = data.realms.find((r) => r.id === "lianqi")!;
       // 練氣階段提示離突破還差幾層（M32：讓前期有看得見的目標）
       const toBreakthrough = state.realmId === lianqi.id ? lianqi.stageNames.length - 1 - state.stage : 0;
-      const tail = toBreakthrough > 0 ? `再 ${toBreakthrough} 層可衝擊築基。` : "";
-      e.pace.textContent = `每月約 +${formatGain(pace.perMonth)} 修為，約 ${formatDuration(pace.seconds)}後進入下一階段（依目前安排與速度估算）。${tail}`;
+      const tail = toBreakthrough > 0 ? `再 ${toBreakthrough} 層築基。` : "";
+      e.pace.textContent = `每月約 +${formatGain(pace.perMonth)}，約 ${formatDuration(pace.seconds)}後升階。${tail}`;
     } else if (pace.kind === "bottleneck") {
       e.pace.textContent = "修為已圓滿，不再增長，要靠突破才能再進一步。";
     } else {
@@ -1184,11 +1238,12 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       b.setAttribute("aria-pressed", String(id === state.schedule));
       b.hidden = !scheduleOpen(state, sched, data);
       if (b.hidden) continue;
-      facts.textContent = scheduleFactLines(scheduleFacts(state, sched, data)).join("　｜　");
+      facts.textContent = scheduleFactLines(scheduleFacts(state, sched, data)).join("・");
       hint.textContent = scheduleHints(state, sched, slotsOf(state), data).join("　");
       hint.hidden = hint.textContent === "";
     }
     renderStatDetail(state);
+    renderResources(state);
     renderSect(state, e);
     renderAlchemy(state, e);
     renderTribulation(state, e);
