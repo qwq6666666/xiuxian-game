@@ -45,3 +45,9 @@
 .float-delta.down { color: var(--bad); }
 .float-delta.bar { left: auto; right: var(--sp-2); top: 0; margin: 0; line-height: 22px; }
 @keyframes float-up { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-8px); } }
+
+/* 突破與升階回饋：只閃一下邊框顏色，不發光 */
+.status.flash-up, .progress.flash-up { animation: flash-up var(--dur-slow) var(--ease); }
+.status.flash-down { animation: flash-down var(--dur-slow) var(--ease); }
+@keyframes flash-up { 0% { border-color: var(--accent); background-color: var(--accent-dim); } 100% { border-color: var(--line); } }
+@keyframes flash-down { 0% { border-color: var(--bad); } 100% { border-color: var(--line); } }
