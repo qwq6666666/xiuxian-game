@@ -1,5 +1,5 @@
 {
-  "version": 17,
+  "version": 18,
   "shape": {
     "TravelState": [
       "locationId",
@@ -77,6 +77,11 @@
       "wave",
       "waves"
     ],
+    "AlchemyState": [
+      "paid",
+      "progress",
+      "recipeId"
+    ],
     "SectMembership": [
       "contribution",
       "id",
@@ -85,6 +90,7 @@
     ],
     "GameState": [
       "ageMonths",
+      "alchemy",
       "attributes",
       "autoChoice",
       "breakthroughs",

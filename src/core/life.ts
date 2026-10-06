@@ -93,6 +93,7 @@ export function createInitialState(
       goalIds: [],
       startFragments: meta.fragments.length,
       tribulation: null,
+      alchemy: null,
       sect: null,
       sectsTried: [],
       sectPeak: 0,

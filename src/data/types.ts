@@ -103,6 +103,8 @@ export interface ScheduleDef {
   stones: { chance: number; min: number; max: number };
   /** 每月拾得物品的機率 */
   finds: { itemId: string; chance: number }[];
+  /** 每月掉落材料的機率（M29）：用獨立的亂數序列，不消耗存檔的 rngSeed，也不寫日誌 */
+  drops?: { itemId: string; chance: number }[];
   /** 每月身亡機率 */
   deathChance: number;
   /** 達到這個境界才開放（預設一開始就能選） */
@@ -118,14 +120,48 @@ export type ItemEffect =
   | { kind: "lifespan"; years: number; maxPerLife: number }
   | { kind: "breakthrough" }
   /** 天劫中祭出：該道成功率增加 bonus（M28） */
-  | { kind: "tribulationWard"; bonus: number };
+  | { kind: "tribulationWard"; bonus: number }
+  /** 突破失敗時自動服用，該次的修為損失比例減少 value（M29） */
+  | { kind: "failLossRelief"; value: number }
+  /** 材料：不能服用、不在坊市賣，只用來煉製（M29） */
+  | { kind: "material" };
 
 export interface ItemDef {
   id: string;
   name: string;
   desc: string;
+  /** 坊市價格；材料不賣，價格為 0 */
   price: number;
   effect: ItemEffect;
+}
+
+/** 煉丹用的日常安排 id */
+export const ALCHEMY_SCHEDULE = "alchemy";
+
+/** 丹方（M29）：閉關煉丹時，每爐先備齊 inputs，經 months 個月出丹，成功率 = baseRate + 悟性 × 每點加成 */
+export interface RecipeDef {
+  id: string;
+  /** 產出的物品 id */
+  output: string;
+  inputs: Record<string, number>;
+  months: number;
+  baseRate: number;
+  /** 達到這個境界才能煉 */
+  realmMin: string;
+}
+
+export interface AlchemyRules {
+  /** 悟性每一點增加的成功率 */
+  insightPerPoint: number;
+  /** 成功率上限 */
+  maxRate: number;
+  /** 煉失敗時退回的材料比例（各材料向下取整） */
+  failRefund: number;
+}
+
+export interface RecipesData {
+  rules: AlchemyRules;
+  recipes: RecipeDef[];
 }
 
 /** 事件結果的效果。cultivation 是當前階段所需修為的比例（0.2 = +20%）；lifespan 增減壽元上限（年） */
@@ -285,6 +321,8 @@ export interface TextData {
     stageMilestone: Record<string, string>;
     /** 天劫失敗的日誌；{wave} 是第幾道、{fail} 是該道的失敗描寫 */
     tribulationFail: string;
+    /** 煉丹日誌（M29）：{item} 是產出的丹藥，stop 是材料不足而收爐 */
+    alchemy: { done: string; fail: string; stop: string };
     /** 宗門日誌（M25）：{sect} 填宗門名稱；promote 以位階 id 為鍵（外門以外的位階都要寫） */
     sect: { join: string; refuse: string; leave: string; promote: Record<string, string> };
     /** 閉關見聞：依閉關長短分檔，結束原因的補句接在後面（時間用完不補） */
@@ -542,6 +580,7 @@ export interface GameData {
   realms: RealmDef[];
   schedules: ScheduleDef[];
   items: ItemDef[];
+  recipes: RecipesData;
   events: EventDef[];
   talents: TalentDef[];
   spiritRoots: SpiritRootDef[];

@@ -22,6 +22,7 @@ import { fillSlots, type SlotValues } from "../data/slots";
 import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { sectPanel } from "./sectinfo";
+import { alchemyPanel } from "./alchemyinfo";
 import { attributeGuide, recommendTalent, talentPreview, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
 import type { MapTarget } from "./mapinfo";
 import { buildWorldMap, mapStamp } from "./worldmap";
@@ -66,6 +67,8 @@ export interface UiHandlers {
   onZuohua(): void;
   onTravel(targetId: string): void;
   onWave(choice: WaveChoice): void;
+  onStartBrew(recipeId: string): void;
+  onCancelBrew(): void;
   onJoinSect(): void;
   onLeaveSect(): void;
   onPromoteSect(): void;
@@ -604,6 +607,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     schedules: { id: string; b: HTMLButtonElement; facts: HTMLElement; hint: HTMLElement }[];
     zuohuaBox: HTMLElement;
     sectBox: HTMLElement;
+    alchemyBox: HTMLElement;
     zuohuaInfo: HTMLElement;
     btSection: HTMLElement;
     btInfo: HTMLElement;
@@ -658,6 +662,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
           </section>
           <section id="sectBox" class="s-sect" hidden></section>
+          <section id="alchemyBox" class="s-alchemy" hidden></section>
           <section id="zuohuaBox" class="s-zuohua" hidden>
             <h2>閉關坐化</h2>
             <p id="zuohuaInfo" class="desc"></p>
@@ -705,7 +710,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     });
 
     const marketBox = q("#market");
-    const market = data.items.map((item) => {
+    // 材料不在坊市賣
+    const market = data.items.filter((item) => item.effect.kind !== "material").map((item) => {
       const li = document.createElement("li");
       li.innerHTML = `<div><strong>${item.name}</strong> <span class="price"></span><small>${item.desc}</small></div>`;
       const owned = document.createElement("span");
@@ -755,6 +761,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       schedules,
       zuohuaBox: q("#zuohuaBox"),
       sectBox: q("#sectBox"),
+      alchemyBox: q("#alchemyBox"),
       zuohuaInfo: q("#zuohuaInfo"),
       btSection: q("#btSection"),
       btInfo: q("#btInfo"),
@@ -823,10 +830,22 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       e.bag.appendChild(li);
       return;
     }
-    for (const item of owned) {
+    // 背包分「丹藥」「符籙」「材料」三段，每段第一項前放小標
+    const groupOf = (kind: string): number => (kind === "material" ? 2 : kind === "tribulationWard" ? 1 : 0);
+    const GROUP_NAMES = ["丹藥", "符籙", "材料"];
+    let lastGroup = -1;
+    for (const item of [...owned].sort((x, y) => groupOf(x.effect.kind) - groupOf(y.effect.kind))) {
+      const group = groupOf(item.effect.kind);
+      if (group !== lastGroup) {
+        lastGroup = group;
+        const head = document.createElement("li");
+        head.className = "desc bag-group";
+        head.textContent = GROUP_NAMES[group];
+        e.bag.appendChild(head);
+      }
       const li = document.createElement("li");
       li.innerHTML = `<div><strong>${item.name}</strong> ×${state.items[item.id]}</div>`;
-      if (item.effect.kind !== "breakthrough") {
+      if (item.effect.kind === "cultivationFraction" || item.effect.kind === "lifespan") {
         const b = document.createElement("button");
         b.type = "button";
         b.textContent = "服用";
@@ -937,6 +956,45 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     box.append(actions);
   }
 
+  /** 煉丹面板：內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
+  let alchemyKey = "";
+  function renderAlchemy(state: GameState, e: LifeEls): void {
+    const panel = alchemyPanel(state, data);
+    const key = JSON.stringify(panel);
+    if (key === alchemyKey) return;
+    alchemyKey = key;
+    e.alchemyBox.hidden = panel === null;
+    e.alchemyBox.replaceChildren();
+    if (!panel) return;
+    const box = e.alchemyBox;
+    box.append(el("h2", undefined, "煉丹"));
+    const b = panel.brewing;
+    if (b) {
+      const stage = b.paid ? `第 ${b.progress} ／ ${b.months} 個月` : "材料下個月投入";
+      box.append(el("p", undefined, `爐中：${b.name}（${stage}），成功率 ${b.ratePct}%。`));
+      if (b.paused) box.append(el("p", "desc", "爐火暫歇，在日常安排切回「閉關煉丹」即可接著煉。"));
+      const off = button("熄爐", () => handlers.onCancelBrew());
+      off.classList.add("danger");
+      const actions = el("div", "actions");
+      actions.append(off);
+      box.append(actions);
+    } else {
+      box.append(el("p", "desc", "備齊材料開爐，煉丹期間修行較緩、事件較少。材料靠採藥、歷練與走訪渡口時偶然拾得。"));
+    }
+    const list = el("ul", "items");
+    for (const r of panel.recipes) {
+      const li = document.createElement("li");
+      const need = r.inputs.map((i) => `${i.name} ${i.have}／${i.need}`).join("、");
+      const info = el("div");
+      info.append(el("strong", undefined, r.name), el("small", undefined, `${need}・${r.months} 個月・成功率 ${r.ratePct}%${r.reason && !r.canStart ? `　${r.reason}` : ""}`));
+      const start = button("開爐", () => handlers.onStartBrew(r.id), true);
+      start.disabled = !r.canStart;
+      li.append(info, start);
+      list.append(li);
+    }
+    box.append(list);
+  }
+
   function renderLife(state: GameState): void {
     if (built !== "life" || !els) buildLife(state);
     const e = els!;
@@ -1041,6 +1099,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       hint.hidden = hint.textContent === "";
     }
     renderSect(state, e);
+    renderAlchemy(state, e);
     renderTribulation(state, e);
     e.zuohuaBox.hidden = !canZuohua(state, data);
     if (!e.zuohuaBox.hidden) {

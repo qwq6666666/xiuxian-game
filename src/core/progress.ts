@@ -1,5 +1,6 @@
 // 境界、瓶頸、日誌等 tick 與事件共用的基礎函式。
 import { gameData } from "../data/load";
+import { ALCHEMY_SCHEDULE } from "../data/types";
 import type { EventDef, GameData, RealmDef, ScheduleDef } from "../data/types";
 import { lifespanMonths, stageNeed } from "./formulas";
 import type { GameState, LogEntry } from "./state";
@@ -19,6 +20,8 @@ export function scheduleOf(state: GameState, data: GameData = gameData): Schedul
 /** 這個安排目前是否開放（有 realmMin 的要達到該境界） */
 export function scheduleOpen(state: GameState, sched: ScheduleDef, data: GameData = gameData): boolean {
   if (sched.requiresSect && state.sect === null) return false;
+  // 煉丹要先開爐選定丹方
+  if (sched.id === ALCHEMY_SCHEDULE && state.alchemy === null) return false;
   if (sched.realmMin === undefined) return true;
   const idx = (id: string): number => data.realms.findIndex((r) => r.id === id);
   return idx(state.realmId) >= idx(sched.realmMin);

@@ -17,6 +17,7 @@
     "eventRateMult": 2,
     "stones": { "chance": 0.4, "min": 1, "max": 3 },
     "finds": [{ "itemId": "juqi_dan", "chance": 0.01 }],
+    "drops": [{ "itemId": "ling_sha", "chance": 0.05 }, { "itemId": "ling_cao", "chance": 0.05 }],
     "deathChance": 0.00003
   },
   {
@@ -27,6 +28,7 @@
     "eventRateMult": 1,
     "stones": { "chance": 1, "min": 3, "max": 3 },
     "finds": [],
+    "drops": [{ "itemId": "ling_cao", "chance": 0.2 }],
     "deathChance": 0
   },
   {
@@ -43,6 +45,7 @@
     "eventRateMult": 1.5,
     "stones": { "chance": 0, "min": 0, "max": 0 },
     "finds": [],
+    "drops": [{ "itemId": "fu_zhi", "chance": 0.1 }],
     "deathChance": 0
   },
   {
@@ -53,6 +56,17 @@
     "requiresSect": true,
     "cultivationMult": 0.4,
     "eventRateMult": 1.5,
+    "stones": { "chance": 0, "min": 0, "max": 0 },
+    "finds": [],
+    "deathChance": 0
+  },
+  {
+    "id": "alchemy",
+    "name": "閉關煉丹",
+    "desc": "開爐煉製丹藥與符籙，修行稍緩，事件較少。",
+    "realmMin": "lianqi",
+    "cultivationMult": 0.3,
+    "eventRateMult": 0.7,
     "stones": { "chance": 0, "min": 0, "max": 0 },
     "finds": [],
     "deathChance": 0

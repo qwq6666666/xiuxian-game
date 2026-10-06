@@ -11,8 +11,11 @@
 // 入宗策略（sect，第 5 個參數）：同 mixed，另外練氣三層起旅行到最近的開放宗門求入宗，入宗後依晉升條件做差事並晉升，量測入宗成功率與位階分布（GDD 第 29 節）。
 // 天劫策略（tribulation，第 5 個參數）：同 mixed，另外突破前買避雷符，天劫每一道用符籙或護體，量測各境界天劫的成功率（GDD 第 31 節）。其他策略的天劫每一道都硬抗，結果與一鍵突破相同。
 // 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
+// 煉丹策略（alchemy，第 5 個參數）：同 herb（永遠採藥、有錢就買丹），另外材料攢夠就開爐煉聚氣丹與護心丹，量測煉丹有沒有讓這條最划算的路線快過閉關（GDD 第 32 節）。
 // 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
 // 例：npm run sim -- 300 1 40 post
+import { canStartBrew, startBrew } from "../src/core/alchemy";
+import { ALCHEMY_SCHEDULE } from "../src/data/types";
 import { beginTravel, placesAt, routeTo } from "../src/core/travel";
 import { canJoinSect, canPromoteSect, joinSect, nextRank, promoteSect } from "../src/core/sect";
 import { buyItem, buyTalent, canBuyItem, canBuyTalent, canUseItem, canZuohua, setSchedule, useItem, zuohua } from "../src/core/actions";
@@ -28,7 +31,7 @@ import { realmLabel } from "../src/ui/format";
 const runs = Number(process.argv[2] ?? 1000);
 const baseSeed = Number(process.argv[3] ?? 1);
 const lives = Number(process.argv[4] ?? 1);
-const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : "simple";
+const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -59,6 +62,37 @@ function herbActions(state: GameState): GameState {
   let s = setSchedule(state, "herb", gameData);
   while (s.realmId !== "mortal" && canBuyItem(s, "juqi_dan", gameData)) s = buyItem(s, "juqi_dan", gameData);
   while (canUseItem(s, "juqi_dan", gameData)) s = useItem(s, "juqi_dan", gameData);
+  return s;
+}
+
+/** 煉丹策略的統計：開爐數與出爐結果 */
+const alchemyStats = { brews: 0, done: 0, failed: 0, halts: 0, lives: 0, brewLives: 0, brewedThisLife: false };
+
+/** 煉丹策略的每月操作（最壞情況）：永遠採藥、有錢就買丹，同時有材料就開爐煉丹；煉丹中只服丹，不動安排 */
+function alchemyActions(state: GameState): GameState {
+  let s = state;
+  const last = s.log[s.log.length - 1];
+  if (last && last.month === s.ageMonths) {
+    if (last.kind === "alchemyDone") alchemyStats.done++;
+    else if (last.kind === "alchemyFail") alchemyStats.failed++;
+    else if (last.kind === "alchemyStop") alchemyStats.halts++;
+  }
+  if (s.schedule === ALCHEMY_SCHEDULE) {
+    while (canUseItem(s, "juqi_dan", gameData)) s = useItem(s, "juqi_dan", gameData);
+    return s;
+  }
+  s = herbActions(s);
+  if (s.realmId !== "mortal") {
+    const first = s.realmId === "lianqi" && s.stage >= 6 && (s.items.huxin_dan ?? 0) === 0 ? "huxin_dan" : "juqi_dan";
+    for (const id of [first, "juqi_dan"]) {
+      if (canStartBrew(s, id, gameData)) {
+        s = startBrew(s, id, gameData);
+        alchemyStats.brews++;
+        alchemyStats.brewedThisLife = true;
+        break;
+      }
+    }
+  }
   return s;
 }
 
@@ -180,6 +214,7 @@ function playLife(start: GameState): GameState {
     state = tick(state, 1, gameData);
     if (strategy === "herb" && state.phase === "living") state = herbActions(state);
     else if (strategy === "wander" && state.phase === "living") state = wanderActions(state);
+    else if (strategy === "alchemy" && state.phase === "living") state = alchemyActions(state);
     else if (strategy !== "simple" && state.phase === "living") state = mixedActions(state);
     if (state.pendingEvent !== null) state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
     if (strategy === "sect" && state.phase === "living" && state.pendingEvent === null) state = sectActions(state);
@@ -375,6 +410,11 @@ function campaigns(): void {
         gotAll = true;
         allLives.push(k + 1);
       }
+      if (strategy === "alchemy") {
+        alchemyStats.lives++;
+        if (alchemyStats.brewedThisLife) alchemyStats.brewLives++;
+        alchemyStats.brewedThisLife = false;
+      }
       if (strategy === "sect") {
         sectStats.lives++;
         sectStats.peaks[state.sectPeak]++;
@@ -428,14 +468,14 @@ function campaigns(): void {
         yuanyingHours.push((months * gameData.config.msPerMonth) / 3_600_000);
       }
       // 把道韻優先花在宿慧
-      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation") state = buyTalentsBalanced(state);
+      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation" || strategy === "alchemy") state = buyTalentsBalanced(state);
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(
@@ -511,6 +551,12 @@ function campaigns(): void {
     console.log(`  各世最高位階：未入宗 ${pct(sectStats.peaks[0])}、外門 ${pct(sectStats.peaks[1])}、內門 ${pct(sectStats.peaks[2])}、執事 ${pct(sectStats.peaks[3])}、長老 ${pct(sectStats.peaks[4])}`);
     console.log(`  ${ok(cMed >= 7)} 入宗路線首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
     console.log(`  ${ok(hours >= 3.5)} 入宗路線通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
+  }
+  if (strategy === "alchemy") {
+    console.log("對照第 32.4 節（煉丹）：");
+    console.log(`  開爐 ${alchemyStats.brews} 次（${alchemyStats.brewLives}／${alchemyStats.lives} 世有開爐）：出丹 ${alchemyStats.done}、失敗 ${alchemyStats.failed}、材料用盡收爐 ${alchemyStats.halts}`);
+    console.log(`  ${ok(cMed >= 7)} 煉丹路線首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
+    console.log(`  ${ok(hours >= 3.5)} 煉丹路線通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
   }
   if (strategy === "tribulation") {
     console.log("對照第 31.4 節（天劫）：");

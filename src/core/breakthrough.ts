@@ -11,13 +11,22 @@ export function breakthroughRuleOf(state: GameState, data: GameData = gameData):
   return realmOf(state, data).breakthroughRule;
 }
 
-/** 突破失敗時損失的修為比例，含心性與道心天賦的減免 */
+/** 手上帶著的護心丹（M29）：失敗時自動服用，減免該次的損失比例 */
+export function reliefItem(state: GameState, data: GameData = gameData): { id: string; value: number } | null {
+  for (const item of data.items) {
+    if (item.effect.kind === "failLossRelief" && (state.items[item.id] ?? 0) > 0) return { id: item.id, value: item.effect.value };
+  }
+  return null;
+}
+
+/** 突破失敗時損失的修為比例，含心性與道心天賦的減免，以及手上的護心丹 */
 export function currentFailLoss(state: GameState, data: GameData = gameData): number {
-  return breakthroughFailLoss(
+  const base = breakthroughFailLoss(
     data.config,
     state.attributes.mind,
     talentBonus(state.meta, data.talents, "failLoss"),
   );
+  return Math.max(0, base - (reliefItem(state, data)?.value ?? 0));
 }
 
 /** 突破還缺的天賦等級（目前等級不足門檻時回傳門檻），沒有缺則回傳 null */
@@ -64,8 +73,11 @@ function succeed(s: GameState, data: GameData): GameState {
 /** 突破失敗：損失部分修為（可再試）。wave 是天劫止步的那一道（從 1 起算），extraLoss 是額外損失的比例 */
 function fail(s: GameState, data: GameData, wave?: number, extraLoss = 0): GameState {
   const loss = Math.min(1, currentFailLoss(s, data) + extraLoss);
+  // 護心丹隨失敗服下，用掉一顆
+  const relief = reliefItem(s, data);
+  const items = relief ? { ...s.items, [relief.id]: s.items[relief.id] - 1 } : s.items;
   return addLog(
-    { ...s, tribulation: null, cultivation: s.cultivation * (1 - loss) },
+    { ...s, items, tribulation: null, cultivation: s.cultivation * (1 - loss) },
     { month: s.ageMonths, kind: "breakthroughFail", realmId: s.realmId, stage: s.stage, ...(wave !== undefined ? { wave } : {}) },
     data.config.logLimit,
   );
