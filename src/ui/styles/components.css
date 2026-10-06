@@ -91,3 +91,8 @@ blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }
 /* 一生回顧（死亡與通關）：比一般彈窗慢，作為轉世前的轉場 */
 #modal:not([hidden]) { animation-duration: var(--dur-slow); }
 #modal:not([hidden]) .card { animation-duration: var(--dur-slow); animation-delay: var(--dur-base); animation-fill-mode: backwards; }
+
+/* 小圖示：跟著文字色，放在名稱前 */
+.ico { width: 1em; height: 1em; vertical-align: -0.14em; margin-right: 0.3em; flex: none; }
+.chip .ico { margin-right: 0.25em; }
+.event-art:empty, #eventArt:empty { display: none; }

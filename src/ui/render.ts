@@ -23,6 +23,9 @@ import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { sectPanel } from "./sectinfo";
 import { statPanel } from "./statinfo";
+import { burstScene, sceneHtml, updateScene } from "./scene";
+import { icon, itemIcon, scheduleIcon } from "./icons";
+import { vignetteHtml } from "./vignette";
 import { methodRows } from "./methodinfo";
 import { alchemyPanel } from "./alchemyinfo";
 import { attributeGuide, recommendTalent, talentPreview, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
@@ -694,6 +697,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     // 側欄分四頁（修行、煉製、行囊、角色），一次只顯示一頁；分頁列在手機固定在畫面底部。
     stageEl.innerHTML = `
       <section class="status" aria-label="狀態">
+        ${sceneHtml()}
         <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
         <p id="pace" class="pace"></p>
@@ -726,6 +730,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       </div>
       <div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" hidden>
         <div class="card event">
+          <div id="eventArt"></div>
           <h2 id="eventTitle"></h2>
           <p id="eventText"></p>
           <div id="eventHistory" class="event-history" hidden></div>
@@ -753,7 +758,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const b = document.createElement("button");
       b.type = "button";
       b.setAttribute("aria-pressed", "false");
-      b.innerHTML = `<strong>${s.name}</strong><small>${s.desc}</small><small class="sched-facts"></small><small class="sched-hint"></small>`;
+      b.innerHTML = `<strong>${scheduleIcon(s.id)}${s.name}</strong><small>${s.desc}</small><small class="sched-facts"></small><small class="sched-hint"></small>`;
       b.addEventListener("click", () => handlers.onSchedule(s.id));
       schedBox.appendChild(b);
       return { id: s.id, b, facts: b.querySelector<HTMLElement>(".sched-facts")!, hint: b.querySelector<HTMLElement>(".sched-hint")! };
@@ -763,7 +768,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     // 材料不在坊市賣
     const market = data.items.filter((item) => item.effect.kind !== "material").map((item) => {
       const li = document.createElement("li");
-      li.innerHTML = `<div><strong>${item.name}</strong> <span class="price"></span><small>${item.desc}</small></div>`;
+      li.innerHTML = `<div><strong>${itemIcon(data, item.id)}${item.name}</strong> <span class="price"></span><small>${item.desc}</small></div>`;
       const owned = document.createElement("span");
       owned.className = "owned";
       const b = document.createElement("button");
@@ -881,7 +886,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const id = state.equipment[slot];
       const li = document.createElement("li");
       const name = id ? (data.items.find((i) => i.id === id)?.name ?? id) : "（空）";
-      li.innerHTML = `<div><strong>${SLOT_LABEL[slot]}</strong> ${name}</div>`;
+      li.innerHTML = `<div><strong>${SLOT_LABEL[slot]}</strong> ${id ? itemIcon(data, id) : ""}${name}</div>`;
       if (id) {
         const b = document.createElement("button");
         b.type = "button";
@@ -912,7 +917,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         e.bag.appendChild(head);
       }
       const li = document.createElement("li");
-      li.innerHTML = `<div><strong>${item.name}</strong> ×${state.items[item.id]}</div>`;
+      li.innerHTML = `<div><strong>${itemIcon(data, item.id)}${item.name}</strong> ×${state.items[item.id]}</div>`;
       if (item.effect.kind === "cultivationFraction" || item.effect.kind === "lifespan") {
         const b = document.createElement("button");
         b.type = "button";
@@ -1050,27 +1055,27 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const box = stageEl.querySelector<HTMLElement>("#resbar");
     if (!box) return;
     const name = (id: string): string => data.items.find((i) => i.id === id)?.name ?? id;
-    const chips: { text: string; tab: SideTab }[] = [];
+    const chips: { text: string; tab: SideTab; icon?: string }[] = [];
     for (const id of ["juqi_dan", "zhuji_dan", "huxin_dan", "bilei_fu"]) {
       const n = state.items[id] ?? 0;
-      if (n > 0) chips.push({ text: `${name(id)} ${n}`, tab: "pack" });
+      if (n > 0) chips.push({ text: `${name(id)} ${n}`, tab: "pack", icon: itemIcon(data, id) });
     }
     const worn = ARTIFACT_SLOTS.map((s) => state.equipment[s]).filter((x): x is string => x !== null);
-    if (worn.length > 0) chips.push({ text: worn.map(name).join("、"), tab: "pack" });
+    if (worn.length > 0) chips.push({ text: worn.map(name).join("、"), tab: "pack", icon: itemIcon(data, worn[0]) });
     const mats = data.items.filter((i) => i.effect.kind === "material").reduce((n, i) => n + (state.items[i.id] ?? 0), 0);
-    if (mats > 0) chips.push({ text: `材料 ${mats}`, tab: "make" });
+    if (mats > 0) chips.push({ text: `材料 ${mats}`, tab: "make", icon: icon("herb") });
     if (state.alchemy) {
       const r = data.recipes.recipes.find((x) => x.id === state.alchemy!.recipeId);
-      chips.push({ text: `煉${name(r?.output ?? "")} ${state.alchemy.progress}／${r?.months ?? 0}`, tab: "make" });
+      chips.push({ text: `煉${name(r?.output ?? "")} ${state.alchemy.progress}／${r?.months ?? 0}`, tab: "make", icon: icon("alchemy") });
     }
     // 材料夠了可以開爐或煉器時提示（最多兩個，免得資源列太長）
     const ready = alchemyPanel(state, data);
     if (ready) {
       const names = [...(ready.brewing ? [] : ready.recipes.filter((r) => r.canStart)), ...ready.forge.filter((f) => f.canForge)].map((x) => x.name);
-      for (const n of names.slice(0, 2)) chips.push({ text: `可煉${n}`, tab: "make" });
+      for (const n of names.slice(0, 2)) chips.push({ text: `可煉${n}`, tab: "make", icon: icon("alchemy") });
     }
     const method = data.methods.find((m) => m.id === state.methodId);
-    if (method && method.id !== data.methods[0].id) chips.push({ text: method.name, tab: "me" });
+    if (method && method.id !== data.methods[0].id) chips.push({ text: method.name, tab: "me", icon: icon("method") });
     const key = JSON.stringify(chips);
     if (key === resKey) return;
     resKey = key;
@@ -1078,6 +1083,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     for (const c of chips) {
       const b = button(c.text, () => showSideTab(c.tab));
       b.className = "chip";
+      if (c.icon) b.insertAdjacentHTML("afterbegin", c.icon);
       box.append(b);
     }
   }
@@ -1109,6 +1115,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     for (const r of panel.breakdown) list.append(el("li", undefined, `${r.label}　${r.value}`));
     det.append(list);
     box.append(det);
+  }
+
+  /** 圖示加名稱的標題（名稱來自資料檔，不含使用者輸入） */
+  function iconTitle(itemId: string, name: string): HTMLElement {
+    const s = el("strong");
+    s.innerHTML = itemIcon(data, itemId);
+    s.append(name);
+    return s;
   }
 
   /** 煉丹面板：內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
@@ -1149,7 +1163,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const li = document.createElement("li");
       const need = r.inputs.map((i) => `${i.name} ${i.have}／${i.need}`).join("、");
       const info = el("div");
-      info.append(el("strong", undefined, r.name), el("small", undefined, `${need}・${r.months} 個月・成功率 ${r.ratePct}%${r.reason && !r.canStart ? `　${r.reason}` : ""}`));
+      info.append(iconTitle(r.itemId, r.name), el("small", undefined, `${need}・${r.months} 個月・成功率 ${r.ratePct}%${r.reason && !r.canStart ? `　${r.reason}` : ""}`));
       const start = button("開爐", () => handlers.onStartBrew(r.id), true);
       start.disabled = !r.canStart;
       li.append(info, start);
@@ -1163,7 +1177,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const li = document.createElement("li");
       const need = f.inputs.map((i) => `${i.name} ${i.have}／${i.need}`).join("、");
       const info = el("div");
-      info.append(el("strong", undefined, f.name), el("small", undefined, `${f.kind}：${f.effect}`), el("small", undefined, `${need}、靈石 ${f.stones}・成功率 ${f.ratePct}%${f.reason ? `　${f.reason}` : ""}`));
+      info.append(iconTitle(f.itemId, f.name), el("small", undefined, `${f.kind}：${f.effect}`), el("small", undefined, `${need}、靈石 ${f.stones}・成功率 ${f.ratePct}%${f.reason ? `　${f.reason}` : ""}`));
       const go = button("煉製", () => handlers.onForge(f.id), true);
       go.disabled = !f.canForge;
       li.append(info, go);
@@ -1275,6 +1289,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       hint.textContent = scheduleHints(state, sched, slotsOf(state), data).join("　");
       hint.hidden = hint.textContent === "";
     }
+    updateScene(stageEl.querySelector<HTMLElement>("#scene"), state);
     renderStatDetail(state);
     renderResources(state);
     renderSect(state, e);
@@ -1319,7 +1334,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       logLen = state.log.length;
       // 突破與升階的短暫回饋：成功金框、失敗朱砂框，升階只讓進度條亮一下
       for (const entry of state.log.slice(state.log.length - fresh)) {
-        if (entry.kind === "breakthroughSuccess" || entry.kind === "realmUp") flash(".status", "flash-up");
+        if (entry.kind === "breakthroughSuccess" || entry.kind === "realmUp") {
+          flash(".status", "flash-up");
+          burstScene(stageEl.querySelector<HTMLElement>("#scene"));
+        }
         else if (entry.kind === "breakthroughFail") flash(".status", "flash-down");
         else if (entry.kind === "stageUp") flash(".progress", "flash-up");
         else if (entry.kind === "alchemyDone" || entry.kind === "forgeDone") markMake("flash-up");
@@ -1369,6 +1387,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         const ev = eventOf(state.pendingEvent, data);
         const slots = slotsOf(state);
         e.eventTitle.textContent = fillSlots(ev.title, slots);
+        stageEl.querySelector<HTMLElement>("#eventArt")!.innerHTML = vignetteHtml(ev, state.realmId);
         e.eventText.textContent = fillSlots(ev.text, slots);
         const earlier = state.log.filter((entry) => entry.kind === "event" && entry.eventId && relatedEvents(ev.id).includes(entry.eventId));
         e.eventHistory.hidden = earlier.length === 0;
