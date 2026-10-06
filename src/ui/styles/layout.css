@@ -87,6 +87,13 @@
 .tabs button[data-locked="true"] { color: var(--muted); }
 .side > [data-tab] { animation: fold-in var(--dur-base) var(--ease); }
 .tabs button[data-badge]::after { content: " ●"; color: var(--accent); font-size: var(--fs-xs); }
+.craft-tabs { display: flex; gap: var(--sp-1); margin: var(--sp-3) 0; border-bottom: 1px solid var(--line); }
+.craft-tabs button { flex: 1 1 0; border-color: transparent; border-bottom: 2px solid transparent; border-radius: var(--r-sm) var(--r-sm) 0 0; background: transparent; color: var(--muted); }
+.craft-tabs button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--accent); font-weight: bold; }
+.craft-pane[hidden] { display: none; }
+.locked-recipes { margin-top: var(--sp-2); border-top: 1px solid var(--line); }
+.locked-recipes > summary { font-size: var(--fs-sm); }
+.locked-recipes .items { padding: var(--sp-2) 0 var(--sp-1) var(--sp-3); opacity: 0.8; }
 
 /* 運功鈕與場景點擊回饋 */
 .focus-btn { border-color: var(--accent); color: var(--accent); min-height: 0; padding: 0 var(--sp-3); }

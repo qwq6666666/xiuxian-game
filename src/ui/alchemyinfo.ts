@@ -19,6 +19,10 @@ export interface RecipeRow {
   canStart: boolean;
   /** 不能開爐的原因；能開為 null */
   reason: string | null;
+  /** 煉製頁分頁；由產出物種類判斷，不把配方 id 寫死在介面。 */
+  category: "pill" | "talisman";
+  open: boolean;
+  unlockRealm: string;
 }
 
 export interface ForgeRow {
@@ -34,6 +38,8 @@ export interface ForgeRow {
   ratePct: number;
   canForge: boolean;
   reason: string | null;
+  open: boolean;
+  unlockRealm: string;
 }
 
 export interface BrewingInfo {
@@ -60,6 +66,7 @@ function realmName(data: GameData, id: string): string {
 export function alchemyPanel(state: GameState, data: GameData): AlchemyPanel | null {
   const itemName = (id: string): string => data.items.find((i) => i.id === id)?.name ?? id;
   const recipes = data.recipes.recipes.filter((r) => r.kind === "brew").map((r): RecipeRow => {
+    const output = data.items.find((i) => i.id === r.output);
     const open = recipeOpen(state, r, data);
     const canStart = canStartBrew(state, r.id, data);
     let reason: string | null = null;
@@ -77,6 +84,9 @@ export function alchemyPanel(state: GameState, data: GameData): AlchemyPanel | n
       ratePct: Math.round(recipeRate(state, r, data) * 100),
       canStart,
       reason,
+      category: output?.effect.kind === "tribulationWard" ? "talisman" : "pill",
+      open,
+      unlockRealm: realmName(data, r.realmMin),
     };
   });
   const a = state.alchemy;
@@ -133,6 +143,8 @@ function forgeRows(state: GameState, data: GameData, itemName: (id: string) => s
         ratePct: Math.round(recipeRate(state, r, data) * 100),
         canForge: can,
         reason,
+        open,
+        unlockRealm: realmName(data, r.realmMin),
       };
     });
 }
