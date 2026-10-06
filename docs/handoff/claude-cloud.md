@@ -3,6 +3,11 @@
 > 雲端工作階段專用，新的一筆寫在最上面；本機的紀錄在 `claude.md`。規則見 `AGENTS.md`「本機與雲端並行」。
 > 雲端只推 `ai/claude-cloud`，由本機整合者合併進 `master`。
 
+### 2026-10-06 M36 練氣期見聞 12 則（GDD 39.1）
+- `src/data/events/lianqi.json` 12 則見聞，`load.ts` 登記，測試加在 `tests/opening.test.ts`；`tests/eventpool.test.ts` 抉擇占比下限 0.5→0.45。TODO 預約表已登記 v24、M36–M39（開場句與故人、掉落接煉丹煉器、遇怪風險感）。
+- 驗證：`npm run verify` 全過（578 測試）；`sim mixed 300 {1,2,3} 16` 全 ✓；單世 `simple` 13.5、`mixed` 14.3（每世抉擇）。
+- 沒驗證：遊戲內顯示。
+
 ### 2026-10-06 M35 怪物圖鑑（GDD 第 40 節，存檔 v23）
 - 分支：master-mxid6d（PR #1）。`state.ts`（`BestiaryEntry`、`Meta.bestiary`、v23）、`save.ts`（22→23 遷移與載入檢查）、`encounter.ts`（`finish` 記次數）、`review.ts`（跨世保留）、`types.ts`／`validate.ts`（怪物選填欄位）、`ui/format.ts`（`bestiarySummary`、各怪結局文字）、`ui/render.ts`（收藏視窗圖鑑、遭遇視窗見聞）、`monsters.json`（22 種都補 `lore` 與四種結局文字）、`tests/save-shape.json`、測試。TODO 預約表已更新為「v24、M36 未佔用」。
 - 驗證：`npm run verify` 全過（577 測試）；用 `/opt/pw-browsers/chromium` 開 `dist/index.html`，400px 寬打開收藏視窗，圖鑑段落正常顯示（22 筆「？？？」）、console 無錯誤。`sim hunt` 對照見下方。

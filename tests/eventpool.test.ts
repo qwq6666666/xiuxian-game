@@ -25,10 +25,10 @@ const CHAINS: { name: string; stages: { id: string; needs?: string }[] }[] = [
 ];
 
 describe("事件池擴充", () => {
-  it("事件數至少 70，抉擇與見聞維持約六比四（抉擇事件數的上限靠它撐住）", () => {
+  it("事件數至少 70，抉擇事件占比維持在約四成五到七成（每世抉擇數由 sim 的第 13 節指標守住）", () => {
     expect(data.events.length).toBeGreaterThanOrEqual(70);
     const choices = data.events.filter((e) => e.type === "choice").length;
-    expect(choices / data.events.length).toBeGreaterThan(0.5);
+    expect(choices / data.events.length).toBeGreaterThan(0.45);
     expect(choices / data.events.length).toBeLessThan(0.68);
   });
 

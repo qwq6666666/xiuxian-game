@@ -50,3 +50,16 @@ describe("怪物多樣性（monsters.json）", () => {
     }
   });
 });
+
+describe("練氣期見聞（lianqi.json）", () => {
+  const daily = data.events.filter((e) => e.id.startsWith("lianqi_daily_"));
+  it("12 則，皆為練氣期限定的見聞，每段不超過三句", () => {
+    expect(daily).toHaveLength(12);
+    for (const e of daily) {
+      expect(e.type).toBe("anecdote");
+      expect(e.conditions.realmMin).toBe("lianqi");
+      expect(e.conditions.realmMax).toBe("lianqi");
+      expect(e.text.split(/[。！？]/).filter(Boolean).length).toBeLessThanOrEqual(3);
+    }
+  });
+});

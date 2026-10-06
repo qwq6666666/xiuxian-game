@@ -1,0 +1,158 @@
+[
+  {
+    "id": "lianqi_daily_001",
+    "type": "anecdote",
+    "title": "練氣初覺",
+    "text": "靈氣第一次在經脈裡走完一圈時，你並沒有想像中那麼激動。只是覺得指尖微暖，然後肚子叫了。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_002",
+    "type": "anecdote",
+    "title": "同鄉少年",
+    "text": "{village}的同齡人已有人娶親，有人學徒，見了你只問一句還在打坐？你點頭，他們便不再問了，彷彿那是種不太好治的病。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_003",
+    "type": "anecdote",
+    "title": "腳程",
+    "text": "你每日往返{mountain}腳下，腳步漸漸輕了。有一天你發現，同一段路，已經比去年少走了一炷香。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_004",
+    "type": "anecdote",
+    "title": "窗邊的蒲團",
+    "text": "同一間屋裡，窗邊的靈氣略濃，牆角的略淡。你把蒲團挪了三尺，從此再不讓人動它。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_005",
+    "type": "anecdote",
+    "title": "藥鋪夥計",
+    "text": "{market}的藥鋪夥計認得了你，不用開口便把常買的藥包好遞來。你想了想，這大概是你在世上最穩定的往來。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_006",
+    "type": "anecdote",
+    "title": "雨後腳印",
+    "text": "雨後山徑泥濘，你每一步都陷下半寸。回頭望去，一串腳印整整齊齊，像有人在替你記帳。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_007",
+    "type": "anecdote",
+    "title": "換腿",
+    "text": "你換了三種坐姿，腿麻的次數卻沒有少。後來你不再糾結，只在麻到發燙時，換另一條腿。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_008",
+    "type": "anecdote",
+    "title": "私塾夜讀",
+    "text": "村口私塾的燈亮到很晚，你路過時聽見孩子們念書。一句也沒聽懂，卻覺得那聲音讓靈氣走得慢了些，也穩了些。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_009",
+    "type": "anecdote",
+    "title": "補了又補的鞋",
+    "text": "腳上那雙鞋補了又補，鞋底薄得能覺出石子的形狀。你說等哪天有錢再換，如此已經三年。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_010",
+    "type": "anecdote",
+    "title": "駝鈴",
+    "text": "一支商隊從{village}經過，駝鈴聲拖得很長。領頭的人看了你一眼，沒有停，也沒有回頭，你卻站了很久。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_011",
+    "type": "anecdote",
+    "title": "撿柴",
+    "text": "你在山腳撿柴，撿著撿著，順著靈氣的流向走到一處乾淨的泉眼。你喝了一捧，回家時才發現柴忘了帶。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  },
+  {
+    "id": "lianqi_daily_012",
+    "type": "anecdote",
+    "title": "舊年的符",
+    "text": "年節時家家戶戶貼了新符，你的門上仍是去年那張。紙邊被風吹得半捲，你伸手按平，沒有換。",
+    "weight": 4,
+    "tone": "neutral",
+    "highlight": 1,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi"
+    }
+  }
+]

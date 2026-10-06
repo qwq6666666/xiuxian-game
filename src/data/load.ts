@@ -4,6 +4,7 @@ import eventsJson from "./events.json";
 import yuanyingEventsJson from "./events/yuanying.json";
 import introEventsJson from "./events/intro.json";
 import openingEventsJson from "./events/opening.json";
+import lianqiEventsJson from "./events/lianqi.json";
 import sectEventsJson from "./events/sect.json";
 import zhujiEventsJson from "./events/zhuji.json";
 import fragmentsJson from "./fragments.json";
@@ -73,6 +74,7 @@ export const gameData: GameData = validateGameData({
     { file: "events/yuanying.json", raw: yuanyingEventsJson },
     { file: "events/intro.json", raw: introEventsJson },
     { file: "events/opening.json", raw: openingEventsJson },
+    { file: "events/lianqi.json", raw: lianqiEventsJson },
     { file: "events/sect.json", raw: sectEventsJson },
     { file: "events/zhuji.json", raw: zhujiEventsJson },
   ]),
