@@ -23,7 +23,8 @@ describe("日常安排", () => {
 
   it("採藥每月穩定獲得靈石，閉關沒有", () => {
     const base = living(3, { spiritStones: 0 });
-    expect(tick(setSchedule(base, "herb"), 10).spiritStones).toBe(30);
+    const herb = gameData.schedules.find((x) => x.id === "herb")!.stones.min;
+    expect(tick(setSchedule(base, "herb"), 10).spiritStones).toBe(10 * herb);
     expect(tick(base, 10).spiritStones).toBe(0);
   });
 

@@ -5,6 +5,7 @@
     "title": "丹師回禮",
     "text": "先前那位丹師尋到你，手裡捧著一只小匣，說上回的藥材讓他的爐火多撐了三日。他沒說是哪三日，也沒說爐子後來怎麼樣了。",
     "weight": 30,
+    "scheduleWeights": { "wander": 3 },
     "tone": "good",
     "highlight": 1.2,
     "conditions": {
@@ -73,6 +74,7 @@
     "title": "崖邊舊識",
     "text": "坊間有人遠遠朝你拱手，是先前在崖邊與你爭過靈草的那名散修。他身上的傷好了，神色也和緩了些。",
     "weight": 30,
+    "scheduleWeights": { "wander": 3 },
     "tone": "neutral",
     "highlight": 1.2,
     "conditions": {

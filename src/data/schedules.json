@@ -26,7 +26,7 @@
     "desc": "入山採藥，換取靈石，修行稍緩。",
     "cultivationMult": 0.2,
     "eventRateMult": 1,
-    "stones": { "chance": 1, "min": 3, "max": 3 },
+    "stones": { "chance": 1, "min": 2, "max": 2 },
     "finds": [],
     "drops": [{ "itemId": "ling_cao", "chance": 0.2 }],
     "deathChance": 0

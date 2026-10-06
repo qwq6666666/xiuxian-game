@@ -39,7 +39,7 @@ const lives = Number(process.argv[4] ?? 1);
 // method:<心法 id> 是 mixed 加上指定心法
 const forcedMethod = process.argv[5]?.startsWith("method:") ? process.argv[5].slice(7) : null;
 if (forcedMethod !== null && !gameData.methods.some((m) => m.id === forcedMethod)) throw new Error(`找不到心法 ${forcedMethod}`);
-const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : process.argv[5] === "forge" ? "forge" : process.argv[5] === "focus" ? "focus" : process.argv[5] === "hunt" ? "hunt" : "simple";
+const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : process.argv[5] === "forge" ? "forge" : process.argv[5] === "focus" ? "focus" : process.argv[5] === "rotate" ? "rotate" : process.argv[5] === "hunt" ? "hunt" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -87,6 +87,16 @@ function mixedActions(state: GameState): GameState {
   while (s.realmId !== "mortal" && canBuyItem(s, "juqi_dan", gameData) && s.spiritStones >= 520) s = buyItem(s, "juqi_dan", gameData);
   while (canUseItem(s, "juqi_dan", gameData)) s = useItem(s, "juqi_dan", gameData);
   return s;
+}
+
+/**
+ * 輪流安排策略（M42）：同 mixed 買丹吃丹，但每 12 個月裡 9 個月閉關、歷練／走訪／採藥各 1 個月（凡人只閉關）。
+ * 量測「認真換安排」的玩家：首次金丹不得低於第 7 世（GDD 第 13 節的疊加上限檢查）。
+ */
+const ROTATE_CYCLE = ["retreat", "retreat", "retreat", "retreat", "retreat", "retreat", "retreat", "retreat", "retreat", "adventure", "wander", "herb"];
+function rotateActions(state: GameState): GameState {
+  const s = mixedActions(state);
+  return s.realmId === "mortal" ? s : setSchedule(s, ROTATE_CYCLE[s.ageMonths % ROTATE_CYCLE.length], gameData);
 }
 
 /** 採藥丹修策略的每月操作：一直採藥，凡人以外有錢就買聚氣丹、能服就服 */
@@ -247,6 +257,7 @@ function playLife(start: GameState): GameState {
     state = tick(state, 1, gameData);
     state = settleEncounter(state);
     if (strategy === "hunt" && state.phase === "living") state = huntActions(state);
+    else if (strategy === "rotate" && state.phase === "living") state = rotateActions(state);
     else if (strategy === "herb" && state.phase === "living") state = herbActions(state);
     else if (strategy === "wander" && state.phase === "living") state = wanderActions(state);
     else if (strategy === "alchemy" && state.phase === "living") state = alchemyActions(state);
@@ -517,14 +528,14 @@ function campaigns(): void {
         yuanyingHours.push((months * gameData.config.msPerMonth) / 3_600_000);
       }
       // 把道韻優先花在宿慧
-      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation" || strategy === "alchemy" || strategy === "forge" || strategy === "focus" || strategy === "hunt") state = buyTalentsBalanced(state);
+      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation" || strategy === "alchemy" || strategy === "forge" || strategy === "focus" || strategy === "hunt" || strategy === "rotate") state = buyTalentsBalanced(state);
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹", forge: "法寶", focus: "運功", hunt: "打怪" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹", forge: "法寶", focus: "運功", hunt: "打怪", rotate: "輪流安排" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(
@@ -613,6 +624,11 @@ function campaigns(): void {
     const pct = (v: number): string => (n > 0 ? ((v / n) * 100).toFixed(0) : "0");
     console.log(`遇怪 ${n} 次：勝 ${pct(huntStats.win)}%、敗 ${pct(huntStats.lose)}%、平手 ${pct(huntStats.draw)}%、逃成 ${pct(huntStats.flee)}%、逃敗 ${pct(huntStats.fleeFail)}%；每勝平均修為 ${(huntStats.win > 0 ? huntStats.gain / huntStats.win : 0).toFixed(1)}`);
     console.log("對照第 38 節（打怪，最壞情況：永遠外出歷練）：");
+    console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
+    console.log(`  ${ok(hours >= 3.5)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
+  }
+  if (strategy === "rotate") {
+    console.log("對照第 44 節（輪流安排：9 閉關＋歷練、走訪、採藥各 1，每 12 個月）：");
     console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
     console.log(`  ${ok(hours >= 3.5)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
   }

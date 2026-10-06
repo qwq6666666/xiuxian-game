@@ -2,6 +2,13 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：日常安排的價值（M42，GDD 第 44 節）
+
+- 分支 `master`（本機，尚未 push）。`scripts/simulate.ts` 新增 `rotate` 策略；`schedules.json` 採藥靈石 3→2；`events/reunion.json`、`chains.json` 加 `scheduleWeights: { wander: 3 }`。核心與存檔不動。
+- 驗證：`npm run verify`；sim（種子 1、2）simple、mixed 1／16 世逐項不變，`post` 全 ✓（元嬰累計 12.2 小時 ✗ 是 PLAYTEST 舊問題），`rotate` 首次金丹第 7 世，`herb`／`wander`／`alchemy`／`forge`／`hunt`／`focus` 與預期一致。測試中寫死「採藥 3 靈石」的三處改成讀資料。
+- 沒驗證：玩家實際輪流出門的手感；走訪掛故人後實際遇到的頻率（只改權重，沒單獨量測）；`method:*`。
+- 給 ChatGPT（UI 需求）：安排卡（`src/ui/derived.ts` 的 `scheduleFacts`、`render.ts` 安排區）加一行「靈石可換修為」：例如採藥「每月 2 靈石，約可買 0.1 顆聚氣丹」。聚氣丹價格與效果在 `items.json`，換算不要寫死數字；畫面目前只顯示每月修為，容易讓玩家以為出門很虧。
+
 ## 2026-10-06：最後一次叩關（M41，GDD 第 43 節）
 
 - 分支 `master`（本機，尚未 push）。事件 `lianqi_last_push`（`src/data/events/lianqi.json`，文字是我寫的草稿，請 ChatGPT 審稿）；格式擴充見 GDD 43，核心改動只在 `core/events.ts`（條件與兩個效果）與 `core/breakthrough.ts`（匯出 `forceBreakthrough`、`forceBreakthroughFail`）。存檔不升版。sim 新增 `最後一次叩關` 統計行。

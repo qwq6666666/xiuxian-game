@@ -68,8 +68,9 @@ describe("安排的效率數字", () => {
   it("採藥：靈石期望值與攢一顆參考物品的年數由資料算出", () => {
     const s = living(1, { realmId: "lianqi", stage: 1 });
     const f = scheduleFacts(s, sched("herb"), gameData);
-    expect(f.stonesPerMonth).toBe(3);
-    expect(f.refYears).toBeCloseTo(f.refPrice / 3 / 12);
+    const per = sched("herb").stones.min;
+    expect(f.stonesPerMonth).toBe(per);
+    expect(f.refYears).toBeCloseTo(f.refPrice / per / 12);
     expect(f.cultivationPct).toBe(20);
     expect(f.perMonth).toBeCloseTo(monthlyGain(s, sched("herb"), gameData));
   });

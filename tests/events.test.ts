@@ -244,7 +244,7 @@ describe("計時與觸發", () => {
     const s = tick(living(1, { eventThreshold: 12, schedule: "herb", autoChoice: true, spiritStones: 0 }), 12, data);
     expect(s.pendingEvent).toBeNull();
     expect(s.log.filter((e) => e.kind === "event")).toHaveLength(1);
-    expect(s.spiritStones).toBe(7 + 36);
+    expect(s.spiritStones).toBe(7 + 12 * data.schedules.find((x) => x.id === "herb")!.stones.min);
   });
 
   it("第一個選項前提不足時，自動抉擇跳到下一個可選的", () => {
