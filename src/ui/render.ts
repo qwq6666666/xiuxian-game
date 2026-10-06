@@ -15,6 +15,7 @@ import { goalStatuses } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
+import { createVeil } from "./veil";
 import { esc } from "./dom";
 import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./rollview";
 import { createPanels } from "./panels";
@@ -33,9 +34,13 @@ import { type ArtifactSlot, type GameData } from "../data/types";
 import {
   choiceBlockReason,
   choiceOdds,
+  eraBorn,
+  eraTransition,
   formatChanges,
   formatLogEntry,
+  formatReviewSummary,
   realmLabel,
+  reviewTitle,
 } from "./format";
 
 export interface UiHandlers {
@@ -311,6 +316,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   // ---- 修行畫面（含死亡與通關彈窗）----
   let els: LifeEls | null = null;
   let lastState: GameState | null = null;
+  const veil = createVeil();
   let logKey = "";
   let logLen = 0;
   let prevStones: number | null = null;
@@ -684,8 +690,12 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         if (entry.kind === "breakthroughSuccess" || entry.kind === "realmUp") {
           panels.flash(".status", "flash-up");
           burstScene(stageEl.querySelector<HTMLElement>("#scene"));
+          if (entry.kind === "breakthroughSuccess") veil.play("success", formatLogEntry(entry, data, state.name, slotsOf(state)));
         }
-        else if (entry.kind === "breakthroughFail") panels.flash(".status", "flash-down");
+        else if (entry.kind === "breakthroughFail") {
+          panels.flash(".status", "flash-down");
+          veil.play("fail", formatLogEntry(entry, data, state.name, slotsOf(state)));
+        }
         else if (entry.kind === "stageUp") panels.flash(".progress", "flash-up");
         else if (entry.kind === "alchemyDone" || entry.kind === "forgeDone") panels.markMake("flash-up");
         else if (entry.kind === "alchemyFail" || entry.kind === "forgeFail" || entry.kind === "alchemyStop") panels.markMake("flash-down");
@@ -804,12 +814,20 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     render(state) {
       const arrivedAt = lastState?.travel.targetId && !state.travel.targetId && state.travel.locationId === lastState.travel.targetId
         ? placesAt(state, data).find((place) => place.id === state.travel.locationId)?.name : null;
+      const before = lastState;
       lastState = state;
       overlays.update(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));
       if (state.phase === "rolling") rollView.render(state);
       else renderLife(state);
+      // 死亡與轉世的全螢幕過場；只在狀態剛切換的那一次播，載入與匯入存檔不播
+      const ended = state.phase === "dead" || state.phase === "cleared";
+      if (before?.phase === "living" && ended) {
+        veil.play("death", state.review ? formatReviewSummary(state.review, data) : "此生已了，且入輪迴。", reviewTitle(state.review));
+      } else if ((before?.phase === "dead" || before?.phase === "cleared") && state.phase === "rolling") {
+        veil.play("rebirth", eraTransition(lifeIndex(state), data) || eraBorn(lifeIndex(state), data));
+      }
       if (arrivedAt) {
         noticeText.textContent = `已抵達${arrivedAt}。此處的風物，總算不只在圖上。`;
         noticeGo.hidden = true;

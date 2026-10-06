@@ -8,6 +8,7 @@
   --sunken: #14161a;
   --line: #2f343c;
   --overlay: rgba(0, 0, 0, 0.6);
+  --veil-ink: #0b0d11; /* 全螢幕過場的墨色 */
 
   /* 文字與強調 */
   --text: #d9d6cc;
@@ -68,6 +69,7 @@
   --z-menu: 5;
   --z-modal: 20;
   --z-modal-top: 30;
+  --z-veil: 40;
 }
 
 /* 場景與插圖用色（主畫面的動態場景、事件配圖）：深墨底上的淡彩，依境界換色調。
@@ -86,6 +88,7 @@
   --scene-warm: #c98f4e;
   --scene-ink: #8f9aae;
   --scene-hair: #cfcabb;
+  --veil-ms: 2000ms; /* 全螢幕過場的總長，由 veil.ts 依種類覆寫 */
   --d: 0s; /* 場景粒子的動畫延遲，由各粒子的 style 覆寫 */
 }
 .scene[data-realm="lianqi"], .vignette[data-realm="lianqi"] { --scene-sky-top: #14222a; --scene-sky-bottom: #28434a; --scene-far: #23393f; --scene-mid: #1b2d33; --scene-near: #131f24; }

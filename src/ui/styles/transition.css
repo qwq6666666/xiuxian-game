@@ -1,0 +1,15 @@
+/* 全螢幕過場（ui/veil.ts）：墨色從中心暈開、文字逐字浮現；偏好減少動態時 veil.ts 不會建立它。
+   顏色只取 tokens.css。 */
+.veil { position: fixed; inset: 0; z-index: var(--z-veil); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-4); padding: var(--sp-5); cursor: pointer; text-align: center; background: var(--veil-ink); color: var(--text);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, black 55%, transparent 72%); mask-image: radial-gradient(circle at 50% 50%, black 55%, transparent 72%);
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; -webkit-mask-position: center; mask-position: center;
+  animation: veil-bleed calc(var(--veil-ms) * 0.3) ease-out both, veil-out calc(var(--veil-ms) * 0.2) ease-in calc(var(--veil-ms) * 0.8) forwards; }
+.veil-title { font-size: var(--fs-xl); letter-spacing: 0.3em; color: var(--accent); opacity: 0; animation: veil-char calc(var(--veil-ms) * 0.2) ease-out calc(var(--veil-ms) * 0.15) forwards; }
+.veil-text { margin: 0; max-width: 28em; font-size: var(--fs-lg); line-height: var(--leading); }
+.veil-text span { opacity: 0; animation: veil-char 400ms ease-out forwards; }
+.veil[data-kind="success"] .veil-text { color: var(--accent); }
+.veil[data-kind="fail"] .veil-text { color: var(--bad); }
+.veil[data-kind="death"] .veil-text, .veil[data-kind="rebirth"] .veil-text { color: var(--text); }
+@keyframes veil-bleed { from { -webkit-mask-size: 0% 0%; mask-size: 0% 0%; } to { -webkit-mask-size: 320% 320%; mask-size: 320% 320%; } }
+@keyframes veil-out { to { opacity: 0; } }
+@keyframes veil-char { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
