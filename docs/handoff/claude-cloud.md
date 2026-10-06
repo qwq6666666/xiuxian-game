@@ -3,6 +3,11 @@
 > 雲端工作階段專用，新的一筆寫在最上面；本機的紀錄在 `claude.md`。規則見 `AGENTS.md`「本機與雲端並行」。
 > 雲端只推 `ai/claude-cloud`，由本機整合者合併進 `master`。
 
+### 2026-10-06 設計提案：怪物圖鑑、隔世重逢
+- 分支：master-mxid6d（PR #1）。只改文件：`docs/GDD.md` 新增 16.3（怪物圖鑑）與 16.4（隔世重逢的故人），`docs/TODO.md` 兩條待確認項目。沒動程式與存檔。
+- 驗證：只有文件，未跑測試。
+- 下一步：等使用者確認；兩案共用一次存檔升版（v23），本機動手前先登記並行預約表。16.4 需先開第 15 節例外。
+
 ### 2026-10-06 事件條件 origins／roots 與開場回憶事件（GDD 第 39 節）
 - 分支：master-mxid6d（PR #1）。`EventConditions` 加 `origins`、`roots`（`types.ts`、`core/events.ts`、`data/validate.ts`），新檔 `src/data/events/opening.json`（12 則）並在 `load.ts` 登記；`tests/opening.test.ts`。沒動存檔結構。
 - 驗證：`npm run verify` 全過（569 測試）；`npm run sim -- 300 1 1 simple|mixed` 全 ✓；`300 1 16 simple` 只有「f01 與 f02 都到手」貼邊（空檔對照組在種子 2 也是 ✗，判定為雜訊，換種子 2、3 加入後皆 ✓）。
