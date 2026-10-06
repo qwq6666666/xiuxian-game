@@ -3,6 +3,7 @@ import { msToMonths } from "./core/formulas";
 import { buyItem, renameCharacter, buyTalent, setSchedule, useAll, useItem, zuohua } from "./core/actions";
 import { equip, forge, unequip } from "./core/forge";
 import { focus } from "./core/focus";
+import { huntChoose } from "./core/encounter";
 import { setMethod } from "./core/method";
 import { cancelBrew, startBrew } from "./core/alchemy";
 import { attemptBreakthrough, faceWave } from "./core/breakthrough";
@@ -87,6 +88,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onTravel: (targetId) => update(beginTravel(state, targetId, data)),
   onBuyItem: (id) => update(buyItem(state, id, data)),
   onWave: (choice, focused) => update(faceWave(state, choice, data, focused)),
+  onHunt: (choice) => update(huntChoose(state, choice, data)),
   onFocus: () => update(focus(state, data)),
   onMethod: (id) => update(setMethod(state, id, data)),
   onForge: (id) => update(forge(state, id, data)),
@@ -134,7 +136,7 @@ function frame(now: number): void {
   const dt = now - last;
   last = now;
   // 等待抉擇時時間暫停
-  if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null) {
+  if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null && state.encounter === null) {
     acc += msToMonths(dt, state.speed, data.config.msPerMonth);
     const months = Math.min(Math.floor(acc), data.config.maxCatchUpMonths);
     if (months > 0) {

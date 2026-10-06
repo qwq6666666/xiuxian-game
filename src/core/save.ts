@@ -112,6 +112,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   // v18 沒有心法：補上預設的無相訣（第一個心法）
   // v19 沒有法寶：補上空的裝備欄與帶來的法寶清單
   // v20 沒有運功：補上還沒用過
+  // v21 沒有遇怪：補上未在遇怪的狀態
+  21: (d) => ({ ...d, version: 22, encounter: null }),
   20: (d) => ({ ...d, version: 21, focusMonth: -1 }),
   19: (d) => ({ ...d, version: 20, equipment: { weapon: null, ward: null }, meta: { ...obj(d.meta, "meta"), keptArtifacts: [] } }),
   18: (d, gd) => ({ ...d, version: 19, methodId: gd.methods[0].id }),
@@ -205,6 +207,11 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
   }
   if (eo.sectName !== undefined) entry.sectName = str(eo, "sectName", `${p}.sectName`);
   if (eo.wave !== undefined) entry.wave = num(eo, "wave", { integer: true, min: 1 }, `${p}.wave`);
+  if (eo.monsterId !== undefined) {
+    entry.monsterId = str(eo, "monsterId", `${p}.monsterId`);
+    if (!data.monsters.monsters.some((m) => m.id === entry.monsterId)) fail(`${p}.monsterId`, `找不到怪物 ${entry.monsterId}`);
+  }
+  if (kind.startsWith("hunt") && entry.monsterId === undefined) fail(`${p}.monsterId`, "遇怪日誌必須有 monsterId");
   if (eo.rank !== undefined) entry.rank = num(eo, "rank", { integer: true, min: 0 }, `${p}.rank`);
   if (eo.eraIndex !== undefined) entry.eraIndex = num(eo, "eraIndex", { integer: true, min: 0 }, `${p}.eraIndex`);
   if (kind === "era" && entry.eraIndex === undefined) fail(p, "開場日誌必須有 eraIndex");
@@ -428,6 +435,22 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   } else if (o.tribulation === undefined) {
     fail("tribulation", "不可缺少（沒有天劫時為 null）");
   }
+  let encounter: GameState["encounter"] = null;
+  if (o.encounter !== null && o.encounter !== undefined) {
+    const eo = obj(o.encounter, "encounter");
+    const monsterId = str(eo, "monsterId", "encounter.monsterId");
+    const monster = data.monsters.monsters.find((m) => m.id === monsterId);
+    if (!monster) fail("encounter.monsterId", `找不到怪物 ${monsterId}`);
+    if (monster.realm !== realm.id) fail("encounter.monsterId", `怪物 ${monster.name} 不屬於目前境界 ${realm.name}`);
+    const round = num(eo, "round", { integer: true, min: 0 }, "encounter.round");
+    if (round >= data.monsters.rules.rounds) fail("encounter.round", `必須小於回合數 ${data.monsters.rules.rounds}，目前為 ${round}`);
+    const monsterHp = num(eo, "monsterHp", { min: 0 }, "encounter.monsterHp");
+    const myHp = num(eo, "myHp", { min: 0 }, "encounter.myHp");
+    if (monsterHp > 1 || myHp > 1 || monsterHp === 0 || myHp === 0) fail("encounter", "monsterHp、myHp 必須大於 0 且不超過 1");
+    encounter = { monsterId, round, monsterHp, myHp, seed: num(eo, "seed", { integer: true, min: 0 }, "encounter.seed") };
+  } else if (o.encounter === undefined) {
+    fail("encounter", "不可缺少（沒有遇怪時為 null）");
+  }
   let alchemy: GameState["alchemy"] = null;
   if (o.alchemy !== null && o.alchemy !== undefined) {
     const ao = obj(o.alchemy, "alchemy");
@@ -492,6 +515,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     goalIds,
     startFragments: num(o, "startFragments", { integer: true, min: 0 }),
     tribulation,
+    encounter,
     alchemy,
     methodId,
     focusMonth: num(o, "focusMonth", { integer: true, min: -1 }),

@@ -40,7 +40,7 @@ export function missingTalent(state: GameState, data: GameData = gameData): { id
 
 /** 修行中、卡在瓶頸，有下一個境界可進，且滿足天賦門檻 */
 export function canBreakthrough(state: GameState, data: GameData = gameData): boolean {
-  if (state.phase !== "living" || state.tribulation !== null || !atBottleneck(state, data)) return false;
+  if (state.phase !== "living" || state.tribulation !== null || state.encounter !== null || !atBottleneck(state, data)) return false;
   if (breakthroughRuleOf(state, data) === undefined || nextRealm(realmOf(state, data), data) === undefined) return false;
   return missingTalent(state, data) === null;
 }

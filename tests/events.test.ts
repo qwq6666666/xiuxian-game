@@ -14,12 +14,12 @@ import type { GameState } from "../src/core/state";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import type { Effects, EventDef, GameData } from "../src/data/types";
-import { lianqiNeed, living } from "./helpers";
+import { lianqiNeed, living, noHunt } from "./helpers";
 
 const ev = (id: string): EventDef => gameData.events.find((e) => e.id === id)!;
 
 /** 只含指定事件的資料，讓測試不受其他事件干擾 */
-const withEvents = (events: EventDef[]): GameData => ({ ...gameData, events });
+const withEvents = (events: EventDef[]): GameData => ({ ...noHunt(), events });
 
 function anecdote(id: string, patch: Partial<EventDef> = {}): EventDef {
   return { id, type: "anecdote", title: id, text: "測試。", weight: 10, tone: "neutral", maxPerLife: 1, conditions: {}, ...patch };

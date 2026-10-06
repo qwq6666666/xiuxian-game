@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 21;
+export const SAVE_VERSION = 22;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -109,6 +109,10 @@ export const LOG_KINDS = [
   "alchemyStop",
   "forgeDone",
   "forgeFail",
+  "huntWin",
+  "huntLose",
+  "huntFlee",
+  "huntDraw",
 ] as const;
 export type LogKind = (typeof LOG_KINDS)[number];
 
@@ -155,6 +159,8 @@ export interface LogEntry {
   rank?: number;
   /** 天劫失敗的日誌：止步於第幾道（從 1 起算） */
   wave?: number;
+  /** 歷練遇怪的日誌：怪物 id */
+  monsterId?: string;
 }
 
 /** 天劫進行中的狀態 */
@@ -165,6 +171,15 @@ export interface TribulationState {
   rate: number;
   roll: number;
   threshold: number;
+}
+
+/** 進行中的遇怪（M34）：氣血以 0–1 計；seed 是遇怪開始時抽定的亂數種子，每回合再由它衍生 */
+export interface EncounterState {
+  monsterId: string;
+  round: number;
+  monsterHp: number;
+  myHp: number;
+  seed: number;
 }
 
 /** 進行中的煉丹（M29）：paid 表示這一爐的材料已經投進爐裡，progress 是已煉的月數 */
@@ -232,6 +247,8 @@ export interface GameState {
   startFragments: number;
   /** 進行中的天劫（M28）；時間暫停，等玩家逐道選擇。wave 是下一道的索引（從 0 起算），roll 是開始時抽定的亂數，threshold 是已通過各道的累積成功率 */
   tribulation: TribulationState | null;
+  /** 進行中的歷練遇怪（M34）；時間暫停，等玩家選擇戰或逃 */
+  encounter: EncounterState | null;
   /** 進行中的煉丹（M29）；換了日常安排也保留，換回來就接著煉 */
   alchemy: AlchemyState | null;
   /** 目前所屬宗門（M25）；rank 是位階索引（0 外門），joinedAge 是入宗年齡（月） */

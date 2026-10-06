@@ -86,6 +86,13 @@
 @keyframes sc-pulse { 0% { transform: scale(1); opacity: 1; stroke-width: 2; } 100% { transform: scale(1.6); opacity: 0; } }
 .scene .sc-aura { transform-box: fill-box; transform-origin: center; }
 
+/* 遇怪：雙方氣血條 */
+.hunt-bars { display: flex; flex-direction: column; gap: 6px; margin: var(--sp-2) 0; }
+.hunt-bar { display: grid; grid-template-columns: 4.5em 1fr; align-items: center; gap: var(--sp-2); font-size: 0.9rem; }
+.hunt-bar i { display: block; height: 8px; border-radius: 4px; background: var(--sunken); overflow: hidden; }
+.hunt-bar b { display: block; height: 100%; background: var(--warn); transition: width var(--dur-base) var(--ease); }
+.hunt-bar.me b { background: var(--good); }
+
 /* 天劫光圈：外圈收攏到靶圈時（約一輪的一半到八成）選擇，算凝神 */
 .trib-ring { position: relative; width: 84px; height: 84px; margin: var(--sp-2) auto; }
 .trib-ring span { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); }

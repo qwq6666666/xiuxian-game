@@ -238,6 +238,17 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
       template = pickBy(tier, months) + (tail.length > 0 ? pickBy(tail, months) : "");
       break;
     }
+    case "huntWin":
+    case "huntLose":
+    case "huntFlee":
+    case "huntDraw": {
+      const monster = data.monsters.monsters.find((m) => m.id === entry.monsterId);
+      if (!monster) throw new Error(`日誌：找不到怪物 ${entry.monsterId}`);
+      const t = data.monsters.rules.text;
+      const line = entry.kind === "huntWin" ? monster.win : entry.kind === "huntLose" ? t.lose : entry.kind === "huntDraw" ? t.draw : entry.outcome === 1 ? t.fleeFail : t.fleeOk;
+      template = line.replace("{monster}", monster.name);
+      break;
+    }
     case "era":
       template = pickBy(data.text.era.opening, entry.eraIndex ?? 0);
       break;

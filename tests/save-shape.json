@@ -1,5 +1,5 @@
 {
-  "version": 21,
+  "version": 22,
   "shape": {
     "TravelState": [
       "locationId",
@@ -61,6 +61,7 @@
       "eventId",
       "itemId",
       "kind",
+      "monsterId",
       "month",
       "outcome",
       "rank",
@@ -77,6 +78,13 @@
       "threshold",
       "wave",
       "waves"
+    ],
+    "EncounterState": [
+      "monsterHp",
+      "monsterId",
+      "myHp",
+      "round",
+      "seed"
     ],
     "AlchemyState": [
       "paid",
@@ -98,6 +106,7 @@
       "carriedStones",
       "cultivation",
       "cultivationBonus",
+      "encounter",
       "equipment",
       "eventClock",
       "eventCounts",

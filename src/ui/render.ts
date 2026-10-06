@@ -26,7 +26,8 @@ import { statPanel } from "./statinfo";
 import { canFocus, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { icon, itemIcon, scheduleIcon } from "./icons";
-import { vignetteHtml } from "./vignette";
+import { huntVignetteHtml, vignetteHtml } from "./vignette";
+import { canHunt, fleeChance, actionHit, monsterOf, powerRatio, type HuntChoice, huntTalisman } from "../core/encounter";
 import { methodRows } from "./methodinfo";
 import { alchemyPanel } from "./alchemyinfo";
 import { attributeGuide, recommendTalent, talentPreview, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
@@ -74,6 +75,7 @@ export interface UiHandlers {
   onZuohua(): void;
   onTravel(targetId: string): void;
   onWave(choice: WaveChoice, focused: boolean): void;
+  onHunt(choice: HuntChoice): void;
   onFocus(): void;
   onMethod(methodId: string): void;
   onForge(recipeId: string): void;
@@ -649,6 +651,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     tribText: HTMLElement;
     tribInfo: HTMLElement;
     tribChoices: HTMLElement;
+    huntModal: HTMLElement;
+    huntArt: HTMLElement;
+    huntTitle: HTMLElement;
+    huntText: HTMLElement;
+    huntBars: HTMLElement;
+    huntInfo: HTMLElement;
+    huntChoices: HTMLElement;
     eventTitle: HTMLElement;
     eventText: HTMLElement;
     eventHistory: HTMLElement;
@@ -750,12 +759,23 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           <div id="tribChoices" class="choices"></div>
         </div>
       </div>
+      <div class="modal" id="huntModal" role="dialog" aria-modal="true" aria-labelledby="huntTitle" hidden>
+        <div class="card event">
+          <div id="huntArt"></div>
+          <h2 id="huntTitle"></h2>
+          <p id="huntText"></p>
+          <div id="huntBars" class="hunt-bars"></div>
+          <p id="huntInfo" class="desc"></p>
+          <div id="huntChoices" class="choices"></div>
+        </div>
+      </div>
       <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="一生回顧" hidden>
         <div class="card review life-review-card"><div id="modalBody"></div></div>
       </div>`;
     const q = <T extends HTMLElement>(sel: string) => stageEl.querySelector<T>(sel)!;
     watchModal(q("#eventModal"));
     watchModal(q("#tribModal"));
+    watchModal(q("#huntModal"));
     watchModal(q("#modal"));
 
     const schedBox = q("#schedules");
@@ -807,6 +827,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       tribText: q("#tribText"),
       tribInfo: q("#tribInfo"),
       tribChoices: q("#tribChoices"),
+      huntModal: q("#huntModal"),
+      huntArt: q("#huntArt"),
+      huntTitle: q("#huntTitle"),
+      huntText: q("#huntText"),
+      huntBars: q("#huntBars"),
+      huntInfo: q("#huntInfo"),
+      huntChoices: q("#huntChoices"),
       eventTitle: q("#eventTitle"),
       eventText: q("#eventText"),
       eventHistory: q("#eventHistory"),
@@ -1025,6 +1052,46 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       b.disabled = !canChooseWave(state, r.choice, data);
       b.addEventListener("click", () => handlers.onWave(r.choice, ringHit()));
       e.tribChoices.append(b);
+    }
+  }
+
+  /** 遇怪視窗：時間暫停，選穩打、強攻、符籙或逃。內容沒變就不重畫 */
+  let huntKey = "";
+  function renderHunt(state: GameState, e: LifeEls): void {
+    const h = state.encounter;
+    const talisman = huntTalisman(data);
+    const have = talisman ? (state.items[talisman] ?? 0) : 0;
+    const key = h ? JSON.stringify([h, have, state.realmId, state.stage, state.attributes]) : "";
+    if (key === huntKey) return;
+    huntKey = key;
+    e.huntModal.hidden = h === null;
+    e.huntChoices.replaceChildren();
+    if (!h) return;
+    const rules = data.monsters.rules;
+    const m = monsterOf(h.monsterId, data);
+    const ratio = powerRatio(state, m, data);
+    e.huntArt.innerHTML = huntVignetteHtml(m.id, state.realmId);
+    e.huntTitle.textContent = `遭遇${m.name}`;
+    e.huntText.textContent = m.appear;
+    const bar = (label: string, hp: number, cls: string): string =>
+      `<div class="hunt-bar ${cls}"><span>${label}</span><i><b style="width:${Math.max(0, Math.round(hp * 100))}%"></b></i></div>`;
+    e.huntBars.innerHTML = bar(m.name, h.monsterHp, "foe") + bar("你", h.myHp, "me");
+    const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";
+    e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・勝了有修為與靈石，打不贏可以逃。`;
+    const pct = (v: number): string => `${Math.round(v * 100)}%`;
+    const rows: { choice: HuntChoice; name: string; note: string }[] = [
+      { choice: "steady", name: rules.actions.steady.name, note: `命中約 ${pct(actionHit(state, "steady", data))}・傷己較輕` },
+      { choice: "fierce", name: rules.actions.fierce.name, note: `命中約 ${pct(actionHit(state, "fierce", data))}・傷勢更重` },
+      { choice: "ward", name: `祭出${talisman ? itemName(talisman) : "符籙"}`, note: have > 0 ? `必中・傷己最輕・持有 ${have}` : "沒有符籙，坊市可買" },
+      { choice: "flee", name: "逃", note: `成功約 ${pct(fleeChance(state, data))}・失敗損 ${Math.round(rules.flee.failLoss * 100)}% 修為` },
+    ];
+    for (const r of rows) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = `<strong>${r.name}</strong><small>${r.note}</small>`;
+      b.disabled = !canHunt(state, r.choice, data);
+      b.addEventListener("click", () => handlers.onHunt(r.choice));
+      e.huntChoices.append(b);
     }
   }
 
@@ -1325,6 +1392,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     renderSect(state, e);
     renderAlchemy(state, e);
     renderTribulation(state, e);
+    renderHunt(state, e);
     e.zuohuaBox.hidden = !canZuohua(state, data);
     if (!e.zuohuaBox.hidden) {
       e.zuohuaInfo.textContent = `把剩餘壽元一次坐完，結束這一世，額外換得道韻 +${zuohuaDaoYun(state, data)}。已達階段的道韻照常結算。`;

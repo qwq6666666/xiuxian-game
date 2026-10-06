@@ -30,7 +30,7 @@ export function forgeRecipes(data: GameData = gameData): RecipeDef[] {
 /** 能煉：修行中、境界與材料與靈石都夠 */
 export function canForge(state: GameState, recipeId: string, data: GameData = gameData): boolean {
   const r = data.recipes.recipes.find((x) => x.id === recipeId);
-  if (!r || r.kind !== "forge" || state.phase !== "living" || state.tribulation !== null) return false;
+  if (!r || r.kind !== "forge" || state.phase !== "living" || state.tribulation !== null || state.encounter !== null) return false;
   return recipeOpen(state, r, data) && hasMaterials(state, r) && state.spiritStones >= r.stones;
 }
 

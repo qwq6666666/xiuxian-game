@@ -14,6 +14,9 @@ export function living(seed = 1, patch: Partial<GameState> = {}): GameState {
   return { ...startLife(createInitialState(seed)), eventThreshold: 1e9, ...patch };
 }
 
+/** 關掉歷練遇怪的資料：測歷練的其他收益、事件頻率時，不讓遇怪暫停時間 */
+export const noHunt = (data = gameData): typeof gameData => ({ ...data, monsters: { ...data.monsters, rules: { ...data.monsters.rules, chance: 0 } } });
+
 /** 練氣第 stage 階段（從 0 起算）升級所需修為，隨資料檔變動 */
 export const lianqiNeed = (stage: number): number =>
   stageNeed(gameData.realms.find((r) => r.id === "lianqi")!, stage);

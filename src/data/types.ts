@@ -496,6 +496,65 @@ export interface MapBlurbs {
   mountain: string;
 }
 
+/** 歷練遇怪（M34）：怪物與戰鬥規則 */
+export type HuntAction = "steady" | "fierce" | "ward";
+export const HUNT_ACTIONS: readonly HuntAction[] = ["steady", "fierce", "ward"];
+
+export interface MonsterDef {
+  id: string;
+  name: string;
+  /** 出沒的境界 id */
+  realm: string;
+  /** 相對於該境界基準戰力的倍數 */
+  power: number;
+  /** 勝利得到的修為，單位為「閉關一個月的修為」 */
+  reward: number;
+  stones: { min: number; max: number };
+  drops: { itemId: string; chance: number }[];
+  appear: string;
+  win: string;
+}
+
+export interface HuntActionDef {
+  name: string;
+  /** 基礎命中率 */
+  hit: number;
+  /** 命中時對怪物造成的氣血比例（怪物氣血為 1） */
+  dmg: number;
+  /** 每回合怪物反擊對玩家造成的氣血比例（玩家氣血為 1） */
+  taken: number;
+}
+
+export interface HuntRules {
+  /** 會遇怪的日常安排 id */
+  schedule: string;
+  /** 外出歷練時每月遇怪的機率 */
+  chance: number;
+  /** 最多幾回合，打不死怪物就算平手 */
+  rounds: number;
+  realmPower: Record<string, number>;
+  /** 每個小階段加成的戰力比例 */
+  stagePower: number;
+  /** 根骨每高於 5 一點加成的戰力比例 */
+  bonePower: number;
+  /** 戰力比每高於 1，命中率增加多少 */
+  ratioHit: number;
+  /** 傷害的隨機浮動幅度 */
+  variance: number;
+  /** 敗北損失目前修為的比例 */
+  lossFrac: number;
+  flee: { base: number; perRatio: number; perFortune: number; min: number; max: number; failLoss: number };
+  /** 自動抉擇時，戰力比低於這個值就逃，否則穩打 */
+  autoMinRatio: number;
+  actions: Record<HuntAction, HuntActionDef>;
+  text: { lose: string; fleeOk: string; fleeFail: string; draw: string };
+}
+
+export interface MonstersData {
+  rules: HuntRules;
+  monsters: MonsterDef[];
+}
+
 /** 天劫的數值與文字（M28） */
 export interface TribulationData {
   /** 運功護體：成功率 + 心性 × perMind（上限 max），這一道失敗時額外損失 extraLoss 的修為 */
@@ -630,6 +689,7 @@ export interface GameData {
   schedules: ScheduleDef[];
   items: ItemDef[];
   recipes: RecipesData;
+  monsters: MonstersData;
   methods: MethodDef[];
   events: EventDef[];
   talents: TalentDef[];

@@ -38,6 +38,12 @@ import {
   ARTIFACT_SLOTS,
   type ArtifactSlot,
   type MethodDef,
+  HUNT_ACTIONS,
+  type HuntAction,
+  type HuntActionDef,
+  type HuntRules,
+  type MonsterDef,
+  type MonstersData,
   type RecipeDef,
   type RecipesData,
   type OriginDef,
@@ -869,6 +875,86 @@ export function validateSects(raw: unknown, file = "sects.json"): SectsData {
     discount: { itemIds: strList(d, "itemIds", `${file} 欄位 discount`), mult: num(d, "mult", `${file} 欄位 discount`, { gt: 0, max: 1 }) },
     dutySchedule: str(o, "dutySchedule", file),
   };
+}
+
+/** 歷練遇怪的規則與怪物（monsters.json） */
+export function validateMonsters(raw: unknown, realmIds: string[], itemIds: string[], file = "monsters.json"): MonstersData {
+  const o = obj(raw, file);
+  const rw = `${file} 欄位 rules`;
+  const r = obj(o.rules, rw);
+  const power = obj(r.realmPower, `${rw}.realmPower`);
+  const realmPower: Record<string, number> = {};
+  for (const id of realmIds) realmPower[id] = num(power, id, `${rw}.realmPower`, { gt: 0 });
+  const fw = `${rw}.flee`;
+  const f = obj(r.flee, fw);
+  const aw = `${rw}.actions`;
+  const a = obj(r.actions, aw);
+  const actions = {} as Record<HuntAction, HuntActionDef>;
+  for (const key of HUNT_ACTIONS) {
+    const w = `${aw}.${key}`;
+    const ao = obj(a[key], w);
+    actions[key] = { name: str(ao, "name", w), hit: num(ao, "hit", w, { gt: 0, max: 1 }), dmg: num(ao, "dmg", w, { gt: 0, max: 1 }), taken: num(ao, "taken", w, { min: 0, max: 1 }) };
+  }
+  const tw = `${rw}.text`;
+  const t = obj(r.text, tw);
+  const text = { lose: str(t, "lose", tw), fleeOk: str(t, "fleeOk", tw), fleeFail: str(t, "fleeFail", tw), draw: str(t, "draw", tw) };
+  for (const [k, v] of Object.entries(text)) if (!v.includes("{monster}")) fail(tw, k, "必須含 {monster}");
+  const rules: HuntRules = {
+    schedule: str(r, "schedule", rw),
+    chance: num(r, "chance", rw, { min: 0, max: 1 }),
+    rounds: num(r, "rounds", rw, { min: 1, max: 6, integer: true }),
+    realmPower,
+    stagePower: num(r, "stagePower", rw, { min: 0, max: 0.3 }),
+    bonePower: num(r, "bonePower", rw, { min: 0, max: 0.2 }),
+    ratioHit: num(r, "ratioHit", rw, { min: 0, max: 1 }),
+    variance: num(r, "variance", rw, { min: 0, max: 0.5 }),
+    lossFrac: num(r, "lossFrac", rw, { min: 0, max: 0.5 }),
+    flee: {
+      base: num(f, "base", fw, { min: 0, max: 1 }),
+      perRatio: num(f, "perRatio", fw, { min: 0, max: 1 }),
+      perFortune: num(f, "perFortune", fw, { min: 0, max: 0.2 }),
+      min: num(f, "min", fw, { min: 0, max: 1 }),
+      max: num(f, "max", fw, { min: 0, max: 1 }),
+      failLoss: num(f, "failLoss", fw, { min: 0, max: 0.5 }),
+    },
+    autoMinRatio: num(r, "autoMinRatio", rw, { min: 0 }),
+    actions,
+    text,
+  };
+  if (rules.flee.min > rules.flee.max) fail(fw, "min", "不可大於 max");
+  const monsters = list(o.monsters, `${file} 欄位 monsters`).map((raw, i): MonsterDef => {
+    const where = `${file} 第 ${i + 1} 筆`;
+    const m = obj(raw, where);
+    const id = str(m, "id", where);
+    const w = `${file} 第 ${i + 1} 筆（${id}）`;
+    const realm = str(m, "realm", w);
+    if (!realmIds.includes(realm)) fail(w, "realm", `找不到境界 ${realm}`);
+    const sw = `${w}.stones`;
+    const so = obj(m.stones, sw);
+    const stones = { min: num(so, "min", sw, { min: 0, integer: true }), max: num(so, "max", sw, { min: 0, integer: true }) };
+    if (stones.min > stones.max) fail(sw, "min", "不可大於 max");
+    if (!Array.isArray(m.drops)) fail(w, "drops", "必須是陣列（可為空）");
+    const drops = (m.drops as unknown[]).map((d, j) => {
+      const dw = `${w}.drops[${j}]`;
+      const dobj = obj(d, dw);
+      const itemId = str(dobj, "itemId", dw);
+      if (!itemIds.includes(itemId)) fail(dw, "itemId", `找不到物品 ${itemId}`);
+      return { itemId, chance: num(dobj, "chance", dw, { gt: 0, max: 1 }) };
+    });
+    return {
+      id,
+      name: str(m, "name", w),
+      realm,
+      power: num(m, "power", w, { gt: 0, max: 3 }),
+      reward: num(m, "reward", w, { gt: 0, max: 10 }),
+      stones,
+      drops,
+      appear: str(m, "appear", w),
+      win: str(m, "win", w),
+    };
+  });
+  uniqueIds(monsters, file);
+  return { rules, monsters };
 }
 
 /** 天劫數值與劫波文字（tribulation.json） */

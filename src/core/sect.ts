@@ -53,7 +53,7 @@ export function joinRate(state: GameState, sect: WorldSect, data: GameData = gam
 
 /** 現在能不能向所在山門求入宗 */
 export function canJoinSect(state: GameState, data: GameData = gameData): boolean {
-  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.sect !== null) return false;
+  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null || state.sect !== null) return false;
   const sect = localSect(state, data);
   if (!sect || !isOpen(sect) || state.sectsTried.includes(sect.id)) return false;
   return realmReached(state, data.sects.join.minRealm, data.sects.join.minStage, data);
@@ -101,7 +101,7 @@ export function nextRank(state: GameState, data: GameData = gameData): { index: 
 }
 
 export function canPromoteSect(state: GameState, data: GameData = gameData): boolean {
-  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.sect === null) return false;
+  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null || state.sect === null) return false;
   const next = nextRank(state, data);
   if (!next?.def.promote) return false;
   return state.sect.contribution >= next.def.promote.contribution && realmReached(state, next.def.promote.realm, 0, data);
