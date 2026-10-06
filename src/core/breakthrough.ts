@@ -29,7 +29,7 @@ export function missingTalent(state: GameState, data: GameData = gameData): { id
 
 /** 修行中、卡在瓶頸，有下一個境界可進，且滿足天賦門檻 */
 export function canBreakthrough(state: GameState, data: GameData = gameData): boolean {
-  if (state.phase !== "living" || !atBottleneck(state, data)) return false;
+  if (state.phase !== "living" || state.tribulation !== null || !atBottleneck(state, data)) return false;
   if (breakthroughRuleOf(state, data) === undefined || nextRealm(realmOf(state, data), data) === undefined) return false;
   return missingTalent(state, data) === null;
 }
@@ -47,14 +47,38 @@ export function currentBreakthroughRate(state: GameState, usePill: boolean, data
   return breakthroughRate(rule, state.attributes.insight, usePill && pillAvailable(state, data), state.meta.talents);
 }
 
+/** 成功進入下一境界：依該境界的 endsLife 決定是否結束這一世 */
+function succeed(s: GameState, data: GameData): GameState {
+  const next = nextRealm(realmOf(s, data), data)!;
+  const won = addLog(
+    { ...s, tribulation: null, realmId: next.id, stage: 0, cultivation: 0, breakthroughs: s.breakthroughs + 1 },
+    { month: s.ageMonths, kind: "breakthroughSuccess", realmId: next.id, stage: 0 },
+    data.config.logLimit,
+  );
+  if (next.endsLife === "never") return won;
+  if (endsLifeOnEntry(next, s)) return endLife(won, next.ending, data);
+  // 紀錄過的存檔：記一次通關或元嬰，這一世繼續
+  return applyEndingAndContinue(won, next.ending);
+}
+
+/** 突破失敗：損失部分修為（可再試）。wave 是天劫止步的那一道（從 1 起算），extraLoss 是額外損失的比例 */
+function fail(s: GameState, data: GameData, wave?: number, extraLoss = 0): GameState {
+  const loss = Math.min(1, currentFailLoss(s, data) + extraLoss);
+  return addLog(
+    { ...s, tribulation: null, cultivation: s.cultivation * (1 - loss) },
+    { month: s.ageMonths, kind: "breakthroughFail", realmId: s.realmId, stage: s.stage, ...(wave !== undefined ? { wave } : {}) },
+    data.config.logLimit,
+  );
+}
+
 /**
- * 嘗試突破。成功進入下一境界（依該境界的 endsLife 決定是否通關結束這一世）；
- * 失敗損失部分修為，可再試。丹藥在嘗試時就消耗，成敗皆然。
+ * 嘗試突破。丹藥在嘗試時就消耗，成敗皆然，並抽一次亂數。
+ * 沒有天劫的突破立刻出結果；有天劫的突破進入天劫（時間暫停，逐道選擇），整體成功率與一鍵突破相同。
+ * 自動抉擇開啟時，天劫每一道都硬抗，結果與一鍵突破完全一致。
  */
 export function attemptBreakthrough(state: GameState, usePill: boolean, data: GameData = gameData): GameState {
   if (!canBreakthrough(state, data)) return state;
   const realm = realmOf(state, data);
-  const next = nextRealm(realm, data)!;
   const rule = realm.breakthroughRule!;
   const pill = usePill && pillAvailable(state, data);
   const rate = breakthroughRate(rule, state.attributes.insight, pill, state.meta.talents);
@@ -65,23 +89,77 @@ export function attemptBreakthrough(state: GameState, usePill: boolean, data: Ga
   }
   const [v, seed] = nextRandom(s.rngSeed);
   s = { ...s, rngSeed: seed };
-  const limit = data.config.logLimit;
 
-  if (v < rate) {
-    const won = addLog(
-      { ...s, realmId: next.id, stage: 0, cultivation: 0, breakthroughs: s.breakthroughs + 1 },
-      { month: s.ageMonths, kind: "breakthroughSuccess", realmId: next.id, stage: 0 },
-      limit,
-    );
-    if (next.endsLife === "never") return won;
-    if (endsLifeOnEntry(next, state)) return endLife(won, next.ending, data);
-    // 紀錄過的存檔：記一次通關或元嬰，這一世繼續
-    return applyEndingAndContinue(won, next.ending);
+  if (rule.tribulation) {
+    const begun: GameState = { ...s, tribulation: { waves: rule.tribulation.waves, wave: 0, rate, roll: v, threshold: 1 } };
+    return state.autoChoice ? autoTribulation(begun, data) : begun;
   }
-  const loss = currentFailLoss(s, data);
-  return addLog(
-    { ...s, cultivation: s.cultivation * (1 - loss) },
-    { month: s.ageMonths, kind: "breakthroughFail", realmId: s.realmId, stage: s.stage },
-    limit,
-  );
+  return v < rate ? succeed(s, data) : fail(s, data);
+}
+
+// ---- 天劫（M28）----
+
+export type WaveChoice = "brace" | "guard" | "ward";
+export const WAVE_CHOICES: readonly WaveChoice[] = ["brace", "guard", "ward"];
+
+/** 避雷符：資料裡第一個 tribulationWard 效果的物品 */
+export function wardItem(data: GameData = gameData): { id: string; bonus: number } | null {
+  for (const item of data.items) if (item.effect.kind === "tribulationWard") return { id: item.id, bonus: item.effect.bonus };
+  return null;
+}
+
+/** 不做準備時每一道的成功率：各道連乘等於整體成功率 */
+export function waveBaseChance(state: GameState): number {
+  const t = state.tribulation;
+  return t ? t.rate ** (1 / t.waves) : 0;
+}
+
+/** 這一道選擇該方式的成功率；符籙不夠或不在天劫中為 0 */
+export function waveChance(state: GameState, choice: WaveChoice, data: GameData = gameData): number {
+  if (!state.tribulation) return 0;
+  const base = waveBaseChance(state);
+  const cap = data.tribulation.maxChance;
+  if (choice === "brace") return base;
+  if (choice === "guard") {
+    const g = data.tribulation.guard;
+    return Math.max(base, Math.min(cap, base + Math.min(g.max, state.attributes.mind * g.perMind)));
+  }
+  const ward = wardItem(data);
+  if (!ward || (state.items[ward.id] ?? 0) <= 0) return 0;
+  return Math.max(base, Math.min(cap, base + ward.bonus));
+}
+
+export function canChooseWave(state: GameState, choice: WaveChoice, data: GameData = gameData): boolean {
+  return state.tribulation !== null && state.phase === "living" && (choice !== "ward" || waveChance(state, "ward", data) > 0);
+}
+
+/** 目前這一道的劫波意象（依道數循環） */
+export function waveImage(state: GameState, data: GameData = gameData) {
+  const images = data.tribulation.images;
+  return images[(state.tribulation?.wave ?? 0) % images.length];
+}
+
+/**
+ * 面對這一道劫波：用累積門檻判定，不再抽亂數（亂數在天劫開始時抽定）。
+ * 通過最後一道即突破成功；任何一道失敗即突破失敗（不致死）。
+ */
+export function faceWave(state: GameState, choice: WaveChoice, data: GameData = gameData): GameState {
+  const t = state.tribulation;
+  if (!t || !canChooseWave(state, choice, data)) return state;
+  const threshold = t.threshold * waveChance(state, choice, data);
+  let s = state;
+  if (choice === "ward") {
+    const ward = wardItem(data)!;
+    s = { ...s, items: { ...s.items, [ward.id]: s.items[ward.id] - 1 } };
+  }
+  if (t.roll >= threshold) return fail(s, data, t.wave + 1, choice === "guard" ? data.tribulation.guard.extraLoss : 0);
+  if (t.wave + 1 >= t.waves) return succeed(s, data);
+  return { ...s, tribulation: { ...t, wave: t.wave + 1, threshold } };
+}
+
+/** 每一道都硬抗直到結束（自動抉擇與模擬用） */
+export function autoTribulation(state: GameState, data: GameData = gameData): GameState {
+  let s = state;
+  while (s.tribulation !== null) s = faceWave(s, "brace", data);
+  return s;
 }

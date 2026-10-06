@@ -1,7 +1,7 @@
 import "./ui/style.css";
 import { msToMonths } from "./core/formulas";
 import { buyItem, renameCharacter, buyTalent, setSchedule, useItem, zuohua } from "./core/actions";
-import { attemptBreakthrough } from "./core/breakthrough";
+import { attemptBreakthrough, faceWave } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
 import { applyOffline } from "./core/offline";
 import { createInitialState, newLife, reroll, startLife } from "./core/life";
@@ -81,6 +81,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onZuohua: () => update(zuohua(state, data)),
   onTravel: (targetId) => update(beginTravel(state, targetId, data)),
   onBuyItem: (id) => update(buyItem(state, id, data)),
+  onWave: (choice) => update(faceWave(state, choice, data)),
   onJoinSect: () => update(joinSect(state, data)),
   onLeaveSect: () => update(leaveSect(state, data)),
   onPromoteSect: () => update(promoteSect(state, data)),
@@ -121,7 +122,7 @@ function frame(now: number): void {
   const dt = now - last;
   last = now;
   // 等待抉擇時時間暫停
-  if (state.phase === "living" && state.pendingEvent === null) {
+  if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null) {
     acc += msToMonths(dt, state.speed, data.config.msPerMonth);
     const months = Math.min(Math.floor(acc), data.config.maxCatchUpMonths);
     if (months > 0) {

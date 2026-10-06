@@ -29,7 +29,11 @@
     "need": { "base": 6000, "growth": 1.8 },
     "breakthrough": "manual",
     "daoYun": 50,
-    "breakthroughRule": { "baseRate": 0.15, "insightBonus": 0.02 }
+    "breakthroughRule": {
+      "tribulation": { "waves": 3 },
+      "baseRate": 0.15,
+      "insightBonus": 0.02
+    }
   },
   {
     "id": "jindan",
@@ -43,6 +47,7 @@
     "daoYun": 250,
     "zuohua": { "daoYunPerYear": 0.15 },
     "breakthroughRule": {
+      "tribulation": { "waves": 5 },
       "baseRate": 0.05,
       "insightBonus": 0.02,
       "requiresTalent": { "id": "shenguang", "level": 4 },
@@ -62,6 +67,7 @@
     "daoYun": 800,
     "zuohua": { "daoYunPerYear": 0.3 },
     "breakthroughRule": {
+      "tribulation": { "waves": 7 },
       "baseRate": 0.06,
       "insightBonus": 0.015,
       "requiresTalent": { "id": "ningshen", "level": 4 },

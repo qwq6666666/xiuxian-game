@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attemptBreakthrough, canBreakthrough } from "../src/core/breakthrough";
+import { canBreakthrough } from "../src/core/breakthrough";
 import { stageNeed } from "../src/core/formulas";
 import { emptyMeta } from "../src/core/state";
 import { CLEARED_FLAG, endsLifeOnEntry, totalClears } from "../src/core/review";
@@ -7,7 +7,7 @@ import { applyOffline } from "../src/core/offline";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { validateRealms } from "../src/data/validate";
-import { living, seedWhere } from "./helpers";
+import { living, seedWhere, attemptBreakthrough } from "./helpers";
 
 const jindan = gameData.realms.find((r) => r.id === "jindan")!;
 const zhujiCap = (patch = {}) =>

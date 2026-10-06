@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chooseEvent } from "../src/core/events";
-import { attemptBreakthrough } from "../src/core/breakthrough";
+
 import { setSchedule } from "../src/core/actions";
 import { endLife, highlightScore, pickClosing, selectHighlights, settleDaoYun } from "../src/core/review";
 import { emptyMeta, type GameState, type LogEntry } from "../src/core/state";
@@ -8,7 +8,7 @@ import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import type { EventDef, GameData } from "../src/data/types";
 import { formatReviewSummary, reviewTitle } from "../src/ui/format";
-import { living } from "./helpers";
+import { living, attemptBreakthrough } from "./helpers";
 
 // 各境界每階段的道韻，隨資料檔變動
 const dy = (id: string): number => gameData.realms.find((r) => r.id === id)!.daoYun;

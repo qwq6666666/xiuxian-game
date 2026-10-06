@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { attemptBreakthrough } from "../src/core/breakthrough";
+
 import { stageNeed } from "../src/core/formulas";
 import { applyClear, withFastest, YUANYING_FLAG } from "../src/core/review";
 import { deserialize, serialize } from "../src/core/save";
 import { emptyMeta } from "../src/core/state";
 import { gameData } from "../src/data/load";
 import { collectionSummary } from "../src/ui/format";
-import { living, seedWhere } from "./helpers";
+import { living, seedWhere, attemptBreakthrough } from "./helpers";
 
 describe("各出身最快達成年齡", () => {
   it("沒有紀錄或這次更快才更新；更慢不動", () => {

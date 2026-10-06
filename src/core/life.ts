@@ -92,6 +92,7 @@ export function createInitialState(
       breakthroughs: 0,
       goalIds: [],
       startFragments: meta.fragments.length,
+      tribulation: null,
       sect: null,
       sectsTried: [],
       sectPeak: 0,

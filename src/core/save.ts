@@ -105,6 +105,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   13: (d) => ({ ...d, version: 14, meta: { ...obj(d.meta, "meta"), huashen: {} } }),
   // v14 沒有宗門：補上未入宗的狀態，跨世與回顧補上最高位階 0
   // v15 沒有最快年齡：舊存檔沒記下過去的年齡，無從回推，補上空的紀錄
+  // v16 沒有天劫：補上未在天劫中的狀態
+  16: (d) => ({ ...d, version: 17, tribulation: null }),
   15: (d) => ({ ...d, version: 16, meta: { ...obj(d.meta, "meta"), fastest: {} } }),
   14: (d) => ({
     ...d,
@@ -194,6 +196,7 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
     entry.stop = stop as OfflineStop;
   }
   if (eo.sectName !== undefined) entry.sectName = str(eo, "sectName", `${p}.sectName`);
+  if (eo.wave !== undefined) entry.wave = num(eo, "wave", { integer: true, min: 1 }, `${p}.wave`);
   if (eo.rank !== undefined) entry.rank = num(eo, "rank", { integer: true, min: 0 }, `${p}.rank`);
   if (eo.eraIndex !== undefined) entry.eraIndex = num(eo, "eraIndex", { integer: true, min: 0 }, `${p}.eraIndex`);
   if (kind === "era" && entry.eraIndex === undefined) fail(p, "開場日誌必須有 eraIndex");
@@ -391,6 +394,21 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     fail("travel.trail", "必須是非空的地點 id 陣列");
   }
 
+  let tribulation: GameState["tribulation"] = null;
+  if (o.tribulation !== null && o.tribulation !== undefined) {
+    const to = obj(o.tribulation, "tribulation");
+    const waves = num(to, "waves", { integer: true, min: 2 }, "tribulation.waves");
+    const wave = num(to, "wave", { integer: true, min: 0 }, "tribulation.wave");
+    if (wave >= waves) fail("tribulation.wave", `必須小於總道數 ${waves}，目前為 ${wave}`);
+    const rate = num(to, "rate", { min: 0 }, "tribulation.rate");
+    const roll = num(to, "roll", { min: 0 }, "tribulation.roll");
+    const threshold = num(to, "threshold", { min: 0 }, "tribulation.threshold");
+    if (rate > 1 || roll >= 1 || threshold > 1) fail("tribulation", "rate、threshold 必須介於 0 與 1，roll 必須小於 1");
+    if (realm.breakthroughRule?.tribulation?.waves !== waves) fail("tribulation.waves", `與目前境界 ${realm.name} 的天劫道數不符`);
+    tribulation = { waves, wave, rate, roll, threshold };
+  } else if (o.tribulation === undefined) {
+    fail("tribulation", "不可缺少（沒有天劫時為 null）");
+  }
   const sectRaw = o.sect === null ? null : obj(o.sect, "sect");
   if (sectRaw !== null) {
     const sid = str(sectRaw, "id", "sect.id");
@@ -429,6 +447,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     breakthroughs: num(o, "breakthroughs", { integer: true, min: 0 }),
     goalIds,
     startFragments: num(o, "startFragments", { integer: true, min: 0 }),
+    tribulation,
     sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
     sectsTried: o.sectsTried as string[],
     sectPeak: num(o, "sectPeak", { integer: true, min: 0 }),

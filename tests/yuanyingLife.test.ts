@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attemptBreakthrough } from "../src/core/breakthrough";
+
 import { stageNeed } from "../src/core/formulas";
 import { applyEndingAndContinue, CLEARED_FLAG, endsLifeOnEntry, totalYuanying, YUANYING_FLAG } from "../src/core/review";
 import { deserialize, serialize } from "../src/core/save";
@@ -7,7 +7,7 @@ import { emptyMeta } from "../src/core/state";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { validateRealms } from "../src/data/validate";
-import { living, seedWhere } from "./helpers";
+import { living, seedWhere, attemptBreakthrough } from "./helpers";
 
 const jindan = gameData.realms.find((r) => r.id === "jindan")!;
 const yuanying = gameData.realms.find((r) => r.id === "yuanying")!;

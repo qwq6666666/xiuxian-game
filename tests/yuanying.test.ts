@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buyTalent, canBuyTalent } from "../src/core/actions";
-import {
-  attemptBreakthrough,
-  canBreakthrough,
-  currentBreakthroughRate,
-  missingTalent,
-} from "../src/core/breakthrough";
+import { canBreakthrough, currentBreakthroughRate, missingTalent } from "../src/core/breakthrough";
 import { breakthroughRate, stageNeed, talentCost } from "../src/core/formulas";
 import { newLife } from "../src/core/life";
 import { CLEARED_FLAG, endLife } from "../src/core/review";
@@ -14,7 +9,7 @@ import { emptyMeta, SAVE_VERSION } from "../src/core/state";
 import { gameData } from "../src/data/load";
 import { validateGameData, validateRealms, validateTalents, validateText } from "../src/data/validate";
 import { collectionSummary, describeTalent, formatReviewSummary, reviewTitle } from "../src/ui/format";
-import { living, seedWhere } from "./helpers";
+import { living, seedWhere, attemptBreakthrough } from "./helpers";
 
 const jindan = gameData.realms.find((r) => r.id === "jindan")!;
 const rule = jindan.breakthroughRule!;

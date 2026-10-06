@@ -1,14 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-  attemptBreakthrough,
-  canBreakthrough,
-  currentBreakthroughRate,
-  pillAvailable,
-} from "../src/core/breakthrough";
+import { canBreakthrough, currentBreakthroughRate, pillAvailable } from "../src/core/breakthrough";
 import { breakthroughFailLoss, breakthroughRate } from "../src/core/formulas";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
-import { lianqiNeed, living, seedWhere } from "./helpers";
+import { lianqiNeed, living, seedWhere, attemptBreakthrough } from "./helpers";
 
 const attrs = { bone: 5, insight: 5, fortune: 5, mind: 5 };
 

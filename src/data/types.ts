@@ -57,6 +57,8 @@ export interface BreakthroughRule {
   talentRate?: { id: string; from: number; perLevel: number };
   /** 缺少所需天賦時顯示的說明；沒寫則用 text.json 的 breakthroughGate */
   gateText?: string;
+  /** 天劫（M28）：成功率不變，但分成這麼多道，每道可做準備；沒寫就是一鍵突破 */
+  tribulation?: { waves: number };
 }
 
 export type EndsLife = "always" | "untilCleared" | "untilYuanying" | "never";
@@ -114,7 +116,9 @@ export interface ScheduleDef {
 export type ItemEffect =
   | { kind: "cultivationFraction"; value: number; falloff: number[] }
   | { kind: "lifespan"; years: number; maxPerLife: number }
-  | { kind: "breakthrough" };
+  | { kind: "breakthrough" }
+  /** 天劫中祭出：該道成功率增加 bonus（M28） */
+  | { kind: "tribulationWard"; bonus: number };
 
 export interface ItemDef {
   id: string;
@@ -279,6 +283,8 @@ export interface TextData {
     zuohua: string;
     /** 小階段升級的里程碑句：鍵是「境界 id:階段索引」，沒有的階段用一般的升級句 */
     stageMilestone: Record<string, string>;
+    /** 天劫失敗的日誌；{wave} 是第幾道、{fail} 是該道的失敗描寫 */
+    tribulationFail: string;
     /** 宗門日誌（M25）：{sect} 填宗門名稱；promote 以位階 id 為鍵（外門以外的位階都要寫） */
     sect: { join: string; refuse: string; leave: string; promote: Record<string, string> };
     /** 閉關見聞：依閉關長短分檔，結束原因的補句接在後面（時間用完不補） */
@@ -403,6 +409,16 @@ export interface MapBlurbs {
   village: string;
   market: string;
   mountain: string;
+}
+
+/** 天劫的數值與文字（M28） */
+export interface TribulationData {
+  /** 運功護體：成功率 + 心性 × perMind（上限 max），這一道失敗時額外損失 extraLoss 的修為 */
+  guard: { perMind: number; max: number; extraLoss: number };
+  /** 每一道的成功率上限 */
+  maxChance: number;
+  /** 劫波意象，依道數循環使用 */
+  images: { name: string; arrive: string; pass: string; fail: string }[];
 }
 
 /** 宗門位階（外門到長老）的資料 */
@@ -539,6 +555,7 @@ export interface GameData {
   worldEffects: WorldEffectDef[];
   goals: GoalDef[];
   sects: SectsData;
+  tribulation: TribulationData;
   /** 年號清單，依世數循環使用 */
   eras: string[];
 }

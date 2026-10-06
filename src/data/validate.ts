@@ -38,6 +38,7 @@ import {
   type RealmDef,
   type ScheduleDef,
   type SectsData,
+  type TribulationData,
   type SectRankDef,
   type SpiritRootDef,
   type TalentDef,
@@ -196,6 +197,10 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
         const q = obj(r.requiresTalent, tw);
         breakthroughRule.requiresTalent = { id: str(q, "id", tw), level: num(q, "level", tw, { gt: 0, integer: true }) };
       }
+      if (r.tribulation !== undefined) {
+        const tw = `${rw}.tribulation`;
+        breakthroughRule.tribulation = { waves: num(obj(r.tribulation, tw), "waves", tw, { min: 2, max: 12, integer: true }) };
+      }
       if (r.gateText !== undefined) breakthroughRule.gateText = str(r, "gateText", rw);
       if (r.talentRate !== undefined) {
         const tw = `${rw}.talentRate`;
@@ -312,8 +317,10 @@ export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
       };
     } else if (kind === "breakthrough") {
       effect = { kind };
+    } else if (kind === "tribulationWard") {
+      effect = { kind, bonus: num(e, "bonus", ew, { gt: 0, max: 0.5 }) };
     } else {
-      return fail(ew, "kind", `必須是 cultivationFraction、lifespan 或 breakthrough，目前為 ${JSON.stringify(kind)}`);
+      return fail(ew, "kind", `必須是 cultivationFraction、lifespan、breakthrough 或 tribulationWard，目前為 ${JSON.stringify(kind)}`);
     }
     return {
       id,
@@ -648,6 +655,7 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       adventureDeath: str(log, "adventureDeath", where),
       zuohua: str(log, "zuohua", where),
       stageMilestone: strRecord("stageMilestone"),
+      tribulationFail: str(log, "tribulationFail", where),
       sect: (() => {
         const sw = `${where}.sect`;
         const so = obj(log.sect, sw);
@@ -770,6 +778,23 @@ export function validateSects(raw: unknown, file = "sects.json"): SectsData {
     ranks,
     discount: { itemIds: strList(d, "itemIds", `${file} 欄位 discount`), mult: num(d, "mult", `${file} 欄位 discount`, { gt: 0, max: 1 }) },
     dutySchedule: str(o, "dutySchedule", file),
+  };
+}
+
+/** 天劫數值與劫波文字（tribulation.json） */
+export function validateTribulation(raw: unknown, file = "tribulation.json"): TribulationData {
+  const o = obj(raw, file);
+  const g = obj(o.guard, `${file} 欄位 guard`);
+  const gw = `${file} 欄位 guard`;
+  const images = list(o.images, `${file} 欄位 images`).map((r, i) => {
+    const iw = `${file} 欄位 images[${i}]`;
+    const io = obj(r, iw);
+    return { name: str(io, "name", iw), arrive: str(io, "arrive", iw), pass: str(io, "pass", iw), fail: str(io, "fail", iw) };
+  });
+  return {
+    guard: { perMind: num(g, "perMind", gw, { min: 0 }), max: num(g, "max", gw, { min: 0, max: 0.5 }), extraLoss: num(g, "extraLoss", gw, { min: 0, max: 0.5 }) },
+    maxChance: num(o, "maxChance", file, { gt: 0, max: 1 }),
+    images,
   };
 }
 

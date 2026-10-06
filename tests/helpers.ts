@@ -1,3 +1,4 @@
+import { attemptBreakthrough as attemptRaw, autoTribulation } from "../src/core/breakthrough";
 import { stageNeed } from "../src/core/formulas";
 import { gameData } from "../src/data/load";
 import { createInitialState, startLife } from "../src/core/life";
@@ -23,4 +24,9 @@ export function seedWhere(pred: (v: number) => boolean): number {
     if (pred(nextRandom(seed)[0])) return seed;
   }
   throw new Error("找不到符合條件的種子");
+}
+
+/** 嘗試突破並把天劫（若有）每一道都硬抗到結束：結果等同舊的一鍵突破 */
+export function attemptBreakthrough(state: GameState, usePill: boolean, data = gameData): GameState {
+  return autoTribulation(attemptRaw(state, usePill, data), data);
 }

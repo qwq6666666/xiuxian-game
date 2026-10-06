@@ -183,7 +183,10 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
       template = log.breakthroughSuccess[entry.realmId] ?? log.stageUp[0];
       break;
     case "breakthroughFail":
-      template = pick(log.breakthroughFail);
+      if (entry.wave !== undefined) {
+        const images = data.tribulation.images;
+        template = log.tribulationFail.replace("{wave}", String(entry.wave)).replace("{fail}", images[(entry.wave - 1) % images.length].fail);
+      } else template = pick(log.breakthroughFail);
       break;
     case "buy":
       template = pick(log.buy);

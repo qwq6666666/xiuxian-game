@@ -19,5 +19,12 @@
     "desc": "壽元上限延長十年，每世至多服三顆。",
     "price": 300,
     "effect": { "kind": "lifespan", "years": 10, "maxPerLife": 3 }
+  },
+  {
+    "id": "bilei_fu",
+    "name": "避雷符",
+    "desc": "天劫中祭出，替你擋下一道劫波的鋒芒，使這一道的把握更大。用過即焚。",
+    "price": 150,
+    "effect": { "kind": "tribulationWard", "bonus": 0.15 }
   }
 ]

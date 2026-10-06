@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attemptBreakthrough, canBreakthrough, currentBreakthroughRate, currentFailLoss, missingTalent } from "../src/core/breakthrough";
+import { canBreakthrough, currentBreakthroughRate, currentFailLoss, missingTalent } from "../src/core/breakthrough";
 import { breakthroughRate, stageNeed } from "../src/core/formulas";
 import { YUANYING_FLAG, endLife } from "../src/core/review";
 import { deserialize, serialize } from "../src/core/save";
@@ -7,7 +7,7 @@ import { emptyMeta } from "../src/core/state";
 import { gameData } from "../src/data/load";
 import { validateRealms } from "../src/data/validate";
 import { collectionSummary, describeTalent, formatReviewSummary, reviewTitle } from "../src/ui/format";
-import { living, seedWhere } from "./helpers";
+import { living, seedWhere, attemptBreakthrough } from "./helpers";
 
 const yuanying = gameData.realms.find((r) => r.id === "yuanying")!;
 const huashen = gameData.realms.find((r) => r.id === "huashen")!;

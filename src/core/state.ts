@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -146,6 +146,18 @@ export interface LogEntry {
   /** 宗門日誌：當時的宗門名稱（日誌存名字，之後世局再變也不影響）與位階索引 */
   sectName?: string;
   rank?: number;
+  /** 天劫失敗的日誌：止步於第幾道（從 1 起算） */
+  wave?: number;
+}
+
+/** 天劫進行中的狀態 */
+export interface TribulationState {
+  waves: number;
+  wave: number;
+  /** 這次突破的整體成功率（不做準備時各道連乘等於它） */
+  rate: number;
+  roll: number;
+  threshold: number;
 }
 
 /** 入宗後的身分 */
@@ -198,6 +210,8 @@ export interface GameState {
   goalIds: string[];
   /** 這一世開始時已有的殘卷數，用來算「本世取得」 */
   startFragments: number;
+  /** 進行中的天劫（M28）；時間暫停，等玩家逐道選擇。wave 是下一道的索引（從 0 起算），roll 是開始時抽定的亂數，threshold 是已通過各道的累積成功率 */
+  tribulation: TribulationState | null;
   /** 目前所屬宗門（M25）；rank 是位階索引（0 外門），joinedAge 是入宗年齡（月） */
   sect: SectMembership | null;
   /** 本世試過或離開的宗門 id，不能再入 */

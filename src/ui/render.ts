@@ -2,7 +2,12 @@ import { canBuyItem, canBuyTalent, canUseItem, canZuohua, pillsTaken, zuohuaDaoY
 import {
   breakthroughRuleOf,
   canBreakthrough,
+  canChooseWave,
   currentBreakthroughRate,
+  waveChance,
+  waveImage,
+  wardItem,
+  type WaveChoice,
   missingTalent,
   currentFailLoss,
   pillAvailable,
@@ -60,6 +65,7 @@ export interface UiHandlers {
   onBuyItem(itemId: string): void;
   onZuohua(): void;
   onTravel(targetId: string): void;
+  onWave(choice: WaveChoice): void;
   onJoinSect(): void;
   onLeaveSect(): void;
   onPromoteSect(): void;
@@ -579,6 +585,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     live: HTMLElement;
     log: HTMLElement;
     eventModal: HTMLElement;
+    tribModal: HTMLElement;
+    tribTitle: HTMLElement;
+    tribText: HTMLElement;
+    tribInfo: HTMLElement;
+    tribChoices: HTMLElement;
     eventTitle: HTMLElement;
     eventText: HTMLElement;
     eventHistory: HTMLElement;
@@ -619,6 +630,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     built = "life";
     logKey = "";
     sectKey = "";
+    tribKey = "";
     logLen = 0;
     prevStones = null;
     prevCultivation = null;
@@ -665,11 +677,20 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           <div id="eventChoices" class="choices"></div>
         </div>
       </div>
+      <div class="modal" id="tribModal" role="dialog" aria-modal="true" aria-labelledby="tribTitle" hidden>
+        <div class="card event">
+          <h2 id="tribTitle"></h2>
+          <p id="tribText"></p>
+          <p id="tribInfo" class="desc"></p>
+          <div id="tribChoices" class="choices"></div>
+        </div>
+      </div>
       <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="一生回顧" hidden>
         <div class="card review life-review-card"><div id="modalBody"></div></div>
       </div>`;
     const q = <T extends HTMLElement>(sel: string) => stageEl.querySelector<T>(sel)!;
     watchModal(q("#eventModal"));
+    watchModal(q("#tribModal"));
     watchModal(q("#modal"));
 
     const schedBox = q("#schedules");
@@ -715,6 +736,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       live: q("#live"),
       log: q("#log"),
       eventModal: q("#eventModal"),
+      tribModal: q("#tribModal"),
+      tribTitle: q("#tribTitle"),
+      tribText: q("#tribText"),
+      tribInfo: q("#tribInfo"),
+      tribChoices: q("#tribChoices"),
       eventTitle: q("#eventTitle"),
       eventText: q("#eventText"),
       eventHistory: q("#eventHistory"),
@@ -775,7 +801,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     if (can) {
       const rate = Math.round(currentBreakthroughRate(state, e.pill.checked, data) * 100);
       const loss = Math.round(currentFailLoss(state, data) * 100);
-      e.btInfo.textContent = `成功率 ${rate}%，失敗將損失 ${loss}% 修為。`;
+      const waves = breakthroughRuleOf(state, data)?.tribulation?.waves;
+      e.btInfo.textContent = `成功率 ${rate}%，失敗將損失 ${loss}% 修為。${waves ? `需度過 ${waves} 道天劫，每一道都能做準備，備得好，整體把握會更高。` : ""}`;
     } else if (atBottleneck(state, data) && missingTalent(state, data) !== null) {
       e.btInfo.textContent = breakthroughRuleOf(state, data)?.gateText ?? data.text.breakthroughGate;
     } else {
@@ -832,6 +859,38 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     span.addEventListener("animationend", () => span.remove());
     // 動畫被關閉（reduced-motion）時不會觸發 animationend，保險起見定時移除
     setTimeout(() => span.remove(), 1200);
+  }
+
+  /** 天劫面板：進行中時顯示，逐道選擇；時間暫停。內容沒變就不重畫 */
+  let tribKey = "";
+  function renderTribulation(state: GameState, e: LifeEls): void {
+    const t = state.tribulation;
+    const have = wardItem(data) ? (state.items[wardItem(data)!.id] ?? 0) : 0;
+    const key = t ? JSON.stringify([t, have, state.attributes.mind]) : "";
+    if (key === tribKey) return;
+    tribKey = key;
+    e.tribModal.hidden = t === null;
+    e.tribChoices.replaceChildren();
+    if (!t) return;
+    const image = waveImage(state, data);
+    e.tribTitle.textContent = `${image.name}劫・第 ${t.wave + 1} 道，共 ${t.waves} 道`;
+    e.tribText.textContent = image.arrive;
+    e.tribInfo.textContent = t.wave === 0 ? "劫雲已聚，這一道只能面對。備得好，把握就大一些；失敗只損失一部分修為，不致喪命。" : `已度過 ${t.wave} 道。`;
+    const pct = (c: WaveChoice): string => `${Math.round(waveChance(state, c, data) * 100)}%`;
+    const ward = wardItem(data);
+    const rows: { choice: WaveChoice; name: string; note: string }[] = [
+      { choice: "brace", name: "硬抗", note: `這一道的把握約 ${pct("brace")}` },
+      { choice: "guard", name: "運功護體", note: `把握約 ${pct("guard")}（看心性）；若在這一道倒下，額外損失 ${Math.round(data.tribulation.guard.extraLoss * 100)}% 修為` },
+      { choice: "ward", name: `祭出${ward ? itemName(ward.id) : "符籙"}`, note: have > 0 ? `把握約 ${pct("ward")}，用掉一張（持有 ${have}）` : "沒有符籙可用，坊市可以買" },
+    ];
+    for (const r of rows) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = `<strong>${r.name}</strong><small>${r.note}</small>`;
+      b.disabled = !canChooseWave(state, r.choice, data);
+      b.addEventListener("click", () => handlers.onWave(r.choice));
+      e.tribChoices.append(b);
+    }
   }
 
   /** 宗門面板：只有入宗者才顯示；內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
@@ -982,6 +1041,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       hint.hidden = hint.textContent === "";
     }
     renderSect(state, e);
+    renderTribulation(state, e);
     e.zuohuaBox.hidden = !canZuohua(state, data);
     if (!e.zuohuaBox.hidden) {
       e.zuohuaInfo.textContent = `把剩餘壽元一次坐完，結束這一世，額外換得道韻 +${zuohuaDaoYun(state, data)}。已達階段的道韻照常結算。`;

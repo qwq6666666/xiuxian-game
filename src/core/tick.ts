@@ -107,6 +107,6 @@ export function tick(state: GameState, months = 1, data: GameData = gameData): G
     throw new Error(`tick：months 必須是非負整數，目前為 ${months}`);
   }
   let s = state;
-  for (let i = 0; i < months && s.phase === "living" && s.pendingEvent === null; i++) s = stepMonth(s, data);
+  for (let i = 0; i < months && s.phase === "living" && s.pendingEvent === null && s.tribulation === null; i++) s = stepMonth(s, data);
   return s;
 }

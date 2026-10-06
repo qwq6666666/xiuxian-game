@@ -1,5 +1,5 @@
 {
-  "version": 16,
+  "version": 17,
   "shape": {
     "TravelState": [
       "locationId",
@@ -67,7 +67,15 @@
       "retreatMonths",
       "sectName",
       "stage",
-      "stop"
+      "stop",
+      "wave"
+    ],
+    "TribulationState": [
+      "rate",
+      "roll",
+      "threshold",
+      "wave",
+      "waves"
     ],
     "SectMembership": [
       "contribution",
@@ -114,6 +122,7 @@
       "stage",
       "startFragments",
       "travel",
+      "tribulation",
       "version",
       "worldSeed"
     ]

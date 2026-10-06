@@ -9,13 +9,14 @@
 // 再依較高的目標均衡購買，並量測首次元嬰、金丹期單世時長與結嬰嘗試次數（對照 GDD 第 23.6 節）。
 // post 另在第一次元嬰之後買凝神到化神門檻、嘗試化神，並量測首次化神、元嬰期單世時長與化神嘗試次數（GDD 第 25.6 節）。
 // 入宗策略（sect，第 5 個參數）：同 mixed，另外練氣三層起旅行到最近的開放宗門求入宗，入宗後依晉升條件做差事並晉升，量測入宗成功率與位階分布（GDD 第 29 節）。
+// 天劫策略（tribulation，第 5 個參數）：同 mixed，另外突破前買避雷符，天劫每一道用符籙或護體，量測各境界天劫的成功率（GDD 第 31 節）。其他策略的天劫每一道都硬抗，結果與一鍵突破相同。
 // 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
 // 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
 // 例：npm run sim -- 300 1 40 post
 import { beginTravel, placesAt, routeTo } from "../src/core/travel";
 import { canJoinSect, canPromoteSect, joinSect, nextRank, promoteSect } from "../src/core/sect";
 import { buyItem, buyTalent, canBuyItem, canBuyTalent, canUseItem, canZuohua, setSchedule, useItem, zuohua } from "../src/core/actions";
-import { attemptBreakthrough, canBreakthrough } from "../src/core/breakthrough";
+import { attemptBreakthrough, autoTribulation, canBreakthrough, canChooseWave, faceWave } from "../src/core/breakthrough";
 import { canChoose, chooseEvent, eventOf } from "../src/core/events";
 import { createInitialState, newLife, startLife } from "../src/core/life";
 import { nextRandom } from "../src/core/rng";
@@ -27,7 +28,7 @@ import { realmLabel } from "../src/ui/format";
 const runs = Number(process.argv[2] ?? 1000);
 const baseSeed = Number(process.argv[3] ?? 1);
 const lives = Number(process.argv[4] ?? 1);
-const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : "simple";
+const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -88,6 +89,29 @@ function sectActions(state: GameState): GameState {
   const idx = (id: string): number => gameData.realms.findIndex((r) => r.id === id);
   const wantDuty = next?.def.promote !== undefined && idx(s.realmId) >= idx(next.def.promote.realm) - 0 && s.sect!.contribution < next.def.promote.contribution;
   s = setSchedule(s, wantDuty ? gameData.sects.dutySchedule : "retreat", gameData);
+  return s;
+}
+
+/** 天劫統計：各境界（離開的境界）的嘗試次數與成功次數 */
+const tribStats: Record<string, { attempts: number; wins: number }> = {};
+
+/** 嘗試突破並走完天劫：tribulation 策略先備好符籙、每一道用符籙或護體，其他策略每一道硬抗 */
+function breakthroughWithTribulation(state: GameState): GameState {
+  const from = state.realmId;
+  const rule = gameData.realms.find((r) => r.id === from)?.breakthroughRule;
+  let s = state;
+  if (strategy === "tribulation" && rule?.tribulation) {
+    while ((s.items.bilei_fu ?? 0) < rule.tribulation.waves && canBuyItem(s, "bilei_fu", gameData)) s = buyItem(s, "bilei_fu", gameData);
+  }
+  s = attemptBreakthrough(s, true, gameData);
+  if (strategy === "tribulation") {
+    while (s.tribulation !== null) s = faceWave(s, canChooseWave(s, "ward", gameData) ? "ward" : "guard", gameData);
+  } else s = autoTribulation(s, gameData);
+  if (rule?.tribulation) {
+    const row = (tribStats[from] ??= { attempts: 0, wins: 0 });
+    row.attempts++;
+    if (s.realmId !== from) row.wins++;
+  }
   return s;
 }
 
@@ -165,7 +189,7 @@ function playLife(start: GameState): GameState {
     while (state.phase === "living" && atBottleneck(state, gameData) && canBreakthrough(state, gameData)) {
       if (state.realmId === "jindan") lifeStats.attempts++;
       if (state.realmId === "yuanying") lifeStats.huashenAttempts++;
-      state = attemptBreakthrough(state, true, gameData);
+      state = breakthroughWithTribulation(state);
       if (atBottleneck(state, gameData)) break;
     }
     if (jindanEntered === null && state.realmId === "jindan") jindanEntered = state.ageMonths;
@@ -404,14 +428,14 @@ function campaigns(): void {
         yuanyingHours.push((months * gameData.config.msPerMonth) / 3_600_000);
       }
       // 把道韻優先花在宿慧
-      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect") state = buyTalentsBalanced(state);
+      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation") state = buyTalentsBalanced(state);
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(
@@ -487,6 +511,15 @@ function campaigns(): void {
     console.log(`  各世最高位階：未入宗 ${pct(sectStats.peaks[0])}、外門 ${pct(sectStats.peaks[1])}、內門 ${pct(sectStats.peaks[2])}、執事 ${pct(sectStats.peaks[3])}、長老 ${pct(sectStats.peaks[4])}`);
     console.log(`  ${ok(cMed >= 7)} 入宗路線首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
     console.log(`  ${ok(hours >= 3.5)} 入宗路線通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
+  }
+  if (strategy === "tribulation") {
+    console.log("對照第 31.4 節（天劫）：");
+    for (const [realm, row] of Object.entries(tribStats)) {
+      const name = gameData.realms.find((r) => r.id === realm)?.name ?? realm;
+      console.log(`  ${name}突破：${row.attempts} 次，成功 ${((row.wins / Math.max(1, row.attempts)) * 100).toFixed(1)}%`);
+    }
+    console.log(`  ${ok(cMed >= 7)} 天劫路線首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
+    console.log(`  ${ok(hours >= 3.5)} 天劫路線通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
   }
   console.log(`  ${lives} 世內已築基 ${((zhujiLives.length / runs) * 100).toFixed(0)}%、已通關 ${((clearLives.length / runs) * 100).toFixed(0)}%`);
 }

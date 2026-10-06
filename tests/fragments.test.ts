@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { attemptBreakthrough } from "../src/core/breakthrough";
+
 import { chooseEvent, eventAvailable } from "../src/core/events";
 import { availableFragments, CLEAR_FRAGMENT_ID, drawFragment, fragmentUnlocked, grantFragment } from "../src/core/fragments";
 import { newLife } from "../src/core/life";
@@ -9,7 +9,7 @@ import { gameData } from "../src/data/load";
 import type { Effects, EventDef, GameData } from "../src/data/types";
 import { validateEvents, validateFragments } from "../src/data/validate";
 import { formatChanges } from "../src/ui/format";
-import { living, seedWhere } from "./helpers";
+import { living, seedWhere, attemptBreakthrough } from "./helpers";
 
 const frags = gameData.fragments.items;
 const tierOf = (id: string): number => frags.find((f) => f.id === id)!.tier;
