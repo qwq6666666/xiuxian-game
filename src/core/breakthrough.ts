@@ -1,7 +1,7 @@
 // 大境界的手動突破。
 import { gameData } from "../data/load";
 import type { BreakthroughRule, GameData } from "../data/types";
-import { breakthroughFailLoss, breakthroughRate, talentBonus } from "./formulas";
+import { breakthroughFailLoss, breakthroughRate, studyRate, talentBonus } from "./formulas";
 import { applyEndingAndContinue, endLife, endsLifeOnEntry } from "./review";
 import { artifactBonus } from "./forge";
 import { methodEffect } from "./method";
@@ -55,14 +55,38 @@ export function pillAvailable(state: GameState, data: GameData = gameData): bool
 export function currentBreakthroughRate(state: GameState, usePill: boolean, data: GameData = gameData): number {
   const rule = breakthroughRuleOf(state, data);
   if (!rule) return 0;
-  return breakthroughRate(rule, state.attributes.insight, usePill && pillAvailable(state, data), state.meta.talents);
+  return breakthroughRate(rule, state.attributes.insight, usePill && pillAvailable(state, data), state.meta.talents, studyRate(data.config, state.breakthroughStudy));
+}
+
+/** 目前成功率的各項來源（M46）：基礎、悟性、丹藥、天賦、心得；加總（限制在 0–100%）就是 currentBreakthroughRate */
+export interface RateParts {
+  base: number;
+  insight: number;
+  pill: number;
+  talent: number;
+  study: number;
+  total: number;
+}
+
+export function breakthroughRateParts(state: GameState, usePill: boolean, data: GameData = gameData): RateParts {
+  const rule = breakthroughRuleOf(state, data);
+  if (!rule) return { base: 0, insight: 0, pill: 0, talent: 0, study: 0, total: 0 };
+  const talentLevels = state.meta.talents;
+  return {
+    base: rule.baseRate,
+    insight: state.attributes.insight * rule.insightBonus,
+    pill: usePill && pillAvailable(state, data) ? (rule.pillBonus ?? 0) : 0,
+    talent: rule.talentRate ? Math.max(0, (talentLevels[rule.talentRate.id] ?? 0) - rule.talentRate.from) * rule.talentRate.perLevel : 0,
+    study: studyRate(data.config, state.breakthroughStudy),
+    total: currentBreakthroughRate(state, usePill, data),
+  };
 }
 
 /** 成功進入下一境界：依該境界的 endsLife 決定是否結束這一世 */
 function succeed(s: GameState, data: GameData): GameState {
   const next = nextRealm(realmOf(s, data), data)!;
   const won = addLog(
-    { ...s, tribulation: null, realmId: next.id, stage: 0, cultivation: 0, breakthroughs: s.breakthroughs + 1 },
+    { ...s, tribulation: null, realmId: next.id, stage: 0, cultivation: 0, breakthroughs: s.breakthroughs + 1, breakthroughStudy: 0 },
     { month: s.ageMonths, kind: "breakthroughSuccess", realmId: next.id, stage: 0 },
     data.config.logLimit,
   );
@@ -79,7 +103,7 @@ function fail(s: GameState, data: GameData, wave?: number, extraLoss = 0): GameS
   const relief = reliefItem(s, data);
   const items = relief ? { ...s.items, [relief.id]: s.items[relief.id] - 1 } : s.items;
   return addLog(
-    { ...s, items, tribulation: null, cultivation: s.cultivation * (1 - loss) },
+    { ...s, items, tribulation: null, cultivation: s.cultivation * (1 - loss), breakthroughStudy: s.breakthroughStudy + 1 },
     { month: s.ageMonths, kind: "breakthroughFail", realmId: s.realmId, stage: s.stage, ...(wave !== undefined ? { wave } : {}) },
     data.config.logLimit,
   );
@@ -106,7 +130,7 @@ export function attemptBreakthrough(state: GameState, usePill: boolean, data: Ga
   const realm = realmOf(state, data);
   const rule = realm.breakthroughRule!;
   const pill = usePill && pillAvailable(state, data);
-  const rate = breakthroughRate(rule, state.attributes.insight, pill, state.meta.talents);
+  const rate = breakthroughRate(rule, state.attributes.insight, pill, state.meta.talents, studyRate(data.config, state.breakthroughStudy));
 
   let s: GameState = state;
   if (pill) {

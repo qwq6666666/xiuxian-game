@@ -71,6 +71,8 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     backgroundMinSeconds: num(o, "backgroundMinSeconds", file, { min: 0 }),
     frameGapSeconds: num(o, "frameGapSeconds", file, { gt: 0 }),
     offlineStopLifespanRatio: num(o, "offlineStopLifespanRatio", file, { min: 0, max: 1 }),
+    breakthroughStudyBonus: num(o, "breakthroughStudyBonus", file, { min: 0, max: 1 }),
+    breakthroughStudyCap: num(o, "breakthroughStudyCap", file, { min: 0, max: 1 }),
     retreatBriefYears: num(o, "retreatBriefYears", file, { gt: 0 }),
     retreatGagChance: num(o, "retreatGagChance", file, { min: 0, max: 1 }),
     retreatRareChance: num(o, "retreatRareChance", file, { min: 0, max: 1 }),
@@ -191,6 +193,22 @@ export function validateSchedules(raw: unknown, file = "schedules.json"): Schedu
       deathChance,
       ...(o.realmMin !== undefined ? { realmMin: str(o, "realmMin", where) } : {}),
       ...(o.requiresSect === true ? { requiresSect: true } : {}),
+      ...(o.fatigue !== undefined
+        ? (() => {
+            const fw = `${where} 欄位 fatigue`;
+            const fo = obj(o.fatigue, fw);
+            return {
+              fatigue: {
+                ...(fo.realmMin !== undefined ? { realmMin: str(fo, "realmMin", fw) } : {}),
+                ...(fo.realmMax !== undefined ? { realmMax: str(fo, "realmMax", fw) } : {}),
+                graceMonths: num(fo, "graceMonths", fw, { min: 0, integer: true }),
+                perYear: num(fo, "perYear", fw, { min: 0, max: 1 }),
+                floor: num(fo, "floor", fw, { min: 0, max: 1 }),
+                recoverPerMonth: num(fo, "recoverPerMonth", fw, { min: 1, integer: true }),
+              },
+            };
+          })()
+        : {}),
       ...(o.worldHints !== undefined
         ? {
             worldHints: (Array.isArray(o.worldHints) ? o.worldHints : fail(where, "worldHints", "必須是陣列")).map((h: unknown, j: number) => {

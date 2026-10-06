@@ -1622,3 +1622,16 @@ M6 事件擴充到 40 個之後重跑（種子 1–4）：
 - **臨終句（`core/review.ts` 的 `pickClosing`）**：`ClosingVariant` 新增選填條件 `ifFlag`、`ifRealmMax`、`ifGoalMissed`（與既有 `ifItem`）。具體條件（物品、旗標、止步境界）符合的優先，多句時依世數輪流；沒有的話在「無條件」與「有未完成目標」的句子中輪流。`ifFlag` 必須是有事件會設定的旗標，`ifRealmMax` 必須是境界 id，載入時檢查。壽盡的收尾句 6 → 24 句。
 - **移除**：`offlineRetreatTierYears`（短／中／長三檔）與 `short`／`medium`／`long` 池。
 - **沒做**：日誌摺疊、連續日誌的意象呼應（與一世內不重複互斥）、其他日誌池（突破失敗、購買、拾物）補量。
+
+## 48. 閉關疲勞與突破心得（M46）
+
+存檔升 v28（`GameState` 新增 `retreatStreak`、`breakthroughStudy`，舊檔補 0）。起因：玩家覺得閉關永遠最優、突破失敗只能乾等。
+
+- **閉關疲勞**（`core/fatigue.ts`，規則在 `schedules.json` 的 `retreat.fatigue`）：
+  - 築基期（`realmMin`、`realmMax` 都是 zhuji）連續閉關超過 `graceMonths`（120 個月），每多一年修為倍率少 `perYear`（0.02），不低於 `floor`（0.92）。倍率乘進 `monthlyGain`，所以離線補算與一般 tick 一致（`offline.ts` 與 `tick.ts` 都呼叫 `advanceStreak`）。
+  - 做別的安排時，每月回復 `recoverPerMonth`（6）個月；卡在瓶頸的月份不計入；練氣與金丹以上不疲勞，連續月數也不累積。
+  - 沒有 `fatigue` 欄位的安排不會疲勞（閉關煉丹也沒有）。
+- **突破心得**：每次突破失敗（含天劫、強行衝關）`breakthroughStudy` +1，下次成功率加 `breakthroughStudyBonus`（0.04）× 次數，上限 `breakthroughStudyCap`（0.2）；突破成功或轉世歸零。`core/breakthrough.ts` 的 `breakthroughRateParts()` 回傳基礎、悟性、丹藥、天賦、心得各項，加總（限 0–100%）等於目前成功率。
+- **為什麼這麼溫和**：M42 的結論仍成立：`rotate` 剛好卡在首次金丹第 7 世的下限，沒有餘裕補償；疲勞越強，`simple`、`mixed`、`post` 越超出第 13 節。試過的設定（種子 1，300 場 16 世，`simple` 首次金丹中位數）：全境界 60 個月寬限、下限 85% → 第 14 世且第一世突破鈕 17%；築基起、120／0.9 → 第 12 世但 `post` 元嬰累計 13.6 小時；只在築基、下限 85%、每年 3% → 第 14 世；最終設定（築基、120 個月、每年 2%、下限 92%）→ 第 11 世。
+- **最終 sim（種子 1）**：`simple` 首次築基第 2 世、首次金丹第 11 世、通關 5.3 小時、突破鈕 31.7%、集滿 14 份第 14 世，全 ✓；`mixed` 第 10 世、5.4 小時、突破鈕 33.7%，全 ✓；第一世 `simple` 26.7 分鐘、止步 8.4 層、`mixed` 27.5 分鐘、8.6 層，全 ✓（心得讓第一世略長，貼近上限 28）。`post` 只剩「首次元嬰累計 13.3 小時」✗，動工前已是 12.2 小時✗（TODO 已有待決），M46 讓它多了約 1 小時。`rotate` 首次金丹第 7 世（不得低於 7）✓、`forge` 第 8 世 ✓、`hunt` 第 14 世 ✓；`herb`／`wander`／`alchemy` 第一世止步 4.6／4.5／4.9 層（不高於 `simple`）✓。
+- **沒做**：疲勞的介面（當前數值面板加「閉關疲勞 ×0.9」一行、久坐提示）、突破鈕旁的成功率明細，都是 `src/ui/` 的需求，寫在 `docs/handoff/claude.md`；疲勞開始時的日誌句。

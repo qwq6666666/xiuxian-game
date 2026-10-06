@@ -96,12 +96,18 @@ export function breakthroughRate(
   insight: number,
   usePill: boolean,
   talentLevels: Record<string, number> = {},
+  studyBonus = 0,
 ): number {
   const aid = rule.talentRate
     ? Math.max(0, (talentLevels[rule.talentRate.id] ?? 0) - rule.talentRate.from) * rule.talentRate.perLevel
     : 0;
-  const rate = rule.baseRate + insight * rule.insightBonus + (usePill ? (rule.pillBonus ?? 0) : 0) + aid;
+  const rate = rule.baseRate + insight * rule.insightBonus + (usePill ? (rule.pillBonus ?? 0) : 0) + aid + studyBonus;
   return Math.min(1, Math.max(0, rate));
+}
+
+/** 突破心得帶來的成功率加成 = 失敗次數 × 每次加成，不超過上限（M46） */
+export function studyRate(config: GameConfig, study: number): number {
+  return Math.min(config.breakthroughStudyCap, Math.max(0, study) * config.breakthroughStudyBonus);
 }
 
 /** 突破失敗損失的修為比例 = 基礎損失 − 心性 × 每點減免 − 道心天賦減免，最低 0 */

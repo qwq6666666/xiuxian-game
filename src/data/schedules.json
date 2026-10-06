@@ -7,7 +7,8 @@
     "eventRateMult": 0.5,
     "stones": { "chance": 0, "min": 0, "max": 0 },
     "finds": [],
-    "deathChance": 0
+    "deathChance": 0,
+    "fatigue": { "realmMin": "zhuji", "realmMax": "zhuji", "graceMonths": 120, "perYear": 0.02, "floor": 0.92, "recoverPerMonth": 6 }
   },
   {
     "id": "adventure",

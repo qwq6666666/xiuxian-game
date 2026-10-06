@@ -12,6 +12,7 @@ import { advanceTravel } from "./travel";
 import { stepSect } from "./sect";
 import { stepAlchemy } from "./alchemy";
 import { accrueFocus } from "./focus";
+import { advanceStreak } from "./fatigue";
 
 /** 材料掉落亂數的雜湊鹽值，與世界生成用的編號錯開 */
 const DROP_SALT = 7_000_000;
@@ -82,7 +83,9 @@ function stepMonth(state: GameState, data: GameData): GameState {
   let s: GameState = accrueFocus({ ...state, ageMonths: month }, data);
   const sched = scheduleOf(s, data);
   // 已卡在瓶頸就不再累積修為
-  if (!atBottleneck(state, data)) s = addCultivation(s, sched, month, data);
+  const accrued = !atBottleneck(state, data);
+  if (accrued) s = addCultivation(s, sched, month, data);
+  s = advanceStreak(s, sched, accrued, data);
   s = applySchedule(s, sched, month, data);
   if (s.phase !== "living") return s;
   s = stepAlchemy(s, data);

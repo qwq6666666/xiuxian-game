@@ -30,6 +30,8 @@
   "backgroundMinSeconds": 5,
   "frameGapSeconds": 2,
   "offlineStopLifespanRatio": 0.1,
+  "breakthroughStudyBonus": 0.04,
+  "breakthroughStudyCap": 0.2,
   "retreatBriefYears": 2,
   "retreatGagChance": 0.28,
   "retreatRareChance": 0.03,

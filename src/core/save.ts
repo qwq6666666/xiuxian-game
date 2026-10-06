@@ -124,6 +124,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   23: (d) => ({ ...d, version: 24, meta: { ...obj(d.meta, "meta"), met: {} } }),
   // v25 沒有擇身、夙願、靈犀：補上沒有備選命盤、沒指定夙願、沒有靈犀次數
   // v26 的閉關見聞沒有序號與種子：選填欄位，顯示時退回由年齡推出的序號
+  // v27 沒有突破心得與疲勞：補上從零開始
+  27: (d) => ({ ...d, version: 28, breakthroughStudy: 0, retreatStreak: 0 }),
   26: (d) => ({ ...d, version: 27 }),
   25: (d) => ({ ...d, version: 26, altCharts: [], wishId: null, omenLeft: 0, omen: [] }),
   // v24 運功是冷卻制：冷卻已過的舊檔補一次存量，起點移到現在；還在冷卻的維持原計時
@@ -606,6 +608,8 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     stage,
     cultivation: num(o, "cultivation", { min: 0 }),
     breakthroughs: num(o, "breakthroughs", { integer: true, min: 0 }),
+    breakthroughStudy: num(o, "breakthroughStudy", { integer: true, min: 0 }),
+    retreatStreak: num(o, "retreatStreak", { integer: true, min: 0 }),
     goalIds,
     startFragments: num(o, "startFragments", { integer: true, min: 0 }),
     tribulation,

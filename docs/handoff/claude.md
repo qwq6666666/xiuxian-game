@@ -2,6 +2,17 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-07：閉關疲勞與突破心得（M46，GDD 第 48 節）
+
+- 分支 `master`（本機，尚未 push）。新增 `core/fatigue.ts`；`core/gain.ts`、`tick.ts`、`offline.ts` 套用疲勞；`core/breakthrough.ts`、`formulas.ts` 加心得與 `breakthroughRateParts`；資料：`schedules.json` retreat.fatigue、`config.json` 兩個心得數值；存檔 v28（`retreatStreak`、`breakthroughStudy`，`tests/save-shape.json` 已更新）。
+- 驗證：`npm run verify`；新增 `tests/fatigue.test.ts`（倍率、境界限制、累積與回復、卡瓶頸不累積、離線與 tick 一致、轉世歸零、v27 遷移、驗證訊息、心得累加與歸零、明細加總）；sim 見 GDD 第 48 節，`simple`／`mixed` 全 ✓，`post` 元嬰累計 13.3 小時 ✗（動工前 12.2），`rotate`／`forge`／`hunt` 守住第 7 世。
+- 沒驗證：疲勞與心得在介面上完全看不到（玩家只會覺得築基期長閉關略慢）；`method:*` 沒跑；沒開瀏覽器。
+- **給 ChatGPT 的介面約定（請做，這兩項之前被擋住）**：
+  1. 「當前數值」面板的修為乘數明細加一行「閉關疲勞」：用 `fatigueMult(state, scheduleOf(state), data)`（`core/fatigue.ts`），倍率 < 1 才顯示，例如「閉關疲勞 ×0.95」；旁邊提示「連續閉關已 N 年，出門走走可回復」，N 取 `Math.floor(state.retreatStreak / 12)`。
+  2. 突破鈕旁顯示成功率明細：用 `breakthroughRateParts(state, usePill, data)`（`core/breakthrough.ts`）回傳 `{ base, insight, pill, talent, study, total }`（都是 0–1 的小數，`total` 已限制在 0–100%）。只列非 0 的項目，例如「基礎 15%＋悟性 10%＋心得 8%＝33%」；`study` 的說明用「失敗累積的心得」。
+  3. 這兩項只動 `src/ui/`，不要碰 `core/`。
+- 已知：疲勞限定築基期、下限 92%，是被 sim 逼出來的溫和值（見 GDD 第 48 節）；要更強就得重新校準第 13 節。
+
 ## 2026-10-06：文案不重複（M45，GDD 第 47 節）
 
 - 分支 `master`（本機，尚未 push）。新增 `core/retreattext.ts`（閉關見聞拼句）；`core/offline.ts` 寫入 `retreatNo`／`retreatSeed`；`core/review.ts` 的 `pickClosing` 支援 `ifFlag`／`ifRealmMax`／`ifGoalMissed`；`text.json` 閉關見聞改成 `brief`／`themes`／`feel`／`rare`／`stop`，壽盡臨終句 6→24；`config.json` 以四個 `retreat*` 取代 `offlineRetreatTierYears`；存檔 v27（`tests/save-shape.json` 已更新）。`ui/format.ts` 只改一處呼叫 `composeRetreat`。

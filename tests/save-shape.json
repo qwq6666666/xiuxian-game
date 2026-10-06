@@ -1,5 +1,5 @@
 {
-  "version": 27,
+  "version": 28,
   "shape": {
     "TravelState": [
       "locationId",
@@ -135,6 +135,7 @@
       "altCharts",
       "attributes",
       "autoChoice",
+      "breakthroughStudy",
       "breakthroughs",
       "carriedStones",
       "cultivation",
@@ -165,6 +166,7 @@
       "pillStage",
       "realmId",
       "rerolls",
+      "retreatStreak",
       "review",
       "rngSeed",
       "schedule",

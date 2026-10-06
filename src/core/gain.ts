@@ -2,6 +2,7 @@
 import { gameData } from "../data/load";
 import type { GameData, ScheduleDef } from "../data/types";
 import { cultivationPerMonth, talentBonus } from "./formulas";
+import { fatigueMult } from "./fatigue";
 import { artifactBonus } from "./forge";
 import { methodEffect } from "./method";
 import { realmOf } from "./progress";
@@ -18,7 +19,7 @@ export function monthlyGain(state: GameState, sched: ScheduleDef, data: GameData
     rootMult: root.mult,
     bone: state.attributes.bone,
     realmMult: realm.cultivationMult,
-    scheduleMult: sched.cultivationMult,
+    scheduleMult: sched.cultivationMult * fatigueMult(state, sched, data),
     originBonus: state.cultivationBonus,
     reincarnationBonus: talentBonus(state.meta, data.talents, "cultivation"),
     sectBonus: sectBonus(state, data),

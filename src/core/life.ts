@@ -69,6 +69,8 @@ export function createInitialState(
       stage: 0,
       cultivation: 0,
       breakthroughs: 0,
+      breakthroughStudy: 0,
+      retreatStreak: 0,
       goalIds: [],
       startFragments: meta.fragments.length,
       tribulation: null,

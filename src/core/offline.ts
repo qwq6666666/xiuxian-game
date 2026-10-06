@@ -4,6 +4,7 @@ import type { GameData } from "../data/types";
 import { lifespanMonths } from "./formulas";
 import { addLog, atBottleneck, realmOf } from "./progress";
 import type { GameState, OfflineStop } from "./state";
+import { advanceStreak } from "./fatigue";
 import { accrueFocus } from "./focus";
 import { addCultivation, monthlyGain } from "./tick";
 
@@ -61,7 +62,7 @@ export function applyOffline(
       break;
     }
     gained += monthlyGain(s, sched, data);
-    s = addCultivation(accrueFocus({ ...s, ageMonths: s.ageMonths + 1 }, data), sched, s.ageMonths + 1, data);
+    s = advanceStreak(addCultivation(accrueFocus({ ...s, ageMonths: s.ageMonths + 1 }, data), sched, s.ageMonths + 1, data), sched, true, data);
     months++;
   }
   if (months > 0) {

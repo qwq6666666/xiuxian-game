@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, Omen, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 27;
+export const SAVE_VERSION = 28;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -295,6 +295,10 @@ export interface GameState {
   cultivation: number;
   /** 本世成功突破大境界的次數 */
   breakthroughs: number;
+  /** 突破心得（M46）：目前境界連續失敗的次數，成功突破或轉世歸零；每次讓下次成功率增加一點 */
+  breakthroughStudy: number;
+  /** 疲勞（M46）：連續從事會疲勞的安排（閉關）的月數，做別的安排時逐月回復，轉世歸零 */
+  retreatStreak: number;
   /** 這一世抽出的目標 id */
   goalIds: string[];
   /** 這一世開始時已有的殘卷數，用來算「本世取得」 */

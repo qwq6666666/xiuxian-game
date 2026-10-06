@@ -104,6 +104,10 @@ export function validateGameData(data: GameData): GameData {
   });
   data.schedules.forEach((s, i) => {
     if (s.realmMin !== undefined) has(realmIds, s.realmMin, `schedules.json 第 ${i + 1} 筆（${s.id}）的 realmMin`, "realms.json");
+    for (const key of ["realmMin", "realmMax"] as const) {
+      const r = s.fatigue?.[key];
+      if (r !== undefined) has(realmIds, r, `schedules.json 第 ${i + 1} 筆（${s.id}）的 fatigue.${key}`, "realms.json");
+    }
     for (const f of s.finds) has(itemIds, f.itemId, `schedules.json 第 ${i + 1} 筆（${s.id}）的 finds`, "items.json");
     for (const f of s.drops ?? []) {
       has(itemIds, f.itemId, `schedules.json 第 ${i + 1} 筆（${s.id}）的 drops`, "items.json");

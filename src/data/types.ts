@@ -57,6 +57,10 @@ export interface GameConfig {
   frameGapSeconds: number;
   /** 離線時壽元剩餘低於此比例就停止閉關 */
   offlineStopLifespanRatio: number;
+  /** 突破心得（M46）：每次失敗累積一點，下次成功率增加這麼多（0–1） */
+  breakthroughStudyBonus: number;
+  /** 突破心得的加成上限 */
+  breakthroughStudyCap: number;
   /** 閉關見聞（M45）：未滿這個年數用簡短句，以上用「意象＋感受＋收尾」拼出的句子 */
   retreatBriefYears: number;
   /** 閉關見聞：收尾用吐槽版的機率 */
@@ -137,6 +141,23 @@ export interface ScheduleDef {
   requiresSect?: boolean;
   /** 世局符合條件時，在這個安排旁顯示的提示，可用名稱欄位 */
   worldHints?: { when: WorldWhen; text: string }[];
+  /** 疲勞（M46）：連續選這個安排太久，每月修為遞減；改做別的安排會回復。沒有這個欄位就不會疲勞 */
+  fatigue?: FatigueRule;
+}
+
+export interface FatigueRule {
+  /** 到這個境界（含）才開始疲勞；之前連續月數不累積。省略代表一開始就會 */
+  realmMin?: string;
+  /** 超過這個境界就不再疲勞（含這個境界本身仍會）。省略代表沒有上限 */
+  realmMax?: string;
+  /** 連續幾個月內不受影響 */
+  graceMonths: number;
+  /** 超過寬限之後，每連續一年修為倍率減少多少 */
+  perYear: number;
+  /** 倍率的下限（0–1） */
+  floor: number;
+  /** 做別的安排時，每個月連續月數減少多少 */
+  recoverPerMonth: number;
 }
 
 export type ItemEffect =
