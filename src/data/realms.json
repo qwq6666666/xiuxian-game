@@ -53,13 +53,32 @@
     "id": "yuanying",
     "name": "元嬰",
     "lifespan": 1000,
-    "cultivationMult": 12,
+    "cultivationMult": 19,
     "stageNames": ["初期", "中期", "後期"],
     "need": { "base": 32000, "growth": 1.8 },
     "breakthrough": "manual",
     "endsLife": "untilYuanying",
     "ending": "yuanying",
     "daoYun": 800,
-    "zuohua": { "daoYunPerYear": 0.3 }
+    "zuohua": { "daoYunPerYear": 0.3 },
+    "breakthroughRule": {
+      "baseRate": 0.06,
+      "insightBonus": 0.015,
+      "requiresTalent": { "id": "ningshen", "level": 4 },
+      "talentRate": { "id": "ningshen", "from": 4, "perLevel": 0.08 },
+      "gateText": "元嬰已然圓滿，只是神魂尚欠一分凝練，再往上一步無從談起。"
+    }
+  },
+  {
+    "id": "huashen",
+    "name": "化神",
+    "lifespan": 2000,
+    "cultivationMult": 24,
+    "stageNames": [""],
+    "need": { "base": 64000, "growth": 1.8 },
+    "breakthrough": "manual",
+    "endsLife": "always",
+    "ending": "huashen",
+    "daoYun": 2000
   }
 ]

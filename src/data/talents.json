@@ -82,5 +82,17 @@
       "base": 250,
       "growth": 1.5
     }
+  },
+  {
+    "id": "ningshen",
+    "name": "凝神",
+    "desc": "元嬰之後，神魂仍可再凝一分。",
+    "maxLevel": 6,
+    "effect": "breakthroughAid",
+    "perLevel": 1,
+    "cost": {
+      "base": 1100,
+      "growth": 1.5
+    }
   }
 ]

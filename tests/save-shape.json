@@ -1,5 +1,5 @@
 {
-  "version": 13,
+  "version": 14,
   "shape": {
     "TravelState": [
       "locationId",
@@ -13,6 +13,7 @@
       "daoYun",
       "fragments",
       "goals",
+      "huashen",
       "lastLife",
       "lives",
       "reached",

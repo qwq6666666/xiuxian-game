@@ -52,7 +52,7 @@ export function describeTalent(talent: TalentDef, level: number): string {
     case "failLoss":
       return `突破失敗的修為損失 −${pct(talent.perLevel)}`;
     case "breakthroughAid":
-      return `結嬰之時用得上，等級愈高愈有把握（${level} 級）`;
+      return `衝擊大關之時用得上，等級愈高愈有把握（${level} 級）`;
   }
 }
 
@@ -67,6 +67,7 @@ export function talentSummary(talents: Record<string, number>, data: GameData): 
 export function reviewTitle(review: LifeReview | null): string {
   if (review?.cause === "cleared") return "金丹大成";
   if (review?.cause === "yuanying") return "元嬰大成";
+  if (review?.cause === "huashen") return "化神大成";
   if (review?.cause === "zuohua") return "閉關坐化";
   return "此生已盡";
 }
@@ -223,7 +224,9 @@ export interface CollectionSummary {
   total: number;
   /** 元嬰總次數 */
   yuanyingTotal: number;
-  rows: { id: string; name: string; desc: string; count: number; yuanying: number }[];
+  /** 化神總次數 */
+  huashenTotal: number;
+  rows: { id: string; name: string; desc: string; count: number; yuanying: number; huashen: number }[];
   /** 每種出身都至少通關一次 */
   allCleared: boolean;
 }
@@ -236,10 +239,12 @@ export function collectionSummary(meta: Meta, data: GameData): CollectionSummary
     desc: o.desc,
     count: meta.clears[o.id] ?? 0,
     yuanying: meta.yuanying[o.id] ?? 0,
+    huashen: meta.huashen[o.id] ?? 0,
   }));
   return {
     total: rows.reduce((sum, r) => sum + r.count, 0),
     yuanyingTotal: rows.reduce((sum, r) => sum + r.yuanying, 0),
+    huashenTotal: rows.reduce((sum, r) => sum + r.huashen, 0),
     rows,
     allCleared: rows.every((r) => r.count > 0),
   };

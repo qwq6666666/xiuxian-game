@@ -55,6 +55,8 @@ export interface BreakthroughRule {
   requiresTalent?: { id: string; level: number };
   /** 天賦等級超過 from 之後，每級增加的成功率 */
   talentRate?: { id: string; from: number; perLevel: number };
+  /** 缺少所需天賦時顯示的說明；沒寫則用 text.json 的 breakthroughGate */
+  gateText?: string;
 }
 
 export type EndsLife = "always" | "untilCleared" | "untilYuanying" | "never";
@@ -237,11 +239,11 @@ export interface TalentDef {
   advice?: { upTo: number; reason: string };
 }
 
-export type ReviewCause = "lifespan" | "adventure" | "event" | "cleared" | "yuanying" | "zuohua";
-export const REVIEW_CAUSES: readonly ReviewCause[] = ["lifespan", "adventure", "event", "cleared", "yuanying", "zuohua"];
+export type ReviewCause = "lifespan" | "adventure" | "event" | "cleared" | "yuanying" | "huashen" | "zuohua";
+export const REVIEW_CAUSES: readonly ReviewCause[] = ["lifespan", "adventure", "event", "cleared", "yuanying", "huashen", "zuohua"];
 /** 境界結束這一世時可用的結束方式 */
-export type EndingCause = "cleared" | "yuanying";
-export const ENDING_CAUSES: readonly EndingCause[] = ["cleared", "yuanying"];
+export type EndingCause = "cleared" | "yuanying" | "huashen";
+export const ENDING_CAUSES: readonly EndingCause[] = ["cleared", "yuanying", "huashen"];
 
 /** 一生回顧的收尾句；有 ifItem 的只在持有該物品（未用完）時使用 */
 export interface ClosingVariant {

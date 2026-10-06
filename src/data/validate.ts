@@ -194,6 +194,7 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
         const q = obj(r.requiresTalent, tw);
         breakthroughRule.requiresTalent = { id: str(q, "id", tw), level: num(q, "level", tw, { gt: 0, integer: true }) };
       }
+      if (r.gateText !== undefined) breakthroughRule.gateText = str(r, "gateText", rw);
       if (r.talentRate !== undefined) {
         const tw = `${rw}.talentRate`;
         const q = obj(r.talentRate, tw);
@@ -234,8 +235,8 @@ export function validateRealms(raw: unknown, file = "realms.json"): RealmDef[] {
   });
   uniqueIds(realms, file);
   const last = realms[realms.length - 1];
-  if (last && last.endsLife === "never") {
-    fail(`${file} 第 ${realms.length} 筆（${last.id}）`, "endsLife", `最後一個境界不能是 "never"，否則這一世永遠不會結束`);
+  if (last && last.endsLife !== "always") {
+    fail(`${file} 第 ${realms.length} 筆（${last.id}）`, "endsLife", `最後一個境界必須是 "always"，否則進入後這一世不會結束，卻沒有下一個境界可走`);
   }
   return realms;
 }

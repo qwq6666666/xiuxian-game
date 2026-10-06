@@ -76,9 +76,11 @@ describe("元嬰期：第一次結束這一世，之後繼續活", () => {
 
 describe("endsLife：untilYuanying 的資料檢查", () => {
   const base = JSON.parse(JSON.stringify(gameData.realms));
-  it("可以當最後一個境界；never 當最後一個境界報錯", () => {
-    expect(validateRealms(base)[base.length - 1].endsLife).toBe("untilYuanying");
-    const bad = base.map((r: object, i: number) => (i === base.length - 1 ? { ...r, endsLife: "never" } : r));
-    expect(() => validateRealms(bad)).toThrow("最後一個境界不能是");
+  it("元嬰不是最後一個境界（化神接在後面）；最後一個境界不是 always 就報錯", () => {
+    expect(base.find((r: { id: string }) => r.id === "yuanying").endsLife).toBe("untilYuanying");
+    for (const endsLife of ["never", "untilYuanying"]) {
+      const bad = base.map((r: object, i: number) => (i === base.length - 1 ? { ...r, endsLife } : r));
+      expect(() => validateRealms(bad)).toThrow("最後一個境界必須是");
+    }
   });
 });

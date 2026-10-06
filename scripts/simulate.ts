@@ -7,6 +7,7 @@
 // 道韻依目標等級均衡購買五種天賦，比較接近認真玩的人。
 // 通關後策略（post，第 5 個參數）：通關前與 mixed 相同；第一次通關之後道韻先買神光到結嬰門檻，
 // 再依較高的目標均衡購買，並量測首次元嬰、金丹期單世時長與結嬰嘗試次數（對照 GDD 第 23.6 節）。
+// post 另在第一次元嬰之後買凝神到化神門檻、嘗試化神，並量測首次化神、元嬰期單世時長與化神嘗試次數（GDD 第 25.6 節）。
 // 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
 // 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
 // 例：npm run sim -- 300 1 40 post
@@ -73,6 +74,15 @@ function buyTalentsPost(state: GameState): GameState {
     if (!canBuyTalent(s, need.id, gameData)) return s;
     s = buyTalent(s, need.id, gameData);
   }
+  // 第一次元嬰之後：凝神買到化神門檻再依目標均衡
+  const gate = gameData.realms.find((r) => r.id === "yuanying")?.breakthroughRule?.requiresTalent;
+  if (gate && Object.values(s.meta.yuanying).some((n) => n > 0)) {
+    while ((s.meta.talents[gate.id] ?? 0) < gate.level) {
+      if (!canBuyTalent(s, gate.id, gameData)) return s;
+      s = buyTalent(s, gate.id, gameData);
+    }
+    return buyTalentsBalanced(s, { ...POST_TARGETS, ningshen: 6 });
+  }
   return buyTalentsBalanced(s, POST_TARGETS);
 }
 
@@ -95,12 +105,17 @@ function buyTalentsBalanced(state: GameState, targets: Record<string, number> = 
 }
 
 /** 最近一世的量測：金丹期的結嬰嘗試次數與停留月數（沒進金丹為 0） */
-let lifeStats = { attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: false, zuohua: false };
+let lifeStats = { attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: false, zuohua: false, huashenAttempts: 0, yuanyingMonths: 0, huashenReady: false };
 
 /** 從開局玩到這一世結束（死亡、通關或元嬰大成） */
 function playLife(start: GameState): GameState {
   const need = gameData.realms.find((r) => r.id === "jindan")?.breakthroughRule?.requiresTalent;
-  lifeStats = { attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: !need || (start.meta.talents[need.id] ?? 0) >= need.level, zuohua: false };
+  const hgate = gameData.realms.find((r) => r.id === "yuanying")?.breakthroughRule?.requiresTalent;
+  lifeStats = {
+    attempts: 0, jindanMonths: 0, jindanEnd: 0, ready: !need || (start.meta.talents[need.id] ?? 0) >= need.level, zuohua: false,
+    huashenAttempts: 0, yuanyingMonths: 0, huashenReady: !hgate || (start.meta.talents[hgate.id] ?? 0) >= hgate.level,
+  };
+  let yuanyingEntered: number | null = null;
   let jindanEntered: number | null = null;
   let jindanLeft: number | null = null;
   let state = startLife(start, gameData);
@@ -113,6 +128,7 @@ function playLife(start: GameState): GameState {
     // 卡在瓶頸時反覆嘗試突破，直到成功或老死
     while (state.phase === "living" && atBottleneck(state, gameData) && canBreakthrough(state, gameData)) {
       if (state.realmId === "jindan") lifeStats.attempts++;
+      if (state.realmId === "yuanying") lifeStats.huashenAttempts++;
       state = attemptBreakthrough(state, true, gameData);
       if (atBottleneck(state, gameData)) break;
     }
@@ -125,12 +141,18 @@ function playLife(start: GameState): GameState {
         lifeStats.jindanEnd = 3;
       }
     }
+    if (yuanyingEntered === null && state.realmId === "yuanying") yuanyingEntered = state.ageMonths;
+    // post 策略：凝神沒到門檻，元嬰後期圓滿、卡在瓶頸時坐化，不空等壽盡
+    if (strategy === "post" && !lifeStats.huashenReady && state.realmId === "yuanying" && state.phase === "living" && canZuohua(state, gameData) && atBottleneck(state, gameData)) {
+      state = zuohua(state, gameData);
+    }
     // post 策略：神光沒到門檻，修到金丹後期圓滿、卡在瓶頸時坐化，不空等壽盡（第 24.2 節）
     if (strategy === "post" && !lifeStats.ready && state.phase === "living" && canZuohua(state, gameData) && atBottleneck(state, gameData)) {
       lifeStats.zuohua = true;
       state = zuohua(state, gameData);
     }
   }
+  if (yuanyingEntered !== null) lifeStats.yuanyingMonths = state.ageMonths - yuanyingEntered;
   if (jindanEntered !== null) lifeStats.jindanMonths = (jindanLeft ?? state.ageMonths) - jindanEntered;
   return state;
 }
@@ -170,7 +192,7 @@ function singleLives(): void {
   const reached = new Map<string, number>();
   const eventTotals = new Map<string, number>();
   const choiceCounts: number[] = [];
-  const causes = { lifespan: 0, event: 0, adventure: 0, cleared: 0, yuanying: 0, zuohua: 0 };
+  const causes = { lifespan: 0, event: 0, adventure: 0, cleared: 0, yuanying: 0, huashen: 0, zuohua: 0 };
   let totalMonths = 0;
   let totalProgress = 0;
 
@@ -252,6 +274,11 @@ function campaigns(): void {
   const yuanyingHours: number[] = [];
   const jindanMinutes: number[] = [];
   const attemptCounts: number[] = [];
+  /** 化神指標：首次化神與首次元嬰相隔幾世、之間的遊玩小時，元嬰期單世分鐘數（凝神已到門檻），化神嘗試次數 */
+  const huashenGap: number[] = [];
+  const huashenHours: number[] = [];
+  const yuanyingMinutes: number[] = [];
+  const huashenAttemptCounts: number[] = [];
   /** 金丹期（通關後繼續活的世）的止步：0 初期、1 中期、2 後期、3 結嬰成功 */
   const jindanEnds = [0, 0, 0, 0];
   /** 通關後進了金丹、但神光還沒到門檻而空等的世數 */
@@ -267,6 +294,9 @@ function campaigns(): void {
     let gotBoth = false;
     let gotAll = false;
     let gotYuanying = false;
+    let gotHuashen = false;
+    let yuanyingLife = 0;
+    let yuanyingMonthsAt = 0;
     let clearLife = 0;
     for (let k = 0; k < lives; k++) {
       const fragmentsBefore = state.meta.fragments.length;
@@ -315,6 +345,17 @@ function campaigns(): void {
       if (lifeStats.jindanMonths > 0 && lifeStats.ready) jindanMinutes.push((lifeStats.jindanMonths * gameData.config.msPerMonth) / 60000);
       if (lifeStats.attempts > 0) attemptCounts.push(lifeStats.attempts);
       if (lifeStats.jindanMonths > 0 && lifeStats.ready) jindanEnds[lifeStats.jindanEnd]++;
+      if (gotYuanying && lifeStats.yuanyingMonths > 0 && lifeStats.huashenReady) yuanyingMinutes.push((lifeStats.yuanyingMonths * gameData.config.msPerMonth) / 60000);
+      if (lifeStats.huashenAttempts > 0) huashenAttemptCounts.push(lifeStats.huashenAttempts);
+      if (!gotHuashen && state.review?.cause === "huashen") {
+        gotHuashen = true;
+        huashenGap.push(k + 1 - yuanyingLife);
+        huashenHours.push(((months - yuanyingMonthsAt) * gameData.config.msPerMonth) / 3_600_000);
+      }
+      if (!gotYuanying && (state.review?.cause === "yuanying" || (state.review?.cause === "huashen" && !gotYuanying))) {
+        yuanyingLife = k + 1;
+        yuanyingMonthsAt = months;
+      }
       if (!gotYuanying && state.review?.cause === "yuanying") {
         gotYuanying = true;
         yuanyingGap.push(k + 1 - clearLife);
@@ -385,6 +426,15 @@ function campaigns(): void {
     console.log(`  （神光未到門檻的金丹期：修到後期圓滿後坐化離場 ${zuohuaLives} 世；壽盡前沒修到圓滿 ${waitingLives} 世；皆不計入上面的時長）`);
     const a = mean(attemptCounts);
     console.log(`  ${ok(a >= 2 && a <= 5)} 每世結嬰嘗試：平均 ${a.toFixed(1)} 次（目標 2–5 次，僅計有嘗試的 ${attemptCounts.length} 世）`);
+    const hgMed = median(huashenGap);
+    console.log("對照第 25.6 節（化神）：");
+    console.log(`  ${ok(hgMed >= 8 && hgMed <= 14)} 首次化神：首次元嬰後再 ${Number.isFinite(hgMed) ? `${hgMed} 世` : `超過 ${lives} 世`}（中位數；目標 8–14 世），${lives} 世內已化神 ${((huashenGap.length / runs) * 100).toFixed(0)}%`);
+    const hh = mean(huashenHours);
+    console.log(`  ${ok(hh >= 6 && hh <= 9)} 首次元嬰到首次化神的遊玩：平均 ${hh.toFixed(1)} 小時（目標 6–9 小時，僅計已化神者；每世仍要重走前三境，見 GDD 25.12）`);
+    const ym = mean(yuanyingMinutes);
+    console.log(`  ${ok(ym >= 20 && ym <= 45)} 元嬰期單世時長：平均 ${ym.toFixed(1)} 分鐘（目標 20–45 分鐘，僅計凝神已到門檻的 ${yuanyingMinutes.length} 世）`);
+    const ha = mean(huashenAttemptCounts);
+    console.log(`  ${ok(ha >= 2 && ha <= 5)} 每世化神嘗試：平均 ${ha.toFixed(1)} 次（目標 2–5 次，僅計有嘗試的 ${huashenAttemptCounts.length} 世）`);
   }
   console.log(`  ${lives} 世內已築基 ${((zhujiLives.length / runs) * 100).toFixed(0)}%、已通關 ${((clearLives.length / runs) * 100).toFixed(0)}%`);
 }

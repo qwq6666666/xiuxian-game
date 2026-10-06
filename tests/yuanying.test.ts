@@ -32,9 +32,8 @@ const atCap = (level: number, patch = {}) =>
   });
 
 describe("結嬰：成功率與門檻", () => {
-  it("資料：元嬰是最後一個境界，三階段，第一次元嬰結束這一世且結束方式為 yuanying", () => {
-    const last = gameData.realms[gameData.realms.length - 1];
-    expect(last.id).toBe("yuanying");
+  it("資料：元嬰三階段，第一次元嬰結束這一世且結束方式為 yuanying", () => {
+    const last = gameData.realms.find((r) => r.id === "yuanying")!;
     expect(last).toMatchObject({ endsLife: "untilYuanying", ending: "yuanying", stageNames: ["初期", "中期", "後期"] });
     expect(rule.requiresTalent).toEqual({ id: "shenguang", level: 4 });
   });

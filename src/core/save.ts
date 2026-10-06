@@ -101,6 +101,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   },
   // v12 的天下圖只供觀看：舊檔從出生村開始，未曾旅行。
   12: (d) => ({ ...d, version: 13, travel: { locationId: "village", targetId: null, totalMonths: 0, remainingMonths: 0, trail: ["village"] } }),
+  // v13 沒有化神紀錄：補上空的紀錄
+  13: (d) => ({ ...d, version: 14, meta: { ...obj(d.meta, "meta"), huashen: {} } }),
 };
 
 function fail(field: string, msg: string): never {
@@ -218,7 +220,7 @@ function parseMeta(v: unknown, data: GameData): Meta {
     return id;
   });
   if (new Set(fragments).size !== fragments.length) fail("meta.fragments", "有重複的殘卷");
-  const originCounts = (key: "clears" | "yuanying"): Record<string, number> => {
+  const originCounts = (key: "clears" | "yuanying" | "huashen"): Record<string, number> => {
     const counts = intRecord(o, key, `meta.${key}`);
     for (const [id, n] of Object.entries(counts)) {
       if (!data.origins.some((x) => x.id === id)) fail(`meta.${key}.${id}`, `找不到出身 ${id}`);
@@ -237,6 +239,7 @@ function parseMeta(v: unknown, data: GameData): Meta {
     fragments,
     clears: originCounts("clears"),
     yuanying: originCounts("yuanying"),
+    huashen: originCounts("huashen"),
     daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
     talents,
     reached: o.reached as string[],

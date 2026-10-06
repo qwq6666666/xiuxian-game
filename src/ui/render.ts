@@ -351,7 +351,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const head = document.createElement("div");
     head.className = "codex-head";
     const title = document.createElement("h2");
-    title.textContent = `收藏　通關 ${sum.total} 次${sum.yuanyingTotal > 0 ? `　元嬰 ${sum.yuanyingTotal} 次` : ""}`;
+    title.textContent = `收藏　通關 ${sum.total} 次${sum.yuanyingTotal > 0 ? `　元嬰 ${sum.yuanyingTotal} 次` : ""}${sum.huashenTotal > 0 ? `　化神 ${sum.huashenTotal} 次` : ""}`;
     const close = document.createElement("button");
     close.type = "button";
     close.textContent = "關閉";
@@ -370,7 +370,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       count.className = "changes";
       count.textContent =
         (row.count > 0 ? `通關 ${row.count} 次` : `（${data.text.collection.empty}）`) +
-        (row.yuanying > 0 ? `　元嬰 ${row.yuanying} 次` : "");
+        (row.yuanying > 0 ? `　元嬰 ${row.yuanying} 次` : "") +
+        (row.huashen > 0 ? `　化神 ${row.huashen} 次` : "");
       const desc = document.createElement("p");
       desc.className = "fragment-text";
       desc.textContent = row.desc;
@@ -761,7 +762,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const loss = Math.round(currentFailLoss(state, data) * 100);
       e.btInfo.textContent = `成功率 ${rate}%，失敗將損失 ${loss}% 修為。`;
     } else if (atBottleneck(state, data) && missingTalent(state, data) !== null) {
-      e.btInfo.textContent = data.text.breakthroughGate;
+      e.btInfo.textContent = breakthroughRuleOf(state, data)?.gateText ?? data.text.breakthroughGate;
     } else {
       e.btInfo.textContent = "修為圓滿，遇上瓶頸時方可突破。";
     }
@@ -888,7 +889,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     if (canBt && stuck) {
       e.todoText.textContent = "修為圓滿，可以嘗試突破。";
     } else if (gated) {
-      e.todoText.textContent = data.text.breakthroughGate;
+      e.todoText.textContent = breakthroughRuleOf(state, data)?.gateText ?? data.text.breakthroughGate;
     } else if (state.phase === "living" && left < lifespan * 0.1) {
       e.todoText.textContent = `壽元將盡，只剩 ${left} 年。`;
     } else {

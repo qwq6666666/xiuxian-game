@@ -40,6 +40,17 @@ export function applyYuanying(state: GameState): GameState {
   };
 }
 
+/** 記一次化神大成：該出身次數加一。化神是終局，只走結束這一世的路。 */
+export function applyHuashen(state: GameState): GameState {
+  return {
+    ...state,
+    meta: {
+      ...state.meta,
+      huashen: { ...state.meta.huashen, [state.originId]: (state.meta.huashen[state.originId] ?? 0) + 1 },
+    },
+  };
+}
+
 /** 繼續活著的突破：依這個境界的結束方式記一次紀錄並加上旗標，這一世不結束 */
 export function applyEndingAndContinue(state: GameState, ending: EndingCause): GameState {
   const flag = ending === "yuanying" ? YUANYING_FLAG : CLEARED_FLAG;
@@ -166,9 +177,11 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
   const earned = cause === "cleared" ? applyClear(state) : state;
   // 元嬰大成：記一次元嬰，不另算通關
   const yuanying = cause === "yuanying" ? applyYuanying(state).meta.yuanying : state.meta.yuanying;
+  // 化神大成：記一次化神，不另算通關與元嬰
+  const huashen = cause === "huashen" ? applyHuashen(state).meta.huashen : state.meta.huashen;
   return {
     ...state,
-    phase: cause === "cleared" || cause === "yuanying" ? "cleared" : "dead",
+    phase: cause === "cleared" || cause === "yuanying" || cause === "huashen" ? "cleared" : "dead",
     pendingEvent: null,
     review,
     meta: {
@@ -179,6 +192,7 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       fragments: earned.meta.fragments,
       clears: earned.meta.clears,
       yuanying,
+      huashen,
       goals,
       lastLife: lifeBrief(state),
     },

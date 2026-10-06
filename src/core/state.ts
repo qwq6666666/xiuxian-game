@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -28,6 +28,8 @@ export interface Meta {
   clears: Record<string, number>;
   /** 各出身結成元嬰的次數（出身 id → 次數），只收藏，不影響任何數值 */
   yuanying: Record<string, number>;
+  /** 各出身化神大成的次數（出身 id → 次數），只收藏，不影響任何數值 */
+  huashen: Record<string, number>;
   /** 各目標達成的次數（目標 id → 次數），只收藏，不影響任何數值 */
   goals: Record<string, number>;
   /** 上一世的簡要結果，供一生回顧比較；還沒走完過一世為 null */
@@ -43,7 +45,7 @@ export interface LifeBrief {
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, goals: {}, lastLife: null };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, goals: {}, lastLife: null };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
