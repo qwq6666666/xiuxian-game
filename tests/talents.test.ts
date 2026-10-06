@@ -187,7 +187,8 @@ describe("第二世比第一世快", () => {
     for (let seed = 1; seed <= n; seed++) {
       const run = (meta: Meta) => {
         const s = startLife(createInitialState(seed, gameData, meta));
-        return tick({ ...s, eventThreshold: 1e9 }, 600).cultivation + tick({ ...s, eventThreshold: 1e9 }, 600).stage * 1000;
+        const t = tick({ ...s, eventThreshold: 1e9 }, 600);
+        return t.cultivation + t.stage * 1000;
       };
       plain += run(emptyMeta());
       boosted += run(withTalents({ suhui: 4 }));

@@ -5,4 +5,6 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 export default defineConfig({
   base: './',
   plugins: [viteSingleFile()],
+  // 統計型測試在 CI 的小機器上會變慢，預設 5 秒不夠
+  test: { testTimeout: 30000 },
 });
