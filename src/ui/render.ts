@@ -55,6 +55,7 @@ export interface UiHandlers {
   onPeek(choiceIndex: number): void;
   onPickChart(index: number): void;
   onSetWish(goalId: string | null): void;
+  onSetNations(count: number): void;
   onSpeed(speed: number): void;
   onReset(): void;
   onExport(): void;

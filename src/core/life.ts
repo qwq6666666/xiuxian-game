@@ -6,6 +6,7 @@ import { talentBonus } from "./formulas";
 import { nextInt } from "./rng";
 import { artifactsToKeep } from "./forge";
 import { chartChoiceLevel, drawAlternates, drawChart } from "./chart";
+import { clamp } from "./noise";
 import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type LogEntry, type Meta } from "./state";
 
 /** 重新擲出屬性、靈根、出身，並套用出身效果；有擇身天賦時再多抽備選命盤。夙願跟著目標走，重擲後要重選。 */
@@ -96,6 +97,14 @@ export function createInitialState(
 }
 
 /** 擲骰階段消耗一次重擲，次數用完則原樣回傳 */
+/** 擲骰畫面選國家數：這一世與之後每一世都用它（存在 meta），世界由種子與它重算 */
+export function setNationCount(state: GameState, count: number, data: GameData = gameData): GameState {
+  if (state.phase !== "rolling") return state;
+  const n = clamp(Math.round(count), data.map.nations.min, data.map.nations.max);
+  if (n === state.nationCount) return state;
+  return { ...state, nationCount: n, meta: { ...state.meta, nationCount: n } };
+}
+
 export function reroll(state: GameState, data: GameData = gameData): GameState {
   if (state.phase !== "rolling" || state.rerolls <= 0) return state;
   return { ...rollLife(state, data), rerolls: state.rerolls - 1 };

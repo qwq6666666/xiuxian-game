@@ -58,7 +58,7 @@ export const birthHtml = (state: GameState, data: GameData): string => {
 export interface RollContext {
   stageEl: HTMLElement;
   data: GameData;
-  handlers: Pick<UiHandlers, "onRename" | "onMethod" | "onReroll" | "onStart" | "onPickChart" | "onSetWish">;
+  handlers: Pick<UiHandlers, "onRename" | "onMethod" | "onReroll" | "onStart" | "onPickChart" | "onSetWish" | "onSetNations">;
   /** 目前舞台畫的是擲骰還是修行畫面；由 render.ts 持有 */
   getBuilt(): "roll" | "life" | null;
   setBuilt(view: "roll"): void;
@@ -115,8 +115,17 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
     return `<section class="wishes"><h2>夙願</h2><p class="desc">指定這一世的一個目標，不給任何數值；再按一次取消。</p><div class="choices">${rows}</div></section>`;
   }
 
+  /** 天下國數：下一世起生效，存在跨世資料裡，每一世沿用 */
+  function nationsHtml(state: GameState): string {
+    const { min, max } = data.map.nations;
+    const rows = Array.from({ length: max - min + 1 }, (_, i) => min + i)
+      .map((n) => `<button type="button" data-nations="${n}" aria-pressed="${n === state.nationCount}" class="${n === state.nationCount ? "active" : ""}"><strong>${n} 國</strong></button>`)
+      .join("");
+    return `<section class="nations"><h2>天下國數</h2><p class="desc">這一世與之後每一世，天下分成幾國。國越少，各國越大；擲骰時可隨時改。</p><div class="choices nation-choices">${rows}</div></section>`;
+  }
+
   function renderRoll(state: GameState): void {
-    const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.methodId}|${state.meta.fragments.length}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}|${JSON.stringify(state.altCharts)}|${state.wishId}|${state.goalIds.join(",")}`;
+    const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.methodId}|${state.meta.fragments.length}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}|${JSON.stringify(state.altCharts)}|${state.wishId}|${state.goalIds.join(",")}|${state.nationCount}`;
     if (getBuilt() === "roll" && key === rollKey) return;
     setBuilt("roll");
     rollKey = key;
@@ -134,6 +143,7 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
         ${guideHtml(data)}
         ${identityHtml(state, data)}
         ${birthHtml(state, data)}
+        ${nationsHtml(state)}
         ${goalsHtml(state, data)}
         ${wishHtml(state)}
         ${chartsHtml(state)}
@@ -152,6 +162,7 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
     });
     stageEl.querySelectorAll<HTMLButtonElement>("[data-chart]").forEach((b) => b.addEventListener("click", () => handlers.onPickChart(Number(b.dataset.chart))));
     stageEl.querySelectorAll<HTMLButtonElement>("[data-wish]").forEach((b) => b.addEventListener("click", () => handlers.onSetWish(b.classList.contains("active") ? null : b.dataset.wish!)));
+    stageEl.querySelectorAll<HTMLButtonElement>("[data-nations]").forEach((b) => b.addEventListener("click", () => handlers.onSetNations(Number(b.dataset.nations))));
     stageEl.querySelectorAll<HTMLButtonElement>("[data-method]").forEach((b) => b.addEventListener("click", () => handlers.onMethod(b.dataset.method!)));
     stageEl.querySelector("#reroll")!.addEventListener("click", () => handlers.onReroll());
     stageEl.querySelector("#start")!.addEventListener("click", () => handlers.onStart());

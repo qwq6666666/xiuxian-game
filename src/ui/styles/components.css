@@ -21,6 +21,8 @@
 .choices { display: flex; flex-direction: column; gap: 6px; }
 .choices button { text-align: left; display: flex; flex-direction: column; flex-shrink: 0; }
 .choices button.active { border-color: var(--accent); color: var(--accent); }
+.nation-choices { flex-direction: row; flex-wrap: wrap; }
+.nation-choices button { min-width: 4.5em; align-items: center; }
 .choices button.active strong::before { content: "✓ "; }
 
 .items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--sp-2); }

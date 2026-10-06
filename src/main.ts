@@ -12,7 +12,7 @@ import { pickChart } from "./core/chart";
 import { peekOmen } from "./core/omen";
 import { setWish } from "./core/wish";
 import { applyOffline } from "./core/offline";
-import { createInitialState, newLife, reroll, startLife } from "./core/life";
+import { createInitialState, newLife, reroll, setNationCount, startLife } from "./core/life";
 import { deserialize, importSave, serialize } from "./core/save";
 import type { GameState } from "./core/state";
 import { tick } from "./core/tick";
@@ -105,6 +105,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onPeek: (i) => update(peekOmen(state, i, data)),
   onPickChart: (i) => update(pickChart(state, i)),
   onSetWish: (id) => update(setWish(state, id, data)),
+  onSetNations: (n) => update(setNationCount(state, n, data)),
   onNewLife: () => update(newLife(state, data)),
   onBuyTalent: (id) => update(buyTalent(state, id, data)),
   onSchedule: (id) => update(setSchedule(state, id, data)),

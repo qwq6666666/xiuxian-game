@@ -1811,7 +1811,7 @@ M6 事件擴充到 40 個之後重跑（種子 1–4）：
 3. 世界縮圖要不要放進 M50（預設不放，選做）。
 4. 羊皮紙維持淺色（原型的樣子）。
 
-## 51. M51：領（國界格）與國家脫鉤、國家數可調（進行中，使用者已授權自主執行 M51–M53）
+## 51. M51：領（國界格）與國家脫鉤、國家數可調（已完成，使用者已授權自主執行 M51–M53）
 
 ### 51.1 決定（使用者）
 
@@ -1840,6 +1840,15 @@ M6 事件擴充到 40 個之後重跑（種子 1–4）：
 ### 51.5 存檔
 
 - `GameState.nationCount`（本世生效）與 `nextNationCount`（擲骰畫面選的，下一世起生效）；v28→v29 遷移：兩者皆 5。更新 `tests/save-shape.json`。
+
+### 51.5a 實作紀錄
+
+- 領：`core/fiefs.ts`（最佳候選撒 48 個點，種子無關的陸地遮罩與留白候選點每份資料只算一次；鄰接用 5 單位取樣網格；`partitionNations` 以面積加權輪流吞併相鄰領，每國連通）；`map.json` 新增 `fiefRules`、`nations`，移除各地域的 `territories`。
+- 世界：`World.owners` 是領→國；`WorldPolity.seat`（國都領）；`WorldSect.fief`；`WorldChange` 的 `split`／`owner` 帶 `fiefs`；`generateWorld(seed, data, nationCount)`、`worldFor(seed, data, nationCount)`；分裂需 ≥4 領、讓出需 ≥3 領，國都領不易手。
+- 判定：`territory.ts` 以領為單位，進度 p＝經過年數／`transitionYears`，已換主的領數＝⌊p×領數⌋，交戰中的是接下來兩個領；`travel.ts` 都城改為每國一座（`capital:<國 id>`，被併入的標舊都）。
+- 顯示：`frontier.ts` 格的所屬領＝格心加低頻雜訊位移後最近的領；易手領集合的格依離進攻方交界的最短路排序逐格換主；`Fight` 帶推進箭頭的起訖點。
+- 存檔 v29：`GameState.nationCount`、`Meta.nationCount`；遷移補 5，旅行位置在舊都的退回出生村。擲骰畫面「天下國數」按鈕（`setNationCount`，只在擲骰階段，存在 meta，轉世沿用）。
+- 基準：判定層單位從地域改成領，sim 不再與 M50 逐字相同；`simple`／`mixed` 全 ✓（`simple` 16 世首次金丹中位數 12，貼上限）。
 
 ### 51.6 驗收
 
