@@ -1,6 +1,8 @@
 {
   "initial": { "allyChance": 0.6, "feudChance": 0.45 },
   "candidateDistance": 190,
+  "effects": { "feudTravelMonths": 1, "feudPriceMult": 1.05, "allyPriceMult": 0.95 },
+  "influence": { "mergeAlly": 2.5, "mergeFeud": 0.3, "ownerAlly": 0.4, "ownerFeud": 2.5 },
   "changeCount": { "min": 0, "max": 2 },
   "changes": [
     { "id": "rel_ally_a", "type": "ally", "ageMin": 15, "ageMax": 90, "weight": 5, "note": "{sect}與{polity}互換盟帖，往後山貨與關稅都多了幾分人情。" },

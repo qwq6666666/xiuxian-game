@@ -66,6 +66,31 @@ export function marketTerritory(state: GameState, data: GameData = gameData) {
   return territoryAt(territoriesAt(world, Math.floor(state.ageMonths / 12), data), region.ferries![0]);
 }
 
+/**
+ * 入宗者所在地的國家與自己宗門的關係（M53）：互惠、世仇或都不是。沒入宗一律回 null。
+ * 國家取當時的領土歸屬（交戰中的領算還沒換主的一方）。
+ */
+export function placeRelation(state: GameState, point: Point, data: GameData = gameData): "ally" | "feud" | null {
+  if (state.sect === null) return null;
+  const world = worldFor(state.worldSeed, data, state.nationCount);
+  const age = Math.floor(state.ageMonths / 12);
+  const rel = worldAt(world, age).relations[state.sect.id];
+  if (!rel) return null;
+  const owner = territoryAt(territoriesAt(world, age, data), point).ownerId;
+  return owner === rel.feud ? "feud" : owner === rel.ally ? "ally" : null;
+}
+
+export function localRelation(state: GameState, data: GameData = gameData): "ally" | "feud" | null {
+  const place = placesAt(state, data).find((p) => p.id === state.travel.locationId);
+  return place ? placeRelation(state, place.point, data) : null;
+}
+
+/** 出生坊市所在國與入宗者宗門的關係，影響坊市物價 */
+export function marketRelation(state: GameState, data: GameData = gameData): "ally" | "feud" | null {
+  const world = worldFor(state.worldSeed, data, state.nationCount);
+  return placeRelation(state, data.map.regions.find((r) => r.id === world.birth.region)!.ferries![0], data);
+}
+
 export function localSectInfluence(state: GameState, data: GameData = gameData): boolean {
   const place = placesAt(state, data).find((p) => p.id === state.travel.locationId);
   if (!place) return false;
@@ -109,6 +134,8 @@ export interface TravelRoute {
   points: Point[];
   months: number;
   delayMonths: number;
+  /** 前往宗門世仇國境內的過關盤查，多出的月數（M53） */
+  inspectionMonths: number;
 }
 
 export function routeTo(state: GameState, targetId: string, data: GameData = gameData): TravelRoute | null {
@@ -120,7 +147,8 @@ export function routeTo(state: GameState, targetId: string, data: GameData = gam
   const anchors = regions.length > 1 ? regions.map((id) => data.map.regions.find((r) => r.id === id)!.capital!) : [];
   const territory = territoryAt(territoriesAt(worldFor(state.worldSeed, data, state.nationCount), Math.floor(state.ageMonths / 12), data), to.point);
   const delayMonths = territory?.contested ? data.map.territoryRules.travelDelayMonths : 0;
-  return { from, to, regions, points: [from.point, ...anchors, to.point], months: travelMonths(regions.length - 1) + delayMonths, delayMonths };
+  const inspectionMonths = placeRelation(state, to.point, data) === "feud" ? data.worldRelations.effects.feudTravelMonths : 0;
+  return { from, to, regions, points: [from.point, ...anchors, to.point], months: travelMonths(regions.length - 1) + delayMonths + inspectionMonths, delayMonths, inspectionMonths };
 }
 
 export function beginTravel(state: GameState, targetId: string, data: GameData = gameData): GameState {

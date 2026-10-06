@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { generateWorld, worldAt } from "../src/core/world";
-import { relationOf, sectPolityDistance } from "../src/core/relations";
+import { relationOf, sectPolityDistance, ties } from "../src/core/relations";
 import { fiefsFor } from "../src/core/fiefs";
 import { gameData as data } from "../src/data/load";
 import { validateWorldRelations } from "../src/data/validate";
 
 const SEEDS = Array.from({ length: 200 }, (_, i) => i * 7919 + 13);
 const AGES = [0, 20, 40, 60, 90, 120, 160, 200];
-// 關係全關掉的資料：用來比對「既有世局一個字都不位移」
-const off = { ...data, worldRelations: { ...data.worldRelations, initial: { allyChance: 0, feudChance: 0 }, changeCount: { min: 0, max: 0 } } };
+const NEUTRAL = { mergeAlly: 1, mergeFeud: 1, ownerAlly: 1, ownerFeud: 1 };
+// 中性資料：關係不影響世局生成（S2 倍率全為 1）
+const neutral = { ...data, worldRelations: { ...data.worldRelations, influence: NEUTRAL } };
+// 關係全關掉、又中性的資料：用來比對「關係只加不改」
+const off = { ...data, worldRelations: { ...data.worldRelations, influence: NEUTRAL, initial: { allyChance: 0, feudChance: 0 }, changeCount: { min: 0, max: 0 } } };
 
 describe("宗門與國家關係（S1）", () => {
   it("決定性：同種子同結果", () => {
@@ -16,9 +19,9 @@ describe("宗門與國家關係（S1）", () => {
     expect(generateWorld(42).changes).toEqual(generateWorld(42).changes);
   });
 
-  it("既有世局不位移：名字、歸屬、宗門與原有變化與關係全關時逐項相同", () => {
+  it("倍率中性時，關係不改變既有世局：名字、歸屬、宗門與原有變化與關係全關時逐項相同", () => {
     for (const seed of SEEDS) {
-      const a = generateWorld(seed);
+      const a = generateWorld(seed, neutral);
       const b = generateWorld(seed, off);
       expect(a.names, String(seed)).toEqual(b.names);
       expect(a.birth).toEqual(b.birth);
@@ -86,6 +89,34 @@ describe("宗門與國家關係（S1）", () => {
         for (const r of Object.values(snap.relations)) if (r.ally !== null) expect(r.ally).not.toBe(r.feud);
       }
     }
+  });
+
+  it("S2：互惠的兩國較易併、世仇的兩國較常奪領，而且只在倍率不為 1 時才不同", () => {
+    let allyMerge = 0;
+    let allyMergeNeutral = 0;
+    let feudOwner = 0;
+    let feudOwnerNeutral = 0;
+    const count = (w: ReturnType<typeof generateWorld>, kind: "merge" | "owner", rel: "ally" | "feud"): number => {
+      let n = 0;
+      let snap = worldAt(w, -1);
+      for (const c of w.changes) {
+        if (c.kind === "merge" && kind === "merge") {
+          if (ties(snap, c.from, c.to)[rel] > 0) n++;
+        } else if (c.kind === "owner" && kind === "owner") {
+          if (ties(snap, snap.owners[c.fiefs[0]], c.to)[rel] > 0) n++;
+        }
+        snap = worldAt(w, c.age);
+      }
+      return n;
+    };
+    for (let seed = 1; seed <= 400; seed++) {
+      allyMerge += count(generateWorld(seed), "merge", "ally");
+      allyMergeNeutral += count(generateWorld(seed, neutral), "merge", "ally");
+      feudOwner += count(generateWorld(seed), "owner", "feud");
+      feudOwnerNeutral += count(generateWorld(seed, neutral), "owner", "feud");
+    }
+    expect(allyMerge).toBeGreaterThan(allyMergeNeutral);
+    expect(feudOwner).toBeGreaterThan(feudOwnerNeutral);
   });
 
   it("資料驗證：錯誤訊息指出是哪一筆的哪個欄位", () => {

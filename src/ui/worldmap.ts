@@ -464,6 +464,9 @@ export function buildWorldMap(
     if (selected.kind === "sect") for (const line of relationLines(snap, { sect: selected.id })) info.append(html("p", "map-effect-line", line));
     if (selected.kind === "territory") {
       if (relTarget) for (const line of relationLines(snap, relTarget)) info.append(html("p", "map-effect-line", line));
+      const mine = state.sect ? snap.relations[state.sect.id] : undefined;
+      if (mine?.feud === selected.polity) info.append(html("p", "map-effect-line", "你的宗門與此國有舊怨，來往要多受盤查，坊市物價也略貴。"));
+      if (mine?.ally === selected.polity) info.append(html("p", "map-effect-line", "你的宗門與此國互惠，坊市物價略便宜。"));
       const cellId = Number(selected.id.slice(5));
       for (const line of territoryLines(world, map, terrain, cellId, data, viewYears)) info.append(html("p", "map-effect-line", line));
       info.append(html("p", "desc", `此處：${terrainLine(terrain, data, cellId)}`));
@@ -478,7 +481,7 @@ export function buildWorldMap(
     const past = placeHistory(world, d.title.split("・"), viewYears).slice(-3);
     if (past.length > 0) info.append(html("p", "desc", `本世此處的事：${past.map((e) => `${e.age} 歲，${e.note}`).join(" ")}`));
     if (previewRoute && !activeRoute) {
-      info.append(html("p", "map-travel-status", `${previewRoute.to.status}。需時 ${previewRoute.months} 個月${previewRoute.delayMonths ? `（邊境動盪多 ${previewRoute.delayMonths} 個月）` : ""}，途經 ${previewRoute.regions.map((id) => regionById(id).name).join("、")}。`));
+      info.append(html("p", "map-travel-status", `${previewRoute.to.status}。需時 ${previewRoute.months} 個月${previewRoute.delayMonths ? `（邊境動盪多 ${previewRoute.delayMonths} 個月）` : ""}${previewRoute.inspectionMonths ? `（過關盤查多 ${previewRoute.inspectionMonths} 個月）` : ""}，途經 ${previewRoute.regions.map((id) => regionById(id).name).join("、")}。`));
       if (state.phase === "living" && state.pendingEvent === null && !scrubbed) {
         const go = html("button", "primary map-travel-go", `前往${previewRoute.to.name}`);
         go.type = "button";

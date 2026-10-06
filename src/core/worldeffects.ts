@@ -3,7 +3,7 @@
 import { gameData } from "../data/load";
 import type { GameData, WorldEffectDef, WorldWhen } from "../data/types";
 import type { GameState } from "./state";
-import { marketTerritory } from "./travel";
+import { marketRelation, marketTerritory } from "./travel";
 import { worldAt, worldFor, type WorldSnapshot } from "./world";
 
 /** 世局是否符合效果的全部條件 */
@@ -55,6 +55,10 @@ export function itemPrice(state: GameState, itemId: string, data: GameData = gam
   let mult = 1;
   for (const e of activeWorldEffects(state, data)) mult *= e.market[itemId] ?? 1;
   if (marketTerritory(state, data)?.contested) mult *= data.map.territoryRules.marketMultiplier;
+  // 入宗者：坊市所在國與自己的宗門世仇則略貴、互惠則略便宜（M53）
+  const rel = marketRelation(state, data);
+  if (rel === "feud") mult *= data.worldRelations.effects.feudPriceMult;
+  else if (rel === "ally") mult *= data.worldRelations.effects.allyPriceMult;
   // 入宗者在庫房買部分丹藥打折（M25）
   if (state.sect && data.sects.discount.itemIds.includes(itemId)) mult *= data.sects.discount.mult;
   return Math.max(1, Math.round(item.price * mult));

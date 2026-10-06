@@ -78,6 +78,10 @@ export function parseConditions(raw: unknown, where: string): EventConditions {
     if (typeof o.territoryConflict !== "boolean") fail(where, "territoryConflict", "必須是 true 或 false");
     c.territoryConflict = o.territoryConflict;
   }
+  if (o.territoryRelation !== undefined) {
+    if (o.territoryRelation !== "ally" && o.territoryRelation !== "feud") fail(where, "territoryRelation", `必須是 "ally" 或 "feud"，目前為 ${JSON.stringify(o.territoryRelation)}`);
+    c.territoryRelation = o.territoryRelation;
+  }
   if (o.sectInfluence !== undefined) {
     if (typeof o.sectInfluence !== "boolean") fail(where, "sectInfluence", "必須是 true 或 false");
     c.sectInfluence = o.sectInfluence;
@@ -97,7 +101,7 @@ export function parseConditions(raw: unknown, where: string): EventConditions {
   }
   for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
   for (const k of Object.keys(o)) {
-    if (!["realmMin", "realmMax", "stageMin", "lifespanLeftMax", "reachedNot", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin", "livesMax", "origins", "roots", "acquaintance"].includes(k)) {
+    if (!["realmMin", "realmMax", "stageMin", "lifespanLeftMax", "reachedNot", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "territoryRelation", "sectInfluence", "sect", "sectRankMin", "livesMax", "origins", "roots", "acquaintance"].includes(k)) {
       fail(where, k, "不是合法的條件");
     }
   }

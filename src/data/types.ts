@@ -297,6 +297,8 @@ export interface EventConditions {
   worldNot?: string[];
   /** 目前所在地是否正逢國界推移 */
   territoryConflict?: boolean;
+  /** 所在地的國家與玩家宗門的關係：互惠或世仇（M53）；沒入宗時一律不成立 */
+  territoryRelation?: "ally" | "feud";
   /** 目前所在地是否在開放宗門的靈脈範圍內 */
   sectInfluence?: boolean;
   /** 是否正在宗門中（宗門事件用；寫了同門欄位的事件必須設為 true） */
@@ -879,8 +881,12 @@ export interface WorldRelationChangeDef {
 
 export interface WorldRelationsData {
   initial: { allyChance: number; feudChance: number };
-  /** 邏輯座標：宗門到國家（最近的地域標記點）在此距離內才算候選 */
+  /** 邏輯座標：山門到國家（最近的領中心）在此距離內才算候選 */
   candidateDistance: number;
+  /** S3：入宗者所在宗門與當地國的關係對旅行與物價的影響（上限由驗證守住） */
+  effects: { feudTravelMonths: number; feudPriceMult: number; allyPriceMult: number };
+  /** S2：關係對世局生成的權重倍率。互惠的兩國較易併、較少互奪領；世仇的兩國較少併、較常奪領。1 是中性 */
+  influence: { mergeAlly: number; mergeFeud: number; ownerAlly: number; ownerFeud: number };
   /** 每世的關係變動次數 */
   changeCount: { min: number; max: number };
   changes: WorldRelationChangeDef[];

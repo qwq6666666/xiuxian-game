@@ -347,9 +347,24 @@ export function validateWorldRelations(raw: unknown, file = "worldRelations.json
     return def;
   });
   uniqueIds(changes, file);
+  const inf = obj(o.influence, `${file} 欄位 influence`);
+  const influence = {
+    mergeAlly: num(inf, "mergeAlly", `${file} 欄位 influence`, { gt: 0 }),
+    mergeFeud: num(inf, "mergeFeud", `${file} 欄位 influence`, { gt: 0 }),
+    ownerAlly: num(inf, "ownerAlly", `${file} 欄位 influence`, { gt: 0 }),
+    ownerFeud: num(inf, "ownerFeud", `${file} 欄位 influence`, { gt: 0 }),
+  };
+  const ef = obj(o.effects, `${file} 欄位 effects`);
+  const effects = {
+    feudTravelMonths: num(ef, "feudTravelMonths", `${file} 欄位 effects`, { min: 0, max: 3, integer: true }),
+    feudPriceMult: num(ef, "feudPriceMult", `${file} 欄位 effects`, { min: 1, max: 1.1 }),
+    allyPriceMult: num(ef, "allyPriceMult", `${file} 欄位 effects`, { min: 0.9, max: 1 }),
+  };
   return {
     initial,
     candidateDistance: num(o, "candidateDistance", file, { gt: 0 }),
+    effects,
+    influence,
     changeCount,
     changes,
   };

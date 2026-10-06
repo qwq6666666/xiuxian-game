@@ -62,7 +62,7 @@ export function territoriesAt(world: World, age: number, data: GameData): Territ
     const p = clamp((age - change.age) / data.map.territoryRules.transitionYears, 0, 1);
     const gained = p >= 1 ? count : Math.floor(p * count);
     order.forEach((fief, k) => {
-      claims[fief] = { ownerId: k < gained ? to : owners[fiefs.ids[fief]], contested: p < 1 && (k === gained || k === gained + 1) };
+      claims[fief] = { ownerId: k < gained ? to : owners[fiefs.ids[fief]], contested: p < 1 && k === gained };
     });
     for (const fief of order) owners[fiefs.ids[fief]] = to;
   }

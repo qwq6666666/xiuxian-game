@@ -4,7 +4,7 @@ import { gameData } from "../data/load";
 import { DEFAULT_SLOTS, type SlotValues } from "../data/slots";
 import type { GameData, SectState, WorldEventDef } from "../data/types";
 import { deriveSeed, nextRandom } from "./rng";
-import { addRelations, type SectRelation } from "./relations";
+import { bindRelation, initialRelations, relationPicks, relationWeight, type SectRelation } from "./relations";
 import { fiefsFor, partitionNations, seatOf, fiefDistance, type Fiefs } from "./fiefs";
 
 export type SectKind = "guard" | "greatSect" | "school";
@@ -308,7 +308,7 @@ function bind(ctx: BindContext, ev: WorldEventDef, age: number): WorldChange | n
       const from = pickOne(rng, pols);
       const options = neighborPolities(ctx, fiefsOf(snap, ctx.fiefs, from.id), from.id);
       if (options.length === 0) return null;
-      const to = pickOne(rng, options);
+      const to = options[weightedIndex(rng, options.map((o) => relationWeight(snap, data, "merge", from.id, o)))];
       return { age, kind: "merge", from: from.id, to, note: fill(ev.note, { target: from.name, other: polName(to) }) };
     }
     case "split": {
@@ -347,7 +347,7 @@ function bind(ctx: BindContext, ev: WorldEventDef, age: number): WorldChange | n
       const first = pickOne(rng, border);
       const options = neighborPolities(ctx, [first], src.id);
       if (options.length === 0) return null;
-      const to = pickOne(rng, options);
+      const to = options[weightedIndex(rng, options.map((o) => relationWeight(snap, data, "owner", src.id, o)))];
       const taken = [first];
       // 有時連同旁邊也鄰著對方的另一個領一起易手
       const second = border.filter((i) => i !== first && ctx.fiefs.nb[first].includes(i) && ctx.fiefs.nb[i].some((j) => snap.owners[ctx.fiefs.ids[j]] === to));
@@ -501,8 +501,8 @@ export function generateWorld(seed: number, data: GameData = gameData, nationCou
     relations: [],
   };
 
+  base.relations = initialRelations(base, data);
   base.changes = buildChanges(base, deriveSeed(seed, 23), data, used);
-  addRelations(base, data);
   return base;
 }
 
@@ -536,12 +536,30 @@ function buildChanges(world: World, seed: number, data: GameData, usedAtStart: S
       fiefs: fiefsFor(world.seed, data), nations: world.nations,
     };
     const out: WorldChange[] = [];
-    for (const p of picks) {
-      if (out.length >= want) break;
-      const change = bind(ctx, p.ev, p.age);
-      if (!change) continue;
-      applyChange(snap, change);
-      out.push(change);
+    // 關係變化（S2）與世局候選依年齡交錯模擬，這樣兩邊都看得到彼此造成的狀態；
+    // 關係用自己的亂數線，所以世局候選的抽選不受它影響。同年齡時世局候選在前。
+    const relRng = makeRng(deriveSeed(seed, 49));
+    const rel = relationPicks(world.seed, data);
+    let events = 0;
+    let i = 0;
+    let j = 0;
+    while (i < picks.length || j < rel.length) {
+      const takeEvent = j >= rel.length || (i < picks.length && picks[i].age <= rel[j].age);
+      if (takeEvent) {
+        const p = picks[i++];
+        if (events >= want) continue;
+        const change = bind(ctx, p.ev, p.age);
+        if (!change) continue;
+        applyChange(snap, change);
+        out.push(change);
+        events++;
+      } else {
+        const p = rel[j++];
+        const change = bindRelation(snap, p.def, p.age, relRng, data, ctx.fiefs);
+        if (!change) continue;
+        applyChange(snap, change);
+        out.push(change);
+      }
     }
     return out;
   };
@@ -549,7 +567,7 @@ function buildChanges(world: World, seed: number, data: GameData, usedAtStart: S
   // 多抽幾條備用，因為有些候選在這個世界裡不成立
   let picks = pickCandidates(pickRng, pool, want + 10, expansion ? [{ ev: expansion, age: expansionAge }] : []);
   let changes = simulate(picks);
-  const inWindow = (cs: WorldChange[]): boolean => cs.some((c) => c.age >= GUARANTEE_WINDOW[0] && c.age <= GUARANTEE_WINDOW[1]);
+  const inWindow = (cs: WorldChange[]): boolean => cs.filter((c) => c.kind !== "relation").some((c) => c.age >= GUARANTEE_WINDOW[0] && c.age <= GUARANTEE_WINDOW[1]);
 
   for (let tries = 0; !inWindow(changes) && tries < 60; tries++) {
     const cands = pool.filter(

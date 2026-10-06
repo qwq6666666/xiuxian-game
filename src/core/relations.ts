@@ -5,7 +5,7 @@ import type { GameData, WorldRelationChangeDef } from "../data/types";
 import { fiefsFor, type Fiefs } from "./fiefs";
 import { deriveSeed } from "./rng";
 import {
-  applyChange, fill, initialSnapshot, makeRng, pickOne, weightedIndex,
+  fill, initialSnapshot, makeRng, pickOne, weightedIndex,
   type World, type WorldChange, type WorldSect, type WorldSnapshot,
 } from "./world";
 
@@ -42,7 +42,7 @@ function candidates(snap: WorldSnapshot, s: WorldSect, data: GameData, fiefs: Fi
 /** 一個宗門在快照上的關係（沒有紀錄就是都沒有） */
 export const relationOf = (snap: WorldSnapshot, sectId: string): SectRelation => snap.relations[sectId] ?? { ally: null, feud: null };
 
-function bindRelation(snap: WorldSnapshot, def: WorldRelationChangeDef, age: number, rng: () => number, data: GameData, fiefs: Fiefs): WorldChange | null {
+export function bindRelation(snap: WorldSnapshot, def: WorldRelationChangeDef, age: number, rng: () => number, data: GameData, fiefs: Fiefs): WorldChange | null {
   const polName = (id: string): string => snap.polities.find((p) => p.id === id)!.name;
   const make = (s: WorldSect, polity: string, relation: RelationKind, on: boolean): WorldChange => ({
     age, kind: "relation", sect: s.id, polity, relation, on,
@@ -68,13 +68,13 @@ function bindRelation(snap: WorldSnapshot, def: WorldRelationChangeDef, age: num
   return make(s, relationOf(snap, s.id)[rel]!, rel, false);
 }
 
-/** 在既有世局之後加上關係：設定 world.relations，並把關係變化依年齡插進 world.changes */
-export function addRelations(world: World, data: GameData): void {
+/** 初始關係：生成世界時在世局變化之前決定（S2 要讓世局變化看得到關係） */
+export function initialRelations(world: World, data: GameData): { sect: string; ally: string | null; feud: string | null }[] {
   const rules = data.worldRelations;
   const rng = makeRng(deriveSeed(world.seed, 47));
   const snap0 = initialSnapshot(world);
   const fiefs = fiefsFor(world.seed, data);
-  world.relations = world.sects.map((s) => {
+  return world.sects.map((s) => {
     const rel: SectRelation = { ally: null, feud: null };
     if (!alive(s)) return { sect: s.id, ...rel };
     if (rng() < rules.initial.allyChance) {
@@ -87,26 +87,47 @@ export function addRelations(world: World, data: GameData): void {
     }
     return { sect: s.id, ...rel };
   });
+}
 
+export interface RelationPick {
+  def: WorldRelationChangeDef;
+  age: number;
+}
+
+/** 這一世的關係變化候選（種類與年齡），依年齡排序；綁定到具體對象在世局模擬時才做 */
+export function relationPicks(seed: number, data: GameData): RelationPick[] {
+  const rules = data.worldRelations;
+  const rng = makeRng(deriveSeed(seed, 48));
   const count = rules.changeCount.min + Math.floor(rng() * (rules.changeCount.max - rules.changeCount.min + 1));
-  const picks: { def: WorldRelationChangeDef; age: number }[] = [];
+  const picks: RelationPick[] = [];
   for (let i = 0; i < count; i++) {
     const def = rules.changes[weightedIndex(rng, rules.changes.map((c) => c.weight))];
     picks.push({ def, age: def.ageMin + Math.floor(rng() * (def.ageMax - def.ageMin + 1)) });
   }
-  picks.sort((a, b) => a.age - b.age || a.def.id.localeCompare(b.def.id));
+  return picks.sort((a, b) => a.age - b.age || a.def.id.localeCompare(b.def.id));
+}
 
-  const snap = initialSnapshot(world);
-  const existing = world.changes;
-  let next = 0;
-  const added: WorldChange[] = [];
-  for (const pick of picks) {
-    while (next < existing.length && existing[next].age <= pick.age) applyChange(snap, existing[next++]);
-    const change = bindRelation(snap, pick.def, pick.age, rng, data, fiefs);
-    if (!change) continue;
-    applyChange(snap, change);
-    added.push(change);
+/** 兩國之間的牽連：互惠宗門與世仇宗門的數量（任一方境內的宗門與對方互惠或世仇都算） */
+export function ties(snap: WorldSnapshot, a: string, b: string): { ally: number; feud: number } {
+  let ally = 0;
+  let feud = 0;
+  for (const s of snap.sects) {
+    if (!alive(s)) continue;
+    const owner = snap.owners[s.fief];
+    const rel = snap.relations[s.id];
+    if (!rel || (owner !== a && owner !== b)) continue;
+    const other = owner === a ? b : a;
+    if (rel.ally === other) ally++;
+    if (rel.feud === other) feud++;
   }
-  // 穩定排序：同年齡時既有變化在前
-  world.changes = [...existing, ...added].sort((a, b) => a.age - b.age);
+  return { ally, feud };
+}
+
+/** S2：併國與易手時，對象國的權重倍率（互惠的兩國較易併、世仇的兩國較常奪領） */
+export function relationWeight(snap: WorldSnapshot, data: GameData, kind: "merge" | "owner", a: string, b: string): number {
+  const inf = data.worldRelations.influence;
+  const t = ties(snap, a, b);
+  const ally = kind === "merge" ? inf.mergeAlly : inf.ownerAlly;
+  const feud = kind === "merge" ? inf.mergeFeud : inf.ownerFeud;
+  return (t.ally > 0 ? ally : 1) * (t.feud > 0 ? feud : 1);
 }
