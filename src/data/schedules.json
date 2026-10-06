@@ -1,8 +1,8 @@
 [
   {
     "id": "retreat",
-    "name": "閉關",
-    "desc": "專心吐納，少受打擾。",
+    "name": "閉關修煉",
+    "desc": "專心吐納，外界諸事少來打擾。",
     "cultivationMult": 1,
     "eventRateMult": 0.5,
     "stones": { "chance": 0, "min": 0, "max": 0 },
@@ -11,8 +11,8 @@
   },
   {
     "id": "adventure",
-    "name": "歷練",
-    "desc": "賺靈石，遇機緣，有風險。",
+    "name": "外出歷練",
+    "desc": "見識風霜，或有機緣，亦有兇險。",
     "cultivationMult": 0.3,
     "eventRateMult": 2,
     "stones": { "chance": 0.4, "min": 1, "max": 3 },
@@ -22,8 +22,8 @@
   },
   {
     "id": "herb",
-    "name": "採藥",
-    "desc": "換靈石，修行稍緩。",
+    "name": "採藥營生",
+    "desc": "入山採藥，換取靈石，修行稍緩。",
     "cultivationMult": 0.2,
     "eventRateMult": 1,
     "stones": { "chance": 1, "min": 3, "max": 3 },
@@ -33,8 +33,8 @@
   },
   {
     "id": "wander",
-    "name": "走訪",
-    "desc": "聽閒話，探消息。",
+    "name": "走訪渡口",
+    "desc": "在渡口與茶棚之間走動，聽人閒話。修行稍緩。",
     "worldHints": [
       { "when": { "ferriesBrokenMin": 2 }, "text": "渡口毀了好幾處，往來的人少，閒話也少了。" },
       { "when": { "guardState": ["closed", "fallen"] }, "text": "{guard}不再開山門，茶棚裡少了說嘴的人。" },
@@ -50,8 +50,8 @@
   },
   {
     "id": "sectDuty",
-    "name": "差事",
-    "desc": "替山門辦事，換貢獻。",
+    "name": "宗門差事",
+    "desc": "替山門辦些雜務，修行稍緩，換得貢獻。",
     "realmMin": "lianqi",
     "requiresSect": true,
     "cultivationMult": 0.4,
@@ -62,8 +62,8 @@
   },
   {
     "id": "alchemy",
-    "name": "煉丹",
-    "desc": "開爐煉製，事件較少。",
+    "name": "閉關煉丹",
+    "desc": "開爐煉製丹藥與符籙，修行稍緩，事件較少。",
     "realmMin": "lianqi",
     "cultivationMult": 0.3,
     "eventRateMult": 0.7,
