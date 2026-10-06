@@ -99,9 +99,22 @@ function scene(theme: Theme, seed: number): string {
   }
 }
 
-/** 事件彈窗上方的配圖；境界決定色調，tone 為 bad 時壓暗 */
+/** 事件彈窗上方的配圖；境界決定色調，tone 為 bad 時壓暗並多一片烏雲與裂紋，good 時多一輪暖光與光線 */
 export function vignetteHtml(ev: EventDef, realmId: string): string {
-  return frame(themeOf(ev.id), hash(ev.id), realmId, ev.tone === "bad");
+  return frame(themeOf(ev.id), hash(ev.id), realmId, ev.tone === "bad", ev.tone);
+}
+
+/** 依 tone 加上去的小道具：同一則事件每次畫同一幅（位置由雜湊決定） */
+function toneProps(tone: EventDef["tone"] | undefined, seed: number): string {
+  if (tone === "good") {
+    const x = 120 + (seed % 160);
+    return `<circle class="vg-warm" cx="${x}" cy="22" r="26" opacity=".18"/><path class="vg-ray" d="M${x} 22 L${x - 70} 84 M${x} 22 L${x - 24} 90 M${x} 22 L${x + 26} 90 M${x} 22 L${x + 72} 84"/>`;
+  }
+  if (tone === "bad") {
+    const x = 60 + (seed % 200);
+    return `<g class="vg-dark" opacity=".55"><ellipse cx="${x}" cy="10" rx="70" ry="13"/><ellipse cx="${x + 70}" cy="16" rx="52" ry="10"/><ellipse cx="${x - 60}" cy="18" rx="46" ry="9"/></g><path class="vg-crack" d="M${x + 20} 24 l-8 14 l9 3 l-10 18"/>`;
+  }
+  return "";
 }
 
 /** 遇怪視窗的配圖：凡人與練氣在林間，築基以上在山裡；同一種怪每次畫同一幅 */
@@ -109,7 +122,7 @@ export function huntVignetteHtml(monsterId: string, realmId: string): string {
   return frame(realmId === "mortal" || realmId === "lianqi" ? "forest" : "mountain", hash(monsterId), realmId, true);
 }
 
-function frame(theme: Theme, seed: number, realmId: string, darken: boolean): string {
+function frame(theme: Theme, seed: number, realmId: string, darken: boolean, tone?: EventDef["tone"]): string {
   const dim = darken ? `<rect x="0" y="0" width="${W}" height="${H}" class="vg-dark" opacity=".3"/>` : "";
-  return `<div class="vignette" data-realm="${realmId}" data-theme="${theme}" aria-hidden="true"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" focusable="false">${scene(theme, seed)}${dim}</svg></div>`;
+  return `<div class="vignette" data-realm="${realmId}" data-theme="${theme}"${tone ? ` data-tone="${tone}"` : ""} aria-hidden="true"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" focusable="false">${scene(theme, seed)}${toneProps(tone, seed)}${dim}</svg></div>`;
 }

@@ -46,6 +46,10 @@
 .codex { z-index: var(--z-modal-top); }
 .event { width: 100%; max-width: 440px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; }
 .event h2 { color: var(--accent); font-size: 1.1em; }
+/* 事件語氣：好事偏暖金、壞事偏朱砂，底色只輕輕染一層 */
+#eventModal[data-tone="good"] .event { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+#eventModal[data-tone="bad"] .event { border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); background: color-mix(in srgb, var(--bad) 7%, var(--panel)); }
+#eventModal[data-tone="bad"] .event h2 { color: var(--bad); }
 .event .choices button:disabled small { color: var(--warn); }
 .event-history { margin: var(--sp-2) 0; padding: var(--sp-2); border-left: 2px solid var(--line); color: var(--muted); }
 .event-history summary, .log li summary { cursor: pointer; }

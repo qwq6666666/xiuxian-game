@@ -759,6 +759,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       if (state.pendingEvent !== null) {
         const ev = eventOf(state.pendingEvent, data);
         const slots = slotsOf(state);
+        e.eventModal.dataset.tone = ev.tone;
         e.eventTitle.textContent = fillSlots(ev.title, slots);
         stageEl.querySelector<HTMLElement>("#eventArt")!.innerHTML = vignetteHtml(ev, state.realmId);
         e.eventText.textContent = fillSlots(ev.text, slots);

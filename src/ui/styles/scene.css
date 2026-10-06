@@ -68,6 +68,9 @@
 .vg-dark { fill: var(--scene-figure); } .vg-orb { fill: var(--scene-orb); } .vg-water { fill: var(--scene-water); opacity: 0.55; }
 .vg-warm { fill: var(--scene-warm); } .vg-stroke { fill: none; stroke: var(--scene-ink); stroke-width: 1.2; stroke-linecap: round; opacity: 0.8; }
 .vg-soft { fill: var(--scene-orb); opacity: 0.14; }
+.vg-ray { fill: none; stroke: var(--scene-warm); stroke-width: 1.4; stroke-linecap: round; opacity: 0.35; }
+.vg-crack { fill: none; stroke: var(--scene-warm); stroke-width: 1.2; stroke-linejoin: round; stroke-linecap: round; opacity: 0.7; }
+.vignette[data-tone="bad"] { filter: saturate(0.7); }
 
 @media (max-width: 640px) {
   .scene { aspect-ratio: auto; height: 84px; margin: calc(var(--sp-3) * -1) calc(var(--sp-3) * -1) var(--sp-2); }

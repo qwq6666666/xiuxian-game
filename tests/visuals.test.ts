@@ -5,6 +5,16 @@ import { sceneHtml } from "../src/ui/scene";
 import { themeOf, vignetteHtml } from "../src/ui/vignette";
 
 describe("圖示", () => {
+  it("事件配圖依 tone 多一組小道具：好事有暖光，壞事有烏雲，其他不變", () => {
+    const ev = data.events.find((e) => e.tone === "good")!;
+    const as = (tone: "good" | "bad" | "neutral") => vignetteHtml({ ...ev, tone }, "lianqi");
+    expect(as("good")).toContain("vg-ray");
+    expect(as("good")).toContain('data-tone="good"');
+    expect(as("bad")).toContain("vg-crack");
+    expect(as("neutral")).not.toMatch(/vg-ray|vg-crack/);
+    expect(as("good")).not.toBe(as("bad"));
+  });
+
   it("每個物品都有專屬圖示（不是預設圈圈）", () => {
     for (const item of data.items) expect(itemIconName(item), item.id).not.toBe("fallback");
   });
