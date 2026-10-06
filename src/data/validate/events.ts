@@ -20,6 +20,12 @@ export function parseEffects(raw: unknown, where: string): Effects {
     if (typeof o.death !== "boolean") fail(where, "death", "必須是 true 或 false");
     e.death = o.death;
   }
+  for (const k of ["advanceRealm", "breakthroughFail"] as const) {
+    if (o[k] !== undefined) {
+      if (typeof o[k] !== "boolean") fail(where, k, "必須是 true 或 false");
+      e[k] = o[k] as boolean;
+    }
+  }
   if (o.fragment !== undefined) {
     const fw = `${where} 欄位 fragment`;
     const f = obj(o.fragment, fw);
@@ -33,7 +39,7 @@ export function parseEffects(raw: unknown, where: string): Effects {
     }
   }
   for (const k of Object.keys(o)) {
-    if (!["cultivation", "spiritStones", "lifespan", "attributes", "items", "flags", "death", "fragment", "contribution"].includes(k)) {
+    if (!["cultivation", "spiritStones", "lifespan", "attributes", "items", "flags", "death", "fragment", "contribution", "advanceRealm", "breakthroughFail"].includes(k)) {
       fail(where, k, "不是合法的效果");
     }
   }
@@ -45,6 +51,9 @@ export function parseConditions(raw: unknown, where: string): EventConditions {
   const c: EventConditions = {};
   if (o.realmMin !== undefined) c.realmMin = str(o, "realmMin", where);
   if (o.realmMax !== undefined) c.realmMax = str(o, "realmMax", where);
+  if (o.stageMin !== undefined) c.stageMin = num(o, "stageMin", where, { min: 0, integer: true });
+  if (o.lifespanLeftMax !== undefined) c.lifespanLeftMax = num(o, "lifespanLeftMax", where, { gt: 0 });
+  c.reachedNot = optStrList(o, "reachedNot", where);
   if (o.ageMin !== undefined) c.ageMin = num(o, "ageMin", where, { min: 0 });
   if (o.ageMax !== undefined) c.ageMax = num(o, "ageMax", where, { min: 0 });
   c.flags = optStrList(o, "flags", where);
@@ -86,7 +95,7 @@ export function parseConditions(raw: unknown, where: string): EventConditions {
   }
   for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
   for (const k of Object.keys(o)) {
-    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin", "livesMax", "origins", "roots", "acquaintance"].includes(k)) {
+    if (!["realmMin", "realmMax", "stageMin", "lifespanLeftMax", "reachedNot", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin", "livesMax", "origins", "roots", "acquaintance"].includes(k)) {
       fail(where, k, "不是合法的條件");
     }
   }

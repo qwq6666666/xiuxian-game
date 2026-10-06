@@ -154,5 +154,53 @@
       "realmMin": "lianqi",
       "realmMax": "lianqi"
     }
+  },
+  {
+    "id": "lianqi_last_push",
+    "type": "choice",
+    "title": "最後一次叩關",
+    "text": "壽元只剩這幾年，丹田裡的靈氣離圓滿還差一截。你清楚，照這個速度，築基的門檻你是摸不到了。夜裡你坐在床沿，把這輩子的打坐一次一次算了一遍。",
+    "weight": 100,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "guaranteed": true,
+    "highlight": 10,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi",
+      "stageMin": 6,
+      "lifespanLeftMax": 10,
+      "reachedNot": ["zhuji:0"],
+      "bottleneck": false,
+      "ageMax": 150
+    },
+    "choices": [
+      {
+        "text": "不等了，強行衝關",
+        "outcomes": [
+          {
+            "weight": 12,
+            "weightPerAttribute": { "insight": 1 },
+            "text": "經脈像被硬生生撐開的舊門，每一寸都在叫。你咬著牙不肯停，最後一口氣灌進去時，眼前的暗忽然亮了。門開了，你在門檻上跪了很久。",
+            "effects": { "advanceRealm": true }
+          },
+          {
+            "weight": 88,
+            "text": "靈氣衝到半途便散了，你伏在地上，吐出一口血。不甘心像一根細針，扎在胸口，拔不出來。你只是笑了一聲，說這輩子總算沒有白等。",
+            "effects": { "breakthroughFail": true }
+          }
+        ]
+      },
+      {
+        "text": "放下，平靜終老",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你把爐火撥小，泡了壺茶，坐在院裡看日頭落下去。門檻就在那裡，你不再去夠它，倒覺得這一夜睡得格外安穩。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
   }
 ]

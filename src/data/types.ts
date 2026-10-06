@@ -230,11 +230,21 @@ export interface Effects {
   contribution?: number;
   /** 給殘卷：指定一份，或從未持有、已解鎖、非 fixed 且層級不超過 maxTier 的殘卷中抽一份（chance 為觸發機率，預設 1） */
   fragment?: { id: string } | { maxTier: number; chance?: number };
+  /** 直接進入下一個大境界（不看修為，成敗由結果權重決定），走一般突破成功的流程 */
+  advanceRealm?: boolean;
+  /** 套用一次突破失敗的損失（含心性、護心丹減免），走一般突破失敗的流程 */
+  breakthroughFail?: boolean;
 }
 
 export interface EventConditions {
   realmMin?: string;
   realmMax?: string;
+  /** 目前境界的小階段下限（0 起算，練氣七層是 6） */
+  stageMin?: number;
+  /** 剩餘壽元（年）不超過此值才出現；依目前境界與延壽算出 */
+  lifespanLeftMax?: number;
+  /** meta.reached 含其中任一項就不出現（例如 "zhuji:0" 表示跨世都沒築基過） */
+  reachedNot?: string[];
   /** 年齡（歲） */
   ageMin?: number;
   ageMax?: number;

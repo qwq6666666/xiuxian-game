@@ -7,7 +7,9 @@ import { availableFragments, drawFragment, grantFragment } from "./fragments";
 import { eventWeight, outcomeWeight, stageNeed } from "./formulas";
 import { addLog, atBottleneck, eventOf, realmOf, resolveStages, scheduleOf } from "./progress";
 import { methodEffect } from "./method";
+import { forceBreakthrough, forceBreakthroughFail } from "./breakthrough";
 import { endLife } from "./review";
+import { lifespanMonths } from "./formulas";
 import { nextInt, nextRandom, pickWeighted } from "./rng";
 import type { Attributes, Changes, GameState } from "./state";
 
@@ -21,6 +23,9 @@ export function eventAvailable(state: GameState, ev: EventDef, data: GameData = 
   const realmIdx = data.realms.findIndex((r) => r.id === state.realmId);
   if (c.realmMin !== undefined && realmIdx < data.realms.findIndex((r) => r.id === c.realmMin)) return false;
   if (c.realmMax !== undefined && realmIdx > data.realms.findIndex((r) => r.id === c.realmMax)) return false;
+  if (c.stageMin !== undefined && state.stage < c.stageMin) return false;
+  if (c.lifespanLeftMax !== undefined && lifespanMonths(realmOf(state, data), state.lifespanBonus) - state.ageMonths > c.lifespanLeftMax * 12) return false;
+  if (c.reachedNot && c.reachedNot.some((k) => state.meta.reached.includes(k))) return false;
   const years = Math.floor(state.ageMonths / 12);
   if (c.ageMin !== undefined && years < c.ageMin) return false;
   if (c.ageMax !== undefined && years > c.ageMax) return false;
@@ -176,6 +181,8 @@ function applyEffects(
       changes.fragment = id;
     }
   }
+  if (effects.advanceRealm) s = forceBreakthrough(s, data);
+  if (effects.breakthroughFail) s = forceBreakthroughFail(s, data);
   return { state: s, changes };
 }
 

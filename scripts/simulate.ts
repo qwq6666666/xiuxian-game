@@ -51,6 +51,9 @@ function randomChoice(pendingId: string, state: GameState): number {
   return options[Math.floor(v * options.length)];
 }
 
+/** 最後一次叩關（lianqi_last_push）統計：出現次數、第一世出現次數、衝關成敗與選擇放下的次數 */
+const pushStats = { seen: 0, seenFirst: 0, win: 0, lose: 0, calm: 0 };
+
 /** 遇怪統計（hunt 策略專用）：各結果的次數 */
 const huntStats = { win: 0, lose: 0, flee: 0, fleeFail: 0, draw: 0, gain: 0 };
 
@@ -249,7 +252,20 @@ function playLife(start: GameState): GameState {
     else if (strategy === "alchemy" && state.phase === "living") state = alchemyActions(state);
     else if (strategy === "focus" && state.phase === "living") state = focus(mixedActions(state), gameData);
     else if (strategy !== "simple" && state.phase === "living") state = mixedActions(state);
-    if (state.pendingEvent !== null) state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
+    if (state.pendingEvent !== null) {
+      const pushing = state.pendingEvent === "lianqi_last_push";
+      if (pushing) {
+        pushStats.seen++;
+        if (state.meta.lives === 0) pushStats.seenFirst++;
+      }
+      state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
+      if (pushing) {
+        const e = state.log[state.log.length - 1];
+        if (e?.choice === 1) pushStats.calm++;
+        else if (e?.outcome === 0) pushStats.win++;
+        else pushStats.lose++;
+      }
+    }
     if (strategy === "sect" && state.phase === "living" && state.pendingEvent === null) state = sectActions(state);
     // 練氣九層圓滿、卡在瓶頸：玩家看得到「突破」鈕
     if (!lifeStats.button && state.realmId === "lianqi" && atBottleneck(state, gameData)) lifeStats.button = true;
@@ -527,6 +543,9 @@ function campaigns(): void {
   const dist = (m: Map<number, number>) =>
     [...m.entries()].sort((a, b) => a[0] - b[0]).map(([k, n]) => `第 ${k} 世 ${((n / runs) * 100).toFixed(0)}%`).join("、") || "（無）";
   console.log(`首次築基發生在：${dist(firstZhuji)}`);
+  if (pushStats.seen > 0) {
+    console.log(`最後一次叩關：出現 ${pushStats.seen} 次（第一世 ${pushStats.seenFirst} 次，占 ${((pushStats.seenFirst / runs) * 100).toFixed(1)}% 的戰役）；強行衝關成功 ${pushStats.win}、失敗 ${pushStats.lose}（成功率 ${((pushStats.win / Math.max(1, pushStats.win + pushStats.lose)) * 100).toFixed(1)}%）、放下 ${pushStats.calm}`);
+  }
   console.log(`首次金丹發生在：${dist(firstClear)}`);
 
   // 對照 GDD 第 13 節：把沒達成的戰役算成無限大，中位數才不會被只看成功者而低估

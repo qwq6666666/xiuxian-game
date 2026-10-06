@@ -85,6 +85,17 @@ function fail(s: GameState, data: GameData, wave?: number, extraLoss = 0): GameS
   );
 }
 
+/** 事件強行衝關（M41）：不看修為直接成功或失敗，沿用一般突破的結算 */
+export function forceBreakthrough(state: GameState, data: GameData = gameData): GameState {
+  if (state.phase !== "living" || breakthroughRuleOf(state, data) === undefined || nextRealm(realmOf(state, data), data) === undefined) return state;
+  return succeed(state, data);
+}
+
+export function forceBreakthroughFail(state: GameState, data: GameData = gameData): GameState {
+  if (state.phase !== "living" || breakthroughRuleOf(state, data) === undefined) return state;
+  return fail(state, data);
+}
+
 /**
  * 嘗試突破。丹藥在嘗試時就消耗，成敗皆然，並抽一次亂數。
  * 沒有天劫的突破立刻出結果；有天劫的突破進入天劫（時間暫停，逐道選擇），整體成功率與一鍵突破相同。

@@ -2,6 +2,13 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：最後一次叩關（M41，GDD 第 43 節）
+
+- 分支 `master`（本機，尚未 push）。事件 `lianqi_last_push`（`src/data/events/lianqi.json`，文字是我寫的草稿，請 ChatGPT 審稿）；格式擴充見 GDD 43，核心改動只在 `core/events.ts`（條件與兩個效果）與 `core/breakthrough.ts`（匯出 `forceBreakthrough`、`forceBreakthroughFail`）。存檔不升版。sim 新增 `最後一次叩關` 統計行。
+- 驗證：`npm run verify`；`tests/lastpush.test.ts`（條件、必出、成敗、回顧排第一、格式錯誤）；瀏覽器匯入練氣八層、剩 5 年的存檔，彈窗與失敗路徑日誌正常。sim：種子 1、2 的 `simple`／`mixed`、`focus`、`forge`、`hunt`、`herb`、`wander`、`alchemy`、`post` 都跑了，首次築基中位數仍是第 2 世。
+- 沒驗證：衝關成功路徑的畫面（只用單元測試驗）；手機寬度；成功率手感（12% 起算，實測 9–18%）；`method:*`。
+- 注意：`post` 40 場樣本的邊緣指標會抖動（種子 2：突破鈕 27.5%、元嬰到化神 9.6 小時，加事件前是 30.0%、9.0）；100 場種子 2 回到 35.0% ✓、9.0 ✓。種子 3、4 的 40 場有「首次元嬰累計 12.5 小時」超標，與 PLAYTEST 記的舊問題一致（TODO 仍開著），不是這次造成；種子 4 的 40 場突破鈕 25% 是抽樣誤差，機制上事件不影響突破鈕。
+
 ## 2026-10-06：掛機體驗（M40，GDD 第 11、37 節）
 
 - 分支 `master`（本機，尚未 push）。背景分頁回到前景用 `applyOffline(..., { minSeconds, speed })` 一次補算（離線閉關規則；`config.json` 新增 `backgroundMinSeconds` 5、`frameGapSeconds` 2）；畫面卡住也走同一條。運功改積蓄：存檔 v25 新增 `focusStored`、`config.focusMaxCharges` 10、`accrueFocus` 在 `tick` 與離線補算每月呼叫；一次用掉全部；v24 遷移補 1 次或維持計時。新的一世計時起點為起始年齡。介面：運功鈕「運功×N +gain」（`render.ts` 一行，請 ChatGPT 看一眼）。
