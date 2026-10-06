@@ -2,6 +2,15 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-07：特殊原因收關不再併入例行閉關
+
+- 分支與 commit：`ai/chatgpt`，`a58c19b`。
+- 改了什麼與為什麼：`collapseRoutineRetreats` 現在只有 `stop === "elapsed"` 的一般閉關可收合；因瓶頸或壽元收關的見聞會保留完整原文，並中斷前後兩段收合，玩家不會再漏看「修為已至圓滿」或壽元將盡的提示。只改顯示層，`state.log` 不動。
+- 自動驗證：新增允許範圍內的 `tests/logcollapse-stop-ui.test.ts`，同時覆蓋 `bottleneck` 與 `lifespan`。`npx tsc --noEmit`、`npm run test`（60 個測試檔、679 項測試）、`npm run build` 全過；`dist/index.html` 1216KB，`git diff --check` 通過。
+- 瀏覽器驗證：本機 Vite、速度 ×1。桌面實看「九十七至九十八歲，閉關兩次」之後完整顯示九十六歲瓶頸收關句，再另起「九十四至九十五歲，閉關兩次」；375×812 同樣保留全文，`innerWidth` 375、文件 `scrollWidth` 360。臨時顯示資料已移除後才跑最終完整檢查。
+- 沒驗證：沒有實際等待一輪離線閉關剛好停在瓶頸或壽元；核心已產生的兩種 `stop` 資料形狀由新增測試直接覆蓋。本項未跑 sim。
+- 下一步／Claude 注意：`elapsed` 的偶得句仍依原規則獨立顯示；任何未來新增的特殊 `stop` 值也會安全地保留原文，不會自動併入摘要。
+
 ## 2026-10-07：M46 疲勞與突破成功率明細介面
 
 - 分支與 commit：`ai/chatgpt`，`08b9ef9`。
