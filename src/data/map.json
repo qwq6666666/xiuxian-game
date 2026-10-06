@@ -1,7 +1,7 @@
 {
   "viewBox": [400, 520],
   "palette": ["#c0715a", "#6b9ac4", "#8fb573", "#c9a64e", "#9d7bb5", "#5fb0a6"],
-  "territoryRules": { "transitionYears": 6, "travelDelayMonths": 2, "marketMultiplier": 1.12, "greatReach": 34, "schoolReach": 21, "prosperReachMultiplier": 1.3, "declineReachMultiplier": 0.65 },
+  "territoryRules": { "transitionYears": 6, "travelDelayMonths": 2, "marketMultiplier": 1.12, "greatReach": 34, "schoolReach": 21, "prosperReachMultiplier": 1.3, "declineReachMultiplier": 0.65, "frontWeight": 2400, "frontOverlap": 1, "driftAmplitude": 260, "driftPeriodYears": 3, "strengthWindowYears": 10, "maxVertexStep": 20 },
   "regions": [
     {
       "id": "beihuang",
@@ -22,6 +22,7 @@
       "label": [200, 128],
       "capital": [215, 168],
       "territories": [[105, 129], [208, 125], [301, 139], [204, 179]],
+      "nodes": [[100, 118], [205, 118], [300, 122], [100, 168], [205, 168], [300, 170]],
       "sites": [[200, 104], [120, 140], [290, 150], [150, 178], [255, 182]],
       "ferries": [[100, 170], [305, 176]],
       "birth": { "village": [262, 160], "mountain": [140, 120] }
@@ -36,6 +37,7 @@
       "label": [96, 222],
       "capital": [100, 262],
       "territories": [[83, 231], [119, 266], [75, 313], [115, 348]],
+      "nodes": [[70, 232], [120, 236], [70, 290], [120, 296], [70, 345], [115, 350]],
       "sites": [[72, 236], [122, 244], [70, 322], [118, 340], [102, 300]],
       "ferries": [[62, 350]],
       "birth": { "village": [132, 298], "mountain": [66, 272] }
@@ -50,6 +52,7 @@
       "label": [206, 222],
       "capital": [206, 262],
       "territories": [[178, 236], [233, 248], [177, 326], [231, 342]],
+      "nodes": [[180, 228], [232, 228], [180, 290], [232, 290], [180, 340], [232, 340]],
       "sites": [[176, 230], [240, 236], [178, 336], [240, 340], [212, 304]],
       "ferries": [[166, 282], [208, 214], [204, 352]],
       "birth": { "village": [238, 290], "mountain": [176, 308] }
@@ -64,6 +67,7 @@
       "label": [312, 222],
       "capital": [310, 266],
       "territories": [[291, 235], [340, 253], [288, 329], [337, 346]],
+      "nodes": [[292, 228], [338, 236], [292, 290], [340, 296], [292, 345], [335, 350]],
       "sites": [[290, 240], [338, 252], [296, 332], [340, 330], [322, 296]],
       "ferries": [[336, 282], [292, 364]],
       "birth": { "village": [284, 296], "mountain": [330, 226] }
@@ -78,6 +82,7 @@
       "label": [206, 410],
       "capital": [206, 452],
       "territories": [[124, 411], [212, 417], [291, 424], [194, 471]],
+      "nodes": [[110, 402], [205, 402], [300, 402], [130, 462], [215, 465], [290, 462]],
       "sites": [[120, 420], [170, 462], [252, 424], [292, 462], [214, 478]],
       "ferries": [[200, 396]],
       "birth": { "village": [150, 436], "mountain": [270, 440] }

@@ -4,7 +4,7 @@ import type { GameData } from "../data/types";
 import { acquaintanceRows, bestiarySummary, collectionSummary } from "./format";
 import type { MapTarget } from "./mapinfo";
 import type { UiHandlers } from "./render";
-import { buildWorldMap, mapStamp } from "./worldmap";
+import { buildWorldMap, mapStamp, resetMapView } from "./worldmap";
 
 export interface OverlayContext {
   root: HTMLElement;
@@ -132,6 +132,7 @@ export function createOverlays(ctx: OverlayContext): Overlays {
 
   function buildMap(state: GameState): void {
     const focusedOnDestination = document.activeElement?.classList.contains("map-destination") ?? false;
+    const focusedSlider = document.activeElement?.classList.contains("map-tl-slider") ?? false;
     const focusedMapLabel = document.activeElement?.classList.contains("map-hit")
       ? document.activeElement.getAttribute("aria-label")
       : null;
@@ -144,13 +145,19 @@ export function createOverlays(ctx: OverlayContext): Overlays {
         onClose: closeMap,
         onTravel(targetId) { handlers.onTravel(targetId); },
         onJoinSect() { handlers.onJoinSect(); },
+        onRefresh() {
+          const current = getState();
+          if (current) buildMap(current);
+        },
       });
     const marketLink = document.createElement("button");
     marketLink.type = "button";
     marketLink.textContent = "查看坊市物價";
     marketLink.addEventListener("click", () => { closeMap(); requestAnimationFrame(() => jumpTo("market")); });
-    if (state.phase !== "rolling") content.append(marketLink);
+    // 此生已盡時坊市不能再看，不要把人帶回回顧畫面
+    if (state.phase === "living") content.append(marketLink);
     mapCard.replaceChildren(content);
+    if (focusedSlider) mapCard.querySelector<HTMLInputElement>(".map-tl-slider")?.focus({ preventScroll: true });
     if (focusedOnDestination) mapCard.querySelector<HTMLSelectElement>(".map-destination")?.focus({ preventScroll: true });
     if (focusedMapLabel) {
       Array.from(mapCard.querySelectorAll<SVGElement>(".map-hit"))
@@ -165,6 +172,7 @@ export function createOverlays(ctx: OverlayContext): Overlays {
     closeCodex();
     closeCollection();
     mapSelected = null;
+    resetMapView();
     buildMap(state);
     mapEl.hidden = false;
     writeMapSeen(mapStamp(state, data));

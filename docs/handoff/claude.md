@@ -2,6 +2,15 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-07：疆界流變（M49，GDD 第 49 節）
+
+- 分支 `ai/claude-m49`（本機）。新增 `core/frontier.ts`（加權 Voronoi、推進、拉鋸、`frontLines`、`territoryHistory`、`polityStrength`）；`map.json` 每地域加 `nodes`、`territoryRules` 加 6 個數值；`validate/world.ts` 逐欄檢查；`travel.ts` 的 `placesAt` 修併國後都城重名、分號同名。UI：`worldmap.ts`（國界、動畫、箭頭、時間軸、大事記、資訊卡、縮放）、新增 `mapgeo.ts`，`mapinfo.ts`、`overlays.ts`、`styles/map.css`。存檔不動。
+- 驗證：`npm run verify` 全過（建置檔 1206 KB）；新增 `tests/frontier.test.ts`（決定性、半平面公式、涵蓋與不重疊、初始對齊 90%、三種易手、單調、連續性、拉鋸不影響判定、效能、命名）與 `tests/mapgeo.test.ts`。sim：`simple` 1／16 世、`mixed` 1／16 世、`post` 40 場（種子 1），與動工前（stash 後重跑）輸出逐字相同。瀏覽器（內建窗格）：桌面 800 寬看過國界移動中的畫面、滑桿回看（輸入時即時重畫、放開重建、焦點保留、啟程鈕隱藏）、事件點與大事記跳轉與高亮、資訊卡；375px 看過橫幅、無橫向捲動，縮放按鈕、拖曳、雙擊（用合成 pointer 事件）。
+- 沒驗證：真實手機的雙指縮放（只用合成事件測單指拖曳與雙擊，沒測兩指）；跨季動畫的實際播放（背景窗格 rAF 被節流，只確認有定時收尾）；`prefers-reduced-motion` 只看程式；其他世界種子的視覺（只開了種子 3）；`method:*` 沒跑（沒動數值）。
+- 沒做：`barriers`（山河屏障）；渡口具名（提案在 GDD 16.7，要使用者同意 WORLD.md 名庫）；歷世足跡等跨世功能（提案在 GDD 16.6）。
+- 設計取捨：判定層（`territoriesAt`）完全沒動，所以 sim 不變；代價是畫面上的「交戰」是整處地域，遊戲效果的「動盪」仍是兩格。權重位移用先縮後長（`-4p(1-p)`）而不是「+W」，換主瞬間面積為 0 才連續。
+- 給 ChatGPT（請看一眼，這些是你的區域）：國界線的粗細與紅色流動虛線、推進箭頭的位置與透明度、時間軸的事件點（14px 圓點，手機好不好點）、大事記按鈕樣式、手機 ＋／－／還原 的位置、渡口橫幅高度（56px）、小標籤避讓後隱藏的取捨（隱藏的標籤選取時才出現）。`mapgeo.ts` 的 `brushLine` 抖動幅度（0.7）可調。
+
 ## 2026-10-07：審 ai/chatgpt 並合併
 
 - 本機 `master` 已合併 `origin/ai/chatgpt`（11 個 commit，`--no-ff`，無衝突）：煉製頁分類與鎖定配方收合、戰鬥扣血回饋、打坐人物隨境界、偶得金邊、連續閉關收合、文案審稿。範圍檢查：只動 `src/ui/`、新增 `tests/logcollapse-ui.test.ts`、自己的交接檔；色碼只在 `tokens.css`；每個 commit 都有 Co-Authored-By。`npm run verify` 全過（676 測試，1187 KB）。

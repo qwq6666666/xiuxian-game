@@ -43,6 +43,12 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     schoolReach: num(rules, "schoolReach", `${file} 欄位 territoryRules`, { gt: 0 }),
     prosperReachMultiplier: num(rules, "prosperReachMultiplier", `${file} 欄位 territoryRules`, { min: 1 }),
     declineReachMultiplier: num(rules, "declineReachMultiplier", `${file} 欄位 territoryRules`, { min: 0, max: 1 }),
+    frontWeight: num(rules, "frontWeight", `${file} 欄位 territoryRules`, { gt: 0 }),
+    frontOverlap: num(rules, "frontOverlap", `${file} 欄位 territoryRules`, { min: 0, integer: true }),
+    driftAmplitude: num(rules, "driftAmplitude", `${file} 欄位 territoryRules`, { min: 0 }),
+    driftPeriodYears: num(rules, "driftPeriodYears", `${file} 欄位 territoryRules`, { gt: 0 }),
+    strengthWindowYears: num(rules, "strengthWindowYears", `${file} 欄位 territoryRules`, { gt: 0 }),
+    maxVertexStep: num(rules, "maxVertexStep", `${file} 欄位 territoryRules`, { gt: 0 }),
   };
 
   const regions = list(o.regions, `${file} 欄位 regions`).map((r, i): MapRegion => {
@@ -65,6 +71,9 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
       const territoryPoints = list(ro.territories, `${w} 欄位 territories`);
       if (territoryPoints.length < 3) fail(w, "territories", "至少需要 3 個領土中心");
       region.territories = territoryPoints.map((p, j) => point(p, w, `territories[${j}]`, box));
+      const nodePoints = list(ro.nodes, `${w} 欄位 nodes`);
+      if (nodePoints.length < 4) fail(w, "nodes", `至少需要 4 個疆界節點，目前 ${nodePoints.length} 個`);
+      region.nodes = nodePoints.map((p, j) => point(p, w, `nodes[${j}]`, box));
       const sites = list(ro.sites, `${w} 欄位 sites`);
       if (sites.length < 5) fail(w, "sites", `至少需要 5 個宗門位置，目前 ${sites.length} 個`);
       region.sites = sites.map((p, j) => point(p, w, `sites[${j}]`, box));

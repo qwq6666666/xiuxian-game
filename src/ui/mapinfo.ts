@@ -1,6 +1,7 @@
 // 天下圖的純邏輯：點選某個標記時顯示什麼、標記該畫成什麼樣子。不碰 DOM，方便測試。
-import type { World, WorldSect, WorldSnapshot } from "../core/world";
-import { polityLabel, worldSlots } from "../core/world";
+import type { World, WorldPolity, WorldSect, WorldSnapshot } from "../core/world";
+import { polityStrength, regionFight, territoryHistory, type GeoCell } from "../core/frontier";
+import { polityLabel, worldAt, worldSlots } from "../core/world";
 import { fillSlots } from "../data/slots";
 import type { GameData, MapRef, WorldEffectDef } from "../data/types";
 import { effectApplies } from "../core/worldeffects";
@@ -85,7 +86,7 @@ export function describeTarget(target: MapTarget, world: World, snap: WorldSnaps
     }
     case "branch": {
       const text = fillBlurb(b.merchantBranch, { ...base, name: slots.merchant, region: regionName(target.region), country: "", capital: "" });
-      return { title: `${slots.merchant}分號`, lines: [text] };
+      return { title: `${slots.merchant}・${regionName(target.region)}分號`, lines: [text] };
     }
     case "merchantHq":
       return { title: `${slots.merchant}總號`, lines: [fillBlurb(b.merchantHq, { ...base, name: slots.merchant, region: "", country: "", capital: "" })] };
@@ -145,4 +146,89 @@ export function legendOf(snap: WorldSnapshot): { name: string; color: string }[]
 /** 主角目前所在的世界年齡（歲）：進行中看年齡，擲骰時是起始年齡，結束後停在最後的年齡 */
 export function mapAgeYears(ageMonths: number): number {
   return Math.floor(ageMonths / 12);
+}
+
+/** 當世出現過的國家：現存、原生與分裂新立的都找得到 */
+export function polityLookup(world: World, snap: WorldSnapshot): (id: string) => WorldPolity | undefined {
+  return (id) => snap.polities.find((p) => p.id === id)
+    ?? world.polities.find((p) => p.id === id)
+    ?? world.changes.flatMap((c) => (c.kind === "split" ? [c.created] : [])).find((p) => p.id === id);
+}
+
+/** 標記的類型，放在資訊卡標題旁 */
+export function targetKindLabel(target: MapTarget, snap: WorldSnapshot): string {
+  switch (target.kind) {
+    case "territory": return "領土";
+    case "region": return "地域";
+    case "sect": {
+      const s = snap.sects.find((x) => x.id === target.id);
+      return s ? `宗門山門・${s.rank === "great" ? "大宗" : "門派"}` : "宗門山門";
+    }
+    case "ferry": return "渡口";
+    case "market": return "坊市";
+    case "village": return "出生村";
+    case "mountain": return "山野";
+    case "merchantHq": return "商號總號";
+    case "branch": return "商號分號";
+    case "stairs": return "殘階";
+  }
+}
+
+const NUMERALS = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+
+/** 推進程度的口語：0.43 → 約四成 */
+export function progressWords(progress: number): string {
+  const tenths = Math.min(10, Math.max(1, Math.round(progress * 10)));
+  return tenths >= 10 ? "近乎底定" : `約${NUMERALS[tenths]}成`;
+}
+
+/** 領土資訊：掌握者、起算年、推進進度與預計底定、國勢 */
+export function territoryLines(world: World, cells: GeoCell[], cellId: string, data: GameData, ageYears: number): string[] {
+  const cell = cells.find((c) => c.id === cellId);
+  if (!cell) return [];
+  const snap = worldAt(world, ageYears);
+  const polity = polityLookup(world, snap);
+  const owner = polity(cell.ownerId);
+  const name = owner ? polityLabel(owner) : "諸部";
+  const history = territoryHistory(world, data, ageYears).filter((e) => e.region === cell.region);
+  const last = history.at(-1);
+  const lines: string[] = [];
+  const fight = regionFight(cells, cell.region);
+  if (fight) {
+    const attacker = polity(fight.attacker);
+    const rest = Math.max(1, Math.round((1 - fight.progress) * data.map.territoryRules.transitionYears));
+    lines.push(`${attacker ? polityLabel(attacker) : "他國"}正向此處推進，${progressWords(fight.progress)}；預計約 ${rest} 年後底定。`);
+    lines.push(`交戰期間行路與交易會受影響。`);
+  } else {
+    lines.push(`現由${name}掌握，${last ? `自 ${last.age} 歲起` : "本世一開始便是如此"}；邊界暫時安定。`);
+  }
+  // 交戰中看進攻方：被攻的一方多半已不在世局名單上
+  const lead = fight ? polity(fight.attacker) : owner;
+  const leadName = lead ? polityLabel(lead) : "諸部";
+  const strength = polityStrength(world, ageYears, data, snap)[fight ? fight.attacker : cell.ownerId];
+  if (strength) lines.push(`${leadName}國勢 ${strength.score.toFixed(1)}：持有 ${strength.regions} 處地域，興盛宗門 ${strength.prosperSects} 家${strength.recent !== 0 ? `，近年${strength.recent > 0 ? "得" : "失"}地 ${Math.abs(strength.recent)} 處` : ""}。`);
+  return lines;
+}
+
+export interface TimelineEntry {
+  age: number;
+  note: string;
+  /** 事件牽涉的地域，點選後在地圖上高亮 */
+  regions: string[];
+}
+
+/** 本世到目前年齡為止的大事記，每筆帶牽涉的地域 */
+export function timelineEntries(world: World, data: GameData, ageYears: number): TimelineEntry[] {
+  const border = territoryHistory(world, data, ageYears);
+  return world.changes.filter((c) => c.age <= ageYears && c.note).map((c) => ({
+    age: c.age,
+    note: c.note,
+    regions: [...new Set(border.filter((e) => e.age === c.age && e.note === c.note).map((e) => e.region))],
+  }));
+}
+
+/** 本世在這個地點（名稱出現在大事記裡）發生過的事 */
+export function placeHistory(world: World, names: string[], ageYears: number): TimelineEntry[] {
+  const keys = names.filter((n) => n.length >= 2);
+  return world.changes.filter((c) => c.age <= ageYears && c.note && keys.some((n) => c.note.includes(n))).map((c) => ({ age: c.age, note: c.note, regions: [] }));
 }

@@ -4,7 +4,7 @@ import type { GameData, Point } from "../data/types";
 import { travelMonths } from "./formulas";
 import { sectReach, territoriesAt, territoryForPoint } from "./territory";
 import type { GameState, TravelState } from "./state";
-import { polityLabel, worldAt, worldFor } from "./world";
+import { polityLabel, worldAt, worldFor, type World } from "./world";
 
 export type PlaceKind = "village" | "market" | "mountain" | "capital" | "ferry" | "sect" | "merchant";
 
@@ -15,6 +15,13 @@ export interface TravelPlace {
   region: string;
   point: Point;
   status: string;
+}
+
+/** 國家的本土地域：原生國是同名地域，分裂出的新國是分裂處 */
+function homeRegion(world: World, polityId: string): string | undefined {
+  if (polityId.startsWith("polity_") && world.polities.some((p) => p.id === polityId)) return polityId.slice(7);
+  const split = world.changes.find((c) => c.kind === "split" && c.created.id === polityId);
+  return split?.kind === "split" ? split.region : undefined;
 }
 
 /** 依此刻世局列出可抵達之處；閉山宗門只能到山門外。 */
@@ -33,7 +40,11 @@ export function placesAt(state: GameState, data: GameData = gameData): TravelPla
     const polity = snap.polities.find((p) => p.id === snap.owners[r.id]);
     // 諸部（尚未立國）沒有都城，名稱是空字串：改用「某某諸部」，狀態說明是聚居地
     const tribal = polity?.tribal === true;
-    places.push({ id: `capital:${r.id}`, name: tribal ? polityLabel(polity!) : polity?.capital || r.name, kind: "capital", region: r.id, point: r.capital!, status: tribal ? "諸部聚居地" : "都城" });
+    // 被併入他國的地域保留原有城名，標成舊都；只有該國的本土地域才用該國現在的都城名
+    const home = polity && homeRegion(world, polity.id) === r.id;
+    const former = world.polities.find((p) => p.id === `polity_${r.id}`)?.capital;
+    const oldName = polity && !home ? (former ? `${former}（舊都）` : r.name) : undefined;
+    places.push({ id: `capital:${r.id}`, name: tribal ? polityLabel(polity!) : oldName ?? (polity?.capital || r.name), kind: "capital", region: r.id, point: r.capital!, status: tribal ? "諸部聚居地" : home ? "都城" : "舊都" });
   }
   for (const f of snap.ferries) {
     places.push({ id: `ferry:${f.id}`, name: `${region(f.region).name}第${f.index + 1}渡口`, kind: "ferry", region: f.region, point: region(f.region).ferries![f.index], status: f.broken ? "渡口已毀，可至舊址" : "渡口可通行" });
@@ -43,7 +54,7 @@ export function placesAt(state: GameState, data: GameData = gameData): TravelPla
   }
   for (const id of snap.merchantBranches) {
     if (id === "center") continue;
-    places.push({ id: `branch:${id}`, name: `${world.names.merchant}分號`, kind: "merchant", region: id, point: region(id).capital!, status: "商號分號" });
+    places.push({ id: `branch:${id}`, name: `${world.names.merchant}・${region(id).name}分號`, kind: "merchant", region: id, point: region(id).capital!, status: "商號分號" });
   }
   return places;
 }
