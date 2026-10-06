@@ -62,8 +62,17 @@
 .map-effect-line { color: var(--accent); }
 .map-info p { margin: var(--sp-1) 0 0; }
 @media (max-width: 760px) {
-  .map-layout { display: block; }
-  .map-side { max-height: none; overflow: visible; }
-  .map-svg { max-height: 58vh; max-height: 58dvh; }
+  .map-card { min-width: 0; overflow-x: hidden; }
+  .map-layout { display: flex; flex-direction: column; width: 100%; }
+  .map-pane { order: 2; }
+  .map-side { display: contents; }
+  .map-travel { order: 1; }
+  .map-info { order: 3; }
+  .map-notes { order: 4; }
+  .map-effects { order: 5; }
+  .map-svg { max-width: 100%; height: auto; max-height: 58vh; max-height: 58dvh; }
+  .map-destination { min-width: 0; max-width: 100%; }
+  .map-travel-status { overflow-wrap: anywhere; }
+  .map-travel-go { width: 100%; min-height: var(--tap); }
   .map-info { position: static; }
 }

@@ -6,6 +6,8 @@ const UI = join(__dirname, "..", "src", "ui");
 const tokensText = readFileSync(join(UI, "styles", "tokens.css"), "utf8");
 const responsiveText = readFileSync(join(UI, "styles", "responsive.css"), "utf8");
 const renderText = readFileSync(join(UI, "render.ts"), "utf8");
+const mapText = readFileSync(join(UI, "styles", "map.css"), "utf8");
+const worldMapText = readFileSync(join(UI, "worldmap.ts"), "utf8");
 
 /** 讀出 tokens.css 裡 --name: #rrggbb 的色票 */
 function colorTokens(): Record<string, string> {
@@ -97,5 +99,16 @@ describe("手機回顧彈窗", () => {
     expect(componentsText).toMatch(/\.life-review-card, #modalBody\s*\{[^}]*min-width:\s*0/);
     expect(componentsText).toMatch(/\.review-actions\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/);
     expect(responsiveText).toMatch(/\.review-actions button\s*\{[^}]*flex:\s*1 1 0/);
+  });
+});
+
+describe("手機地圖旅行", () => {
+  it("先顯示旅行操作區，選單不溢出且啟程鈕可單手點擊", () => {
+    expect(mapText).toMatch(/@media \(max-width: 760px\)[\s\S]*\.map-layout\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
+    expect(mapText).toMatch(/\.map-travel\s*\{[^}]*order:\s*1/);
+    expect(mapText).toMatch(/\.map-pane\s*\{[^}]*order:\s*2/);
+    expect(mapText).toMatch(/\.map-destination\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%/);
+    expect(mapText).toMatch(/\.map-travel-go\s*\{[^}]*width:\s*100%[^}]*min-height:\s*var\(--tap\)/);
+    expect(worldMapText).toContain('"primary map-travel-go"');
   });
 });

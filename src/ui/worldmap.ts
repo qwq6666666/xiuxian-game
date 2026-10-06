@@ -332,7 +332,7 @@ export function buildWorldMap(
   } else if (previewRoute) {
     travel.append(html("p", "map-travel-status", `${previewRoute.to.status}。需時 ${previewRoute.months} 個月${previewRoute.delayMonths ? `（邊境動盪多 ${previewRoute.delayMonths} 個月）` : ""}，途經 ${previewRoute.regions.map((id) => data.map.regions.find((r) => r.id === id)!.name).join("、")}。`));
     if (state.phase === "living" && state.pendingEvent === null) {
-      const go = html("button", "primary", `前往${previewRoute.to.name}`);
+      const go = html("button", "primary map-travel-go", `前往${previewRoute.to.name}`);
       go.type = "button";
       go.addEventListener("click", () => handlers.onTravel(previewRoute.to.id));
       travel.append(go);
