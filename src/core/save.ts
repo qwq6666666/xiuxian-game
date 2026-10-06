@@ -126,6 +126,26 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   // v26 的閉關見聞沒有序號與種子：選填欄位，顯示時退回由年齡推出的序號
   // v27 沒有突破心得與疲勞：補上從零開始
   27: (d) => ({ ...d, version: 28, breakthroughStudy: 0, retreatStreak: 0 }),
+  // v28 的國家以地域為單位、都城用 capital:<地域>：補上國家數 5；旅行位置在都城的退回出生村
+  28: (d) => {
+    const isCapital = (id: unknown): boolean => typeof id === "string" && id.startsWith("capital:");
+    const travel = obj(d.travel, "travel");
+    const trail = Array.isArray(travel.trail) ? travel.trail.filter((id) => !isCapital(id)) : ["village"];
+    return {
+      ...d,
+      version: 29,
+      nationCount: 5,
+      meta: { ...obj(d.meta, "meta"), nationCount: 5 },
+      travel: {
+        ...travel,
+        locationId: isCapital(travel.locationId) ? "village" : travel.locationId,
+        targetId: isCapital(travel.targetId) ? null : travel.targetId,
+        totalMonths: isCapital(travel.targetId) ? 0 : travel.totalMonths,
+        remainingMonths: isCapital(travel.targetId) ? 0 : travel.remainingMonths,
+        trail: trail.length ? trail : ["village"],
+      },
+    };
+  },
   26: (d) => ({ ...d, version: 27 }),
   25: (d) => ({ ...d, version: 26, altCharts: [], wishId: null, omenLeft: 0, omen: [] }),
   // v24 運功是冷卻制：冷卻已過的舊檔補一次存量，起點移到現在；還在冷卻的維持原計時
@@ -345,6 +365,7 @@ function parseMeta(v: unknown, data: GameData): Meta {
     huashen: originCounts("huashen"),
     fastest: parseFastest(o, data),
     sectBest: num(o, "sectBest", { integer: true, min: 0 }, "meta.sectBest"),
+    nationCount: num(o, "nationCount", { integer: true, min: data.map.nations.min }, "meta.nationCount"),
     keptArtifacts: keptArtifacts(o, data),
     daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
     talents,
@@ -588,6 +609,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     name,
     nameCustom: o.nameCustom,
     worldSeed: num(o, "worldSeed", { integer: true, min: 0 }),
+    nationCount: num(o, "nationCount", { integer: true, min: data.map.nations.min }),
     travel: { locationId, targetId, totalMonths, remainingMonths, trail: travelRaw.trail as string[] },
     speed: num(o, "speed", { min: 0 }),
     phase: phase as Phase,

@@ -5,6 +5,7 @@ import { DEFAULT_SLOTS, type SlotValues } from "../data/slots";
 import type { GameData, SectState, WorldEventDef } from "../data/types";
 import { deriveSeed, nextRandom } from "./rng";
 import { addRelations, type SectRelation } from "./relations";
+import { fiefsFor, partitionNations, seatOf, fiefDistance, type Fiefs } from "./fiefs";
 
 export type SectKind = "guard" | "greatSect" | "school";
 export type SectRank = "great" | "school";
@@ -17,6 +18,8 @@ export interface WorldSect {
   region: string;
   /** 在該地域 sites 中的索引 */
   site: number;
+  /** 山門所在的領（離山門座標最近的領），決定它在哪一國境內 */
+  fief: string;
   state: SectState;
 }
 
@@ -27,6 +30,8 @@ export interface WorldPolity {
   tribal: boolean;
   color: string;
   capital: string;
+  /** 國都所在的領 id；被併入後這裡就是舊都 */
+  seat: string;
 }
 
 export interface WorldFerry {
@@ -43,8 +48,8 @@ export type WorldChange = { age: number; note: string } & (
   | { kind: "sectRank"; sect: string; to: SectRank }
   | { kind: "sectNew"; sect: WorldSect }
   | { kind: "merge"; from: string; to: string }
-  | { kind: "split"; polity: string; region: string; created: WorldPolity }
-  | { kind: "owner"; region: string; to: string }
+  | { kind: "split"; polity: string; fiefs: string[]; created: WorldPolity }
+  | { kind: "owner"; fiefs: string[]; to: string }
   | { kind: "polityNew"; polity: string; capital: string }
   | { kind: "rename"; polity: string; name: string }
   | { kind: "capital"; polity: string; capital: string }
@@ -58,9 +63,12 @@ export type WorldSlots = SlotValues;
 
 export interface World {
   seed: number;
-  birth: { region: string; village: string; market: string; mountain: string };
+  birth: { region: string; village: string; market: string; mountain: string; fief: string };
   names: { guard: string; merchant: string; wanderers: string };
+  /** 這個世界的初始國家數 */
+  nations: number;
   polities: WorldPolity[];
+  /** 領 id → 國家 id */
   owners: Record<string, string>;
   sects: WorldSect[];
   ferries: WorldFerry[];
@@ -93,6 +101,10 @@ const RECENT_NOTES = 2;
 
 const SECT_BAD: SectState[] = ["fallen"];
 
+/** 國家至少要有這麼多領，才會分裂或讓出領 */
+const SPLIT_MIN_FIEFS = 4;
+const OWNER_MIN_FIEFS = 3;
+
 export type Rng = () => number;
 
 export function makeRng(seed: number): Rng {
@@ -123,7 +135,6 @@ export function weightedIndex(rng: Rng, weights: number[]): number {
   return weights.length - 1;
 }
 
-const lands0 = (data: GameData): number => landIds(data).length;
 const landIds = (data: GameData): string[] => data.map.regions.filter((r) => r.land).map((r) => r.id);
 const regionName = (data: GameData, id: string): string => data.map.regions.find((r) => r.id === id)?.name ?? id;
 
@@ -142,7 +153,7 @@ export function applyChange(snap: WorldSnapshot, c: WorldChange): void {
       snap.sects.push({ ...c.sect });
       break;
     case "merge":
-      for (const r of Object.keys(snap.owners)) if (snap.owners[r] === c.from) snap.owners[r] = c.to;
+      for (const f of Object.keys(snap.owners)) if (snap.owners[f] === c.from) snap.owners[f] = c.to;
       // 被併的國家，宗門的關係改記到併入的國家；盟仇同國時盟約優先
       for (const rel of Object.values(snap.relations)) {
         if (rel.ally === c.from) rel.ally = c.to;
@@ -153,10 +164,10 @@ export function applyChange(snap: WorldSnapshot, c: WorldChange): void {
       break;
     case "split":
       snap.polities.push({ ...c.created });
-      snap.owners[c.region] = c.created.id;
+      for (const f of c.fiefs) snap.owners[f] = c.created.id;
       break;
     case "owner":
-      snap.owners[c.region] = c.to;
+      for (const f of c.fiefs) snap.owners[f] = c.to;
       break;
     case "polityNew": {
       const p = snap.polities.find((x) => x.id === c.polity)!;
@@ -186,7 +197,7 @@ export function applyChange(snap: WorldSnapshot, c: WorldChange): void {
   if (c.kind === "merge" || c.kind === "owner" || c.kind === "split") {
     for (const sect of snap.sects) {
       const rel = snap.relations[sect.id];
-      if (rel && rel.feud !== null && rel.feud === snap.owners[sect.region]) rel.feud = null;
+      if (rel && rel.feud !== null && rel.feud === snap.owners[sect.fief]) rel.feud = null;
     }
   }
   snap.notes.push(c.note);
@@ -204,21 +215,33 @@ interface BindContext {
   /** 新宗門與新國家的編號，用來產生穩定的 id 與顏色 */
   counters: { sect: number; polity: number };
   merchant: string;
+  fiefs: Fiefs;
+  /** 初始國家數，分裂出的新國顏色接在後面 */
+  nations: number;
 }
 
-const regionsOf = (snap: WorldSnapshot, polity: string): string[] =>
-  Object.keys(snap.owners).filter((r) => snap.owners[r] === polity);
+/** 某國現有的領（索引，由小到大） */
+export function fiefsOf(snap: WorldSnapshot, fiefs: Fiefs, polity: string): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < fiefs.count; i++) if (snap.owners[fiefs.ids[i]] === polity) out.push(i);
+  return out;
+}
 
-/** 與某地域相鄰、且屬於別的國家的地域所屬國 */
-function neighborPolities(ctx: BindContext, regions: string[], self: string): string[] {
+/** 與一組領相鄰、且屬於別的國家的領所屬國 */
+function neighborPolities(ctx: BindContext, members: number[], self: string): string[] {
   const out = new Set<string>();
-  for (const r of regions) {
-    for (const n of ctx.data.map.adjacency[r] ?? []) {
-      const owner = ctx.snap.owners[n];
+  for (const i of members) {
+    for (const j of ctx.fiefs.nb[i]) {
+      const owner = ctx.snap.owners[ctx.fiefs.ids[j]];
       if (owner && owner !== self) out.add(owner);
     }
   }
-  return [...out];
+  return [...out].sort();
+}
+
+/** 某點（邏輯座標）所在國：離該點最近的領的擁有者 */
+export function polityAtPoint(snap: { owners: Record<string, string> }, fiefs: Fiefs, p: [number, number]): string {
+  return snap.owners[fiefs.ids[fiefs.indexAt(p)]];
 }
 
 function freeSite(ctx: BindContext, region: string): number | null {
@@ -274,7 +297,8 @@ function bind(ctx: BindContext, ev: WorldEventDef, age: number): WorldChange | n
       const name = takeName(rng, data.worldNames.schools, ctx.used);
       if (!name) return null;
       const sect: WorldSect = {
-        id: `sect_new_${ctx.counters.sect++}`, name, kind: "school", rank: "school", region, site, state: "stable",
+        id: `sect_new_${ctx.counters.sect++}`, name, kind: "school", rank: "school", region, site,
+        fief: ctx.fiefs.ids[ctx.fiefs.indexAt(data.map.regions.find((r) => r.id === region)!.sites![site])], state: "stable",
       };
       return { age, kind: "sectNew", sect, note: fill(ev.note, { target: name, region: regionName(data, region) }) };
     }
@@ -282,35 +306,53 @@ function bind(ctx: BindContext, ev: WorldEventDef, age: number): WorldChange | n
       const pols = snap.polities;
       if (pols.length < 2) return null;
       const from = pickOne(rng, pols);
-      const options = neighborPolities(ctx, regionsOf(snap, from.id), from.id);
+      const options = neighborPolities(ctx, fiefsOf(snap, ctx.fiefs, from.id), from.id);
       if (options.length === 0) return null;
       const to = pickOne(rng, options);
       return { age, kind: "merge", from: from.id, to, note: fill(ev.note, { target: from.name, other: polName(to) }) };
     }
     case "split": {
-      const big = snap.polities.filter((p) => regionsOf(snap, p.id).length >= 2);
+      const big = snap.polities.filter((p) => fiefsOf(snap, ctx.fiefs, p.id).length >= SPLIT_MIN_FIEFS);
       if (big.length === 0) return null;
       const src = pickOne(rng, big);
-      const regs = regionsOf(snap, src.id);
-      const region = pickOne(rng, regs.slice(1));
+      const mine = fiefsOf(snap, ctx.fiefs, src.id);
+      const seat = ctx.fiefs.ids.indexOf(src.seat);
       const name = takeName(rng, data.worldNames.countries, ctx.used);
       const capital = takeName(rng, data.worldNames.capitals, ctx.used);
       if (!name || !capital) return null;
+      // 從離國都最遠的領開始，向外連通地取走一半的領（不含國都領）
+      const start = mine.filter((i) => i !== seat).sort((a, b) => fiefDistance(ctx.fiefs, seat, b) - fiefDistance(ctx.fiefs, seat, a) || a - b)[0];
+      const want = Math.max(1, Math.floor(mine.length / 2));
+      const taken = [start];
+      for (let k = 0; k < taken.length && taken.length < want; k++) {
+        for (const j of ctx.fiefs.nb[taken[k]]) {
+          if (taken.length >= want) break;
+          if (mine.includes(j) && j !== seat && !taken.includes(j)) taken.push(j);
+        }
+      }
       const created: WorldPolity = {
         id: `polity_new_${ctx.counters.polity}`, name, tribal: false,
-        color: data.map.palette[(lands0(data) + ctx.counters.polity++) % data.map.palette.length], capital,
+        color: data.map.palette[(ctx.nations + ctx.counters.polity++) % data.map.palette.length], capital, seat: ctx.fiefs.ids[start],
       };
-      return { age, kind: "split", polity: src.id, region, created, note: fill(ev.note, { target: src.name, new: name }) };
+      return { age, kind: "split", polity: src.id, fiefs: taken.map((i) => ctx.fiefs.ids[i]), created, note: fill(ev.note, { target: src.name, new: name }) };
     }
     case "owner": {
-      const big = snap.polities.filter((p) => regionsOf(snap, p.id).length >= 2);
+      const big = snap.polities.filter((p) => fiefsOf(snap, ctx.fiefs, p.id).length >= OWNER_MIN_FIEFS);
       if (big.length === 0) return null;
       const src = pickOne(rng, big);
-      const region = pickOne(rng, regionsOf(snap, src.id));
-      const options = neighborPolities(ctx, [region], src.id);
+      const mine = fiefsOf(snap, ctx.fiefs, src.id);
+      const seat = ctx.fiefs.ids.indexOf(src.seat);
+      const border = mine.filter((i) => i !== seat && ctx.fiefs.nb[i].some((j) => snap.owners[ctx.fiefs.ids[j]] !== src.id));
+      if (border.length === 0) return null;
+      const first = pickOne(rng, border);
+      const options = neighborPolities(ctx, [first], src.id);
       if (options.length === 0) return null;
       const to = pickOne(rng, options);
-      return { age, kind: "owner", region, to, note: fill(ev.note, { target: src.name, other: polName(to) }) };
+      const taken = [first];
+      // 有時連同旁邊也鄰著對方的另一個領一起易手
+      const second = border.filter((i) => i !== first && ctx.fiefs.nb[first].includes(i) && ctx.fiefs.nb[i].some((j) => snap.owners[ctx.fiefs.ids[j]] === to));
+      if (second.length > 0 && mine.length - 2 >= OWNER_MIN_FIEFS - 1 && rng() < 0.5) taken.push(pickOne(rng, second));
+      return { age, kind: "owner", fiefs: taken.map((i) => ctx.fiefs.ids[i]), to, note: fill(ev.note, { target: src.name, other: polName(to) }) };
     }
     case "polityNew": {
       const tribal = snap.polities.filter((p) => p.tribal);
@@ -362,8 +404,8 @@ function pickCandidates(rng: Rng, pool: WorldEventDef[], count: number, forced: 
   return picks.sort((a, b) => a.age - b.age || a.ev.id.localeCompare(b.ev.id));
 }
 
-/** 生成這一世的世界。同一個種子永遠得到同樣的結果。 */
-export function generateWorld(seed: number, data: GameData = gameData): World {
+/** 生成這一世的世界。同一個種子與國家數永遠得到同樣的結果。 */
+export function generateWorld(seed: number, data: GameData = gameData, nationCount: number = data.map.nations.default): World {
   const rng = makeRng(deriveSeed(seed, 11));
   const used = new Set<string>();
   const names = data.worldNames;
@@ -371,26 +413,37 @@ export function generateWorld(seed: number, data: GameData = gameData): World {
     if (n === null) throw new Error("世界生成：名庫不夠用");
     return n;
   };
+  const nations = Math.min(data.map.nations.max, Math.max(data.map.nations.min, Math.round(nationCount)));
+  const fiefs = fiefsFor(seed, data);
+  const fiefAt = (p: [number, number]): string => fiefs.ids[fiefs.indexAt(p)];
 
   const lands = landIds(data);
   const birthRegion = pickOne(rng, lands);
-  // 諸部：機率性地讓一處非北非中的地域尚未立國
-  const tribalRegion = rng() < 0.35 ? pickOne(rng, lands.filter((r) => r !== "north" && r !== "center")) : null;
+  // 國家：由領劃分，每國連通
+  const parts = partitionNations(fiefs, nations, rng);
+  const guardPoint = data.map.regions.find((r) => r.id === "north")!.sites![0];
+  const guardPolity = parts[fiefs.indexAt(guardPoint)];
+  // 諸部：機率性地讓一國尚未立國（守梯大宗所在的國不會是諸部）
+  const tribalRoll = rng();
+  const tribalChoices = Array.from({ length: nations }, (_, i) => i).filter((i) => i !== guardPolity);
+  const tribalIndex = tribalRoll < 0.35 ? pickOne(rng, tribalChoices) : -1;
 
   const polities: WorldPolity[] = [];
   const owners: Record<string, string> = {};
-  lands.forEach((region, i) => {
-    const id = `polity_${region}`;
-    const tribal = region === tribalRegion;
+  for (let i = 0; i < nations; i++) {
+    const id = `polity_${i}`;
+    const members = parts.map((o, k) => (o === i ? k : -1)).filter((k) => k >= 0);
+    const tribal = i === tribalIndex;
     polities.push({
       id,
       name: must(takeName(rng, names.countries, used)),
       tribal,
       color: data.map.palette[i % data.map.palette.length],
       capital: tribal ? "" : must(takeName(rng, names.capitals, used)),
+      seat: fiefs.ids[seatOf(fiefs, members)],
     });
-    owners[region] = id;
-  });
+    for (const k of members) owners[fiefs.ids[k]] = id;
+  }
 
   const guard = must(takeName(rng, names.guards, used));
   const merchant = must(takeName(rng, names.merchants, used));
@@ -413,7 +466,7 @@ export function generateWorld(seed: number, data: GameData = gameData): World {
       r = pickOne(rng, lands);
       site = place(r);
     }
-    sects.push({ id, name, kind, rank: kind === "school" ? "school" : "great", region: r, site, state });
+    sects.push({ id, name, kind, rank: kind === "school" ? "school" : "great", region: r, site, fief: fiefAt(data.map.regions.find((x) => x.id === r)!.sites![site]), state });
   };
   addSect("sect_guard", guard, "guard", "north", rng() < 0.65 ? "prosper" : "stable", 0);
   for (let i = 0; i < 2; i++) {
@@ -436,8 +489,9 @@ export function generateWorld(seed: number, data: GameData = gameData): World {
 
   const base: World = {
     seed,
-    birth: { region: birthRegion, village, market, mountain },
+    birth: { region: birthRegion, village, market, mountain, fief: fiefAt(data.map.regions.find((r) => r.id === birthRegion)!.birth!.village) },
     names: { guard, merchant, wanderers },
+    nations,
     polities,
     owners,
     sects,
@@ -479,6 +533,7 @@ function buildChanges(world: World, seed: number, data: GameData, usedAtStart: S
     const snap = initialSnapshot(world);
     const ctx: BindContext = {
       data, snap, rng, used: new Set(usedAtStart), counters: { sect: 0, polity: 0 }, merchant: world.names.merchant,
+      fiefs: fiefsFor(world.seed, data), nations: world.nations,
     };
     const out: WorldChange[] = [];
     for (const p of picks) {
@@ -527,19 +582,19 @@ export function changesBetween(world: World, fromAge: number, toAge: number): Wo
   return world.changes.filter((c) => c.age > fromAge && c.age <= toAge);
 }
 
-let cached: { seed: number; data: GameData; world: World } | null = null;
+let cached: { seed: number; data: GameData; nations: number; world: World } | null = null;
 
 /** 同一個種子重複取用時不必重新生成（介面每次重繪都會用到） */
-export function worldFor(seed: number, data: GameData = gameData): World {
-  if (cached && cached.seed === seed && cached.data === data) return cached.world;
-  const world = generateWorld(seed, data);
-  cached = { seed, data, world };
+export function worldFor(seed: number, data: GameData = gameData, nationCount: number = data.map.nations.default): World {
+  if (cached && cached.seed === seed && cached.data === data && cached.nations === nationCount) return cached.world;
+  const world = generateWorld(seed, data, nationCount);
+  cached = { seed, data, nations: nationCount, world };
   return world;
 }
 
 /** 填入名稱欄位用的當世名稱。國名取出生時的名字，讓同一世的文字前後一致。 */
 export function worldSlots(world: World): WorldSlots {
-  const birthPolity = world.polities.find((p) => p.id === world.owners[world.birth.region])!;
+  const birthPolity = world.polities.find((p) => p.id === world.owners[world.birth.fief])!;
   return {
     guard: world.names.guard,
     merchant: world.names.merchant,

@@ -2,9 +2,10 @@
 import { gameData } from "../data/load";
 import type { GameData, Point } from "../data/types";
 import { travelMonths } from "./formulas";
-import { sectReach, territoriesAt, territoryForPoint } from "./territory";
+import { fiefsFor } from "./fiefs";
+import { sectReach, territoriesAt, territoryAt } from "./territory";
 import type { GameState, TravelState } from "./state";
-import { polityLabel, worldAt, worldFor, type World } from "./world";
+import { polityLabel, worldAt, worldFor, type WorldPolity } from "./world";
 
 export type PlaceKind = "village" | "market" | "mountain" | "capital" | "ferry" | "sect" | "merchant";
 
@@ -17,16 +18,9 @@ export interface TravelPlace {
   status: string;
 }
 
-/** 國家的本土地域：原生國是同名地域，分裂出的新國是分裂處 */
-function homeRegion(world: World, polityId: string): string | undefined {
-  if (polityId.startsWith("polity_") && world.polities.some((p) => p.id === polityId)) return polityId.slice(7);
-  const split = world.changes.find((c) => c.kind === "split" && c.created.id === polityId);
-  return split?.kind === "split" ? split.region : undefined;
-}
-
 /** 依此刻世局列出可抵達之處；閉山宗門只能到山門外。 */
 export function placesAt(state: GameState, data: GameData = gameData): TravelPlace[] {
-  const world = worldFor(state.worldSeed, data);
+  const world = worldFor(state.worldSeed, data, state.nationCount);
   const snap = worldAt(world, Math.floor(state.ageMonths / 12));
   const region = (id: string) => data.map.regions.find((r) => r.id === id)!;
   const birth = region(world.birth.region);
@@ -36,15 +30,16 @@ export function placesAt(state: GameState, data: GameData = gameData): TravelPla
     { id: "mountain", name: world.birth.mountain, kind: "mountain", region: birth.id, point: birth.birth!.mountain, status: "山野" },
     { id: "merchantHq", name: `${world.names.merchant}總號`, kind: "merchant", region: "center", point: region("center").capital!, status: "商號" },
   ];
-  for (const r of data.map.regions.filter((x) => x.land)) {
-    const polity = snap.polities.find((p) => p.id === snap.owners[r.id]);
-    // 諸部（尚未立國）沒有都城，名稱是空字串：改用「某某諸部」，狀態說明是聚居地
-    const tribal = polity?.tribal === true;
-    // 被併入他國的地域保留原有城名，標成舊都；只有該國的本土地域才用該國現在的都城名
-    const home = polity && homeRegion(world, polity.id) === r.id;
-    const former = world.polities.find((p) => p.id === `polity_${r.id}`)?.capital;
-    const oldName = polity && !home ? (former ? `${former}（舊都）` : r.name) : undefined;
-    places.push({ id: `capital:${r.id}`, name: tribal ? polityLabel(polity!) : oldName ?? (polity?.capital || r.name), kind: "capital", region: r.id, point: r.capital!, status: tribal ? "諸部聚居地" : home ? "都城" : "舊都" });
+  // 每個國家一座都城（國都領的中心）；被併入他國的保留原有城名，標成舊都
+  const fiefs = fiefsFor(world.seed, data);
+  const age = Math.floor(state.ageMonths / 12);
+  const known: WorldPolity[] = [...world.polities, ...world.changes.flatMap((c) => (c.kind === "split" && c.age <= age ? [c.created] : []))];
+  for (const p of known) {
+    const alive = snap.polities.find((x) => x.id === p.id);
+    const seat = fiefs.ids.indexOf(p.seat);
+    const tribal = alive?.tribal === true;
+    const name = alive ? (tribal ? polityLabel(alive) : alive.capital) : p.capital ? `${p.capital}（舊都）` : `${p.name}諸部（舊地）`;
+    places.push({ id: `capital:${p.id}`, name, kind: "capital", region: fiefs.region[seat], point: fiefs.points[seat], status: alive ? (tribal ? "諸部聚居地" : "都城") : "舊都" });
   }
   for (const f of snap.ferries) {
     places.push({ id: `ferry:${f.id}`, name: `${region(f.region).name}第${f.index + 1}渡口`, kind: "ferry", region: f.region, point: region(f.region).ferries![f.index], status: f.broken ? "渡口已毀，可至舊址" : "渡口可通行" });
@@ -62,19 +57,19 @@ export function placesAt(state: GameState, data: GameData = gameData): TravelPla
 export function localTerritory(state: GameState, data: GameData = gameData) {
   const place = placesAt(state, data).find((p) => p.id === state.travel.locationId);
   if (!place) return undefined;
-  return territoryForPoint(territoriesAt(worldFor(state.worldSeed, data), Math.floor(state.ageMonths / 12), data), place.region, place.point);
+  return territoryAt(territoriesAt(worldFor(state.worldSeed, data, state.nationCount), Math.floor(state.ageMonths / 12), data), place.point);
 }
 
 export function marketTerritory(state: GameState, data: GameData = gameData) {
-  const world = worldFor(state.worldSeed, data);
+  const world = worldFor(state.worldSeed, data, state.nationCount);
   const region = data.map.regions.find((r) => r.id === world.birth.region)!;
-  return territoryForPoint(territoriesAt(world, Math.floor(state.ageMonths / 12), data), region.id, region.ferries![0]);
+  return territoryAt(territoriesAt(world, Math.floor(state.ageMonths / 12), data), region.ferries![0]);
 }
 
 export function localSectInfluence(state: GameState, data: GameData = gameData): boolean {
   const place = placesAt(state, data).find((p) => p.id === state.travel.locationId);
   if (!place) return false;
-  const snap = worldAt(worldFor(state.worldSeed, data), Math.floor(state.ageMonths / 12));
+  const snap = worldAt(worldFor(state.worldSeed, data, state.nationCount), Math.floor(state.ageMonths / 12));
   return snap.sects.some((sect) => {
     const reach = sectReach(sect, data);
     if (reach === 0 || sect.region !== place.region) return false;
@@ -123,7 +118,7 @@ export function routeTo(state: GameState, targetId: string, data: GameData = gam
   if (!from || !to || from.id === to.id) return null;
   const regions = regionRoute(from.region, to.region, data);
   const anchors = regions.length > 1 ? regions.map((id) => data.map.regions.find((r) => r.id === id)!.capital!) : [];
-  const territory = territoryForPoint(territoriesAt(worldFor(state.worldSeed, data), Math.floor(state.ageMonths / 12), data), to.region, to.point);
+  const territory = territoryAt(territoriesAt(worldFor(state.worldSeed, data, state.nationCount), Math.floor(state.ageMonths / 12), data), to.point);
   const delayMonths = territory?.contested ? data.map.territoryRules.travelDelayMonths : 0;
   return { from, to, regions, points: [from.point, ...anchors, to.point], months: travelMonths(regions.length - 1) + delayMonths, delayMonths };
 }

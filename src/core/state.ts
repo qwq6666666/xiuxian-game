@@ -1,6 +1,9 @@
 import type { ArtifactSlot, AttributeKey, Omen, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 28;
+export const SAVE_VERSION = 29;
+
+/** 沒有選擇過時的國家數（與 map.json 的 nations.default 相同，由載入檢查守住） */
+export const DEFAULT_NATIONS = 5;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -42,6 +45,8 @@ export interface Meta {
   bestiary: Record<string, BestiaryEntry>;
   /** 遇過的故人（故人 id → 初遇與最近一次遇見的世數），只收藏，不影響任何數值（GDD 第 41 節） */
   met: Record<string, MetEntry>;
+  /** 玩家在擲骰畫面選的國家數，之後每一世沿用（M51） */
+  nationCount: number;
   /** 上一世的簡要結果，供一生回顧比較；還沒走完過一世為 null */
   lastLife: LifeBrief | null;
 }
@@ -69,7 +74,7 @@ export interface LifeBrief {
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, keptArtifacts: [], goals: {}, bestiary: {}, met: {}, lastLife: null };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, fastest: {}, keptArtifacts: [], goals: {}, bestiary: {}, met: {}, nationCount: DEFAULT_NATIONS, lastLife: null };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
@@ -255,6 +260,8 @@ export interface GameState {
   nameCustom: boolean;
   /** 世界種子：每世擲骰時定下，世界由它重算，不存進存檔 */
   worldSeed: number;
+  /** 這一世的國家數（開局時取自 meta.nationCount），世界由種子與它重算 */
+  nationCount: number;
   travel: TravelState;
   attributes: Attributes;
   spiritRootId: string;

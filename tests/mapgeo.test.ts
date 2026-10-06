@@ -4,7 +4,8 @@ import { clampZoom, zoomAt, MAX_ZOOM, IDENTITY } from "../src/ui/mapart/zoom";
 import { mixRgb, parseHex, tint } from "../src/ui/mapart/color";
 import { placeHistory, progressWords, relationEdges, relationLines, targetKindLabel, terrainLine, territoryLines, timelineEntries } from "../src/ui/mapinfo";
 import { generateWorld, worldAt } from "../src/core/world";
-import { territoryMapAt } from "../src/core/frontier";
+import { cellFiefs, territoryMapAt } from "../src/core/frontier";
+import { fiefsFor } from "../src/core/fiefs";
 import { terrainFor } from "../src/core/terrain";
 import { gameData } from "../src/data/load";
 
@@ -43,18 +44,19 @@ describe("天下圖資訊卡與時間軸", () => {
   const merge = world.changes.find((c) => c.kind === "merge")!;
   const terrain = terrainFor(world.seed, gameData);
 
-  it("時間軸只列到目前年齡為止的變化，並帶牽涉的地域", () => {
+  it("時間軸只列到目前年齡為止的變化，並帶牽涉的位置", () => {
     const early = timelineEntries(world, gameData, merge.age - 1);
     expect(early.every((e) => e.age < merge.age)).toBe(true);
     const all = timelineEntries(world, gameData, merge.age + 1);
     const hit = all.find((e) => e.age === merge.age && e.note === merge.note)!;
-    expect(hit.regions.length).toBeGreaterThan(0);
+    expect(hit.spots.length).toBeGreaterThan(0);
   });
 
   it("領土資訊：交戰中說明進攻方、進度與預計底定，安定時說明起算年", () => {
     const during = territoryMapAt(world, (merge.age + 2) * 4, gameData, terrain);
     const fight = during.fights[0];
-    const cell = terrain.grid.cells.find((c) => terrain.land[c.id] && terrain.regionIds[terrain.region[c.id]] === fight.region)!;
+    const cf = cellFiefs(terrain, gameData, fiefsFor(world.seed, gameData));
+    const cell = terrain.grid.cells.find((c) => terrain.land[c.id] && fight.fiefs.includes(cf[c.id]))!;
     const lines = territoryLines(world, during, terrain, cell.id, gameData, merge.age + 2);
     expect(lines.join("")).toMatch(/推進/);
     expect(lines.join("")).toMatch(/年後底定/);

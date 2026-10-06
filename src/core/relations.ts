@@ -2,6 +2,7 @@
 // 世界層級、只影響顯示，玩家不能操作；用 deriveSeed(world.seed, 47) 另開亂數線，
 // 在既有世局生成完之後才插入，所以既有的名字、國家、宗門與變化一個字都不位移。
 import type { GameData, WorldRelationChangeDef } from "../data/types";
+import { fiefsFor, type Fiefs } from "./fiefs";
 import { deriveSeed } from "./rng";
 import {
   applyChange, fill, initialSnapshot, makeRng, pickOne, weightedIndex,
@@ -19,34 +20,29 @@ export type RelationKind = "ally" | "feud";
 
 const alive = (s: WorldSect): boolean => s.state !== "closed" && s.state !== "fallen";
 
-/** 宗門在邏輯座標上的位置 */
-function sectPoint(s: WorldSect, data: GameData): [number, number] {
-  return data.map.regions.find((r) => r.id === s.region)!.sites![s.site];
-}
-
-/** 宗門到某國的距離：到該國現有各地域的領土中心與都城的最近距離（邏輯座標） */
-export function sectPolityDistance(snap: WorldSnapshot, s: WorldSect, polity: string, data: GameData): number {
-  const [x, y] = sectPoint(s, data);
+/** 宗門到某國的距離：山門到該國現有各領中心的最近距離（邏輯座標） */
+export function sectPolityDistance(snap: WorldSnapshot, s: WorldSect, polity: string, fiefs: Fiefs): number {
+  const [x, y] = fiefs.points[fiefs.ids.indexOf(s.fief)];
   let best = Infinity;
-  for (const r of data.map.regions) {
-    if (!r.land || snap.owners[r.id] !== polity) continue;
-    for (const p of [...(r.territories ?? []), ...(r.capital ? [r.capital] : [])]) best = Math.min(best, Math.hypot(p[0] - x, p[1] - y));
+  for (let i = 0; i < fiefs.count; i++) {
+    if (snap.owners[fiefs.ids[i]] !== polity) continue;
+    best = Math.min(best, Math.hypot(fiefs.points[i][0] - x, fiefs.points[i][1] - y));
   }
   return best;
 }
 
 /** 候選國家：在距離內、仍存在，且不是排除的那幾個 */
-function candidates(snap: WorldSnapshot, s: WorldSect, data: GameData, exclude: (string | null)[]): string[] {
+function candidates(snap: WorldSnapshot, s: WorldSect, data: GameData, fiefs: Fiefs, exclude: (string | null)[]): string[] {
   const max = data.worldRelations.candidateDistance;
   return snap.polities
-    .filter((p) => !exclude.includes(p.id) && sectPolityDistance(snap, s, p.id, data) <= max)
+    .filter((p) => !exclude.includes(p.id) && sectPolityDistance(snap, s, p.id, fiefs) <= max)
     .map((p) => p.id);
 }
 
 /** 一個宗門在快照上的關係（沒有紀錄就是都沒有） */
 export const relationOf = (snap: WorldSnapshot, sectId: string): SectRelation => snap.relations[sectId] ?? { ally: null, feud: null };
 
-function bindRelation(snap: WorldSnapshot, def: WorldRelationChangeDef, age: number, rng: () => number, data: GameData): WorldChange | null {
+function bindRelation(snap: WorldSnapshot, def: WorldRelationChangeDef, age: number, rng: () => number, data: GameData, fiefs: Fiefs): WorldChange | null {
   const polName = (id: string): string => snap.polities.find((p) => p.id === id)!.name;
   const make = (s: WorldSect, polity: string, relation: RelationKind, on: boolean): WorldChange => ({
     age, kind: "relation", sect: s.id, polity, relation, on,
@@ -58,8 +54,8 @@ function bindRelation(snap: WorldSnapshot, def: WorldRelationChangeDef, age: num
     const other: RelationKind = rel === "ally" ? "feud" : "ally";
     const free = living.filter((s) => relationOf(snap, s.id)[rel] === null);
     const options = free.flatMap((s) => {
-      const exclude = [relationOf(snap, s.id)[other], ...(rel === "feud" ? [snap.owners[s.region]] : [])];
-      return candidates(snap, s, data, exclude).map((p) => ({ s, p }));
+      const exclude = [relationOf(snap, s.id)[other], ...(rel === "feud" ? [snap.owners[s.fief]] : [])];
+      return candidates(snap, s, data, fiefs, exclude).map((p) => ({ s, p }));
     });
     if (options.length === 0) return null;
     const { s, p } = pickOne(rng, options);
@@ -77,15 +73,16 @@ export function addRelations(world: World, data: GameData): void {
   const rules = data.worldRelations;
   const rng = makeRng(deriveSeed(world.seed, 47));
   const snap0 = initialSnapshot(world);
+  const fiefs = fiefsFor(world.seed, data);
   world.relations = world.sects.map((s) => {
     const rel: SectRelation = { ally: null, feud: null };
     if (!alive(s)) return { sect: s.id, ...rel };
     if (rng() < rules.initial.allyChance) {
-      const c = candidates(snap0, s, data, []);
+      const c = candidates(snap0, s, data, fiefs, []);
       if (c.length) rel.ally = pickOne(rng, c);
     }
     if (rng() < rules.initial.feudChance) {
-      const c = candidates(snap0, s, data, [rel.ally, snap0.owners[s.region]]);
+      const c = candidates(snap0, s, data, fiefs, [rel.ally, snap0.owners[s.fief]]);
       if (c.length) rel.feud = pickOne(rng, c);
     }
     return { sect: s.id, ...rel };
@@ -105,7 +102,7 @@ export function addRelations(world: World, data: GameData): void {
   const added: WorldChange[] = [];
   for (const pick of picks) {
     while (next < existing.length && existing[next].age <= pick.age) applyChange(snap, existing[next++]);
-    const change = bindRelation(snap, pick.def, pick.age, rng, data);
+    const change = bindRelation(snap, pick.def, pick.age, rng, data, fiefs);
     if (!change) continue;
     applyChange(snap, change);
     added.push(change);

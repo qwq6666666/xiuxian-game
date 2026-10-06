@@ -7,6 +7,8 @@ import { seededRandom } from "./noise";
 import { distanceToPolygon, flattenPath, pointInPolygon } from "./shape";
 
 export interface Fiefs {
+  /** 世界種子 */
+  seed: number;
   count: number;
   /** f0、f1… */
   ids: string[];
@@ -148,6 +150,7 @@ function buildFiefs(seed: number, data: GameData): Fiefs {
     return lands.reduce((best, l) => (distanceToPolygon(l.poly, p) < distanceToPolygon(best.poly, p) ? l : best)).id;
   };
   return {
+    seed,
     count: n,
     ids: points.map((_, i) => `f${i}`),
     points,

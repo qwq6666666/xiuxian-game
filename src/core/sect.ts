@@ -169,7 +169,7 @@ export function companionsOf(state: GameState, data: GameData = gameData): { pee
 
 /** 名稱欄位：世界名稱加上入宗者的同門名字（沒入宗用通用稱呼） */
 export function slotsFor(state: GameState, data: GameData = gameData): SlotValues {
-  const base = worldSlots(worldFor(state.worldSeed, data));
+  const base = worldSlots(worldFor(state.worldSeed, data, state.nationCount));
   const c = companionsOf(state, data);
   return c ? { ...base, ...c } : { ...base, peer: DEFAULT_SLOTS.peer, steward: DEFAULT_SLOTS.steward, elder: DEFAULT_SLOTS.elder };
 }

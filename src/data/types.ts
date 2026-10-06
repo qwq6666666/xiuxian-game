@@ -563,8 +563,6 @@ export interface MapRegion {
   sites?: Point[];
   ferries?: Point[];
   birth?: { village: Point; mountain: Point };
-  /** 領土分區的中心；只決定地圖形狀，不是新地名 */
-  territories?: Point[];
 }
 
 /** 顯示座標（橫向版面）與邏輯座標（判定用）的固定線性轉換 */

@@ -22,13 +22,13 @@ export function whenApplies(snap: WorldSnapshot, w: WorldWhen): boolean {
   return true;
 }
 
-let memo: { seed: number; age: number; data: GameData; snap: WorldSnapshot; effects: WorldEffectDef[] } | null = null;
+let memo: { seed: number; nations: number; age: number; data: GameData; snap: WorldSnapshot; effects: WorldEffectDef[] } | null = null;
 
 function memoOf(state: GameState, data: GameData): NonNullable<typeof memo> {
   const age = Math.floor(state.ageMonths / 12);
-  if (memo && memo.seed === state.worldSeed && memo.age === age && memo.data === data) return memo;
-  const snap = worldAt(worldFor(state.worldSeed, data), age);
-  memo = { seed: state.worldSeed, age, data, snap, effects: data.worldEffects.filter((e) => effectApplies(snap, e)) };
+  if (memo && memo.seed === state.worldSeed && memo.nations === state.nationCount && memo.age === age && memo.data === data) return memo;
+  const snap = worldAt(worldFor(state.worldSeed, data, state.nationCount), age);
+  memo = { seed: state.worldSeed, nations: state.nationCount, age, data, snap, effects: data.worldEffects.filter((e) => effectApplies(snap, e)) };
   return memo;
 }
 

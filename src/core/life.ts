@@ -45,6 +45,7 @@ export function createInitialState(
       name: "",
       nameCustom: false,
       worldSeed: 0,
+      nationCount: meta.nationCount,
       travel: { locationId: "village", targetId: null, totalMonths: 0, remainingMonths: 0, trail: ["village"] },
       attributes: zero,
       spiritRootId: "",

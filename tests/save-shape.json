@@ -1,5 +1,5 @@
 {
-  "version": 28,
+  "version": 29,
   "shape": {
     "TravelState": [
       "locationId",
@@ -20,6 +20,7 @@
       "lastLife",
       "lives",
       "met",
+      "nationCount",
       "reached",
       "sectBest",
       "talents",
@@ -157,6 +158,7 @@
       "methodId",
       "name",
       "nameCustom",
+      "nationCount",
       "omen",
       "omenLeft",
       "originId",

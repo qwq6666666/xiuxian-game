@@ -94,9 +94,6 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     };
     if (ro.land) {
       region.capital = point(ro.capital, w, "capital", box);
-      const territoryPoints = list(ro.territories, `${w} 欄位 territories`);
-      if (territoryPoints.length < 3) fail(w, "territories", "至少需要 3 個領土中心");
-      region.territories = territoryPoints.map((p, j) => point(p, w, `territories[${j}]`, box));
       const sites = list(ro.sites, `${w} 欄位 sites`);
       if (sites.length < 5) fail(w, "sites", `至少需要 5 個宗門位置，目前 ${sites.length} 個`);
       region.sites = sites.map((p, j) => point(p, w, `sites[${j}]`, box));

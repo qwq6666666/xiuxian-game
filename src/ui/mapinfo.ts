@@ -1,16 +1,17 @@
 // 天下圖的純邏輯：點選某個標記時顯示什麼、標記該畫成什麼樣子。不碰 DOM，方便測試。
 import type { World, WorldPolity, WorldSect, WorldSnapshot } from "../core/world";
-import { polityStrength, regionFight, territoryHistory, type TerritoryMap } from "../core/frontier";
+import { cellFiefs, fightOfCell, polityStrength, territoryHistory, type TerritoryMap } from "../core/frontier";
+import { fiefsFor } from "../core/fiefs";
 import type { Terrain } from "../core/terrain";
 import { polityLabel, worldAt, worldSlots } from "../core/world";
 import { fillSlots } from "../data/slots";
-import type { GameData, MapRef, WorldEffectDef } from "../data/types";
+import type { GameData, MapRef, Point, WorldEffectDef } from "../data/types";
 import { effectApplies } from "../core/worldeffects";
 import { relationOf, type RelationKind } from "../core/relations";
 
 export type MapTarget =
-  | { kind: "region"; id: string }
-  | { kind: "territory"; id: string; region: string }
+  | { kind: "capital"; polity: string }
+  | { kind: "territory"; id: string; region: string; polity: string }
   | { kind: "sect"; id: string }
   | { kind: "ferry"; id: string }
   | { kind: "branch"; region: string }
@@ -57,26 +58,31 @@ export function fillBlurb(template: string, vars: Record<string, string>): strin
 export function describeTarget(target: MapTarget, world: World, snap: WorldSnapshot, data: GameData): MapInfo {
   const slots = worldSlots(world);
   const regionName = (id: string): string => data.map.regions.find((r) => r.id === id)!.name;
-  const polityOf = (region: string) => snap.polities.find((p) => p.id === snap.owners[region])!;
+  const lookup = polityLookup(world, snap);
+  const fiefs = fiefsFor(world.seed, data);
+  const polityOfFief = (fief: string): WorldPolity => lookup(snap.owners[fief])!;
   const base: Record<string, string> = { ...slots };
   const b = data.map.blurbs;
+  /** 國家的簡介：以都城所在的地域名填模板 */
+  const polityInfo = (p: WorldPolity, regionId: string, titleRegion: boolean): MapInfo => {
+    const region = data.map.regions.find((r) => r.id === regionId)!;
+    const fill = (t: string) => fillBlurb(t, { ...base, name: p.name, region: region.name, capital: p.capital, country: p.name });
+    return {
+      title: titleRegion ? `${region.name}・${polityLabel(p)}` : polityLabel(p),
+      lines: [fill(p.tribal ? b.tribal : b.polity), `靈氣：${region.aura}。${region.desc}`],
+    };
+  };
 
   switch (target.kind) {
     case "territory":
-      return describeTarget({ kind: "region", id: target.region }, world, snap, data);
-    case "region": {
-      const region = data.map.regions.find((r) => r.id === target.id)!;
-      if (!region.land) return { title: region.name, lines: [region.desc, `靈氣：${region.aura}。`] };
-      const p = polityOf(region.id);
-      const fill = (t: string) => fillBlurb(t, { ...base, name: p.name, region: region.name, capital: p.capital, country: p.name });
-      return {
-        title: `${region.name}・${polityLabel(p)}`,
-        lines: [fill(p.tribal ? b.tribal : b.polity), `靈氣：${region.aura}。${region.desc}`],
-      };
+      return polityInfo(lookup(target.polity)!, target.region, true);
+    case "capital": {
+      const p = lookup(target.polity)!;
+      return polityInfo(p, fiefs.region[fiefs.ids.indexOf(p.seat)], false);
     }
     case "sect": {
       const sect = snap.sects.find((s) => s.id === target.id)!;
-      const p = polityOf(sect.region);
+      const p = polityOfFief(sect.fief);
       const kindText = sect.kind === "guard" ? b.sect.guard : sect.rank === "great" ? b.sect.great : b.sect.school;
       const text = fillBlurb(kindText, { ...base, name: sect.name, region: regionName(sect.region), country: polityLabel(p), capital: p.capital });
       return { title: sect.name, lines: [`${text}${b.state[sect.state]}`] };
@@ -97,7 +103,7 @@ export function describeTarget(target: MapTarget, world: World, snap: WorldSnaps
     case "village":
     case "market":
     case "mountain": {
-      const birthPolity = polityOf(world.birth.region);
+      const birthPolity = polityOfFief(world.birth.fief);
       const name = slots[target.kind];
       const text = fillBlurb(b[target.kind], { ...base, name, region: regionName(world.birth.region), country: polityLabel(birthPolity), capital: birthPolity.capital });
       return { title: target.kind === "village" ? `${name}（出生地）` : name, lines: [text] };
@@ -148,7 +154,7 @@ export function relationLines(snap: WorldSnapshot, target: { sect?: string; poli
   const id = target.polity!;
   const edges = relationEdges(snap, { polity: id });
   const names = (kind: RelationKind): string => edges.filter((e) => e.kind === kind).map((e) => sectName(e.sect)).join("、");
-  const inside = snap.sects.filter((s) => livingSect(s) && snap.owners[s.region] === id).map((s) => s.name);
+  const inside = snap.sects.filter((s) => livingSect(s) && snap.owners[s.fief] === id).map((s) => s.name);
   const lines: string[] = [];
   if (inside.length) lines.push(`境內宗門：${inside.join("、")}。`);
   if (names("ally")) lines.push(`互惠宗門：${names("ally")}。`);
@@ -212,7 +218,7 @@ export function polityLookup(world: World, snap: WorldSnapshot): (id: string) =>
 export function targetKindLabel(target: MapTarget, snap: WorldSnapshot): string {
   switch (target.kind) {
     case "territory": return "領土";
-    case "region": return "地域";
+    case "capital": return "都城";
     case "sect": {
       const s = snap.sects.find((x) => x.id === target.id);
       return s ? `宗門山門・${s.rank === "great" ? "大宗" : "門派"}` : "宗門山門";
@@ -237,21 +243,22 @@ export function progressWords(progress: number): string {
 
 /** 領土資訊：掌握者、起算年、推進進度與預計底定、國勢 */
 export function territoryLines(world: World, map: TerritoryMap, terrain: Terrain, cellId: number, data: GameData, ageYears: number): string[] {
-  const ri = terrain.region[cellId];
-  if (ri < 0 || map.owner[cellId] < 0) return [];
-  const region = terrain.regionIds[ri];
+  if (map.owner[cellId] < 0) return [];
   const ownerId = map.polityIds[map.owner[cellId]];
   const snap = worldAt(world, ageYears);
   const polity = polityLookup(world, snap);
   const owner = polity(ownerId);
   const name = owner ? polityLabel(owner) : "諸部";
-  const last = territoryHistory(world, data, ageYears).filter((e) => e.region === region).at(-1);
+  const fiefs = fiefsFor(world.seed, data);
+  const fight = fightOfCell(map, cellId);
+  // 這一格所在的領最近一次易手的年齡
+  const cellFief = cellFiefs(terrain, data, fiefs)[cellId];
+  const last = territoryHistory(world, data, ageYears).filter((e) => e.fiefList.includes(cellFief)).at(-1);
   const lines: string[] = [];
-  const fight = regionFight(map, region);
   if (fight) {
     const attacker = polity(fight.attacker);
     const rest = Math.max(1, Math.round((1 - fight.progress) * data.map.territoryRules.transitionYears));
-    lines.push(`${attacker ? polityLabel(attacker) : "他國"}正向${data.map.regions.find((r) => r.id === region)!.name}推進，${progressWords(fight.progress)}；預計約 ${rest} 年後底定。`);
+    lines.push(`${attacker ? polityLabel(attacker) : "他國"}正向此處推進，${progressWords(fight.progress)}；預計約 ${rest} 年後底定。`);
     lines.push("交戰期間行路與交易會受影響。");
   } else {
     lines.push(`現由${name}掌握，${last ? `自 ${last.age} 歲起` : "本世一開始便是如此"}；邊界暫時安定。`);
@@ -260,7 +267,7 @@ export function territoryLines(world: World, map: TerritoryMap, terrain: Terrain
   const leadId = fight ? fight.attacker : ownerId;
   const lead = polity(leadId);
   const strength = polityStrength(world, ageYears, data, snap)[leadId];
-  if (strength) lines.push(`${lead ? polityLabel(lead) : "諸部"}國勢 ${strength.score.toFixed(1)}：持有 ${strength.regions} 處地域，興盛宗門 ${strength.prosperSects} 家${strength.recent !== 0 ? `，近年${strength.recent > 0 ? "得" : "失"}地 ${Math.abs(strength.recent)} 處` : ""}。`);
+  if (strength) lines.push(`${lead ? polityLabel(lead) : "諸部"}國勢 ${strength.score.toFixed(1)}：持有 ${strength.fiefs} 區疆域，興盛宗門 ${strength.prosperSects} 家${strength.recent !== 0 ? `，近年${strength.recent > 0 ? "得" : "失"}地 ${Math.abs(strength.recent)} 區` : ""}。`);
   return lines;
 }
 
@@ -282,8 +289,8 @@ export function terrainLine(terrain: Terrain, data: GameData, cellId: number): s
 export interface TimelineEntry {
   age: number;
   note: string;
-  /** 事件牽涉的地域，點選後在地圖上高亮 */
-  regions: string[];
+  /** 事件牽涉的位置（邏輯座標），點選後在地圖上高亮 */
+  spots: Point[];
 }
 
 /** 本世到目前年齡為止的大事記，每筆帶牽涉的地域 */
@@ -292,12 +299,12 @@ export function timelineEntries(world: World, data: GameData, ageYears: number):
   return world.changes.filter((c) => c.age <= ageYears && c.note).map((c) => ({
     age: c.age,
     note: c.note,
-    regions: [...new Set(border.filter((e) => e.age === c.age && e.note === c.note).map((e) => e.region))],
+    spots: border.filter((e) => e.age === c.age && e.note === c.note).map((e) => e.spot),
   }));
 }
 
 /** 本世在這個地點（名稱出現在大事記裡）發生過的事 */
 export function placeHistory(world: World, names: string[], ageYears: number): TimelineEntry[] {
   const keys = names.filter((n) => n.length >= 2);
-  return world.changes.filter((c) => c.age <= ageYears && c.note && keys.some((n) => c.note.includes(n))).map((c) => ({ age: c.age, note: c.note, regions: [] }));
+  return world.changes.filter((c) => c.age <= ageYears && c.note && keys.some((n) => c.note.includes(n))).map((c) => ({ age: c.age, note: c.note, spots: [] }));
 }

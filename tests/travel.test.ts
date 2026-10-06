@@ -53,12 +53,11 @@ describe("諸部地域的旅行地點", () => {
       const state = startLife(createInitialState(seed));
       const places = placesAt(state);
       for (const place of places) expect(place.name, `seed ${seed} ${place.id}`).not.toBe("");
-      const world = worldFor(state.worldSeed, gameData);
+      const world = worldFor(state.worldSeed, gameData, state.nationCount);
       const snap = worldAt(world, Math.floor(state.ageMonths / 12));
       for (const polity of snap.polities.filter((p) => p.tribal)) {
         tribalSeen++;
-        const region = Object.keys(snap.owners).find((r) => snap.owners[r] === polity.id)!;
-        const place = places.find((p) => p.id === `capital:${region}`)!;
+        const place = places.find((p) => p.id === `capital:${polity.id}`)!;
         expect(place.name).toBe(polityLabel(polity));
         expect(place.status).toBe("諸部聚居地");
       }

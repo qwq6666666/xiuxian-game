@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { generateWorld, worldAt } from "../src/core/world";
 import { relationOf, sectPolityDistance } from "../src/core/relations";
+import { fiefsFor } from "../src/core/fiefs";
 import { gameData as data } from "../src/data/load";
 import { validateWorldRelations } from "../src/data/validate";
 
@@ -42,11 +43,11 @@ describe("宗門與國家關係（S1）", () => {
             continue;
           }
           if (r.ally !== null && r.feud !== null) expect(r.ally).not.toBe(r.feud);
-          expect(r.feud, `${seed}@${age} 仇國不會是山門所在的國`).not.toBe(snap.owners[s.region]);
+          expect(r.feud, `${seed}@${age} 仇國不會是山門所在的國`).not.toBe(snap.owners[s.fief]);
           for (const p of [r.ally, r.feud]) if (p !== null) expect(snap.polities.some((x) => x.id === p), `${seed}@${age}`).toBe(true);
           if (age === 0) {
-            if (r.ally) { withAlly++; expect(sectPolityDistance(snap, s, r.ally, data)).toBeLessThanOrEqual(data.worldRelations.candidateDistance); }
-            if (r.feud) { withFeud++; expect(r.feud).not.toBe(snap.owners[s.region]); }
+            if (r.ally) { withAlly++; expect(sectPolityDistance(snap, s, r.ally, fiefsFor(seed, data))).toBeLessThanOrEqual(data.worldRelations.candidateDistance); }
+            if (r.feud) { withFeud++; expect(r.feud).not.toBe(snap.owners[s.fief]); }
           }
         }
       }

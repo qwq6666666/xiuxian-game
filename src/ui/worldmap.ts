@@ -3,8 +3,8 @@
 import type { GameState } from "../core/state";
 import { localTerritory, marketTerritory, placesAt, routeTo, type TravelPlace } from "../core/travel";
 import { polityLabel, worldAt, worldFor } from "../core/world";
-import { sectReach, territoriesAt, territoryForPoint } from "../core/territory";
-import { ageQuarters, regionFight, territoryMapAt } from "../core/frontier";
+import { sectReach, territoriesAt, territoryAt } from "../core/territory";
+import { ageQuarters, territoryMapAt } from "../core/frontier";
 import { relationOf } from "../core/relations";
 import { provincesFor } from "../core/provinces";
 import { terrainFor, type Terrain } from "../core/terrain";
@@ -33,13 +33,13 @@ let worldMapCache: WorldMapCache | null = null;
 
 // 時間軸回看、事件高亮；只影響顯示，不進遊戲狀態
 let mapView: { seed: number; quarter: number } | null = null;
-let highlightRegions: string[] = [];
+let highlightSpots: Point[] = [];
 let timelineNote: string | null = null;
 
 /** 開啟天下圖時呼叫：回到現在、清掉高亮與縮放 */
 export function resetMapView(): void {
   mapView = null;
-  highlightRegions = [];
+  highlightSpots = [];
   timelineNote = null;
   resetZoom();
   worldMapCache = null;
@@ -65,14 +65,14 @@ const sameTarget = (a: MapTarget | null, b: MapTarget): boolean => a !== null &&
 
 function placeIdOf(target: MapTarget | null): string | null {
   if (!target || target.kind === "stairs") return null;
-  if (target.kind === "region" || target.kind === "territory") return (target.kind === "region" ? target.id : target.region) === "beihuang" ? null : `capital:${target.kind === "region" ? target.id : target.region}`;
+  if (target.kind === "capital" || target.kind === "territory") return `capital:${target.polity}`;
   if (target.kind === "sect" || target.kind === "ferry") return `${target.kind}:${target.id}`;
   if (target.kind === "branch") return `branch:${target.region}`;
   return target.kind;
 }
 
 function targetOfPlace(place: TravelPlace): MapTarget {
-  if (place.id.startsWith("capital:")) return { kind: "region", id: place.region };
+  if (place.id.startsWith("capital:")) return { kind: "capital", polity: place.id.slice(8) };
   if (place.id.startsWith("sect:")) return { kind: "sect", id: place.id.slice(5) };
   if (place.id.startsWith("ferry:")) return { kind: "ferry", id: place.id.slice(6) };
   if (place.id.startsWith("branch:")) return { kind: "branch", region: place.region };
@@ -124,7 +124,7 @@ function worldMapCacheKey(state: GameState, data: GameData, selected: MapTarget 
     worldSeed: state.worldSeed,
     quarter: shownQuarter(state, data),
     now: ageQuarters(state.ageMonths),
-    highlightRegions,
+    highlightSpots,
     timelineNote,
     selected,
     prefs: readMapPrefs(data),
@@ -143,7 +143,7 @@ function worldMapCacheKey(state: GameState, data: GameData, selected: MapTarget 
 
 /** 目前這一世、這個年齡的天下圖快照鍵：世界種子加變化條數，用來判斷「有新變化」 */
 export function mapStamp(state: GameState, data: GameData): string {
-  const world = worldFor(state.worldSeed, data);
+  const world = worldFor(state.worldSeed, data, state.nationCount);
   return `${state.worldSeed}:${worldAt(world, mapAgeYears(state.ageMonths)).changeCount}`;
 }
 
@@ -165,7 +165,7 @@ export function buildWorldMap(
   }
 
   const prefs = readMapPrefs(data);
-  const world = worldFor(state.worldSeed, data);
+  const world = worldFor(state.worldSeed, data, state.nationCount);
   const nowQuarter = ageQuarters(state.ageMonths);
   const nowYears = Math.floor(nowQuarter / 4);
   const viewQuarter = shownQuarter(state, data);
@@ -283,16 +283,12 @@ export function buildWorldMap(
       relLayer.append(svg("path", { d: `M${x1},${y1} Q${cx},${cy} ${to.x},${to.y}`, class: `map-rel map-rel-${e.kind}` }), svg("circle", { cx: to.x, cy: to.y, r: 3, class: "map-rel-end" }));
     }
   }
-  for (const id of highlightRegions) {
-    const cap = regionById(id).capital;
-    if (cap) root.append(svg("circle", { cx: tv(cap)[0], cy: tv(cap)[1], r: 16, class: "map-highlight" }));
-  }
-  // 推進箭頭：由進攻方相鄰地域的都城指向被攻地域的都城；進度越高越不透明
+  for (const spot of highlightSpots) root.append(svg("circle", { cx: tv(spot)[0], cy: tv(spot)[1], r: 16, class: "map-highlight" }));
+  // 推進箭頭：由進攻方最近的領指向被攻處；進度越高越不透明
   for (const fight of map.fights) {
-    const source = (data.map.adjacency[fight.region] ?? []).find((n) => snap.owners[n] === fight.attacker && !regionFight(map, n));
-    if (!source) continue;
-    const [x1, y1] = tv(regionById(source).capital!);
-    const [x2, y2] = tv(regionById(fight.region).capital!);
+    if (!fight.source) continue;
+    const [x1, y1] = fight.source;
+    const [x2, y2] = fight.focus;
     const len = Math.hypot(x2 - x1, y2 - y1) || 1;
     const ux = (x2 - x1) / len;
     const uy = (y2 - y1) / len;
@@ -328,13 +324,12 @@ export function buildWorldMap(
   const addLabel = (key: string, p: Point, dx: number, dy: number, text: string, priority: number, anchor: "start" | "middle", target?: MapTarget): void => {
     labels.push({ key, x: p[0] + dx, y: p[1] + dy, text, anchor, priority: target && sameTarget(selected, target) ? 0 : priority });
   };
-  for (const region of data.map.regions.filter((r) => r.land)) {
-    const polity = snap.polities.find((p) => p.id === snap.owners[region.id]);
-    const capital = placesView.find((place) => place.id === `capital:${region.id}`);
-    if (polity && capital && !polity.tribal) {
-      const c = tv(region.capital!);
+  for (const polity of snap.polities) {
+    const capital = placesView.find((place) => place.id === `capital:${polity.id}`);
+    if (capital && !polity.tribal) {
+      const c = tv(capital.point);
       root.append(svg("circle", { cx: c[0], cy: c[1], r: 1.8, class: "map-capital" }));
-      addLabel(`capital:${region.id}`, c, 4, 2, capital.name, 2, "start");
+      addLabel(`capital:${polity.id}`, c, 4, 2, capital.name, 2, "start");
     }
   }
 
@@ -410,7 +405,12 @@ export function buildWorldMap(
       handlers.onSelect(null);
       return;
     }
-    const target: MapTarget = { kind: "territory", id: `cell:${id}`, region: terrain.regionIds[terrain.region[id]] };
+    const owner = map.owner[id] >= 0 ? map.polityIds[map.owner[id]] : null;
+    if (owner === null) {
+      handlers.onSelect(null);
+      return;
+    }
+    const target: MapTarget = { kind: "territory", id: `cell:${id}`, region: terrain.regionIds[terrain.region[id]], polity: owner };
     handlers.onSelect(sameTarget(selected, target) ? null : target);
   });
   if (isPhone()) attachZoom(wrap, stage);
@@ -454,7 +454,7 @@ export function buildWorldMap(
   // ---- 資訊卡 ----
   const info = html("section", "map-info");
   info.setAttribute("aria-live", "polite");
-  const territoryOf = (place: TravelPlace | undefined) => (place ? territoryForPoint(decision, place.region, place.point) : undefined);
+  const territoryOf = (place: TravelPlace | undefined) => (place ? territoryAt(decision, place.point) : undefined);
   if (selected) {
     const d = describeTarget(selected, world, snap, data);
     const title = html("p", "map-info-title");
@@ -512,7 +512,7 @@ export function buildWorldMap(
     info.append(title, html("p", undefined, "點選國家、宗門、渡口，看一看。"));
     for (const f of map.fights) {
       const attacker = polityById(f.attacker);
-      info.append(html("p", "map-effect-line", `${attacker ? polityLabel(attacker) : "他國"}正向${regionById(f.region).name}推進。`));
+      info.append(html("p", "map-effect-line", `${attacker ? polityLabel(attacker) : "他國"}正向${polityById(f.defender) ? polityLabel(polityById(f.defender)!) : "鄰國"}的疆域推進。`));
     }
   }
   mapPane.append(info);
@@ -577,9 +577,9 @@ export function buildWorldMap(
   if (scrubbed || timelineNote) timeline.open = true;
   timeline.append(html("summary", undefined, "本世疆界與大事記"));
   const history = timelineEntries(world, data, nowYears);
-  const jumpTo = (age: number, regions: string[], note: string | null) => {
+  const jumpTo = (age: number, spots: Point[], note: string | null) => {
     mapView = { seed: state.worldSeed, quarter: Math.min(nowQuarter, Math.max(startQuarter, age * 4)) };
-    highlightRegions = regions;
+    highlightSpots = spots;
     timelineNote = note;
     handlers.onRefresh();
   };
@@ -602,13 +602,13 @@ export function buildWorldMap(
     slider.addEventListener("change", () => handlers.onRefresh());
     row.append(slider, ageText);
     const marks = html("div", "map-tl-marks");
-    for (const entry of history.filter((e) => e.regions.length > 0)) {
+    for (const entry of history.filter((e) => e.spots.length > 0)) {
       const mark = html("button", "map-tl-mark");
       mark.type = "button";
       mark.style.left = `${((entry.age * 4 - startQuarter) / (nowQuarter - startQuarter)) * 100}%`;
       mark.setAttribute("aria-label", `${entry.age} 歲：${entry.note}`);
       mark.title = `${entry.age} 歲：${entry.note}`;
-      mark.addEventListener("click", () => jumpTo(entry.age, entry.regions, `${entry.age} 歲：${entry.note}`));
+      mark.addEventListener("click", () => jumpTo(entry.age, entry.spots, `${entry.age} 歲：${entry.note}`));
       marks.append(mark);
     }
     timeline.append(row, marks);
@@ -617,7 +617,7 @@ export function buildWorldMap(
       back.type = "button";
       back.addEventListener("click", () => {
         mapView = null;
-        highlightRegions = [];
+        highlightSpots = [];
         timelineNote = null;
         handlers.onRefresh();
       });
@@ -633,7 +633,7 @@ export function buildWorldMap(
     const item = html("button", "map-note-btn", `${entry.age} 歲　${entry.note}`);
     item.type = "button";
     if (viewYears === entry.age && timelineNote?.endsWith(entry.note)) item.classList.add("current");
-    item.addEventListener("click", () => jumpTo(entry.age, entry.regions, `${entry.age} 歲：${entry.note}`));
+    item.addEventListener("click", () => jumpTo(entry.age, entry.spots, `${entry.age} 歲：${entry.note}`));
     notes.append(item);
   }
   timeline.append(notes);

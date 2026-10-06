@@ -10,7 +10,8 @@ function everyTarget(seed: number, age: number): MapTarget[] {
   const world = generateWorld(seed, data);
   const snap = worldAt(world, age);
   return [
-    ...data.map.regions.map((r): MapTarget => ({ kind: "region", id: r.id })),
+    ...snap.polities.map((p): MapTarget => ({ kind: "capital", polity: p.id })),
+    ...snap.polities.map((p): MapTarget => ({ kind: "territory", id: "cell:0", region: "north", polity: p.id })),
     ...snap.sects.map((s): MapTarget => ({ kind: "sect", id: s.id })),
     ...snap.ferries.map((f): MapTarget => ({ kind: "ferry", id: f.id })),
     ...snap.merchantBranches.filter((r) => r !== "center").map((region): MapTarget => ({ kind: "branch", region })),

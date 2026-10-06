@@ -48,9 +48,9 @@ export const identityHtml = (state: GameState, data: GameData): string => {
 
 /** 擲骰畫面的出生地：國家與村名，讓玩家看見每次重擲世界都不一樣 */
 export const birthHtml = (state: GameState, data: GameData): string => {
-  const world = worldFor(state.worldSeed, data);
+  const world = worldFor(state.worldSeed, data, state.nationCount);
   const slots = worldSlots(world);
-  const polity = world.polities.find((p) => p.id === world.owners[world.birth.region])!;
+  const polity = world.polities.find((p) => p.id === world.owners[world.birth.fief])!;
   const region = data.map.regions.find((r) => r.id === world.birth.region)!;
   return `<p><span class="tag">出生地</span>${esc(polityLabel(polity))}・${esc(slots.village)}（${esc(region.name)}）</p>`;
 };

@@ -1,81 +1,88 @@
 // 領土由既有世局推算；不另存檔，也不消耗角色亂數。
+// 以「領」為單位（M51）：國家由領組成，易手時依「離進攻方最近」的順序逐領換主。
 import type { GameData, Point } from "../data/types";
+import { fiefDistance, fiefsFor, type Fiefs } from "./fiefs";
+import { clamp } from "./noise";
 import type { World, WorldChange, WorldSect } from "./world";
 
 export interface Territory {
   id: string;
+  /** 領的索引 */
+  fief: number;
   region: string;
-  index: number;
   center: Point;
-  polygon: Point[];
   ownerId: string;
   contested: boolean;
 }
 
 let territoryMemo: { world: World; age: number; data: GameData; value: Territory[] } | null = null;
 
-/** 將地圖矩形沿中心點的垂直平分線裁切，顯示時再裁進地域輪廓。 */
-export function territoryPolygon(center: Point, others: Point[], box: Point): Point[] {
-  let polygon: Point[] = [[0, 0], [box[0], 0], [box[0], box[1]], [0, box[1]]];
-  for (const other of others) {
-    const a = 2 * (other[0] - center[0]);
-    const b = 2 * (other[1] - center[1]);
-    const c = other[0] ** 2 + other[1] ** 2 - center[0] ** 2 - center[1] ** 2;
-    const next: Point[] = [];
-    for (let i = 0; i < polygon.length; i++) {
-      const from = polygon[i];
-      const to = polygon[(i + 1) % polygon.length];
-      const f = a * from[0] + b * from[1] - c;
-      const t = a * to[0] + b * to[1] - c;
-      if (f <= 0) next.push(from);
-      if ((f < 0 && t > 0) || (f > 0 && t < 0)) {
-        const ratio = f / (f - t);
-        next.push([from[0] + (to[0] - from[0]) * ratio, from[1] + (to[1] - from[1]) * ratio]);
-      }
-    }
-    polygon = next;
-  }
-  return polygon;
+/** 一次變化的接收方；沒有領易手的變化回傳 null */
+export function changeTarget(change: WorldChange): string | null {
+  if (change.kind === "owner" || change.kind === "merge") return change.to;
+  if (change.kind === "split") return change.created.id;
+  return null;
 }
 
-function changedRegions(change: WorldChange, owners: Record<string, string>): string[] {
-  if (change.kind === "owner" || change.kind === "split") return [change.region];
-  if (change.kind === "merge") return Object.keys(owners).filter((r) => owners[r] === change.from);
-  return [];
+/**
+ * 這次變化牽涉的領，依換主順序排列：離進攻方（接收方）現有的領最近的先換；
+ * 分裂則從新國的國都領向外。owners 是變化發生前的歸屬。
+ */
+export function changeFiefs(fiefs: Fiefs, change: WorldChange, owners: Record<string, string>): number[] {
+  const to = changeTarget(change);
+  if (to === null) return [];
+  const set: number[] =
+    change.kind === "merge"
+      ? fiefs.ids.map((_, i) => i).filter((i) => owners[fiefs.ids[i]] === change.from)
+      : change.kind === "split" || change.kind === "owner"
+        ? change.fiefs.map((id) => fiefs.ids.indexOf(id)).filter((i) => i >= 0)
+        : [];
+  const refs: number[] =
+    change.kind === "split"
+      ? [fiefs.ids.indexOf(change.created.seat)]
+      : fiefs.ids.map((_, i) => i).filter((i) => owners[fiefs.ids[i]] === to && !set.includes(i));
+  if (change.kind === "owner") return set;
+  if (refs.length === 0) return set.sort((a, b) => a - b);
+  const far = (i: number): number => Math.min(...refs.map((r) => fiefDistance(fiefs, i, r)));
+  return set.map((i) => ({ i, d: far(i) })).sort((a, b) => a.d - b.d || a.i - b.i).map((x) => x.i);
 }
 
-/** 國家變化由邊界逐步推進；規定年數過後，整處地域才完全換色。 */
+/** 國家變化由邊界逐步推進；規定年數過後，整批領才完全換色。 */
 export function territoriesAt(world: World, age: number, data: GameData): Territory[] {
   if (territoryMemo && territoryMemo.world === world && territoryMemo.age === age && territoryMemo.data === data) return territoryMemo.value;
+  const fiefs = fiefsFor(world.seed, data);
   const owners = { ...world.owners };
-  const claims = new Map<string, { ownerId: string; contested: boolean }>();
-  for (const region of data.map.regions.filter((r) => r.land)) {
-    region.territories!.forEach((_, index) => claims.set(`${region.id}:${index}`, { ownerId: owners[region.id], contested: false }));
-  }
+  const claims = fiefs.ids.map((id) => ({ ownerId: owners[id], contested: false }));
   for (const change of world.changes) {
     if (change.age > age) break;
-    const regions = changedRegions(change, owners);
-    for (const region of regions) {
-      const to = change.kind === "merge" ? change.to : change.kind === "split" ? change.created.id : change.kind === "owner" ? change.to : owners[region];
-      const count = data.map.regions.find((r) => r.id === region)!.territories!.length;
-      const elapsed = age - change.age;
-      const gained = Math.min(count, 1 + Math.floor((elapsed * (count - 1)) / data.map.territoryRules.transitionYears));
-      for (let i = 0; i < count; i++) claims.set(`${region}:${i}`, { ownerId: i < gained ? to : owners[region], contested: gained < count && (i === gained - 1 || i === gained) });
-      owners[region] = to;
-    }
+    const to = changeTarget(change);
+    if (to === null) continue;
+    const order = changeFiefs(fiefs, change, owners);
+    const count = order.length;
+    const p = clamp((age - change.age) / data.map.territoryRules.transitionYears, 0, 1);
+    const gained = p >= 1 ? count : Math.floor(p * count);
+    order.forEach((fief, k) => {
+      claims[fief] = { ownerId: k < gained ? to : owners[fiefs.ids[fief]], contested: p < 1 && (k === gained || k === gained + 1) };
+    });
+    for (const fief of order) owners[fiefs.ids[fief]] = to;
   }
-  const value = data.map.regions.filter((r) => r.land).flatMap((region) => region.territories!.map((center, index) => ({
-    id: `${region.id}:${index}`, region: region.id, index, center,
-    polygon: territoryPolygon(center, region.territories!.filter((_, i) => i !== index), data.map.viewBox),
-    ...claims.get(`${region.id}:${index}`)!,
-  })));
+  const value = fiefs.ids.map((id, i) => ({ id, fief: i, region: fiefs.region[i], center: fiefs.points[i], ...claims[i] }));
   territoryMemo = { world, age, data, value };
   return value;
 }
 
-export function territoryForPoint(territories: Territory[], region: string, point: Point): Territory | undefined {
-  return territories.filter((t) => t.region === region).sort((a, b) =>
-    Math.hypot(a.center[0] - point[0], a.center[1] - point[1]) - Math.hypot(b.center[0] - point[0], b.center[1] - point[1]))[0];
+/** 離某點（邏輯座標）最近的領 */
+export function territoryAt(territories: Territory[], point: Point): Territory {
+  let best = territories[0];
+  let bd = Infinity;
+  for (const t of territories) {
+    const d = (t.center[0] - point[0]) ** 2 + (t.center[1] - point[1]) ** 2;
+    if (d < bd) {
+      bd = d;
+      best = t;
+    }
+  }
+  return best;
 }
 
 /** 宗門影響靈脈而非凡俗疆土；閉山與覆滅時範圍消失。 */

@@ -5,6 +5,7 @@ import { deriveSeed, nextRandom } from "../src/core/rng";
 import { SAVE_VERSION } from "../src/core/state";
 import { changesBetween, generateWorld, polityLabel, worldAt, worldSlots } from "../src/core/world";
 import { gameData as data } from "../src/data/load";
+import { fiefsFor } from "../src/core/fiefs";
 import { validateMap, validateWorldEvents, validateWorldNames } from "../src/data/validate";
 import { living } from "./helpers";
 
@@ -54,10 +55,13 @@ describe("世界生成", () => {
     }
   });
 
-  it("每處地域恰好一個國家，諸部至多一處；宗門位置不重疊", () => {
+  it("每個領恰好屬於一個國家，國家數等於設定，諸部至多一國；宗門位置不重疊", () => {
     for (const seed of SEEDS) {
       const w = generateWorld(seed);
-      expect(Object.keys(w.owners).sort()).toEqual([...lands].sort());
+      const fiefs = fiefsFor(seed, data);
+      expect(Object.keys(w.owners).sort()).toEqual([...fiefs.ids].sort());
+      expect(w.polities.length).toBe(data.map.nations.default);
+      expect(new Set(Object.values(w.owners)).size).toBe(w.polities.length);
       expect(w.polities.filter((p) => p.tribal).length).toBeLessThanOrEqual(1);
       expect(w.polities.filter((p) => p.tribal).every((p) => p.capital === "")).toBe(true);
       const sites = new Set(w.sects.map((s) => `${s.region}:${s.site}`));
@@ -92,7 +96,8 @@ describe("世局變化", () => {
       for (const age of [10, 40, 80, 120, 200]) {
         const snap = worldAt(w, age);
         const ids = new Set(snap.polities.map((p) => p.id));
-        for (const r of lands) expect(ids.has(snap.owners[r]), `${seed}@${age} ${r}`).toBe(true);
+        for (const f of Object.keys(snap.owners)) expect(ids.has(snap.owners[f]), `${seed}@${age} ${f}`).toBe(true);
+        for (const p of snap.polities) expect(Object.values(snap.owners).includes(p.id), `${seed}@${age} ${p.id} 沒有領`).toBe(true);
         expect(new Set(snap.polities.map((p) => p.name)).size).toBe(snap.polities.length);
         const sites = new Set(snap.sects.map((s) => `${s.region}:${s.site}`));
         expect(sites.size).toBe(snap.sects.length);
