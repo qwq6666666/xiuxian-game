@@ -141,7 +141,7 @@ export function buildWorldMap(
   close.type = "button";
   close.addEventListener("click", handlers.onClose);
   head.append(close);
-  const ferryScene = html("div", "scene scene-ferry");
+  const ferryScene = html("div", "scene-art scene-art-ferry");
   ferryScene.setAttribute("role", "img");
   ferryScene.setAttribute("aria-label", "晨霧江面上，一葉渡船泊在古渡旁");
   frag.append(head, html("p", "desc", "九渡洲。山河未改，行路的人已不同。"), ferryScene, layout);
