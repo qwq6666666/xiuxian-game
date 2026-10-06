@@ -8,6 +8,16 @@ import { activeEffectsAt, describeEffect, describeTarget, effectsForTarget, lege
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+interface WorldMapCache {
+  key: string;
+  nodes: ChildNode[];
+  you: SVGGElement;
+  routeProgress: SVGPolylineElement | null;
+  travelStatus: HTMLParagraphElement | null;
+}
+
+let worldMapCache: WorldMapCache | null = null;
+
 function svg<K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number> = {}): SVGElementTagNameMap[K] {
   const node = document.createElementNS(SVG_NS, tag);
   for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
@@ -53,6 +63,39 @@ function along(points: [number, number][], progress: number): [number, number] {
   return points.at(-1)!;
 }
 
+function travelProgress(state: GameState): number {
+  if (state.travel.totalMonths <= 0) return 1;
+  return Math.max(0, Math.min(1, (state.travel.totalMonths - state.travel.remainingMonths) / state.travel.totalMonths));
+}
+
+function moveTraveler(you: SVGGElement, point: [number, number]): void {
+  you.style.transform = `translate(${point[0]}px, ${point[1]}px)`;
+}
+
+function updateTravelProgress(cache: WorldMapCache, state: GameState, data: GameData): void {
+  if (!state.travel.targetId) return;
+  const route = routeTo(state, state.travel.targetId, data);
+  if (!route) return;
+  const progress = travelProgress(state);
+  moveTraveler(cache.you, along(route.points, progress));
+  if (cache.routeProgress) cache.routeProgress.style.strokeDasharray = `${progress * 100} 100`;
+  if (cache.travelStatus) cache.travelStatus.textContent = `正往${route.to.name}，尚需 ${state.travel.remainingMonths} 個月。途中修行與事件照常。`;
+}
+
+function worldMapCacheKey(state: GameState, selected: MapTarget | null): string {
+  return JSON.stringify({
+    worldSeed: state.worldSeed,
+    year: mapAgeYears(state.ageMonths),
+    selected,
+    phase: state.phase,
+    eventPending: state.pendingEvent !== null,
+    locationId: state.travel.locationId,
+    targetId: state.travel.targetId,
+    totalMonths: state.travel.totalMonths,
+    trail: state.travel.trail,
+  });
+}
+
 /** 目前這一世、這個年齡的天下圖快照鍵：世界種子加變化條數，用來判斷「有新變化」 */
 export function mapStamp(state: GameState, data: GameData): string {
   const world = worldFor(state.worldSeed, data);
@@ -66,6 +109,14 @@ export function buildWorldMap(
   selected: MapTarget | null,
   handlers: { onSelect(target: MapTarget | null): void; onClose(): void; onTravel(targetId: string): void },
 ): DocumentFragment {
+  const cacheKey = worldMapCacheKey(state, selected);
+  if (worldMapCache?.key === cacheKey && worldMapCache.nodes.every((node) => node.ownerDocument === document)) {
+    updateTravelProgress(worldMapCache, state, data);
+    const cached = document.createDocumentFragment();
+    cached.append(...worldMapCache.nodes);
+    return cached;
+  }
+
   const world = worldFor(state.worldSeed, data);
   const snap = worldAt(world, mapAgeYears(state.ageMonths));
   const territories = territoriesAt(world, mapAgeYears(state.ageMonths), data);
@@ -166,7 +217,19 @@ export function buildWorldMap(
   const activeRoute = state.travel.targetId ? routeTo(state, state.travel.targetId, data) : null;
   const previewRoute = !activeRoute && selected ? routeTo(state, placeIdOf(selected) ?? "", data) : null;
   const shownRoute = activeRoute ?? previewRoute;
-  if (shownRoute) root.append(svg("polyline", { points: shownRoute.points.map((p) => p.join(",")).join(" "), class: activeRoute ? "map-route active" : "map-route" }));
+  let routeProgress: SVGPolylineElement | null = null;
+  if (shownRoute) {
+    root.append(svg("polyline", { points: shownRoute.points.map((p) => p.join(",")).join(" "), class: activeRoute ? "map-route active" : "map-route" }));
+    if (activeRoute) {
+      routeProgress = svg("polyline", {
+        points: activeRoute.points.map((p) => p.join(",")).join(" "),
+        class: "map-route-progress",
+        pathLength: 100,
+      });
+      routeProgress.style.strokeDasharray = `${travelProgress(state) * 100} 100`;
+      root.append(routeProgress);
+    }
+  }
   for (const region of data.map.regions) {
     const p = region.land ? polityOf(region) : undefined;
     const label = svg("text", { x: region.label[0], y: region.label[1], class: "map-label", "text-anchor": "middle" });
@@ -253,9 +316,10 @@ export function buildWorldMap(
   root.append(villageName);
 
   const current = places.find((place) => place.id === state.travel.locationId)?.point ?? [vx, vy];
-  const markerPoint = activeRoute ? along(activeRoute.points, (state.travel.totalMonths - state.travel.remainingMonths) / state.travel.totalMonths) : current;
+  const markerPoint = activeRoute ? along(activeRoute.points, travelProgress(state)) : current;
   const you = svg("g", { class: "map-you" });
-  you.append(svg("circle", { cx: markerPoint[0], cy: markerPoint[1], r: 10, class: "map-you-ring" }), svg("circle", { cx: markerPoint[0], cy: markerPoint[1], r: 5, class: "map-you-dot" }));
+  you.append(svg("circle", { cx: 0, cy: 0, r: 10, class: "map-you-ring" }), svg("circle", { cx: 0, cy: 0, r: 5, class: "map-you-dot" }));
+  moveTraveler(you, markerPoint);
   root.append(you);
 
   root.addEventListener("click", () => handlers.onSelect(null));
@@ -331,8 +395,10 @@ export function buildWorldMap(
   });
   territoryLabel.append(territorySelect);
   travel.append(territoryLabel);
+  let travelStatus: HTMLParagraphElement | null = null;
   if (activeRoute) {
-    travel.append(html("p", "map-travel-status", `正往${activeRoute.to.name}，尚需 ${state.travel.remainingMonths} 個月。途中修行與事件照常。`));
+    travelStatus = html("p", "map-travel-status", `正往${activeRoute.to.name}，尚需 ${state.travel.remainingMonths} 個月。途中修行與事件照常。`);
+    travel.append(travelStatus);
   } else if (previewRoute) {
     travel.append(html("p", "map-travel-status", `${previewRoute.to.status}。需時 ${previewRoute.months} 個月${previewRoute.delayMonths ? `（邊境動盪多 ${previewRoute.delayMonths} 個月）` : ""}，途經 ${previewRoute.regions.map((id) => data.map.regions.find((r) => r.id === id)!.name).join("、")}。`));
     if (state.phase === "living" && state.pendingEvent === null) {
@@ -395,5 +461,6 @@ export function buildWorldMap(
     info.append(html("p", "desc", "點選地域、宗門、渡口，看一看。"));
   }
   mapSide.append(info);
+  worldMapCache = { key: cacheKey, nodes: Array.from(frag.childNodes), you, routeProgress, travelStatus };
   return frag;
 }

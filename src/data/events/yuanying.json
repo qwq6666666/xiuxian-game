@@ -1,1 +1,272 @@
-[]
+[
+  {
+    "id": "yuanying_pine_001",
+    "type": "anecdote",
+    "title": "千年松",
+    "text": "你記得{mountain}半腰曾有一株幼松。再經此地，松根已抱住半面石崖，樹下的人卻說它自古如此。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_old_city_001",
+    "type": "anecdote",
+    "title": "舊城新名",
+    "text": "{country}遷都後，舊城連名字也換了。你沿著熟悉的街巷走了一圈，只有井口的位置沒有變。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_meditation_001",
+    "type": "anecdote",
+    "title": "入定",
+    "text": "你入定時窗外才落第一場雪，睜眼已是春深。案上積塵很厚，茶倒還是那一盞。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_portrait_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "舊鋪畫像",
+    "text": "{market}一間舊鋪懸著前代掌櫃的畫像。你看了半晌，發現畫中人身旁站著的過客，與如今的你一模一樣。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_letter_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "代代相傳",
+    "text": "一名年輕人送來封蠟早已碎裂的信，說祖上囑咐代代相傳，等你出關。你拆開一看，信中只問一句：近來可好。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_snow_001",
+    "type": "anecdote",
+    "title": "山中雪",
+    "text": "大雪封住{mountain}的舊路。你踏雪而過，回首時足印已被風抹平，像從未有人來過。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_lamps_001",
+    "type": "anecdote",
+    "title": "三代燈火",
+    "text": "你夜過{village}，看見同一扇窗下換了三代燈火。屋裡的人不認得你，仍留了一碗熱湯在門邊。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_ferry_001",
+    "type": "anecdote",
+    "title": "古渡繩結",
+    "text": "{wanderers}守著的一處古渡毀而復建，木樁換了七遍，系船的繩結仍是舊法。你看懂了，沒有點破。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_bell_001",
+    "type": "anecdote",
+    "title": "山門舊鐘",
+    "text": "{guard}山門深處傳來鐘聲，與你記憶中的音色不同。守門弟子說古鐘早已重鑄，只有規矩仍照舊。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" }
+  },
+  {
+    "id": "yuanying_ruler_001",
+    "type": "choice",
+    "title": "國書問壽",
+    "text": "{country}的使者帶來一封國書，替君主問長生之法。封泥用了三層，彷彿多封一層，歲月便會慢些。",
+    "weight": 9,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" },
+    "choices": [
+      {
+        "text": "據實回覆",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你回了四字：修行無捷。使者捧著信離去，神情像是更願意相信別的答案。",
+            "effects": { "attributes": { "mind": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "不作回覆",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "國書在案上放了十年，最後自行褪了顏色。君主也沒有再問。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "yuanying_stele_001",
+    "type": "choice",
+    "title": "無主古碑",
+    "text": "荒野有碑，碑文已被風雨磨平，只剩一道極淡的氣息，固執地守著空白。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" },
+    "choices": [
+      {
+        "text": "扶正石碑",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你扶正石碑，卻沒有補字。往事既已無從查考，至少不必替它另寫一段。",
+            "effects": { "attributes": { "insight": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "任其風化",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你沒有動手。山風吹過，石屑落了一地，碑仍站著。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "yuanying_shelter_001",
+    "type": "choice",
+    "title": "破院避雨",
+    "text": "一名築基修士不知你的來歷，邀你在荒雨中共避破院。他談了一夜修行，最後問你師承何處。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" },
+    "choices": [
+      {
+        "text": "只說散修",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你說自己只是散修。他點頭，像是聽見世上最尋常的答案。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "反問其道",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你反問他為何修行。他沉默良久，天亮時才說，原是怕死。你沒有笑。",
+            "effects": { "attributes": { "mind": 1 } }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "yuanying_coffer_001",
+    "type": "choice",
+    "title": "百年密匣",
+    "text": "{merchant}的掌櫃送來一只封死的舊匣，請你代藏百年，不問內容。契紙寫得周全，連百年後由誰取回都列了三頁。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" },
+    "choices": [
+      {
+        "text": "收下密匣",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "百年後，來取匣的是掌櫃的曾孫。他按契紙逐行核對，最後才向你行禮。",
+            "effects": { "spiritStones": 30 }
+          }
+        ]
+      },
+      {
+        "text": "婉言推辭",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你把匣子退回。掌櫃當場改了契紙，將百年劃成五十年，仍沒有再問你。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "yuanying_drought_001",
+    "type": "choice",
+    "title": "無雨之年",
+    "text": "{village}久旱，村民在河床上設壇求雨。沒有人認得站在人群外的你，也沒有人知道雲從何處聚來。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" },
+    "choices": [
+      {
+        "text": "引水入渠",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你只引來一夜細雨，夠潤濕新種的秧苗。天亮前你已離去，村民把功勞記給了那座新壇。",
+            "effects": { "attributes": { "fortune": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "不涉天時",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你看過乾裂的河床，終究沒有出手。三日後遠山落雨，水走了別處。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "yuanying_seeker_001",
+    "type": "choice",
+    "highlight": 1.5,
+    "title": "門外十年",
+    "text": "一名垂暮修士在你閉關之地外守了十年，只求問一句金丹之上可有路。他不知道你是誰，你也不打算讓他知道。",
+    "weight": 9,
+    "tone": "neutral",
+    "conditions": { "realmMin": "yuanying" },
+    "choices": [
+      {
+        "text": "見他一面",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你只說路不在別人口中。他拜了一拜，下山時腳步仍舊很慢，卻沒有回頭。",
+            "effects": { "attributes": { "insight": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "留字一行",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在門外留下一個「行」字。他抄了三遍，或許悟出了什麼，也或許只是怕認錯。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  }
+]
