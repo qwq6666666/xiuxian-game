@@ -9,8 +9,11 @@ import {
   type WorldNames,
   type NameData,
   type TextData,
+  RETREAT_MOODS,
+  type RetreatFeel,
+  type RetreatTheme,
 } from "../types";
-import { fail, obj, list, num, str, strList, uniqueIds } from "./common";
+import { bool, fail, obj, list, num, str, strList, uniqueIds } from "./common";
 
 export function validateText(raw: unknown, file = "text.json"): TextData {
   const o = obj(raw, file);
@@ -63,9 +66,10 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
         })() };
       })(),
       retreat: {
-        short: strList(retreat, "short", `${where}.retreat`),
-        medium: strList(retreat, "medium", `${where}.retreat`),
-        long: strList(retreat, "long", `${where}.retreat`),
+        brief: strList(retreat, "brief", `${where}.retreat`),
+        themes: parseRetreatThemes(retreat.themes, `${where}.retreat.themes`),
+        feel: parseRetreatFeel(retreat.feel, `${where}.retreat.feel`),
+        rare: strList(retreat, "rare", `${where}.retreat`),
         stop: {
           bottleneck: strList(retreatStop, "bottleneck", `${where}.retreat.stop`),
           lifespan: strList(retreatStop, "lifespan", `${where}.retreat.stop`),
@@ -227,13 +231,48 @@ export function parseReview(raw: unknown, where: string): TextData["review"] {
       return {
         text: str(vo, "text", vw),
         ...(vo.ifItem !== undefined ? { ifItem: str(vo, "ifItem", vw) } : {}),
+        ...(vo.ifFlag !== undefined ? { ifFlag: str(vo, "ifFlag", vw) } : {}),
+        ...(vo.ifRealmMax !== undefined ? { ifRealmMax: str(vo, "ifRealmMax", vw) } : {}),
+        ...(vo.ifGoalMissed !== undefined ? { ifGoalMissed: bool(vo, "ifGoalMissed", vw) } : {}),
       };
     });
-    // 至少要有一句不限物品的，否則可能沒有句子可用
-    if (!variants.some((v) => v.ifItem === undefined)) {
-      throw new Error(`${where}.${cause}：至少要有一句沒有 ifItem 的收尾句`);
+    // 至少要有一句沒有任何條件的，否則可能沒有句子可用
+    if (!variants.some((v) => v.ifItem === undefined && v.ifFlag === undefined && v.ifRealmMax === undefined && v.ifGoalMissed === undefined)) {
+      throw new Error(`${where}.${cause}：至少要有一句沒有任何條件（ifItem、ifFlag、ifRealmMax、ifGoalMissed）的收尾句`);
     }
     out[cause] = variants;
+  }
+  return out;
+}
+
+function parseRetreatThemes(raw: unknown, where: string): RetreatTheme[] {
+  const seen = new Set<string>();
+  return list(raw, where).map((v, i): RetreatTheme => {
+    const w = `${where}[${i}]`;
+    const o = obj(v, w);
+    const id = str(o, "id", w);
+    if (seen.has(id)) fail(w, "id", `重複：${id}`);
+    seen.add(id);
+    const exit = strList(o, "exit", w);
+    if (exit.length < 2) fail(w, "exit", "至少要有兩句平常收尾");
+    return { id, lonely: o.lonely === undefined ? false : bool(o, "lonely", w), open: str(o, "open", w), exit, gag: str(o, "gag", w) };
+  });
+}
+
+function parseRetreatFeel(raw: unknown, where: string): Record<string, RetreatFeel> {
+  const o = obj(raw, where);
+  if (o.default === undefined) fail(where, "default", "必須有 default 這一組，沒有專屬感受句的境界都用它");
+  const out: Record<string, RetreatFeel> = {};
+  for (const key of Object.keys(o)) {
+    const w = `${where}.${key}`;
+    const f = obj(o[key], w);
+    const feel = {} as RetreatFeel;
+    for (const mood of RETREAT_MOODS) {
+      // 只有 default 一定要三種語氣都有；其他境界缺的（或寫成空陣列的）語氣退回 default
+      if (key !== "default" && (f[mood] === undefined || (Array.isArray(f[mood]) && f[mood].length === 0))) feel[mood] = [];
+      else feel[mood] = strList(f, mood, w);
+    }
+    out[key] = feel;
   }
   return out;
 }

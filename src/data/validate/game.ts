@@ -132,7 +132,11 @@ export function validateGameData(data: GameData): GameData {
   for (const cause of REVIEW_CAUSES) {
     for (const v of data.text.review[cause]) {
       if (v.ifItem !== undefined) has(itemIds, v.ifItem, `text.json 的 review.${cause}`, "items.json");
+      if (v.ifRealmMax !== undefined) has(realmIds, v.ifRealmMax, `text.json 的 review.${cause}`, "realms.json");
     }
+  }
+  for (const key of Object.keys(data.text.log.retreat.feel)) {
+    if (key !== "default") has(realmIds, key, "text.json 的 log.retreat.feel", "realms.json");
   }
 
   const scheduleIds = new Set(data.schedules.map((s) => s.id));
@@ -202,6 +206,12 @@ export function validateGameData(data: GameData): GameData {
       throw new Error(`events 第 ${i + 1} 筆（${ev.id}）：用了同門名稱欄位 {peer}、{steward}、{elder}，conditions.sect 必須是 true`);
     }
   });
+  for (const cause of REVIEW_CAUSES) {
+    for (const v of data.text.review[cause]) {
+      const flag = v.ifFlag;
+      if (flag !== undefined && !setFlags.has(flag)) throw new Error(`text.json 的 review.${cause}：ifFlag 的 ${flag} 沒有任何事件結果會設定它`);
+    }
+  }
   return data;
   for (const id of Object.keys(data.text.era.origin)) has(originIds, id, "text.json 的 era.origin", "origins.json");
   for (const id of Object.keys(data.text.era.root)) has(rootIds, id, "text.json 的 era.root", "spiritRoots.json");

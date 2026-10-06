@@ -1,5 +1,5 @@
 {
-  "version": 26,
+  "version": 27,
   "shape": {
     "TravelState": [
       "locationId",
@@ -80,6 +80,8 @@
       "rank",
       "realmId",
       "retreatMonths",
+      "retreatNo",
+      "retreatSeed",
       "sectName",
       "spiritRootId",
       "stage",

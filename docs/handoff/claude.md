@@ -2,6 +2,14 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：文案不重複（M45，GDD 第 47 節）
+
+- 分支 `master`（本機，尚未 push）。新增 `core/retreattext.ts`（閉關見聞拼句）；`core/offline.ts` 寫入 `retreatNo`／`retreatSeed`；`core/review.ts` 的 `pickClosing` 支援 `ifFlag`／`ifRealmMax`／`ifGoalMissed`；`text.json` 閉關見聞改成 `brief`／`themes`／`feel`／`rare`／`stop`，壽盡臨終句 6→24；`config.json` 以四個 `retreat*` 取代 `offlineRetreatTierYears`；存檔 v27（`tests/save-shape.json` 已更新）。`ui/format.ts` 只改一處呼叫 `composeRetreat`。
+- 驗證：`npm run verify` 全過（建置檔 1180 KB）；新增 `tests/retreattext.test.ts`（意象不重複、語氣分流、每片段一句、吐槽與罕見句比例、臨終句條件與輪流、序號與 v26 遷移、資料驗證訊息）；`simple` 1／16 世、`mixed` 16 世 sim 與動工前逐字相同。用 `tsx` 印出各境界樣本句檢查語感。
+- 沒驗證：**瀏覽器實際看日誌**（要觸發背景分頁或離線補算，沒做）；罕見句與「【偶得】」前綴的視覺（日誌分段標記沒有特別處理）；手機寬度的長句換行。
+- 給 ChatGPT（請看一眼）：「【偶得】」前綴是純文字，若要做成金邊標記需要你在 `logGroups.ts` 與 CSS 處理；文案語感請審稿（`text.json` 的 `log.retreat` 與 `review.lifespan`）。
+- 已知：`src/data/validate/game.ts` 的 `return data;` 後面還有兩行 `era.origin`／`era.root` 的跨檔案檢查，是不會執行的死碼（M45 之前就有），我沒動；啟用它們前要先確認現有資料都符合。其他日誌池（突破失敗、購買、拾物）沒補量。
+
 ## 2026-10-06：改變玩法的輪迴天賦（M44，GDD 第 46 節）
 
 - 分支 `master`（本機，尚未 push）。擇身、夙願、靈犀三個天賦；存檔 v26。核心：`core/chart.ts`、`wish.ts`、`omen.ts`，`life.ts` 把抽命盤抽成 `drawChart`，`events.ts` 加 `pickOutcome` 與夙願權重；資料：`talents.json`（新增三個並重排推薦順序）、`goals.json`（`tilt`、新目標「遇見故人」）、`reunion.json`（設 `reunion_met`）、`config.json` 三個數值。介面：擲骰畫面夙願與備選命盤區塊、抉擇彈窗窺看鈕（`rollview.ts`、`render.ts`、`components.css`）。sim 新增 `chart`／`wish`／`omen`。

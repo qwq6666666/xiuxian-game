@@ -66,9 +66,11 @@ export function applyOffline(
   }
   if (months > 0) {
     // 閉關見聞：文字依閉關長短與結束原因由介面挑選，這裡只記事實，不動亂數
+    // 序號與世界種子供顯示時挑意象（一世內不重複）；序號取目前日誌裡最大的接下去，日誌被截斷也不會倒退
+    const retreatNo = s.log.reduce((m, e) => (e.kind === "retreat" && e.retreatNo !== undefined ? Math.max(m, e.retreatNo + 1) : m), 0);
     s = addLog(
       s,
-      { month: s.ageMonths, kind: "retreat", realmId: s.realmId, stage: s.stage, retreatMonths: months, stop },
+      { month: s.ageMonths, kind: "retreat", realmId: s.realmId, stage: s.stage, retreatMonths: months, stop, retreatNo, retreatSeed: s.worldSeed },
       config.logLimit,
     );
   }

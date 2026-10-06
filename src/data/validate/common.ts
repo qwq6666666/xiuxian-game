@@ -16,6 +16,11 @@ export function obj(raw: unknown, where: string): Obj {
   return raw;
 }
 
+export function bool(o: Obj, key: string, where: string): boolean {
+  if (typeof o[key] !== "boolean") fail(where, key, "必須是 true 或 false");
+  return o[key] as boolean;
+}
+
 export function list(raw: unknown, where: string): unknown[] {
   if (!Array.isArray(raw) || raw.length === 0) {
     throw new Error(`${where}：內容必須是非空陣列`);
@@ -55,14 +60,6 @@ export function uniqueIds(items: { id: string }[], file: string): void {
     if (seen.has(it.id)) throw new Error(`${file}：id ${it.id} 重複`);
     seen.add(it.id);
   }
-}
-
-export function tierYears(o: Obj, file: string): [number, number] {
-  const v = o.offlineRetreatTierYears;
-  if (!Array.isArray(v) || v.length !== 2 || !v.every((n) => typeof n === "number" && n > 0) || !(v[0] < v[1])) {
-    fail(file, "offlineRetreatTierYears", "必須是兩個由小到大的正數，例如 [5, 15]");
-  }
-  return [v[0], v[1]];
 }
 
 export function optStrList(o: Obj, key: string, where: string): string[] | undefined {

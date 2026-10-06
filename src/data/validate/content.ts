@@ -23,7 +23,7 @@ import {
   type SpiritRootDef,
   type TalentDef,
 } from "../types";
-import { fail, obj, list, num, optStrList, str, strList, numRecord, uniqueIds, tierYears, intRecord } from "./common";
+import { fail, obj, list, num, optStrList, str, strList, numRecord, uniqueIds, intRecord } from "./common";
 import { validateWhen } from "./world";
 
 export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
@@ -71,7 +71,10 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     backgroundMinSeconds: num(o, "backgroundMinSeconds", file, { min: 0 }),
     frameGapSeconds: num(o, "frameGapSeconds", file, { gt: 0 }),
     offlineStopLifespanRatio: num(o, "offlineStopLifespanRatio", file, { min: 0, max: 1 }),
-    offlineRetreatTierYears: tierYears(o, file),
+    retreatBriefYears: num(o, "retreatBriefYears", file, { gt: 0 }),
+    retreatGagChance: num(o, "retreatGagChance", file, { min: 0, max: 1 }),
+    retreatRareChance: num(o, "retreatRareChance", file, { min: 0, max: 1 }),
+    retreatLonelyRatio: num(o, "retreatLonelyRatio", file, { min: 0, max: 1 }),
   };
 }
 

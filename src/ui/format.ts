@@ -1,6 +1,7 @@
 import type { VersusLine } from "../core/goals";
 import { eraName } from "../core/era";
 import { outcomeWeight } from "../core/formulas";
+import { composeRetreat } from "../core/retreattext";
 import type { OfflineSummary } from "../core/offline";
 import type { BestiaryEntry, Changes, LifeReview, LogEntry, Meta } from "../core/state";
 import { DEFAULT_SLOTS, fillSlots, type SlotValues } from "../data/slots";
@@ -244,12 +245,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
       template = log.sect.promote[data.sects.ranks[entry.rank ?? 1]?.id] ?? log.sect.join;
       break;
     case "retreat": {
-      const months = entry.retreatMonths ?? 0;
-      const [mid, long] = data.config.offlineRetreatTierYears;
-      const years = months / 12;
-      const tier = years >= long ? log.retreat.long : years >= mid ? log.retreat.medium : log.retreat.short;
-      const tail = entry.stop === "bottleneck" || entry.stop === "lifespan" ? log.retreat.stop[entry.stop] : [];
-      template = pickBy(tier, months) + (tail.length > 0 ? pickBy(tail, months) : "");
+      template = composeRetreat(entry, data);
       break;
     }
     case "huntWin":

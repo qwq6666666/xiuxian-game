@@ -30,5 +30,8 @@
   "backgroundMinSeconds": 5,
   "frameGapSeconds": 2,
   "offlineStopLifespanRatio": 0.1,
-  "offlineRetreatTierYears": [8, 15]
+  "retreatBriefYears": 2,
+  "retreatGagChance": 0.28,
+  "retreatRareChance": 0.03,
+  "retreatLonelyRatio": 0.6
 }

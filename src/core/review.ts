@@ -1,6 +1,6 @@
 // 一生的結束：回顧、道韻結算。死亡、通關與元嬰大成的每個出口都從 endLife 進來，確保只結算一次。
 import { gameData } from "../data/load";
-import type { EndingCause, GameData, RealmDef, ReviewCause } from "../data/types";
+import type { ClosingVariant, EndingCause, GameData, RealmDef, ReviewCause } from "../data/types";
 import { CLEAR_FRAGMENT_ID, grantFragment } from "./fragments";
 import { goalStatuses, lifeBrief } from "./goals";
 import { eventOf, realmOf } from "./progress";
@@ -151,13 +151,29 @@ export function settleDaoYun(state: GameState, data: GameData = gameData): DaoYu
   return { base, bonus, newlyReached };
 }
 
-/** 挑收尾句：持有對應物品的優先，否則在不限物品的句子中輪流選 */
+/** 這一句的條件是否都符合這一世（沒有條件的句子永遠符合） */
+function closingFits(state: GameState, v: ClosingVariant, data: GameData): boolean {
+  if (v.ifItem !== undefined && (state.items[v.ifItem] ?? 0) <= 0) return false;
+  if (v.ifFlag !== undefined && !state.flags.includes(v.ifFlag)) return false;
+  if (v.ifRealmMax !== undefined && realmOf(state, data).id !== v.ifRealmMax) return false;
+  if (v.ifGoalMissed && !goalStatuses(state, data).some((g) => !g.done)) return false;
+  return true;
+}
+
+/**
+ * 挑收尾句：持有物品、旗標或止步境界這類具體條件符合的句子優先；
+ * 沒有的話，在「只有未完成目標」的條件句與沒有條件的句子中輪流選。
+ * 多句可選時依世數輪流，條件池相同時連續兩世不會用同一句。
+ */
 export function pickClosing(state: GameState, cause: ReviewCause, data: GameData = gameData): number {
   const variants = data.text.review[cause];
-  const byItem = variants.findIndex((v) => v.ifItem !== undefined && (state.items[v.ifItem] ?? 0) > 0);
-  if (byItem !== -1) return byItem;
-  const plain = variants.map((v, i) => (v.ifItem === undefined ? i : -1)).filter((i) => i >= 0);
-  return plain[state.ageMonths % plain.length];
+  const specific = (v: ClosingVariant): boolean => v.ifItem !== undefined || v.ifFlag !== undefined || v.ifRealmMax !== undefined;
+  const indices = (keep: (v: ClosingVariant) => boolean): number[] => variants.map((v, i) => (keep(v) ? i : -1)).filter((i) => i >= 0);
+  const pickFrom = (pool: number[]): number => pool[state.meta.lives % pool.length];
+  const exact = indices((v) => specific(v) && closingFits(state, v, data));
+  if (exact.length > 0) return pickFrom(exact);
+  // 沒有具體條件的句子，加上符合「有未完成目標」的句子
+  return pickFrom(indices((v) => !specific(v) && closingFits(state, v, data)));
 }
 
 /**

@@ -57,8 +57,14 @@ export interface GameConfig {
   frameGapSeconds: number;
   /** 離線時壽元剩餘低於此比例就停止閉關 */
   offlineStopLifespanRatio: number;
-  /** 閉關見聞的分檔門檻（年）：未滿第一個值為短，到第二個值以上為長，其間為中 */
-  offlineRetreatTierYears: [number, number];
+  /** 閉關見聞（M45）：未滿這個年數用簡短句，以上用「意象＋感受＋收尾」拼出的句子 */
+  retreatBriefYears: number;
+  /** 閉關見聞：收尾用吐槽版的機率 */
+  retreatGagChance: number;
+  /** 閉關見聞：換成罕見句的機率 */
+  retreatRareChance: number;
+  /** 閉關見聞：閉關時已用掉的壽元（以該境界基本壽元估）達這個比例以上，語氣偏孤寂 */
+  retreatLonelyRatio: number;
 }
 
 /** 大境界手動突破的成功率規則 */
@@ -385,11 +391,35 @@ export const REVIEW_CAUSES: readonly ReviewCause[] = ["lifespan", "adventure", "
 export type EndingCause = "cleared" | "yuanying" | "huashen";
 export const ENDING_CAUSES: readonly EndingCause[] = ["cleared", "yuanying", "huashen"];
 
-/** 一生回顧的收尾句；有 ifItem 的只在持有該物品（未用完）時使用 */
+/**
+ * 一生回顧的收尾句。條件都是選填，有條件的句子要全部符合才可用：
+ * ifItem 持有該物品（未用完）；ifFlag 本世有該事件旗標；ifRealmMax 這一世止步於該境界；ifGoalMissed 本世有未完成的目標。
+ */
 export interface ClosingVariant {
   text: string;
   ifItem?: string;
+  ifFlag?: string;
+  ifRealmMax?: string;
+  ifGoalMissed?: boolean;
 }
+
+/** 閉關見聞的語氣：順利、卡在瓶頸、壽元將盡 */
+export type RetreatMood = "calm" | "anxious" | "lonely";
+export const RETREAT_MOODS: readonly RetreatMood[] = ["calm", "anxious", "lonely"];
+
+/** 閉關見聞的意象：開頭與收尾綁在同一個意象上，孤寂的意象只在孤寂語氣使用 */
+export interface RetreatTheme {
+  id: string;
+  lonely: boolean;
+  open: string;
+  /** 平常收尾，至少兩句 */
+  exit: string[];
+  /** 吐槽收尾 */
+  gag: string;
+}
+
+/** 閉關見聞的感受句，依語氣分池 */
+export type RetreatFeel = Record<RetreatMood, string[]>;
 
 export interface TextData {
   log: {
@@ -417,9 +447,15 @@ export interface TextData {
     sect: { join: string; refuse: string; leave: string; promote: Record<string, string> };
     /** 閉關見聞：依閉關長短分檔，結束原因的補句接在後面（時間用完不補） */
     retreat: {
-      short: string[];
-      medium: string[];
-      long: string[];
+      /** 閉關不滿 retreatBriefYears 年用的簡短句 */
+      brief: string[];
+      /** 意象：一世內依洗牌後的順序輪流用，不重複 */
+      themes: RetreatTheme[];
+      /** 感受句：鍵是境界 id，沒有該境界的用 default */
+      feel: Record<string, RetreatFeel>;
+      /** 罕見句，以 retreatRareChance 的機率取代整句 */
+      rare: string[];
+      /** 因瓶頸或壽元而收關時，取代收尾的說明句 */
       stop: { bottleneck: string[]; lifespan: string[] };
     };
   };

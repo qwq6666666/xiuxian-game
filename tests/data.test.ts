@@ -45,7 +45,7 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(() => validateText({ ...t, log: { ...t.log, buy: [] } })).toThrow("buy");
     expect(() => validateText({ log: t.log })).toThrow("review");
     expect(() => validateText({ ...t, review: { ...t.review, cleared: [{ text: "a", ifItem: "juqi_dan" }] } })).toThrow(
-      "review.cleared：至少要有一句沒有 ifItem",
+      "review.cleared：至少要有一句沒有任何條件",
     );
     expect(() => validateText({ ...t, review: { ...t.review, event: [] } })).toThrow("review.event");
   });
@@ -81,7 +81,6 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(() => validateRealms([{ ...r, daoYun: -1 }])).toThrow("daoYun");
     expect(() => validateEvents([{ ...gameData.events[0], highlight: -1 }])).toThrow("highlight");
     expect(() => validateConfig({ ...gameData.config, daoYunFirstTimeMult: 0.5 })).toThrow("daoYunFirstTimeMult");
-    expect(() => validateConfig({ ...gameData.config, offlineRetreatTierYears: [15, 5] })).toThrow("offlineRetreatTierYears");
     const bad = { ...gameData, text: { ...gameData.text, review: { ...gameData.text.review, lifespan: [{ text: "a", ifItem: "ghost" }, { text: "b" }] } } };
     expect(() => validateGameData(bad)).toThrow("ghost");
   });

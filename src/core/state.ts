@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, Omen, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 26;
+export const SAVE_VERSION = 27;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -170,6 +170,9 @@ export interface LogEntry {
   /** 閉關見聞：實際閉關的月數與結束原因 */
   retreatMonths?: number;
   stop?: OfflineStop;
+  /** 閉關見聞（M45）：這一世的第幾次閉關見聞（從 0 起算），以及當時的世界種子；意象用它們洗牌，一世內不重複。舊檔沒有 */
+  retreatNo?: number;
+  retreatSeed?: number;
   /** 開場日誌：這一世是第幾世（從 0 起算），年號由它算出 */
   eraIndex?: number;
   /** 開場日誌：這一世的出身與靈根（M38；舊檔沒有，顯示時退回通用開場句） */

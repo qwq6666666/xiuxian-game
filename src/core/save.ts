@@ -123,6 +123,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   // v23 沒有故人紀錄：補上空的紀錄；舊的開場日誌沒有出身欄位，顯示時退回通用句
   23: (d) => ({ ...d, version: 24, meta: { ...obj(d.meta, "meta"), met: {} } }),
   // v25 沒有擇身、夙願、靈犀：補上沒有備選命盤、沒指定夙願、沒有靈犀次數
+  // v26 的閉關見聞沒有序號與種子：選填欄位，顯示時退回由年齡推出的序號
+  26: (d) => ({ ...d, version: 27 }),
   25: (d) => ({ ...d, version: 26, altCharts: [], wishId: null, omenLeft: 0, omen: [] }),
   // v24 運功是冷卻制：冷卻已過的舊檔補一次存量，起點移到現在；還在冷卻的維持原計時
   24: (d, gd) => {
@@ -211,6 +213,8 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
   if (eo.outcome !== undefined) entry.outcome = num(eo, "outcome", { integer: true, min: 0 }, `${p}.outcome`);
   if (eo.changes !== undefined) entry.changes = parseChanges(eo.changes, `${p}.changes`);
   if (eo.retreatMonths !== undefined) entry.retreatMonths = num(eo, "retreatMonths", { integer: true, min: 1 }, `${p}.retreatMonths`);
+  if (eo.retreatNo !== undefined) entry.retreatNo = num(eo, "retreatNo", { integer: true, min: 0 }, `${p}.retreatNo`);
+  if (eo.retreatSeed !== undefined) entry.retreatSeed = num(eo, "retreatSeed", { integer: true, min: 0 }, `${p}.retreatSeed`);
   if (eo.stop !== undefined) {
     const stop = str(eo, "stop", `${p}.stop`);
     if (!(OFFLINE_STOPS as readonly string[]).includes(stop)) fail(`${p}.stop`, `不是合法的閉關結束原因：${stop}`);
