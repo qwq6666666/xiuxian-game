@@ -1,6 +1,14 @@
 /* 元件：擲骰畫面、屬性、選項、物品列、彈窗、回顧、殘卷 */
 .roll { max-width: 480px; margin: 32px auto; }
 .roll h1 { margin: 0; letter-spacing: 0.2em; }
+.scene { width: 100%; aspect-ratio: 16 / 9; margin: var(--sp-2) auto var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background-position: center; background-repeat: no-repeat; background-size: cover; }
+.scene-opening { background-image: url('../images/scene-opening.webp'); }
+.scene-wilderness { background-image: url('../images/scene-wilderness.webp'); }
+.scene-market { background-image: url('../images/scene-market.webp'); }
+.scene-ferry { background-image: url('../images/scene-ferry.webp'); }
+.scene-breakthrough { background-image: url('../images/scene-breakthrough.webp'); }
+.scene-reincarnation { background-image: url('../images/scene-reincarnation.webp'); }
+.review .scene, .map-card > .scene { max-width: 480px; }
 .sub { color: var(--muted); margin: var(--sp-1) 0 var(--sp-4); }
 .namebox { display: block; margin: var(--sp-2) 0; }
 .namebox input { width: 8em; margin-left: 6px; padding: 2px 6px; background: transparent; color: inherit; border: 1px solid var(--muted); border-radius: var(--r-sm); font: inherit; }

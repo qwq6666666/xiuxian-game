@@ -141,7 +141,10 @@ export function buildWorldMap(
   close.type = "button";
   close.addEventListener("click", handlers.onClose);
   head.append(close);
-  frag.append(head, html("p", "desc", "九渡洲。山河未改，行路的人已不同。"), layout);
+  const ferryScene = html("div", "scene scene-ferry");
+  ferryScene.setAttribute("role", "img");
+  ferryScene.setAttribute("aria-label", "晨霧江面上，一葉渡船泊在古渡旁");
+  frag.append(head, html("p", "desc", "九渡洲。山河未改，行路的人已不同。"), ferryScene, layout);
 
   const root = svg("svg", { viewBox: `0 0 ${w} ${h}`, class: "map-svg", role: "group", "aria-label": "九渡洲地圖" });
 
