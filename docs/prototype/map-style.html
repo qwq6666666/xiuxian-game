@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>地圖風格原型</title>
+<style>
+  :root { --bg:#16181d; --panel:#1f232b; --line:#343a46; --text:#e6e2d6; --muted:#9aa0ac; --accent:#d8b45a; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.6 "Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif; }
+  h1 { font-size:18px; margin:0 0 4px; }
+  .wrap { display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:16px; max-width:1280px; margin:0 auto; padding:16px; align-items:start; }
+  .stage { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; }
+  canvas { display:block; width:100%; max-width:720px; height:auto; margin:0 auto; border-radius:6px; cursor:crosshair; }
+  .side { display:flex; flex-direction:column; gap:12px; }
+  .box { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; }
+  .box h2 { font-size:14px; margin:0 0 8px; color:var(--accent); }
+  label { display:flex; align-items:center; gap:8px; margin:4px 0; color:var(--text); }
+  label.col { flex-direction:column; align-items:stretch; gap:2px; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  input[type=number], select { width:100%; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 8px; font:inherit; }
+  button { background:var(--accent); color:#1b1b1b; border:0; border-radius:6px; padding:8px 12px; font:inherit; font-weight:700; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .row { display:flex; gap:8px; }
+  .legend { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; font-size:13px; }
+  .chip { display:flex; align-items:center; gap:6px; }
+  .sw { width:14px; height:14px; border-radius:3px; border:1px solid #0006; flex:none; }
+  #tip { min-height:9em; font-size:14px; }
+  #tip b { color:var(--accent); }
+  .muted { color:var(--muted); font-size:13px; }
+  @media (max-width: 900px) { .wrap { grid-template-columns:1fr; } }
+  .wrap { display:block; max-width:760px; margin:0 auto; padding:12px 14px 40px; }
+  .wrap > * { margin-bottom:10px; }
+  h1 { font-size:16px; }
+  canvas { max-width:100%; }
+  .bar { display:flex; flex-wrap:wrap; gap:8px; }
+  .tg { margin:0; }
+  .tg input { position:absolute; opacity:0; pointer-events:none; }
+  .tg span { display:inline-block; padding:8px 14px; min-height:40px; border:1px solid var(--line); border-radius:999px; background:var(--panel); color:var(--muted); cursor:pointer; user-select:none; }
+  .tg input:checked + span { background:#3a3220; border-color:var(--accent); color:var(--text); }
+  .tg input:focus-visible + span { outline:2px solid var(--accent); outline-offset:2px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px; min-height:7.2em; }
+  .card .it { font-size:17px; font-weight:700; margin-bottom:2px; }
+  .card small { font-weight:400; color:var(--muted); font-size:13px; }
+  .card .g { color:#d6a428; font-weight:700; }
+  .card .r { color:#d25046; font-weight:700; }
+  details { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px; }
+  summary { cursor:pointer; color:var(--accent); min-height:28px; }
+  .gen { display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px 10px; }
+  .mini { display:flex; flex-direction:column; gap:2px; margin:0; font-size:12px; color:var(--muted); }
+  .mini input { width:96px; } .mini.wide { flex:1 1 150px; } .mini.wide input { width:100%; } .mini select { width:112px; }
+  .gen > button { min-height:38px; }
+  details.adv { flex:1 1 100%; background:transparent; border:0; padding:0; }
+  details.adv[open] { background:var(--panel); border:1px solid var(--line); padding:8px 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>九渡洲（地圖原型，不在遊戲內）</h1>
+  <div class="gen">
+    <label class="mini">種子<input id="seed" type="number" value="7"></label>
+    <button id="roll">重擲</button>
+    <label class="mini">輪廓<select id="mode"><option value="fixed">九渡洲</option><option value="random">隨機大陸</option></select></label>
+    <label class="mini wide">國家數：<b id="pv">6</b><input id="p" type="range" min="3" max="8" step="1" value="6"></label>
+    <label class="mini wide">國界格數：<b id="nv">80</b><input id="n" type="range" min="30" max="100" step="10" value="80"></label>
+    <details class="adv"><summary>進階</summary>
+      <button id="regen" class="ghost">重新生成</button>
+      <div class="muted" id="stat"></div>
+    </details>
+  </div>
+  <canvas id="map"></canvas>
+  <div class="bar" id="chips">
+    <label class="tg"><input type="checkbox" id="L_nation" checked><span>國家</span></label>
+    <label class="tg"><input type="checkbox" id="L_terrain" checked><span>地形</span></label>
+    <label class="tg"><input type="checkbox" id="L_river" checked><span>河流</span></label>
+    <label class="tg"><input type="checkbox" id="L_sect" checked><span>宗門靈脈</span></label>
+    <label class="tg"><input type="checkbox" id="L_symbol" checked><span>山林符號</span></label>
+  </div>
+  <div class="card" id="info"></div>
+  <details>
+    <summary>更多圖層與圖例</summary>
+    <div class="bar">
+      <label class="tg"><input type="checkbox" id="L_border" checked><span>國界省界</span></label>
+      <label class="tg"><input type="checkbox" id="L_label" checked><span>國名</span></label>
+      <label class="tg"><input type="checkbox" id="L_sea" checked><span>淺海虛線</span></label>
+      <label class="tg"><input type="checkbox" id="L_grid" checked><span>經緯格線</span></label>
+    </div>
+    <label class="col">靈脈範圍畫法
+      <select id="halo"><option value="aura">C 有機光暈</option><option value="circle">A 圓圈</option><option value="province">B 以省染色</option></select>
+    </label>
+    <div class="legend" id="legend" style="margin-top:8px"></div>
+    <p class="muted" style="margin:8px 0 0">金線＝互惠、紅虛線＝世仇（點選宗門或國家才顯示）。圓點：實心興盛、空心尋常、虛線衰微、灰色閉山、✕覆滅、外圈守梯大宗。</p>
+  </details>
+</div>
+
+<script>
+"use strict";
+const W = 400, H = 520, S = 2, M = 24;
+const OW = W * S, OH = H * S, CW = OW + 2 * M, CH = OH + 2 * M;
+const REGIONS = [
+  "M44,88 C73,101 98,88 138,98 C175,85 208,98 244,91 C275,100 307,84 344,92 C357,125 355,159 345,197 C315,189 295,205 262,196 C226,204 185,187 151,197 C120,189 87,205 55,196 C46,166 40,130 44,88 Z",
+  "M55,196 C87,205 120,189 151,197 C157,229 145,253 153,284 C143,316 154,342 148,372 C117,364 94,384 68,382 C43,355 33,325 30,290 C36,253 45,223 55,196 Z",
+  "M151,197 C185,187 226,204 262,196 C254,229 271,256 261,283 C272,311 256,341 264,372 C229,365 190,382 148,372 C154,342 143,316 153,284 C145,253 157,229 151,197 Z",
+  "M262,196 C295,205 315,189 345,197 C359,221 357,254 372,300 C369,334 351,361 338,384 C313,376 286,383 264,372 C256,341 272,311 261,283 C271,256 254,229 262,196 Z",
+  "M68,382 C94,384 117,364 148,372 C190,382 229,365 264,372 C286,383 313,376 338,384 C340,413 333,450 312,494 C270,506 243,483 208,495 C172,485 139,502 96,494 C78,471 73,416 68,382 Z"
+];
+const BIOMES = [
+  { id: 0, name: "雪原",   c: [236, 241, 243] },
+  { id: 1, name: "苔原",   c: [186, 195, 168] },
+  { id: 2, name: "針葉林", c: [104, 144, 110] },
+  { id: 3, name: "高山",   c: [158, 150, 138] },
+  { id: 4, name: "山地",   c: [172, 156, 128] },
+  { id: 5, name: "丘陵",   c: [190, 170, 118] },
+  { id: 6, name: "闊葉林", c: [128, 164, 92] },
+  { id: 7, name: "草原",   c: [190, 208, 126] },
+  { id: 8, name: "乾草原", c: [214, 192, 134] },
+  { id: 9, name: "荒漠",   c: [224, 198, 140] },
+  { id: 10, name: "雨林",  c: [78, 140, 90] },
+  { id: 11, name: "沼澤",  c: [116, 142, 118] }
+];
+const POLITY_COLORS = [[217,96,74],[79,154,152],[224,180,58],[143,111,176],[127,176,79],[216,124,154],[95,127,176],[201,138,90]];
+const NAMES = ["白澤","朔雲","定陵","臨江","西陵","洛川","玄朔","青陽","岐城","廣陵","落霞","滄浪"];
+const CITIES = ["嶺安","澄波","望舒","雲臺","長汀","觀瀾","霜橋","石梁"];
+const PARCH = [233, 215, 166];
+
+// ---------- 亂數與雜訊 ----------
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function hash(ix, iy, s) { let h = (Math.imul(ix, 374761393) + Math.imul(iy, 668265263) + Math.imul(s, 1442695041)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16; return (h >>> 0) / 4294967296; }
+function vnoise(x, y, s) {
+  const ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
+  const a = hash(ix, iy, s), b = hash(ix + 1, iy, s), c = hash(ix, iy + 1, s), d = hash(ix + 1, iy + 1, s);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function fbm(x, y, s, oct = 4) { let sum = 0, amp = 1, f = 1, norm = 0; for (let i = 0; i < oct; i++) { sum += amp * vnoise(x * f, y * f, s + i * 31); norm += amp; amp *= 0.5; f *= 2; } return sum / norm; }
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+// ---------- 距離場 ----------
+function distanceTo(src) {
+  const d = new Float32Array(W * H);
+  for (let i = 0; i < d.length; i++) d[i] = src[i] ? 0 : 1e9;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x; let v = d[i];
+    if (x > 0) v = Math.min(v, d[i - 1] + 1);
+    if (y > 0) { v = Math.min(v, d[i - W] + 1); if (x > 0) v = Math.min(v, d[i - W - 1] + 1.414); if (x < W - 1) v = Math.min(v, d[i - W + 1] + 1.414); }
+    d[i] = v;
+  }
+  for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+    const i = y * W + x; let v = d[i];
+    if (x < W - 1) v = Math.min(v, d[i + 1] + 1);
+    if (y < H - 1) { v = Math.min(v, d[i + W] + 1); if (x < W - 1) v = Math.min(v, d[i + W + 1] + 1.414); if (x > 0) v = Math.min(v, d[i + W - 1] + 1.414); }
+    d[i] = v;
+  }
+  return d;
+}
+
+// ---------- 地形生成 ----------
+function genTerrain(seed, mode) {
+  const t0 = performance.now();
+  const N = W * H;
+  // 基礎遮罩
+  const base = new Uint8Array(N);
+  if (mode === "fixed") {
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+    const g = cv.getContext("2d"); g.fillStyle = "#000";
+    for (const p of REGIONS) g.fill(new Path2D(p));
+    const data = g.getImageData(0, 0, W, H).data;
+    for (let i = 0; i < N; i++) base[i] = data[i * 4 + 3] > 128 ? 1 : 0;
+  } else {
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const dx = (x - 200) / 170, dy = (y - 275) / 225;
+      const r2 = dx * dx + dy * dy;
+      const v = fbm(x / 95, y / 95, seed + 5, 5) * 0.95 + 0.62 - r2 * 1.05;
+      base[y * W + x] = v > 0.5 ? 1 : 0;
+    }
+  }
+  const outside = new Uint8Array(N), inside = new Uint8Array(N);
+  for (let i = 0; i < N; i++) { outside[i] = base[i] ? 0 : 1; inside[i] = base[i]; }
+  const dIn = distanceTo(outside), dOut = distanceTo(inside);
+  const F = new Float32Array(N);
+  const amp = mode === "fixed" ? 1.5 : 0.9;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x;
+    let sd = base[i] ? dIn[i] : -dOut[i];
+    sd += ((fbm(x / 26, y / 26, seed + 101, 3) - 0.5) * 22 + (fbm(x / 8, y / 8, seed + 202, 2) - 0.5) * 5) * amp;
+    // 小島：離岸 10–70 格的海面上，低頻雜訊高處浮出
+    if (sd < -9 && sd > -80) {
+      const isl = fbm(x / 22, y / 22, seed + 303, 3);
+      sd = Math.max(sd, (isl - 0.7) * 70);
+    }
+    F[i] = sd;
+  }
+  const land = new Uint8Array(N); let landCount = 0;
+  for (let i = 0; i < N; i++) { land[i] = F[i] > 0 ? 1 : 0; landCount += land[i]; }
+  const seaMask = new Uint8Array(N); for (let i = 0; i < N; i++) seaMask[i] = land[i] ? 0 : 1;
+  const dl = distanceTo(seaMask);          // 陸地離海多遠
+  // 高度、氣溫、濕度
+  const E = new Float32Array(N), T = new Float32Array(N), Mo = new Float32Array(N);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x; if (!land[i]) continue;
+    const d = dl[i];
+    const bias = 0.55 + 0.9 * ((1 - y / H) * 0.6 + (1 - x / W) * 0.4);
+    const rn = fbm(x / 55, y / 55, seed + 11, 4);
+    const ridge = Math.pow(1 - Math.abs(2 * rn - 1), 2.2);
+    let e = Math.min(1, d / 70) * 0.3 + ridge * 0.62 * bias * Math.min(1, d / 22) + (fbm(x / 17, y / 17, seed + 13, 3) - 0.5) * 0.14 + 0.06;
+    E[i] = clamp(e, 0, 1.2);
+    T[i] = clamp(1 - 0.88 * (y / H) + (fbm(x / 90, y / 90, seed + 17, 3) - 0.5) * 0.18 - Math.max(0, E[i] - 0.3) * 0.75, 0, 1);
+    const coast = Math.exp(-d / 48);
+    Mo[i] = clamp(0.22 + 0.5 * fbm(x / 70, y / 70, seed + 19, 4) + 0.38 * coast + 0.22 * (y / H) + 0.18 * (x / W) - 0.2 + (E[i] > 0.55 ? 0.05 : 0), 0, 1);
+  }
+  // 河流：從海邊做優先洪填，得到每格的流向
+  const EF = new Float32Array(N); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) EF[y * W + x] = E[y * W + x] + (fbm(x / 7, y / 7, seed + 33, 3) - 0.5) * 0.05;
+  const dir = new Int32Array(N).fill(-1), fill = new Float32Array(N), seen = new Uint8Array(N), order = [];
+  const heap = []; // [key, idx]
+  const push = (k, i) => { heap.push([k, i]); let c = heap.length - 1; while (c > 0) { const p = (c - 1) >> 1; if (heap[p][0] <= heap[c][0]) break; [heap[p], heap[c]] = [heap[c], heap[p]]; c = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let c = 0; for (;;) { let l = 2 * c + 1, r = l + 1, m = c; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === c) break; [heap[m], heap[c]] = [heap[c], heap[m]]; c = m; } } return top; };
+  const nb = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = y * W + x; if (!land[i]) continue;
+    let coastal = false;
+    for (const [dx, dy] of nb) { const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H || !land[yy * W + xx]) { coastal = true; break; } }
+    if (coastal) { seen[i] = 1; fill[i] = EF[i]; dir[i] = -2; push(EF[i], i); }
+  }
+  while (heap.length) {
+    const [, i] = pop(); order.push(i);
+    const x = i % W, y = (i / W) | 0;
+    for (const [dx, dy] of nb) {
+      const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+      const j = yy * W + xx; if (!land[j] || seen[j]) continue;
+      seen[j] = 1; dir[j] = i; fill[j] = Math.max(EF[j], fill[i] + 1e-4); push(fill[j], j);
+    }
+  }
+  const acc = new Float32Array(N);
+  for (let k = order.length - 1; k >= 0; k--) { const i = order[k]; acc[i] += 0.5 + Mo[i]; if (dir[i] >= 0) acc[dir[i]] += acc[i]; }
+  const lake = new Uint8Array(N);
+  for (let i = 0; i < N; i++) if (land[i] && fill[i] - EF[i] > 0.012 && acc[i] > 20) lake[i] = 1;
+  // 光影
+  const shade = new Float32Array(N);
+  for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) shade[y * W + x] = clamp((E[(y - 1) * W + x - 1] - E[(y + 1) * W + x + 1]) * 5.5, -0.32, 0.32);
+  // 國界扭曲場
+  const warpX = new Float32Array(N), warpY = new Float32Array(N);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; warpX[i] = (fbm(x / 13, y / 13, seed + 401, 3) - 0.5) * 9; warpY[i] = (fbm(x / 13, y / 13, seed + 502, 3) - 0.5) * 9; }
+  const hn = new Float32Array(N); for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) hn[y * W + x] = fbm(x / 11, y / 11, seed + 707, 3);
+  return { seed, mode, F, land, landCount, dl, E, T, Mo, acc, dir, lake, shade, warpX, warpY, hn, ms: performance.now() - t0 };
+}
+
+// ---------- 生態區 ----------
+function biomeOf(e, t, m) {
+  if (e > 0.82) return t < 0.5 ? 0 : 3;
+  if (t < 0.2) return 0;
+  if (t < 0.36) return m > 0.42 ? 2 : 1;
+  if (e > 0.62) return 4;
+  if (e > 0.46) return 5;
+  if (t > 0.6 && m < 0.28) return 9;
+  if (m > 0.7 && t > 0.52) return e < 0.22 ? 11 : 10;
+  if (m > 0.5) return 6;
+  if (m > 0.32) return 7;
+  return 8;
+}
+const climateWord = t => t < 0.22 ? "極寒" : t < 0.38 ? "寒冷" : t < 0.62 ? "溫和" : t < 0.8 ? "溫暖" : "炎熱";
+const wetWord = m => m < 0.3 ? "乾燥" : m < 0.55 ? "適中" : m < 0.75 ? "濕潤" : "潮濕";
+
+// ---------- 國家與省 ----------
+function genProvinces(T, nProv, nPol) {
+  const t0 = performance.now();
+  const { land, landCount, E } = T;
+  const idx = []; for (let i = 0; i < W * H; i++) if (land[i]) idx.push(i);
+  const rand = rng(T.seed * 7 + nProv);
+  let r = Math.sqrt(landCount / nProv) * 0.82;
+  let seeds = [];
+  for (let round = 0; round < 12 && seeds.length < nProv; round++) {
+    seeds = [];
+    for (let k = 0; k < nProv * 80 && seeds.length < nProv; k++) {
+      const i = idx[(rand() * idx.length) | 0], x = i % W, y = (i / W) | 0;
+      if (seeds.every(s => (s[0] - x) ** 2 + (s[1] - y) ** 2 > r * r)) seeds.push([x, y]);
+    }
+    r *= 0.92;
+  }
+  // 放鬆兩輪，讓格子更均勻
+  for (let it = 0; it < 2; it++) {
+    const sx = new Float64Array(seeds.length), sy = new Float64Array(seeds.length), sc = new Float64Array(seeds.length);
+    for (let q = 0; q < idx.length; q += 2) {
+      const i = idx[q], x = i % W, y = (i / W) | 0; let b = 0, bd = 1e9;
+      for (let k = 0; k < seeds.length; k++) { const d = (seeds[k][0] - x) ** 2 + (seeds[k][1] - y) ** 2; if (d < bd) { bd = d; b = k; } }
+      sx[b] += x; sy[b] += y; sc[b]++;
+    }
+    seeds = seeds.map((s, k) => { if (!sc[k]) return s; const nx = Math.round(sx[k] / sc[k]), ny = Math.round(sy[k] / sc[k]); return land[ny * W + nx] ? [nx, ny] : s; });
+  }
+  // 以扭曲座標指派每格到最近的省
+  const prov = new Int16Array(W * H).fill(-1), n = seeds.length;
+  for (const i of idx) {
+    const x = i % W + T.warpX[i], y = ((i / W) | 0) + T.warpY[i]; let b = 0, bd = 1e9;
+    for (let k = 0; k < n; k++) { const d = (seeds[k][0] - x) ** 2 + (seeds[k][1] - y) ** 2; if (d < bd) { bd = d; b = k; } }
+    prov[i] = b;
+  }
+  // 省的相鄰與平均高度
+  const adj = Array.from({ length: n }, () => new Set()); const eSum = new Float64Array(n), eCnt = new Float64Array(n), area = new Float64Array(n);
+  for (const i of idx) {
+    const p = prov[i], x = i % W, y = (i / W) | 0; eSum[p] += E[i]; eCnt[p]++; area[p]++;
+    if (x < W - 1 && prov[i + 1] >= 0 && prov[i + 1] !== p) { adj[p].add(prov[i + 1]); adj[prov[i + 1]].add(p); }
+    if (y < H - 1 && prov[i + W] >= 0 && prov[i + W] !== p) { adj[p].add(prov[i + W]); adj[prov[i + W]].add(p); }
+  }
+  const pe = Array.from({ length: n }, (_, k) => eCnt[k] ? eSum[k] / eCnt[k] : 0);
+  // 主大陸（最大連通塊）
+  const comp = new Int16Array(n).fill(-1); let cs = [];
+  for (let k = 0; k < n; k++) if (comp[k] < 0) { const st = [k]; comp[k] = cs.length; let c = 0; while (st.length) { const a = st.pop(); c++; for (const b of adj[a]) if (comp[b] < 0) { comp[b] = cs.length; st.push(b); } } cs.push(c); }
+  const main = cs.indexOf(Math.max(...cs));
+  const cand = []; for (let k = 0; k < n; k++) if (comp[k] === main) cand.push(k);
+  // 國都：遠點取樣，偏好低地
+  const caps = []; const low = cand.filter(k => pe[k] < 0.5); const pool = low.length >= nPol ? low : cand;
+  caps.push(pool[(rand() * pool.length) | 0]);
+  while (caps.length < Math.min(nPol, pool.length)) {
+    let best = -1, bd = -1;
+    for (const k of pool) { if (caps.includes(k)) continue; const d = Math.min(...caps.map(c => (seeds[c][0] - seeds[k][0]) ** 2 + (seeds[c][1] - seeds[k][1]) ** 2)); if (d > bd) { bd = d; best = k; } }
+    caps.push(best);
+  }
+  // 多源最短路擴張：山地走得慢
+  const owner = new Int16Array(n).fill(-1), dist = new Float64Array(n).fill(1e18);
+  const pq = []; caps.forEach((c, i) => { owner[c] = i; dist[c] = 0; pq.push([0, c]); });
+  const done = new Uint8Array(n);
+  while (pq.length) {
+    pq.sort((a, b) => a[0] - b[0]); const [d, a] = pq.shift(); if (done[a]) continue; done[a] = 1;
+    for (const b of adj[a]) {
+      const len = Math.hypot(seeds[a][0] - seeds[b][0], seeds[a][1] - seeds[b][1]);
+      const nd = d + len * (1 + 1.7 * Math.max(pe[a], pe[b]) + rand() * 0.35);
+      if (nd < dist[b]) { dist[b] = nd; owner[b] = owner[a]; pq.push([nd, b]); }
+    }
+  }
+  for (let k = 0; k < n; k++) if (owner[k] < 0) { let b = 0, bd = 1e18; caps.forEach((c, i) => { const d = (seeds[c][0] - seeds[k][0]) ** 2 + (seeds[c][1] - seeds[k][1]) ** 2; if (d < bd) { bd = d; b = i; } }); owner[k] = b; }
+  const order = [...NAMES.keys()].sort((a, b) => hash(a, 1, T.seed) - hash(b, 1, T.seed));
+  const cities = [...CITIES.keys()].sort((a, b) => hash(a, 2, T.seed) - hash(b, 2, T.seed));
+  const polities = caps.map((c, i) => ({ id: i, cap: c, color: POLITY_COLORS[i % POLITY_COLORS.length], name: NAMES[order[i]] + (i % 3 === 2 ? "聯盟" : "國"), city: CITIES[cities[i % cities.length]] }));
+  // 宗門：偏好高地；第一個是守梯大宗（最北的山地）；關係另用自己的亂數線，不影響上面的結果
+  const sr = rng(T.seed * 13 + 5), SECT_NAMES = ["靖天宗", "逐日宗", "玄鶴觀", "落霞派", "栖梧閣", "聽潮門", "滄浪宗", "玉簫門"];
+  const sects = []; const used = new Set();
+  const northmost = cand.filter(k => pe[k] > 0.3).sort((a, b) => seeds[a][1] - seeds[b][1])[0] ?? cand[0];
+  const takeProv = (k) => { used.add(k); return k; };
+  const picks = [takeProv(northmost)];
+  for (let tries = 0; picks.length < 8 && tries < 400; tries++) {
+    const k = cand[(sr() * cand.length) | 0]; if (used.has(k)) continue;
+    if (sr() > (pe[k] + 0.15) ** 1.5 * 1.6) continue;
+    if (picks.some(q => Math.hypot(seeds[q][0] - seeds[k][0], seeds[q][1] - seeds[k][1]) < 42)) continue;
+    picks.push(takeProv(k));
+  }
+  const stateRoll = () => { const v = sr(); return v < 0.3 ? "prosper" : v < 0.72 ? "stable" : v < 0.92 ? "decline" : v < 0.97 ? "closed" : "fallen"; };
+  const REACH = { great: 34, school: 21 }, MULT = { prosper: 1.3, stable: 1, decline: 0.65, closed: 0, fallen: 0 };
+  picks.forEach((k, i) => {
+    const rank = i < 3 ? "great" : "school", state = i === 0 ? (sr() < 0.65 ? "prosper" : "stable") : stateRoll();
+    const x = seeds[k][0], y = seeds[k][1], host = owner[k];
+    sects.push({ id: i, name: SECT_NAMES[i], rank, guard: i === 0, state, x, y, prov: k, host, reach: REACH[rank] * MULT[state], e: bil(T.E, x, y), ally: -1, feud: -1 });
+  });
+  for (const s of sects) {
+    if (s.reach <= 0) continue;
+    const dists = polities.map((pol, id) => { let md = 1e9; for (let k = 0; k < n; k++) if (owner[k] === id) md = Math.min(md, Math.hypot(seeds[k][0] - s.x, seeds[k][1] - s.y)); return { id, md }; }).filter(o => o.md <= REACH[s.rank] * 2.4 + 25).sort((a, b) => a.md - b.md);
+    if (dists.length && sr() < 0.65) s.ally = (sr() < 0.55 ? dists[0] : dists[(sr() * dists.length) | 0]).id;
+    const rest = dists.filter(o => o.id !== s.ally);
+    if (rest.length && sr() < 0.5) s.feud = rest[(sr() * rest.length) | 0].id;
+  }
+  // 省染色畫法用：靈脈半徑內的省
+  for (const s of sects) s.cover = new Set(Array.from({ length: n }, (_, k) => k).filter(k => s.reach > 0 && Math.hypot(seeds[k][0] - s.x, seeds[k][1] - s.y) <= s.reach));
+  return { seeds, prov, owner, polities, sects, n, ms: performance.now() - t0 };
+}
+
+// ---------- 繪製 ----------
+const canvas = document.getElementById("map"); canvas.width = CW; canvas.height = CH;
+const ctx = canvas.getContext("2d");
+let TER = null, PRO = null, view = null;
+
+function bil(arr, gx, gy) {
+  gx = clamp(gx, 0, W - 1.001); gy = clamp(gy, 0, H - 1.001);
+  const x0 = gx | 0, y0 = gy | 0, fx = gx - x0, fy = gy - y0, i = y0 * W + x0;
+  return arr[i] * (1 - fx) * (1 - fy) + arr[i + 1] * fx * (1 - fy) + arr[i + W] * (1 - fx) * fy + arr[i + W + 1] * fx * fy;
+}
+const layer = id => document.getElementById("L_" + id).checked;
+const GOLD = [236, 192, 70], COLD = [86, 104, 196], INK = [120, 96, 64];
+let HALO = "aura";
+const relColor = s => s.ally >= 0 ? GOLD : s.feud >= 0 ? COLD : INK;
+function halo(c, x, y, gx, gy, e, pv) {
+  for (const s of PRO.sects) {
+    if (s.reach <= 0) continue;
+    const d = Math.hypot(gx - s.x, gy - s.y);
+    if (HALO === "province") {
+      if (!s.cover.has(pv)) continue;
+      c = mix(c, relColor(s), 0.2); if ((x + y) % 8 < 2) c = mix(c, relColor(s), 0.22); continue;
+    }
+    if (d > s.reach * 1.6) continue;
+    const re = HALO === "circle" ? s.reach : s.reach * (0.8 + 0.55 * bil(TER.hn, gx, gy)) * (1 - clamp((e - s.e) * 0.55, 0, 0.32));
+    const base = relColor(s);
+    if (d < re) { c = mix(c, base, HALO === "circle" ? 0.1 : 0.12 + 0.1 * (d / re)); if ((x + y) % 8 < 2) c = mix(c, base, 0.2); }
+    if (Math.abs(d - re) < (HALO === "circle" ? 0.9 : 1.15)) {
+      let rc = base;
+      if (s.ally >= 0 && s.feud >= 0) rc = (x + y) % 14 < 7 ? GOLD : COLD;
+      else if (s.feud >= 0 && (x + y) % 10 > 5) continue;
+      c = mix(c, rc, 0.8);
+    }
+  }
+  return c;
+}
+const mix = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+
+function render() {
+  const t0 = performance.now();
+  const T = TER, P = PRO, L = { sect: layer("sect"), rel: true, terrain: layer("terrain"), nation: layer("nation"), border: layer("border"), river: layer("river"), symbol: layer("symbol"), sea: layer("sea"), grid: layer("grid"), label: layer("label") };
+  const img = ctx.createImageData(CW, CH), px = img.data;
+  const provOut = new Int16Array(OW * OH).fill(-1), polOut = new Int16Array(OW * OH).fill(-1), landOut = new Uint8Array(OW * OH);
+  const bio = new Uint8Array(OW * OH);
+  // 第一輪：陸地、省
+  for (let y = 0; y < OH; y++) for (let x = 0; x < OW; x++) {
+    const gx = x / S, gy = y / S, f = bil(T.F, gx, gy), o = y * OW + x;
+    if (f <= 0) continue; landOut[o] = 1;
+    const wx = gx + bil(T.warpX, gx, gy), wy = gy + bil(T.warpY, gx, gy);
+    let b = 0, bd = 1e9; const sd = P.seeds;
+    for (let k = 0; k < sd.length; k++) { const d = (sd[k][0] - wx) ** 2 + (sd[k][1] - wy) ** 2; if (d < bd) { bd = d; b = k; } }
+    provOut[o] = b; polOut[o] = P.owner[b];
+  }
+  // 第二輪：上色
+  for (let py = 0; py < CH; py++) for (let pxx = 0; pxx < CW; pxx++) {
+    const p = (py * CW + pxx) * 4, x = pxx - M, y = py - M;
+    // 羊皮紙
+    const mott = (fbm(pxx / 70, py / 70, 901, 3) - 0.5) * 0.16 + (hash(pxx, py, 77) - 0.5) * 0.045;
+    const vx = (pxx / CW - 0.5) * 2, vy = (py / CH - 0.5) * 2, vig = Math.pow(Math.max(Math.abs(vx), Math.abs(vy)), 4) * 0.2 + (vx * vx + vy * vy) * 0.05;
+    let c = [PARCH[0] * (1 + mott - vig), PARCH[1] * (1 + mott - vig), PARCH[2] * (1 + mott - vig)];
+    if (x >= 0 && y >= 0 && x < OW && y < OH) {
+      const o = y * OW + x, gx = x / S, gy = y / S, f = bil(T.F, gx, gy);
+      if (f > 0) {
+        const e = bil(T.E, gx, gy), t = bil(T.T, gx, gy), m = bil(T.Mo, gx, gy);
+        const b = biomeOf(e, t, m); bio[o] = b;
+        let col = L.terrain ? BIOMES[b].c : [205, 190, 140];
+        const sh = bil(T.shade, gx, gy) * 0.55;
+        if (L.nation) { const pc = P.polities[polOut[o]]; if (pc) col = L.terrain ? mix(pc.color, col, 0.3) : mix(col, pc.color, 0.85); }
+        col = [col[0] * (1 + sh), col[1] * (1 + sh), col[2] * (1 + sh)];
+        col = mix(col, [c[0], c[1], c[2]], 0.12);
+        if (bil(T.lake, gx, gy) > 0.5) col = [92, 150, 168];
+        c = col;
+        if (L.sect) c = halo(c, x, y, gx, gy, e, provOut[o]);
+        if (f < 1.3) c = mix(c, [78, 62, 44], 0.7);
+      } else {
+        const d = -f;
+        c = mix(c, [150, 168, 160], Math.exp(-d / 9) * 0.22);
+        if (L.sea) {
+          const dash = ((x + y) % 10) < 6;
+          if (dash && Math.abs(d - 11) < 0.55) c = mix(c, [110, 96, 70], 0.55);
+          if (dash && Math.abs(d - 26) < 0.45) c = mix(c, [130, 116, 90], 0.3);
+        }
+      }
+      // 省界、國界
+      if (L.border && landOut[o]) {
+        const r = x < OW - 1 ? o + 1 : o, d2 = y < OH - 1 ? o + OW : o, l = x > 0 ? o - 1 : o, u = y > 0 ? o - OW : o;
+        const polyEdge = (polOut[r] !== polOut[o] && landOut[r]) || (polOut[d2] !== polOut[o] && landOut[d2]) || (polOut[l] !== polOut[o] && landOut[l]) || (polOut[u] !== polOut[o] && landOut[u]);
+        const provEdge = (provOut[r] !== provOut[o] && landOut[r]) || (provOut[d2] !== provOut[o] && landOut[d2]);
+        if (polyEdge) c = mix(c, [70, 50, 36], 0.78); else if (provEdge) c = mix(c, [90, 74, 52], 0.32);
+      }
+    }
+    px[p] = clamp(c[0], 0, 255); px[p + 1] = clamp(c[1], 0, 255); px[p + 2] = clamp(c[2], 0, 255); px[p + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  ctx.save(); ctx.translate(M, M);
+  // 格線
+  if (L.grid) { ctx.strokeStyle = "rgba(90,110,100,.22)"; ctx.lineWidth = 1; ctx.beginPath(); for (let x = 0; x <= OW; x += 80) { ctx.moveTo(x, 0); ctx.lineTo(x, OH); } for (let y = 0; y <= OH; y += 80) { ctx.moveTo(0, y); ctx.lineTo(OW, y); } ctx.stroke(); }
+  // 河流
+  if (L.river) {
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (let i = 0; i < W * H; i++) {
+      const a = T.acc[i]; if (a < 360 || !T.land[i]) continue;
+      const j = T.dir[i]; if (j < 0) continue;
+      const x = i % W, y = (i / W) | 0, x2 = j % W, y2 = (j / W) | 0;
+      ctx.strokeStyle = "rgba(48,118,142,.92)"; ctx.lineWidth = clamp(0.4 + Math.sqrt(a) * 0.045, 0.5, 2.6) * S * 0.6;
+      ctx.beginPath(); ctx.moveTo((x + 0.5) * S, (y + 0.5) * S); ctx.lineTo((x2 + 0.5) * S, (y2 + 0.5) * S); ctx.stroke();
+    }
+  }
+  // 符號
+  if (L.symbol) {
+    const rr = rng(T.seed + 4242);
+    const stepS = 9;
+    for (let gy = 4; gy < H - 4; gy += stepS) for (let gx = 4; gx < W - 4; gx += stepS) {
+      const x = gx + (rr() - 0.5) * stepS * 0.8, y = gy + (rr() - 0.5) * stepS * 0.8, i = Math.round(y) * W + Math.round(x);
+      if (!T.land[i] || T.F[i] < 4 || T.lake[i]) continue;
+      const e = T.E[i], t = T.T[i], m = T.Mo[i], b = biomeOf(e, t, m), X = x * S, Y = y * S, roll = rr();
+      ctx.lineWidth = 1.1;
+      if (b === 3 || b === 4 || (b === 0 && e > 0.62)) {
+        if (roll > 0.5) continue; const s = (3 + (e - 0.55) * 6) * S * 0.6;
+        ctx.strokeStyle = "rgba(70,56,44,.8)"; ctx.beginPath(); ctx.moveTo(X - s, Y + s * 0.7); ctx.lineTo(X, Y - s * 0.9); ctx.lineTo(X + s, Y + s * 0.7); ctx.stroke();
+        ctx.strokeStyle = "rgba(70,56,44,.35)"; ctx.beginPath(); ctx.moveTo(X, Y - s * 0.9); ctx.lineTo(X + s * 0.1, Y + s * 0.7); ctx.stroke();
+      } else if (b === 5) {
+        if (roll > 0.2) continue; ctx.strokeStyle = "rgba(90,70,48,.45)"; ctx.beginPath(); ctx.arc(X, Y + 2, 5 * S * 0.5, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+      } else if (b === 2) {
+        if (roll > 0.55) continue; const s = 3.6 * S * 0.6; ctx.strokeStyle = "rgba(30,70,44,.8)"; ctx.beginPath(); ctx.moveTo(X, Y - s); ctx.lineTo(X - s * 0.7, Y + s * 0.6); ctx.lineTo(X + s * 0.7, Y + s * 0.6); ctx.closePath(); ctx.stroke();
+      } else if (b === 6 || b === 10) {
+        if (roll > 0.4) continue; const s = 3 * S * 0.6; ctx.strokeStyle = b === 10 ? "rgba(24,76,40,.85)" : "rgba(52,84,36,.75)"; ctx.beginPath(); ctx.arc(X, Y - s * 0.4, s, 0, Math.PI * 2); ctx.moveTo(X, Y + s * 0.6); ctx.lineTo(X, Y + s * 1.7); ctx.stroke();
+      } else if (b === 7 || b === 8) {
+        if (roll > 0.28) continue; ctx.strokeStyle = "rgba(96,110,52,.65)"; ctx.beginPath(); ctx.moveTo(X - 3, Y + 2); ctx.lineTo(X - 2, Y - 2); ctx.moveTo(X, Y + 2); ctx.lineTo(X, Y - 3); ctx.moveTo(X + 3, Y + 2); ctx.lineTo(X + 2, Y - 2); ctx.stroke();
+      } else if (b === 11) {
+        if (roll > 0.5) continue; ctx.strokeStyle = "rgba(48,84,70,.8)"; ctx.beginPath(); ctx.moveTo(X - 4, Y + 2); ctx.lineTo(X + 4, Y + 2); ctx.moveTo(X - 1, Y + 2); ctx.lineTo(X - 1, Y - 3); ctx.moveTo(X + 2, Y + 2); ctx.lineTo(X + 3, Y - 2); ctx.stroke();
+      } else if (b === 0) {
+        if (roll > 0.35) continue; ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fillRect(X, Y, 2, 2);
+      } else if (b === 9) {
+        if (roll > 0.3) continue; ctx.strokeStyle = "rgba(150,110,60,.5)"; ctx.beginPath(); ctx.arc(X, Y, 5, Math.PI, 0); ctx.stroke();
+      }
+    }
+  }
+  ctx.restore();
+  BASE.width = CW; BASE.height = CH; BASE.getContext("2d").drawImage(canvas, 0, 0);
+  view = { provOut, polOut, landOut, bio };
+  R = { L, P, polOut, landOut, provOut, bio, t0 };
+  overlay();
+}
+
+function overlay() {
+  const { L, P, polOut, landOut, t0 } = R;
+  ctx.drawImage(BASE, 0, 0);
+  ctx.save(); ctx.translate(M, M);
+  // 互惠／世仇連線與宗門記號
+  if (L.sect) {
+    if (L.rel) for (const s of P.sects) {
+      if (s.reach <= 0) continue;
+      for (const [pid, kind] of [[s.ally, "ally"], [s.feud, "feud"]]) {
+        if (pid < 0 || !sel) continue;
+        if (sel.type === "sect" ? sel.id !== s.id : sel.id !== pid) continue;
+        const cp = P.seeds[P.polities[pid].cap], x1 = s.x * S, y1 = s.y * S, x2 = cp[0] * S, y2 = cp[1] * S, mx = (x1 + x2) / 2, my = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1, bend = kind === "ally" ? 0.14 : -0.14;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.quadraticCurveTo(mx - dy * bend, my + dx * bend, x2, y2);
+        ctx.setLineDash(kind === "ally" ? [] : [7, 5]); ctx.lineWidth = kind === "ally" ? 2.6 : 2.2;
+        ctx.strokeStyle = kind === "ally" ? "rgba(200,150,30,.95)" : "rgba(176,48,40,.9)"; ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = kind === "ally" ? "rgba(200,150,30,1)" : "rgba(176,48,40,1)"; ctx.beginPath(); ctx.arc(x2, y2, 4, 0, Math.PI * 2); ctx.fill();
+        if (kind === "feud") { ctx.strokeStyle = "rgba(176,48,40,1)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(mx - dy * bend * 0.5 - 4, my + dx * bend * 0.5 - 4); ctx.lineTo(mx - dy * bend * 0.5 + 4, my + dx * bend * 0.5 + 4); ctx.moveTo(mx - dy * bend * 0.5 + 4, my + dx * bend * 0.5 - 4); ctx.lineTo(mx - dy * bend * 0.5 - 4, my + dx * bend * 0.5 + 4); ctx.stroke(); }
+      }
+    }
+    for (const s of P.sects) {
+      const X = s.x * S, Y = s.y * S, r = (s.rank === "great" ? 7 : 5) * S * 0.8;
+      ctx.lineWidth = 2; ctx.strokeStyle = "rgba(44,32,22,.95)";
+      if (sel && sel.type === "sect" && sel.id === s.id) { ctx.beginPath(); ctx.arc(X, Y, r + 9, 0, Math.PI * 2); ctx.lineWidth = 2.5; ctx.strokeStyle = "rgba(200,150,30,1)"; ctx.stroke(); ctx.strokeStyle = "rgba(44,32,22,.95)"; }
+      if (s.guard) { ctx.beginPath(); ctx.arc(X, Y, r + 4, 0, Math.PI * 2); ctx.lineWidth = 1.3; ctx.stroke(); }
+      ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, r, 0, Math.PI * 2);
+      ctx.fillStyle = s.state === "prosper" ? "rgba(44,32,22,.95)" : s.state === "closed" ? "rgba(140,140,140,.95)" : "rgba(244,232,196,.95)";
+      ctx.setLineDash(s.state === "decline" ? [3, 3] : []); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+      if (s.state === "fallen") { ctx.strokeStyle = "rgba(160,40,32,1)"; ctx.beginPath(); ctx.moveTo(X - r, Y - r); ctx.lineTo(X + r, Y + r); ctx.moveTo(X + r, Y - r); ctx.lineTo(X - r, Y + r); ctx.stroke(); }
+      ctx.font = '600 12px "Noto Serif TC","Songti TC",serif'; ctx.textAlign = "left"; ctx.textBaseline = "middle"; ctx.letterSpacing = "0px";
+      ctx.lineWidth = 3; ctx.strokeStyle = "rgba(240,226,184,.85)"; ctx.strokeText(s.name, X + r + 5, Y); ctx.fillStyle = "rgba(44,32,22,.95)"; ctx.fillText(s.name, X + r + 5, Y);
+    }
+  }
+  // 國名與都城
+  if (L.label && L.nation) {
+    const sx = new Float64Array(P.polities.length), sy = new Float64Array(P.polities.length), sn = new Float64Array(P.polities.length);
+    for (let y = 0; y < OH; y += 3) for (let x = 0; x < OW; x += 3) { const o = y * OW + x; if (!landOut[o]) continue; const k = polOut[o]; sx[k] += x; sy[k] += y; sn[k]++; }
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    P.polities.forEach((pol, k) => {
+      if (!sn[k]) return; let cx = sx[k] / sn[k], cy = sy[k] / sn[k];
+      if (polOut[(Math.round(cy)) * OW + Math.round(cx)] !== k) { cx = P.seeds[pol.cap][0] * S; cy = P.seeds[pol.cap][1] * S; }
+      const sz = clamp(13 + Math.sqrt(sn[k] * 9) / 12, 20, 50);
+      ctx.font = `700 ${sz}px "Noto Serif TC","Songti TC","PMingLiU",serif`; ctx.letterSpacing = (sz * 0.14) + "px";
+      ctx.lineWidth = 4; ctx.strokeStyle = "rgba(240,226,184,.65)"; ctx.strokeText(pol.name, cx, cy);
+      ctx.fillStyle = `rgba(${pol.color[0] * 0.38 | 0},${pol.color[1] * 0.3 | 0},${pol.color[2] * 0.3 | 0},.9)`; ctx.fillText(pol.name, cx, cy);
+      // 都城
+      const [kx, ky] = P.seeds[pol.cap]; ctx.letterSpacing = "0px";
+      ctx.fillStyle = "rgba(50,38,28,.95)"; ctx.beginPath(); ctx.arc(kx * S, ky * S, 3.2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(kx * S, ky * S, 6, 0, Math.PI * 2); ctx.strokeStyle = "rgba(50,38,28,.8)"; ctx.lineWidth = 1.2; ctx.stroke();
+      ctx.font = `600 13px "Noto Serif TC","Songti TC",serif`; ctx.lineWidth = 3; ctx.strokeStyle = "rgba(240,226,184,.8)"; ctx.strokeText(pol.city, kx * S, ky * S + 17); ctx.fillStyle = "rgba(50,38,28,.95)"; ctx.fillText(pol.city, kx * S, ky * S + 17);
+    });
+  }
+  ctx.restore();
+  // 外框與刻度
+  ctx.strokeStyle = "rgba(40,30,20,.9)"; ctx.lineWidth = 2; ctx.strokeRect(M, M, OW, OH);
+  ctx.lineWidth = 1; ctx.strokeRect(M - 7, M - 7, OW + 14, OH + 14); ctx.strokeRect(M - 11, M - 11, OW + 22, OH + 22);
+  ctx.fillStyle = "rgba(60,46,32,.85)"; ctx.font = "10px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.letterSpacing = "0px";
+  for (let x = 0; x <= OW; x += 80) { const v = (-90 + x / OW * 180).toFixed(1) + "°"; ctx.fillText(v, M + x, 8); ctx.fillText(v, M + x, CH - 8); }
+  for (let y = 0; y <= OH; y += 80) { const v = (47 - y / OH * 94).toFixed(1) + "°"; ctx.save(); ctx.translate(8, M + y); ctx.rotate(-Math.PI / 2); ctx.fillText(v, 0, 0); ctx.restore(); ctx.save(); ctx.translate(CW - 8, M + y); ctx.rotate(Math.PI / 2); ctx.fillText(v, 0, 0); ctx.restore(); }
+  updateInfo();
+  document.getElementById("stat").textContent = `地形 ${TER.ms.toFixed(0)} ms ・ 國界 ${PRO.ms.toFixed(0)} ms ・ 繪製 ${(performance.now() - t0).toFixed(0)} ms ・ 陸地 ${TER.landCount} 格 ・ ${PRO.n} 省`;
+}
+
+function generate(full = true) {
+  const seed = +document.getElementById("seed").value | 0, mode = document.getElementById("mode").value;
+  if (full || !TER || TER.seed !== seed || TER.mode !== mode) TER = genTerrain(seed, mode);
+  sel = null;
+  PRO = genProvinces(TER, +document.getElementById("n").value, +document.getElementById("p").value);
+  render();
+}
+
+// ---------- 介面 ----------
+const legend = document.getElementById("legend");
+for (const b of BIOMES) { const d = document.createElement("div"); d.className = "chip"; d.innerHTML = `<span class="sw" style="background:rgb(${b.c})"></span>${b.name}`; legend.append(d); }
+document.getElementById("roll").onclick = () => { document.getElementById("seed").value = (Math.random() * 99999) | 0; generate(true); };
+document.getElementById("regen").onclick = () => generate(true);
+document.getElementById("mode").onchange = () => generate(true);
+for (const id of ["n", "p"]) document.getElementById(id).oninput = e => { document.getElementById(id === "n" ? "nv" : "pv").textContent = e.target.value; };
+for (const id of ["n", "p"]) document.getElementById(id).onchange = () => generate(false);
+document.getElementById("seed").onchange = () => generate(true);
+for (const id of ["terrain", "nation", "border", "river", "symbol", "sea", "grid", "label", "sect"]) document.getElementById("L_" + id).onchange = () => render();
+document.getElementById("halo").onchange = e => { HALO = e.target.value; render(); };
+// ---------- 選取與資訊卡 ----------
+let sel = null, R = null;
+const BASE = document.createElement("canvas");
+const STATE_NAME = { prosper: "興盛", stable: "尋常", decline: "衰微", closed: "閉山", fallen: "覆滅" };
+const rankName = s => s.guard ? "守梯大宗" : s.rank === "great" ? "大宗" : "門派";
+function strengthOf(id) {
+  const own = PRO.owner.filter(o => o === id).length, allies = PRO.sects.filter(s => s.ally === id && s.reach > 0);
+  return (own / PRO.n * 10 + allies.filter(s => s.state === "prosper").length + allies.filter(s => s.state !== "prosper").length * 0.5).toFixed(1);
+}
+function updateInfo() {
+  const el = document.getElementById("info"), pn = id => PRO.polities[id].name;
+  const gold = t => `<span class="g">互惠</span> ${t}`, red = t => `<span class="r">世仇</span> ${t}`;
+  if (!sel) {
+    const feuds = PRO.sects.filter(s => s.feud >= 0).length, allies = PRO.sects.filter(s => s.ally >= 0).length;
+    el.innerHTML = `<div class="it">九渡洲<small>　${PRO.polities.length} 國・${PRO.sects.length} 宗門</small></div><div>點選國家或宗門，看詳情與關係。</div><div class="muted">互惠 ${allies} 組・世仇 ${feuds} 組</div>`;
+    return;
+  }
+  if (sel.type === "sect") {
+    const s = PRO.sects[sel.id];
+    el.innerHTML = `<div class="it">${s.name}<small>　${rankName(s)}・${STATE_NAME[s.state]}</small></div><div>位於${pn(s.host)}境內</div><div>${s.ally >= 0 ? gold(pn(s.ally)) : "互惠 —"}　${s.feud >= 0 ? red(pn(s.feud)) : "世仇 —"}</div>`;
+    return;
+  }
+  const pol = PRO.polities[sel.id], mine = PRO.sects.filter(s => s.host === pol.id).length;
+  const al = PRO.sects.filter(s => s.ally === pol.id).map(s => s.name).join("、") || "—", fe = PRO.sects.filter(s => s.feud === pol.id).map(s => s.name).join("、") || "—";
+  let ter = "";
+  if (sel.at) { const [gx, gy] = sel.at, e = bil(TER.E, gx, gy), t = bil(TER.T, gx, gy), m = bil(TER.Mo, gx, gy); ter = `<div class="muted">此處：${BIOMES[biomeOf(e, t, m)].name}・${climateWord(t)}${wetWord(m)}・海拔約 ${Math.round(e * 2800)} 公尺</div>`; }
+  el.innerHTML = `<div class="it">${pol.name}<small>　國勢 ${strengthOf(pol.id)}・境內宗門 ${mine} 家</small></div><div>${gold(al)}</div><div>${red(fe)}</div>${ter}`;
+}
+canvas.addEventListener("click", ev => {
+  if (!view) return;
+  const r = canvas.getBoundingClientRect(), sc = CW / r.width;
+  const x = Math.round((ev.clientX - r.left) * sc - M), y = Math.round((ev.clientY - r.top) * sc - M);
+  let next = null;
+  if (x >= 0 && y >= 0 && x < OW && y < OH) {
+    const gx = x / S, gy = y / S; let best = null, bd = 1e9;
+    for (const s of PRO.sects) { const d = Math.hypot(gx - s.x, gy - s.y); const near = d <= 9, inside = s.reach > 0 && d <= s.reach; if ((near || inside) && (near ? d - 100 : d) < bd) { bd = near ? d - 100 : d; best = s; } }
+    if (best) next = { type: "sect", id: best.id };
+    else if (view.landOut[y * OW + x]) next = { type: "polity", id: view.polOut[y * OW + x], at: [gx, gy] };
+  }
+  sel = sel && next && sel.type === next.type && sel.id === next.id ? null : next;
+  overlay();
+});
+generate(true);
+</script>
+</body>
+</html>
