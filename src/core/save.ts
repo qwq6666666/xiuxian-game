@@ -120,6 +120,13 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   22: (d) => ({ ...d, version: 23, meta: { ...obj(d.meta, "meta"), bestiary: {} } }),
   // v23 沒有故人紀錄：補上空的紀錄；舊的開場日誌沒有出身欄位，顯示時退回通用句
   23: (d) => ({ ...d, version: 24, meta: { ...obj(d.meta, "meta"), met: {} } }),
+  // v24 運功是冷卻制：冷卻已過的舊檔補一次存量，起點移到現在；還在冷卻的維持原計時
+  24: (d, gd) => {
+    const age = d.ageMonths as number;
+    const last = d.focusMonth as number;
+    const ready = age - last >= gd.config.focusCooldown;
+    return { ...d, version: 25, focusMonth: ready ? age : last, focusStored: ready ? 1 : 0 };
+  },
   20: (d) => ({ ...d, version: 21, focusMonth: -1 }),
   19: (d) => ({ ...d, version: 20, equipment: { weapon: null, ward: null }, meta: { ...obj(d.meta, "meta"), keptArtifacts: [] } }),
   18: (d, gd) => ({ ...d, version: 19, methodId: gd.methods[0].id }),
@@ -551,6 +558,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     alchemy,
     methodId,
     focusMonth: num(o, "focusMonth", { integer: true, min: -1 }),
+    focusStored: num(o, "focusStored", { integer: true, min: 0 }),
     equipment,
     sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
     sectsTried: o.sectsTried as string[],

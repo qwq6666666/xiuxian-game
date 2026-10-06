@@ -24,6 +24,8 @@ export interface GameConfig {
   focusBonus: number;
   /** 運功的冷卻（月）。一次運功得到的修為 = 當月修為 × focusBonus × 冷卻月數 */
   focusCooldown: number;
+  /** 運功最多積蓄幾次（M40）；一次運功得到的修為 × 積蓄次數，整體加成仍受 focusBonus 限制 */
+  focusMaxCharges: number;
   /** 每點心性減少的損失比例 */
   mindLossReduction: number;
   /** 安排資訊面拿來換算「攢多久買得起」的參考物品 id */
@@ -43,6 +45,10 @@ export interface GameConfig {
   offlineMaxYears: number;
   /** 離線少於此秒數不算（也不顯示回歸提示） */
   offlineMinSeconds: number;
+  /** 分頁在背景或畫面卡住再回來時，少於這麼多秒不補算（M40） */
+  backgroundMinSeconds: number;
+  /** 兩個影格相隔超過這麼多秒，視為畫面被凍結，改用離線規則補算（M40） */
+  frameGapSeconds: number;
   /** 離線時壽元剩餘低於此比例就停止閉關 */
   offlineStopLifespanRatio: number;
   /** 閉關見聞的分檔門檻（年）：未滿第一個值為短，到第二個值以上為長，其間為中 */

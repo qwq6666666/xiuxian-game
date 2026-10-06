@@ -53,6 +53,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     cultivationBonusCap: num(o, "cultivationBonusCap", file, { gt: 0 }),
     focusBonus: num(o, "focusBonus", file, { min: 0, max: 0.5 }),
     focusCooldown: num(o, "focusCooldown", file, { min: 1, max: 24, integer: true }),
+    focusMaxCharges: num(o, "focusMaxCharges", file, { min: 1, max: 30, integer: true }),
     mindLossReduction: num(o, "mindLossReduction", file, { min: 0 }),
     priceRefItemId: str(o, "priceRefItemId", file),
     eventIntervalMin: eventMin,
@@ -63,6 +64,8 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     offlineMaxHours: num(o, "offlineMaxHours", file, { gt: 0 }),
     offlineMaxYears: num(o, "offlineMaxYears", file, { gt: 0 }),
     offlineMinSeconds: num(o, "offlineMinSeconds", file, { min: 0 }),
+    backgroundMinSeconds: num(o, "backgroundMinSeconds", file, { min: 0 }),
+    frameGapSeconds: num(o, "frameGapSeconds", file, { gt: 0 }),
     offlineStopLifespanRatio: num(o, "offlineStopLifespanRatio", file, { min: 0, max: 1 }),
     offlineRetreatTierYears: tierYears(o, file),
   };

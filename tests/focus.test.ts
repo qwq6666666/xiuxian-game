@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { attemptBreakthrough as attemptRaw, faceWave, waveChance } from "../src/core/breakthrough";
-import { canFocus, focus, focusGain } from "../src/core/focus";
+import { canFocus, focus, focusCharges, focusGain } from "../src/core/focus";
+import { applyOffline } from "../src/core/offline";
 import { stageNeed } from "../src/core/formulas";
 import { deserialize, serialize } from "../src/core/save";
 import { scheduleOf } from "../src/core/progress";
@@ -12,24 +13,40 @@ import { living } from "./helpers";
 const lianqi = (patch = {}) => living(1, { realmId: "lianqi", stage: 2, ageMonths: 200, ...patch });
 
 describe("運功（點擊加速）", () => {
-  it("額外得到當月修為的一小部分", () => {
-    const s = lianqi();
+  it("額外得到當月修為的一小部分（每次積蓄）", () => {
+    const s = lianqi({ focusStored: 1, focusMonth: 200 });
     const gain = monthlyGain(s, scheduleOf(s, data), data) * data.config.focusBonus * data.config.focusCooldown;
     expect(focusGain(s, data)).toBeCloseTo(gain);
     const t = focus(s, data);
     expect(t.cultivation - s.cultivation).toBeCloseTo(gain);
-    expect(t.focusMonth).toBe(200);
+    expect(t.focusStored).toBe(0);
   });
-  it("有冷卻：冷卻內不能再運功，過了就可以", () => {
-    const once = focus(lianqi(), data);
+  it("每滿冷卻存一次，玩家一次用掉全部，沒有存量時不能運功", () => {
     const cd = data.config.focusCooldown;
-    expect(canFocus(once, data)).toBe(false);
-    expect(focus(once, data)).toBe(once);
-    expect(canFocus(tick(once, cd - 1, data), data)).toBe(false);
-    expect(canFocus(tick(once, cd, data), data)).toBe(true);
+    const s = lianqi({ focusMonth: 200 });
+    expect(canFocus(s, data)).toBe(false);
+    expect(focus(s, data)).toBe(s);
+    expect(canFocus(tick(s, cd - 1, data), data)).toBe(false);
+    const three = tick(s, cd * 3, data);
+    expect(focusCharges(three, data)).toBe(3);
+    const one = lianqi({ focusStored: 1, focusMonth: 200 });
+    expect(focusGain(three, data) / focusGain(one, data)).toBeGreaterThan(2.9);
+    expect(focusCharges(focus(three, data), data)).toBe(0);
+  });
+  it("存量有上限，多出來的時間浪費", () => {
+    const cd = data.config.focusCooldown;
+    const cap = data.config.focusMaxCharges;
+    const t = tick(lianqi({ focusMonth: 200, eventThreshold: 1e9 }), cd * (cap + 5), data);
+    expect(focusCharges(t, data)).toBe(cap);
+  });
+  it("離線閉關也會積蓄", () => {
+    const cap = data.config.focusMaxCharges;
+    const { state } = applyOffline(lianqi({ focusMonth: 200 }), 60_000, data);
+    expect(state.focusStored).toBeGreaterThan(0);
+    expect(state.focusStored).toBeLessThanOrEqual(cap);
   });
   it("連點的總加成不超過資料設定的比例", () => {
-    let plain = lianqi({ eventThreshold: 1e9 });
+    let plain = lianqi({ eventThreshold: 1e9, focusMonth: 200 });
     let clicked = plain;
     for (let i = 0; i < 48; i++) {
       plain = tick(plain, 1, data);
@@ -40,6 +57,14 @@ describe("運功（點擊加速）", () => {
     expect(c / p).toBeLessThanOrEqual(1 + data.config.focusBonus + 0.02);
     expect(c).toBeGreaterThan(p);
   });
+  it("攢著用的總加成也不超過資料設定的比例", () => {
+    const base = lianqi({ eventThreshold: 1e9, focusMonth: 200 });
+    const plain = tick(base, 48, data);
+    const saved = focus(tick(base, 48, data), data);
+    const gap = (x: typeof plain): number => x.stage * 1000 + x.cultivation - (base.stage * 1000 + base.cultivation);
+    expect(gap(saved) / gap(plain)).toBeLessThanOrEqual(1 + data.config.focusBonus + 0.02);
+    expect(gap(saved)).toBeGreaterThan(gap(plain));
+  });
   it("卡在瓶頸、等待抉擇、天劫中、不在修行時不能運功", () => {
     const zhuji = data.realms.find((r) => r.id === "zhuji")!;
     const stuck = living(1, { realmId: "zhuji", stage: 2, cultivation: stageNeed(zhuji, 2), ageMonths: 900 });
@@ -49,18 +74,28 @@ describe("運功（點擊加速）", () => {
     expect(canFocus(attemptRaw(stuck, false, data), data)).toBe(false);
   });
   it("存檔往返保留；v20 遷移補 -1；壞資料指出欄位", () => {
-    const s = focus(lianqi(), data);
-    expect(deserialize(serialize(s)).focusMonth).toBe(200);
+    const s = lianqi({ focusStored: 4, focusMonth: 200 });
+    expect(deserialize(serialize(s)).focusStored).toBe(4);
     const old = JSON.parse(serialize(lianqi()));
     old.version = 20;
     delete old.focusMonth;
-    expect(deserialize(JSON.stringify(old)).focusMonth).toBe(-1);
+    delete old.focusStored;
+    expect(deserialize(JSON.stringify(old)).focusStored).toBe(1);
+    const cooling = JSON.parse(serialize(lianqi({ focusMonth: 198 })));
+    cooling.version = 24;
+    delete cooling.focusStored;
+    const m = deserialize(JSON.stringify(cooling));
+    expect([m.focusMonth, m.focusStored]).toEqual([198, 0]);
+    const badStored = JSON.parse(serialize(lianqi()));
+    badStored.focusStored = -1;
+    expect(() => deserialize(JSON.stringify(badStored))).toThrow("focusStored");
     const bad = JSON.parse(serialize(lianqi()));
     bad.focusMonth = "x";
     expect(() => deserialize(JSON.stringify(bad))).toThrow("focusMonth");
   });
   it("格式錯誤指出欄位", () => {
     expect(() => validateConfig({ ...data.config, focusBonus: 2 })).toThrow("focusBonus");
+    expect(() => validateConfig({ ...data.config, focusMaxCharges: 0 })).toThrow("focusMaxCharges");
     expect(() => validateTribulation({ ...data.tribulation, focusBonus: 0.5 })).toThrow("focusBonus");
   });
 });

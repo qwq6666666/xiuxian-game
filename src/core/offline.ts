@@ -4,6 +4,7 @@ import type { GameData } from "../data/types";
 import { lifespanMonths } from "./formulas";
 import { addLog, atBottleneck, realmOf } from "./progress";
 import type { GameState, OfflineStop } from "./state";
+import { accrueFocus } from "./focus";
 import { addCultivation, monthlyGain } from "./tick";
 
 export type { OfflineStop };
@@ -17,11 +18,19 @@ export interface OfflineSummary {
   stop: OfflineStop;
 }
 
+export interface OfflineOptions {
+  /** 少於這麼多秒不算；預設 config.offlineMinSeconds（分頁切到背景再回來用較小的值） */
+  minSeconds?: number;
+  /** 遊戲速度倍率（M40）；離線重新開啟時為 1，分頁背景回來時傳入當前速度 */
+  speed?: number;
+}
+
 /** 離線 elapsedMs 毫秒的結果。不是修行中、或正在等待抉擇時原樣回傳（months 為 0）。 */
 export function applyOffline(
   state: GameState,
   elapsedMs: number,
   data: GameData = gameData,
+  opts: OfflineOptions = {},
 ): { state: GameState; summary: OfflineSummary } {
   const { config } = data;
   const idle = (stop: OfflineStop): { state: GameState; summary: OfflineSummary } => ({
@@ -29,10 +38,10 @@ export function applyOffline(
     summary: { months: 0, gained: 0, stop },
   });
   if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null) return idle("elapsed");
-  if (!(elapsedMs >= config.offlineMinSeconds * 1000)) return idle("elapsed");
+  if (!(elapsedMs >= (opts.minSeconds ?? config.offlineMinSeconds) * 1000)) return idle("elapsed");
 
   const capped = Math.min(elapsedMs, config.offlineMaxHours * 3_600_000);
-  const budget = Math.min(Math.floor(capped / config.msPerMonth), Math.floor(config.offlineMaxYears * 12));
+  const budget = Math.min(Math.floor((capped * (opts.speed ?? 1)) / config.msPerMonth), Math.floor(config.offlineMaxYears * 12));
   const sched = data.schedules.find((s) => s.id === "retreat");
   if (!sched) throw new Error("離線進度：找不到閉關修煉（retreat）安排");
 
@@ -52,7 +61,7 @@ export function applyOffline(
       break;
     }
     gained += monthlyGain(s, sched, data);
-    s = addCultivation({ ...s, ageMonths: s.ageMonths + 1 }, sched, s.ageMonths + 1, data);
+    s = addCultivation(accrueFocus({ ...s, ageMonths: s.ageMonths + 1 }, data), sched, s.ageMonths + 1, data);
     months++;
   }
   if (months > 0) {

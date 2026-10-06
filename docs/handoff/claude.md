@@ -2,6 +2,13 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：掛機體驗（M40，GDD 第 11、37 節）
+
+- 分支 `master`（本機，尚未 push）。背景分頁回到前景用 `applyOffline(..., { minSeconds, speed })` 一次補算（離線閉關規則；`config.json` 新增 `backgroundMinSeconds` 5、`frameGapSeconds` 2）；畫面卡住也走同一條。運功改積蓄：存檔 v25 新增 `focusStored`、`config.focusMaxCharges` 10、`accrueFocus` 在 `tick` 與離線補算每月呼叫；一次用掉全部；v24 遷移補 1 次或維持計時。新的一世計時起點為起始年齡。介面：運功鈕「運功×N +gain」（`render.ts` 一行，請 ChatGPT 看一眼）。
+- 驗證：`npm run verify`；單元測試新增積蓄、上限、離線積蓄、前景補算參數、v24 遷移；瀏覽器（桌面）：分頁背景約 40 秒回來，年齡 11歲2月→14歲8月、修為 9→36、日誌通知「閉關 3 年 4 個月」、鈕顯示「運功×10 +3」。sim（種子 1）：simple 1／16 世、mixed 1／16 世、`40 post` 全 ✓（`post` 首次元嬰 11.8 小時）；`focus` 首次金丹第 7 世（不得低於 7，✓）、`forge` 第 7 世 ✓、`hunt` 第 13 世 ✓、`herb`／`wander`／`alchemy` 預期的 ✗ 與回歸檢查一致。
+- 沒驗證：實際切走整整 2 分鐘（只驗約 40 秒，機制相同）；手機寬度；`method:*` 策略（沒動到心法）；速度 ×4 的補算。注意 `focus` 策略首次金丹中位數是第 7 世（M33 紀錄為第 8 世，原因未查：M34–M39 的內容改動與這次都有可能）：仍在下限，但已貼邊，日後別再加修煉加成。
+- 並行預約：存檔 v26 與 M41 未佔用。
+
 ## 2026-10-06：render.ts 拆檔（純搬移，不改行為）
 
 - 分支 `ai/claude-render-split`，已合併進 `master`。`src/ui/render.ts` 由 1807 行拆成 836 行，搬出：`dom.ts`（`el`、`button`）、`modals.ts`（彈窗焦點、一生回顧、輪迴天賦）、`overlays.ts`（殘卷錄、天下圖、收藏）、`rollview.ts`（擲骰畫面與共用 HTML 片段）、`panels.ts`（突破、背包、天劫、歷練、宗門、資源列、屬性明細、煉丹）。

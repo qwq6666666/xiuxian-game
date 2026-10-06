@@ -13,7 +13,7 @@ import { marketTerritory } from "../core/travel";
 import { fillSlots, type SlotValues } from "../data/slots";
 import { goalStatuses } from "../core/goals";
 import { slotsFor } from "../core/sect";
-import { canFocus, focusGain, focusWait } from "../core/focus";
+import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { esc } from "./dom";
 import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./rollview";
@@ -633,7 +633,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const ok = canFocus(state, data);
       fb.hidden = state.phase !== "living" || atBottleneck(state, data);
       fb.disabled = !ok;
-      fb.textContent = ok ? `運功 +${Math.max(1, Math.round(focusGain(state, data)))}` : `運功・${focusWait(state, data)}`;
+      const charges = focusCharges(state, data);
+      fb.textContent = ok ? `運功×${charges} +${Math.max(1, Math.round(focusGain(state, data)))}` : charges > 0 ? `運功×${charges}` : `運功・${focusWait(state, data)}`;
     }
     panels.renderStatDetail(state);
     panels.renderResources(state);

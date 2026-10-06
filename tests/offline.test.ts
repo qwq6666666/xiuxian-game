@@ -20,6 +20,16 @@ describe("離線進度", () => {
     expect(summary.gained).toBeGreaterThan(0);
   });
 
+  it("前景補算：較小的門檻與遊戲速度倍率", () => {
+    const s = living(3);
+    const ms = 10 * data.config.msPerMonth;
+    expect(applyOffline(s, ms, data).summary.months).toBe(0);
+    const bg = { minSeconds: data.config.backgroundMinSeconds };
+    expect(applyOffline(s, ms, data, bg).summary.months).toBe(10);
+    expect(applyOffline(s, ms, data, { ...bg, speed: 4 }).summary.months).toBe(40);
+    expect(applyOffline(s, 2_000, data, bg).summary.months).toBe(0);
+  });
+
   it("不觸發事件、不改變靈石與亂數", () => {
     const s = living(5, { eventThreshold: 1, schedule: "adventure" });
     const { state } = applyOffline(s, 30 * data.config.msPerMonth, data);

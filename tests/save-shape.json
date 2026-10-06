@@ -1,5 +1,5 @@
 {
-  "version": 24,
+  "version": 25,
   "shape": {
     "TravelState": [
       "locationId",
@@ -127,6 +127,7 @@
       "eventThreshold",
       "flags",
       "focusMonth",
+      "focusStored",
       "goalIds",
       "items",
       "itemsUsed",

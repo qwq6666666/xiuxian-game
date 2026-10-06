@@ -153,11 +153,24 @@ ui.render(state);
 // 時間迴圈：累積現實經過的時間，每滿一個月呼叫一次 tick
 let last = performance.now();
 let acc = 0;
+
+/** 分頁在背景或畫面被凍結 elapsedMs 毫秒後，一次補算：沿用離線閉關規則（不抽事件、不老死、有上限） */
+function catchUp(elapsedMs: number): void {
+  const off = applyOffline(state, elapsedMs, data, { minSeconds: data.config.backgroundMinSeconds, speed: state.speed });
+  last = performance.now();
+  acc = 0;
+  if (off.summary.months > 0) {
+    ui.notice(formatOffline(off.summary));
+    update(off.state);
+  }
+}
+
 function frame(now: number): void {
   const dt = now - last;
   last = now;
-  // 等待抉擇時時間暫停
-  if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null && state.encounter === null) {
+  if (dt > data.config.frameGapSeconds * 1000) {
+    catchUp(dt);
+  } else if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null && state.encounter === null) {
     acc += msToMonths(dt, state.speed, data.config.msPerMonth);
     const months = Math.min(Math.floor(acc), data.config.maxCatchUpMonths);
     if (months > 0) {
@@ -173,20 +186,17 @@ function frame(now: number): void {
 }
 requestAnimationFrame(frame);
 
+// 背景分頁的 requestAnimationFrame 不會跑：記下離開的時間，回到前景時一次補算
+let hiddenAt: number | null = null;
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    hiddenAt = Date.now();
     save(state);
     return;
   }
-  // 分頁被凍結或電腦休眠後回到前景：補算離開的時間
-  const off = applyOffline(state, elapsedSinceSeen(), data);
-  if (off.summary.months > 0) {
-    ui.notice(formatOffline(off.summary));
-    last = performance.now();
-    acc = 0;
-    update(off.state);
-  } else {
-    save(state);
-  }
+  if (hiddenAt !== null) catchUp(Date.now() - hiddenAt);
+  hiddenAt = null;
+  last = performance.now();
+  save(state);
 });
 window.addEventListener("beforeunload", () => save(state));
