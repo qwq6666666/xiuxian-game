@@ -1,0 +1,295 @@
+[
+  {
+    "id": "zhuji_homecoming_001",
+    "type": "anecdote",
+    "title": "還鄉",
+    "text": "你路過{village}，在村口站了一會兒。認得你的人都已老去，年輕的見你衣著不凡，遠遠便停了笑聲，退到路邊。",
+    "weight": 7,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" }
+  },
+  {
+    "id": "zhuji_well_001",
+    "type": "choice",
+    "title": "苦井",
+    "text": "{village}的里正登門，說村中那口老井的水忽然發苦，已有幾戶人家鬧了肚子。他沒說請你看，只說不知該去問誰。",
+    "weight": 7,
+    "tone": "good",
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" },
+    "choices": [
+      {
+        "text": "隨他去看看",
+        "outcomes": [
+          { "weight": 55, "text": "井底壓著一小塊淤住的靈石渣，將周遭水氣攪得濁了。你取出它，水在三日內轉清，村人往你住處送來一籃新蛋。", "effects": { "attributes": { "fortune": 1 } } },
+          { "weight": 45, "text": "你在井邊坐了半個時辰，只看出是上游埋了新墳，滲出的土味。你教他們挪開水源，里正連連道謝，你卻覺得這一趟用不著修為。", "effects": {} }
+        ]
+      },
+      {
+        "text": "留下一張符，讓他自己處置",
+        "requires": { "spiritStones": 5 },
+        "outcomes": [{ "weight": 100, "text": "你畫了張清水符，交給里正，他雙手接過，像捧著一件祭物。符用完了，井水好了沒有，你後來沒再聽說。", "effects": { "spiritStones": -5 } }]
+      },
+      {
+        "text": "推說有事在身",
+        "outcomes": [{ "weight": 100, "text": "里正恭敬退下，沒有再說什麼。你關上門，在案前坐了許久，那口井的名字一直沒從腦子裡退去。", "effects": { "attributes": { "mind": -1 } } }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_old_debt_001",
+    "type": "choice",
+    "title": "舊債",
+    "text": "一位老婦捧著一只布包求見，說她祖父當年借過你一斗米，臨終吩咐一定要還。布包裡是二十枚銅錢，已被摩挲得發亮。",
+    "weight": 6,
+    "tone": "good",
+    "highlight": 1.5,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" },
+    "choices": [
+      {
+        "text": "收下，免她心裡掛著",
+        "outcomes": [{ "weight": 100, "text": "你收下銅錢，老婦長出一口氣，像卸了擔子。你把銅錢收進匣中，往後偶爾翻到，總覺得它比靈石沉。", "effects": { "attributes": { "mind": 1 } } }]
+      },
+      {
+        "text": "推回，另贈她一些靈石",
+        "requires": { "spiritStones": 10 },
+        "outcomes": [{ "weight": 100, "text": "老婦再三推辭，終究收下，走時回頭看了你三次。你當年那一斗米，原來比今日的靈石貴重得多。", "effects": { "spiritStones": -10, "attributes": { "fortune": 1 } } }]
+      },
+      {
+        "text": "說已不記得這回事",
+        "outcomes": [{ "weight": 100, "text": "老婦愣了愣，把布包重新包好，行禮告退。這件事你記得一清二楚，只是不想收。", "effects": {} }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_teahouse_claim_001",
+    "type": "anecdote",
+    "title": "茶棚閒話",
+    "text": "{market}的茶棚裡，一位散修大聲說自己築基已二十年，同桌的人只顧嗑瓜子，沒有一個接話。你在鄰桌坐著，把茶喝完，沒有表明自己也是。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" }
+  },
+  {
+    "id": "zhuji_pill_price_001",
+    "type": "choice",
+    "title": "探問丹價",
+    "text": "一位練氣後期的修士在{market}攔住你，客氣地問築基丹究竟要多少靈石。他握著袖口的手很緊，像是已經問過許多人。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" },
+    "choices": [
+      {
+        "text": "照實說，並告訴他{merchant}的門路",
+        "outcomes": [
+          { "weight": 60, "text": "他認真記下，連道了好幾聲謝。臨別時他說，若真有那一日，必不忘今日這番話。", "effects": { "attributes": { "fortune": 1 } } },
+          { "weight": 40, "text": "他聽完，沉默了很久，說了聲「明白了」，轉身走進人群。你不知道他明白了什麼。", "effects": {} }
+        ]
+      },
+      {
+        "text": "只說一句「早點攢」",
+        "outcomes": [{ "weight": 100, "text": "他點點頭，似乎比聽到價錢更受打擊。你想補一句，又覺得補什麼都不對。", "effects": {} }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_stalled_001",
+    "type": "anecdote",
+    "title": "關隘不動",
+    "text": "修為已經圓滿，關口卻紋絲不動。你把這些年的帳目、丹藥與日子攤在案上，一項項核過，結論只有一個：該算的都算了，剩下的不歸算盤管。",
+    "weight": 9,
+    "tone": "neutral",
+    "highlight": 1.5,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji", "bottleneck": true }
+  },
+  {
+    "id": "zhuji_wall_marks_001",
+    "type": "choice",
+    "title": "石壁刻痕",
+    "text": "你在{mountain}的一處舊洞府避雨，石壁上有人用指力刻下一行行字，風化得只剩淺痕。字跡很老，筆畫卻一絲不苟，像是刻給後來人看的。",
+    "weight": 6,
+    "tone": "good",
+    "highlight": 2,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji", "fragmentAvailable": 1 },
+    "choices": [
+      {
+        "text": "一筆一筆臨摹下來",
+        "outcomes": [
+          { "weight": 55, "text": "你抄了一夜，手腕發酸。天明時再讀，竟讀出一段別處見不到的文字，你小心收好。", "effects": { "fragment": { "maxTier": 2 } } },
+          { "weight": 45, "text": "你抄完才發現，大半是某位前輩記的柴米與天氣。抄得很仔細，只是沒什麼可用的。", "effects": {} }
+        ]
+      },
+      {
+        "text": "只看一遍，不留痕",
+        "outcomes": [{ "weight": 100, "text": "你默讀了一遍，起身離去。後來你想不起任何一個字，卻記得那面牆是涼的。", "effects": { "attributes": { "insight": 1 } } }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_flood_001",
+    "type": "choice",
+    "title": "山洪之後",
+    "text": "連日大雨，{mountain}腳下的山洪沖毀了幾座茅屋，有人家被困在對岸，喊聲隔水傳來。你的腳程比任何人都快，只是這一趟要耽誤你好幾日。",
+    "weight": 7,
+    "tone": "good",
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" },
+    "choices": [
+      {
+        "text": "涉水過去，把人一個個背出來",
+        "outcomes": [
+          { "weight": 70, "text": "你往返六趟，衣袍濕了又乾。最後一個被背出來的孩子，把一枚紅色小石塞進你手裡，說是謝禮。", "effects": { "cultivation": -0.03, "attributes": { "fortune": 1 } } },
+          { "weight": 30, "text": "你救出了所有人，自己卻受了寒氣，打坐三日才逼出去。老人們一直站在岸邊，沒有人說話，只是一直站著。", "effects": { "cultivation": -0.05, "attributes": { "mind": 1 } } }
+        ]
+      },
+      {
+        "text": "遠遠扔過去幾枚辟水符",
+        "requires": { "spiritStones": 15 },
+        "outcomes": [{ "weight": 100, "text": "符落在對岸，人們借著它避開了最急的水勢，勉強爬出來。你站在岸邊看完，轉身走了，沒有人追問你的名字。", "effects": { "spiritStones": -15 } }]
+      },
+      {
+        "text": "繼續趕路",
+        "outcomes": [{ "weight": 100, "text": "你繞過山腳，身後的喊聲漸漸遠去。修行人有修行人的路，這句話你以前說得很順。", "effects": { "attributes": { "mind": -1 } } }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_banquet_001",
+    "type": "choice",
+    "title": "講席請帖",
+    "text": "{guard}遞來一張請帖，邀你到席上為年輕弟子講一堂吐納。帖上的字寫得很客氣，客氣得讓你明白不去也沒人會說什麼，但大家都會記得。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" },
+    "choices": [
+      {
+        "text": "赴席講學",
+        "outcomes": [
+          { "weight": 60, "text": "你講了一個時辰，座下之人記得很勤。講到一半，你自己也想通了前年一處卡住的口訣。", "effects": { "cultivation": 0.04 } },
+          { "weight": 40, "text": "你講得很用心，座下之人也聽得很用心，只是問題一個比一個遠，你只好說下回再談。", "effects": { "attributes": { "insight": 1 } } }
+        ]
+      },
+      {
+        "text": "備一份薄禮代為致意",
+        "requires": { "spiritStones": 8 },
+        "outcomes": [{ "weight": 100, "text": "禮送去了，回帖寫得同樣客氣。你說不清這一來一往，到底算人情還是算帳。", "effects": { "spiritStones": -8 } }]
+      },
+      {
+        "text": "婉言辭謝",
+        "outcomes": [{ "weight": 100, "text": "你回帖只寫了四個字：「閉關，不便」。這是實話，只是少寫了你並沒有在閉關。", "effects": {} }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_dream_ferry_001",
+    "type": "anecdote",
+    "title": "夢中渡口",
+    "text": "你夢見一座從未去過的渡口，船家遞來一隻舊碗，碗沿缺了一塊。醒來時掌心微濕，碗的形狀卻一直留在腦中，揮之不去。",
+    "weight": 7,
+    "tone": "neutral",
+    "highlight": 1.5,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji", "ageMin": 30 }
+  },
+  {
+    "id": "zhuji_half_life_001",
+    "type": "anecdote",
+    "title": "壽元過半",
+    "text": "你在案前算了算，築基兩百年的壽數，已經過去了一多半。你把算盤推到一旁，又拉回來，再算了一遍，結果仍是同一個數。",
+    "weight": 8,
+    "tone": "neutral",
+    "highlight": 1.5,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji", "ageMin": 100 }
+  },
+  {
+    "id": "zhuji_alchemist_001",
+    "type": "choice",
+    "title": "山中丹師",
+    "text": "你在{mountain}遇見一位背著藥簍的老丹師，他看了你一眼，說你丹田裡有一股鬱氣，是吃丹吃得太急。他沒問你的姓名，只等你開口。",
+    "weight": 6,
+    "tone": "good",
+    "highlight": 1.5,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" },
+    "choices": [
+      {
+        "text": "請他指點",
+        "outcomes": [
+          { "weight": 65, "text": "老丹師教你每回服藥前先靜坐一刻，把前一顆的藥力走完再下一顆。他說這是最土的法子，也是最少人肯用的法子。", "effects": { "cultivation": 0.05 } },
+          { "weight": 35, "text": "老丹師把了把你的脈，說你鬱氣不在丹田，在別處，然後便走了，留你站在原地想了很久。", "effects": { "attributes": { "mind": 1 } } }
+        ]
+      },
+      {
+        "text": "奉上一壺茶",
+        "outcomes": [{ "weight": 100, "text": "老丹師接過茶，慢慢喝完，道了聲謝，把空盞放回你手裡。他什麼也沒說，卻給你的茶盞留下了一股淡淡的藥香。", "effects": { "attributes": { "fortune": 1 } } }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_caravan_001",
+    "type": "choice",
+    "title": "護一程",
+    "text": "{merchant}的一支商隊要走一段不太平的山路，管事的客客氣氣地問你，肯不肯同行這一程。他沒有說價，只說到地方會有心意。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" },
+    "choices": [
+      {
+        "text": "同行一程",
+        "outcomes": [
+          { "weight": 65, "text": "一路平安，商隊在山口擺了一桌薄酒。管事遞來一小袋靈石，說不多，是個意思。", "effects": { "spiritStones": 30 } },
+          { "weight": 35, "text": "半路遇上一夥攔路的散修，你亮了亮修為，他們便退了。你到地方時只得一杯茶，管事說路上折了些貨，改日再補。", "effects": { "spiritStones": 8 } }
+        ]
+      },
+      {
+        "text": "婉拒",
+        "outcomes": [{ "weight": 100, "text": "管事點頭，沒有糾纏，轉身去問下一位。你看著商隊遠去，不知是鬆了口氣，還是少賺了一筆。", "effects": {} }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_orphan_001",
+    "type": "choice",
+    "title": "山門外的孩子",
+    "text": "你的居處外蹲著一個孩子，已經等了三日，衣衫單薄，手裡攥著半塊冷饅頭。他不敢敲門，只說想學你們那樣吐納。",
+    "weight": 7,
+    "tone": "good",
+    "highlight": 2,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji" },
+    "choices": [
+      {
+        "text": "給他一頓熱飯，教他一段最基礎的吐納",
+        "outcomes": [{ "weight": 100, "text": "你不能收他為徒，只能教到這裡。孩子扒完飯，認真地把那段口訣背了三遍，鞠了個不太標準的躬。", "effects": { "flags": ["zhuji_orphan_fed"], "attributes": { "mind": 1 } } }]
+      },
+      {
+        "text": "指他去{guard}報名",
+        "outcomes": [{ "weight": 100, "text": "孩子半信半疑，攥著你給的一小袋乾糧上路了。你站在門口看他走遠，直到再看不見。", "effects": { "flags": ["zhuji_orphan_fed"] } }]
+      },
+      {
+        "text": "掩上門",
+        "outcomes": [{ "weight": 100, "text": "門外安靜了一陣，又傳來幾聲輕輕的挪步。第二天一早，人已經不在了。", "effects": { "attributes": { "mind": -1 } } }]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_orphan_002",
+    "type": "choice",
+    "title": "故人之後",
+    "text": "{market}的人群裡，有位練氣修士遠遠停下，向你規規矩矩行了一禮。你認出他來，正是多年前蹲在你門外的那個孩子。",
+    "weight": 30,
+    "tone": "good",
+    "highlight": 3,
+    "maxPerLife": 1,
+    "conditions": { "realmMin": "zhuji", "realmMax": "zhuji", "ageMin": 40, "flags": ["zhuji_orphan_fed"] },
+    "choices": [
+      {
+        "text": "上前問他近況",
+        "outcomes": [
+          { "weight": 60, "text": "他說這些年一邊做工一邊吐納，兩年前才摸到練氣門檻。說完從懷中掏出一小包乾果，說是自己曬的，請你不要嫌棄。", "effects": { "attributes": { "fortune": 1, "mind": 1 } } },
+          { "weight": 40, "text": "他說練氣之路比想的難，但從沒後悔。他送你一枚自己煉的聚氣丹，丹色不太勻，卻是實打實的藥力。", "effects": { "items": { "juqi_dan": 1 } } }
+        ]
+      },
+      {
+        "text": "點點頭，不上前",
+        "outcomes": [{ "weight": 100, "text": "你頷首回禮，他便再度行禮，退入人群。你站了一會兒，才想起自己原本要買什麼。", "effects": {} }]
+      }
+    ]
+  }
+]
