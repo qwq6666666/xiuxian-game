@@ -87,3 +87,15 @@ describe("長通知", () => {
     expect(layoutText).toMatch(/#notice button\s*\{[^}]*flex:\s*0 0 auto/);
   });
 });
+
+describe("手機回顧彈窗", () => {
+  const componentsText = readFileSync(join(UI, "styles", "components.css"), "utf8");
+
+  it("內層可縮窄，操作列黏附底部且手機按鈕等寬", () => {
+    expect(renderText).toContain('class="card review life-review-card"');
+    expect(renderText.match(/actions review-actions/g)).toHaveLength(2);
+    expect(componentsText).toMatch(/\.life-review-card, #modalBody\s*\{[^}]*min-width:\s*0/);
+    expect(componentsText).toMatch(/\.review-actions\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/);
+    expect(responsiveText).toMatch(/\.review-actions button\s*\{[^}]*flex:\s*1 1 0/);
+  });
+});

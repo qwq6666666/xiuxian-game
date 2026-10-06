@@ -20,4 +20,5 @@
   .items li { flex-wrap: wrap; }
   .modal { padding: var(--sp-2); }
   .card { padding: 14px var(--sp-4); }
+  .review-actions button { flex: 1 1 0; }
 }

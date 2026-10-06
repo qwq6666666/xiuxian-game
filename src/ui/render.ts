@@ -643,7 +643,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         </div>
       </div>
       <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="一生回顧" hidden>
-        <div class="card review"><div id="modalBody"></div></div>
+        <div class="card review life-review-card"><div id="modalBody"></div></div>
       </div>`;
     const q = <T extends HTMLElement>(sel: string) => stageEl.querySelector<T>(sel)!;
     watchModal(q("#eventModal"));
@@ -1136,7 +1136,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const bonus = review.daoYunBonus > 0 ? `（其中首次達成 +${review.daoYunBonus}）` : "";
       box.append(el("p", "daoyun", `獲得道韻 +${gained}${bonus}　道韻餘額 ${state.meta.daoYun}`));
     }
-    const actions = el("div", "actions");
+    const actions = el("div", "actions review-actions");
     actions.append(button("前往輪迴", () => showView("talents"), true));
     box.append(actions);
     return box;
@@ -1165,7 +1165,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       ul.append(li);
     }
     box.append(ul);
-    const actions = el("div", "actions");
+    const actions = el("div", "actions review-actions");
     actions.append(button("返回", () => showView("review")), button("轉世", () => handlers.onNewLife(), true));
     box.append(actions);
     return box;
