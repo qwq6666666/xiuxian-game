@@ -47,6 +47,22 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
   if (box[0] * (viewScale[0] as number) > (viewSize[0] as number) || box[1] * (viewScale[1] as number) > (viewSize[1] as number)) {
     fail(file, "view", `邏輯畫布 ${box[0]}×${box[1]} 乘上 scale 後超出顯示畫布 ${viewSize[0]}×${viewSize[1]}`);
   }
+  const fr = obj(o.fiefRules, `${file} 欄位 fiefRules`);
+  const fiefRules = {
+    count: num(fr, "count", `${file} 欄位 fiefRules`, { min: 12, integer: true }),
+    candidates: num(fr, "candidates", `${file} 欄位 fiefRules`, { min: 1, integer: true }),
+    margin: num(fr, "margin", `${file} 欄位 fiefRules`, { min: 0 }),
+    step: num(fr, "step", `${file} 欄位 fiefRules`, { gt: 0 }),
+  };
+  const nr = obj(o.nations, `${file} 欄位 nations`);
+  const nations = {
+    min: num(nr, "min", `${file} 欄位 nations`, { min: 2, integer: true }),
+    max: num(nr, "max", `${file} 欄位 nations`, { min: 2, integer: true }),
+    default: num(nr, "default", `${file} 欄位 nations`, { min: 2, integer: true }),
+  };
+  if (nations.max < nations.min) fail(`${file} 欄位 nations`, "max", `不可小於 min（${nations.min}）`);
+  if (nations.default < nations.min || nations.default > nations.max) fail(`${file} 欄位 nations`, "default", `必須在 ${nations.min} 到 ${nations.max} 之間，目前為 ${nations.default}`);
+  if (nations.max * 2 > fiefRules.count) fail(`${file} 欄位 nations`, "max", `國家數上限 ${nations.max} 太多，領數 ${fiefRules.count} 要至少是它的兩倍`);
   const rules = obj(o.territoryRules, `${file} 欄位 territoryRules`);
   const territoryRules = {
     transitionYears: num(rules, "transitionYears", `${file} 欄位 territoryRules`, { min: 1, integer: true }),
@@ -148,7 +164,7 @@ export function validateMap(raw: unknown, file = "map.json"): MapData {
     market: blurb(bo.market, "market"),
     mountain: blurb(bo.mountain, "mountain"),
   } as MapData["blurbs"];
-  return { viewBox: box, view: { size: [viewSize[0] as number, viewSize[1] as number], scale: [viewScale[0] as number, viewScale[1] as number] }, palette, territoryRules, regions, adjacency, stairs, blurbs };
+  return { viewBox: box, view: { size: [viewSize[0] as number, viewSize[1] as number], scale: [viewScale[0] as number, viewScale[1] as number] }, palette, fiefRules, nations, territoryRules, regions, adjacency, stairs, blurbs };
 }
 
 /** 世局候選池各種類允許的目標、欄位與模板欄位 */

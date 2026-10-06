@@ -603,6 +603,10 @@ export interface MapData {
   view: MapView;
   /** 國家顏色，依序分配 */
   palette: string[];
+  /** 領（國界格）：邏輯座標上的政治最小單位 */
+  fiefRules: { count: number; candidates: number; margin: number; step: number };
+  /** 國家數的範圍與預設 */
+  nations: { min: number; max: number; default: number };
   territoryRules: { transitionYears: number; travelDelayMonths: number; marketMultiplier: number; greatReach: number; schoolReach: number; prosperReachMultiplier: number; declineReachMultiplier: number; driftPeriodYears: number; driftThreshold: number; strengthWindowYears: number };
   regions: MapRegion[];
   adjacency: Record<string, string[]>;
