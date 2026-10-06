@@ -16,6 +16,7 @@ import { slotsFor } from "../core/sect";
 import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { createVeil } from "./veil";
+import { canPeek } from "../core/omen";
 import { groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
 import { lockedNote } from "./tabinfo";
 import { esc } from "./dom";
@@ -45,10 +46,15 @@ import {
   reviewTitle,
 } from "./format";
 
+const OMEN_LABEL: Record<"good" | "neutral" | "bad", string> = { good: "靈犀：吉兆", neutral: "靈犀：平", bad: "靈犀：凶兆" };
+
 export interface UiHandlers {
   onBuyTalent(talentId: string): void;
   onAutoChoice(enabled: boolean): void;
   onChoose(choiceIndex: number): void;
+  onPeek(choiceIndex: number): void;
+  onPickChart(index: number): void;
+  onSetWish(goalId: string | null): void;
   onSpeed(speed: number): void;
   onReset(): void;
   onExport(): void;
@@ -771,7 +777,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     }
 
     // 抉擇事件：時間暫停，等玩家選擇
-    const pendingKey = state.pendingEvent === null ? "" : `${state.pendingEvent}|${state.spiritStones}|${JSON.stringify(state.items)}|${showOdds}|${JSON.stringify(state.attributes)}`;
+    const pendingKey = state.pendingEvent === null ? "" : `${state.pendingEvent}|${state.spiritStones}|${JSON.stringify(state.items)}|${showOdds}|${JSON.stringify(state.attributes)}|${state.omenLeft}|${JSON.stringify(state.omen)}`;
     if (pendingKey !== eventKey) {
       eventKey = pendingKey;
       e.eventModal.hidden = state.pendingEvent === null;
@@ -809,8 +815,33 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           if (reason) b.querySelector("small")!.textContent = reason;
           else if (odds.length > 0) b.querySelector("small")!.textContent = `結果機率約 ${odds.map((p) => `${p}%`).join("／")}`;
           b.addEventListener("click", () => handlers.onChoose(i));
-          e.eventChoices.appendChild(b);
+          // 靈犀：已窺看的顯示吉凶，還有次數且能窺看的多一個「窺看」鈕
+          const seen = state.omen.find((o) => o.choice === i);
+          if (seen) {
+            const tag = document.createElement("small");
+            tag.className = `omen omen-${seen.omen}`;
+            tag.textContent = OMEN_LABEL[seen.omen];
+            b.appendChild(tag);
+          }
+          if (state.omenLeft > 0 && canPeek(state, i, data)) {
+            const row = document.createElement("div");
+            row.className = "choice-row";
+            const peek = document.createElement("button");
+            peek.type = "button";
+            peek.className = "peek";
+            peek.textContent = "窺看";
+            peek.setAttribute("aria-label", `以靈犀窺看「${fillSlots(choice.text, slots)}」的吉凶，本世還剩 ${state.omenLeft} 次`);
+            peek.addEventListener("click", () => handlers.onPeek(i));
+            row.append(b, peek);
+            e.eventChoices.appendChild(row);
+          } else e.eventChoices.appendChild(b);
         });
+        if (state.omenLeft > 0 || state.omen.length > 0) {
+          const hint = document.createElement("p");
+          hint.className = "desc omen-hint";
+          hint.textContent = `靈犀：本世還能窺看 ${state.omenLeft} 次，只看吉凶，不看內容。`;
+          e.eventChoices.prepend(hint);
+        }
       }
     }
 
@@ -820,7 +851,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       e.goals.replaceChildren(
         ...items.map((g) => {
           const li = document.createElement("li");
-          li.textContent = goalLine(g);
+          li.textContent = goalLine(g, g.def.id === state.wishId);
           li.classList.toggle("done", g.done);
           return li;
         }),

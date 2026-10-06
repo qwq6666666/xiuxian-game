@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createInitialState } from "../src/core/life";
+import { createInitialState, startLife } from "../src/core/life";
+import { emptyMeta } from "../src/core/state";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { mountUi, type UiHandlers } from "../src/ui/render";
@@ -67,6 +68,41 @@ describe("UI 煙霧測試", () => {
     ui.render(living(1, { realmId: "lianqi", stage: 1 }));
     expect(root.querySelector<HTMLElement>('[data-locked-for="make"]')!.hidden).toBe(true);
     expect(root.querySelector<HTMLElement>('#sideTabs button[data-go="make"]')!.dataset.locked).toBeUndefined();
+  });
+
+  it("擲骰畫面：擇身的備選命盤與夙願的目標可點，點了呼叫對應處理器", () => {
+    const { root, ui, handlers } = mount();
+    const state = createInitialState(21, gameData, { ...emptyMeta(), lives: 4, talents: { zeshen: 2, suyuan: 2 } });
+    ui.render(state);
+    const charts = root.querySelectorAll<HTMLButtonElement>("[data-chart]");
+    expect(charts).toHaveLength(2);
+    charts[1].click();
+    expect(handlers.onPickChart).toHaveBeenCalledWith(1);
+    const wishes = root.querySelectorAll<HTMLButtonElement>("[data-wish]");
+    expect(wishes.length).toBeGreaterThan(3);
+    // 有掛鉤事件的目標排在前面
+    expect(gameData.goals.find((g) => g.id === wishes[0].dataset.wish)?.tilt).toBeDefined();
+    wishes[0].click();
+    expect(handlers.onSetWish).toHaveBeenCalledWith(wishes[0].dataset.wish);
+    // 沒有這兩個天賦就沒有這兩個區塊
+    const plain = mount();
+    plain.ui.render(createInitialState(21, gameData));
+    expect(plain.root.querySelector(".charts, .wishes")).toBeNull();
+  });
+
+  it("抉擇彈窗：有靈犀次數的選項有「窺看」鈕，窺看過的顯示吉凶標示", () => {
+    const { root, ui, handlers } = mount();
+    const base = { ...startLife(createInitialState(21, gameData, { ...emptyMeta(), talents: { lingxi: 2 } }), gameData), pendingEvent: "flood_001" };
+    ui.render(base);
+    const peeks = root.querySelectorAll<HTMLButtonElement>("#eventChoices .peek");
+    expect(peeks.length).toBeGreaterThan(0);
+    expect(root.querySelector(".omen-hint")?.textContent).toContain("2 次");
+    peeks[0].click();
+    expect(handlers.onPeek).toHaveBeenCalled();
+    ui.render({ ...base, omenLeft: 1, omen: [{ choice: 0, omen: "bad" }] });
+    expect(root.querySelector("#eventChoices .omen-bad")?.textContent).toBe("靈犀：凶兆");
+    ui.render({ ...base, omenLeft: 0 });
+    expect(root.querySelector("#eventChoices .peek")).toBeNull();
   });
 
   it("連續 tick 多年後重繪不拋錯，日誌有內容", () => {

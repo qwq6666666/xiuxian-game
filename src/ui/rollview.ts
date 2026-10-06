@@ -1,6 +1,7 @@
 import { lifeIndex } from "../core/era";
 import type { GoalProgress } from "../core/goals";
 import { goalStatuses } from "../core/goals";
+import { wishChoices, wishLevel } from "../core/wish";
 import type { GameState } from "../core/state";
 import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
@@ -16,16 +17,16 @@ export const statsHtml = (state: GameState): string =>
   ).join("")}</dl>`;
 
 /** 這一世的目標：只作收藏，不給任何數值，所以措辭上不強求 */
-export const goalLine = (g: GoalProgress): string => {
+export const goalLine = (g: GoalProgress, wished = false): string => {
   // 境界與旗標的進度數字沒有意義，只有年歲、殘卷、見聞才顯示
   const counted = ["age", "fragments", "events"].includes(g.def.condition.kind) && !g.done;
-  return `${g.done ? "✓ " : ""}${g.def.name}｜${g.def.desc}${counted ? `（${g.current} / ${g.target}）` : ""}`;
+  return `${g.done ? "✓ " : ""}${wished ? "【夙願】" : ""}${g.def.name}｜${g.def.desc}${counted ? `（${g.current} / ${g.target}）` : ""}`;
 };
 
 export const goalsHtml = (state: GameState, data: GameData): string => {
   const items = goalStatuses(state, data);
   if (items.length === 0) return "";
-  return `<section class="goals-box"><h3>這一世的目標</h3><ul class="goals">${items.map((g) => `<li>${esc(goalLine(g))}</li>`).join("")}</ul><p class="desc">只記入收藏，不強求。</p></section>`;
+  return `<section class="goals-box"><h3>這一世的目標</h3><ul class="goals">${items.map((g) => `<li>${esc(goalLine(g, g.def.id === state.wishId))}</li>`).join("")}</ul><p class="desc">只記入收藏，不強求。</p></section>`;
 };
 
 /** 屬性與靈根各自影響什麼，收在可展開的說明裡 */
@@ -57,7 +58,7 @@ export const birthHtml = (state: GameState, data: GameData): string => {
 export interface RollContext {
   stageEl: HTMLElement;
   data: GameData;
-  handlers: Pick<UiHandlers, "onRename" | "onMethod" | "onReroll" | "onStart">;
+  handlers: Pick<UiHandlers, "onRename" | "onMethod" | "onReroll" | "onStart" | "onPickChart" | "onSetWish">;
   /** 目前舞台畫的是擲骰還是修行畫面；由 render.ts 持有 */
   getBuilt(): "roll" | "life" | null;
   setBuilt(view: "roll"): void;
@@ -86,8 +87,36 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
     return `<section class="methods"><h2>心法</h2><p class="desc">每世選一種，開始後不可換。</p><div class="choices">${rows}</div></section>`;
   }
 
+  /** 擇身：備選命盤，一份一個鈕；改選後原本的命盤會換到這裡 */
+  function chartsHtml(state: GameState): string {
+    if (state.altCharts.length === 0) return "";
+    const rows = state.altCharts
+      .map((c, i) => {
+        const root = data.spiritRoots.find((r) => r.id === c.spiritRootId)?.name ?? c.spiritRootId;
+        const origin = data.origins.find((o) => o.id === c.originId);
+        const attrs = ATTRIBUTE_KEYS.map((k) => `${ATTR_LABEL[k]} ${c.attributes[k]}`).join("　");
+        return `<button type="button" data-chart="${i}"><strong>${esc(root)}・${esc(origin?.name ?? c.originId)}</strong><small>${esc(attrs)}　靈石 ${c.spiritStones}</small><small>${esc(origin?.desc ?? "")}</small></button>`;
+      })
+      .join("");
+    return `<section class="charts"><h2>備選命盤</h2><p class="desc">擇身讓你多得幾份功率相近的命盤，各有各的脾性。改選之後，原本的命盤會換到這裡。</p><div class="choices">${rows}</div></section>`;
+  }
+
+  /** 夙願：指定這一世的一個目標；再按一次取消 */
+  function wishHtml(state: GameState): string {
+    if (wishLevel(state, data) <= 0) return "";
+    // 有掛鉤事件的排前面，只是記號的排後面
+    const rows = [...wishChoices(state, data)]
+      .sort((a, b) => Number(b.tilt !== undefined) - Number(a.tilt !== undefined))
+      .map((g) => {
+        const on = g.id === state.wishId;
+        return `<button type="button" data-wish="${esc(g.id)}" aria-pressed="${on}" class="${on ? "active" : ""}"><strong>${esc(g.name)}</strong><small>${esc(g.desc)}</small><small>${g.tilt ? "相關的際遇會多一些" : "只是記號，不影響際遇"}</small></button>`;
+      })
+      .join("");
+    return `<section class="wishes"><h2>夙願</h2><p class="desc">指定這一世的一個目標，不給任何數值；再按一次取消。</p><div class="choices">${rows}</div></section>`;
+  }
+
   function renderRoll(state: GameState): void {
-    const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.methodId}|${state.meta.fragments.length}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
+    const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.methodId}|${state.meta.fragments.length}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}|${JSON.stringify(state.altCharts)}|${state.wishId}|${state.goalIds.join(",")}`;
     if (getBuilt() === "roll" && key === rollKey) return;
     setBuilt("roll");
     rollKey = key;
@@ -106,6 +135,8 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
         ${identityHtml(state, data)}
         ${birthHtml(state, data)}
         ${goalsHtml(state, data)}
+        ${wishHtml(state)}
+        ${chartsHtml(state)}
         ${methodHtml(state)}
         <div class="actions">
           <button id="reroll" type="button" ${state.rerolls > 0 ? "" : "disabled"}>重擲（剩 ${state.rerolls} 次）</button>
@@ -119,6 +150,8 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
       handlers.onRename(nameInput.value);
       nameInput.value = currentName;
     });
+    stageEl.querySelectorAll<HTMLButtonElement>("[data-chart]").forEach((b) => b.addEventListener("click", () => handlers.onPickChart(Number(b.dataset.chart))));
+    stageEl.querySelectorAll<HTMLButtonElement>("[data-wish]").forEach((b) => b.addEventListener("click", () => handlers.onSetWish(b.classList.contains("active") ? null : b.dataset.wish!)));
     stageEl.querySelectorAll<HTMLButtonElement>("[data-method]").forEach((b) => b.addEventListener("click", () => handlers.onMethod(b.dataset.method!)));
     stageEl.querySelector("#reroll")!.addEventListener("click", () => handlers.onReroll());
     stageEl.querySelector("#start")!.addEventListener("click", () => handlers.onStart());

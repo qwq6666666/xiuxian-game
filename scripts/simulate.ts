@@ -26,6 +26,9 @@ import { canJoinSect, canPromoteSect, joinSect, nextRank, promoteSect } from "..
 import { buyItem, buyTalent, canBuyItem, canBuyTalent, canUseItem, canZuohua, setSchedule, useItem, zuohua } from "../src/core/actions";
 import { attemptBreakthrough, autoTribulation, canBreakthrough, canChooseWave, faceWave } from "../src/core/breakthrough";
 import { canChoose, chooseEvent, eventOf } from "../src/core/events";
+import { chartPower, currentChart, pickChart } from "../src/core/chart";
+import { canPeek, peekOmen } from "../src/core/omen";
+import { setWish, wishChoices } from "../src/core/wish";
 import { createInitialState, newLife, startLife } from "../src/core/life";
 import { nextRandom } from "../src/core/rng";
 import type { GameState } from "../src/core/state";
@@ -39,7 +42,7 @@ const lives = Number(process.argv[4] ?? 1);
 // method:<心法 id> 是 mixed 加上指定心法
 const forcedMethod = process.argv[5]?.startsWith("method:") ? process.argv[5].slice(7) : null;
 if (forcedMethod !== null && !gameData.methods.some((m) => m.id === forcedMethod)) throw new Error(`找不到心法 ${forcedMethod}`);
-const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : process.argv[5] === "forge" ? "forge" : process.argv[5] === "focus" ? "focus" : process.argv[5] === "rotate" ? "rotate" : process.argv[5] === "hunt" ? "hunt" : "simple";
+const strategy = forcedMethod !== null ? "mixed" : process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : process.argv[5] === "tribulation" ? "tribulation" : process.argv[5] === "alchemy" ? "alchemy" : process.argv[5] === "forge" ? "forge" : process.argv[5] === "focus" ? "focus" : process.argv[5] === "rotate" ? "rotate" : process.argv[5] === "chart" ? "chart" : process.argv[5] === "wish" ? "wish" : process.argv[5] === "omen" ? "omen" : process.argv[5] === "hunt" ? "hunt" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -97,6 +100,45 @@ const ROTATE_CYCLE = ["retreat", "retreat", "retreat", "retreat", "retreat", "re
 function rotateActions(state: GameState): GameState {
   const s = mixedActions(state);
   return s.realmId === "mortal" ? s : setSchedule(s, ROTATE_CYCLE[s.ageMonths % ROTATE_CYCLE.length], gameData);
+}
+
+/**
+ * 改變玩法的輪迴天賦策略（M44）：同 mixed，道韻先買該天賦到滿級（買不起就存著，宿慧以外的都排在後面），再買其他；最貪的用法：
+ * chart 擲骰時挑功率最高的命盤；wish 指定有掛鉤事件的目標；omen 每個抉擇窺看到吉為止再選它，窺看到凶的不選。
+ */
+const TALENT_STRATEGIES: Record<string, string> = { chart: "zeshen", wish: "suyuan", omen: "lingxi" };
+const isTalentStrategy = (s: string): boolean => s in TALENT_STRATEGIES;
+
+/** 擲骰階段的選擇：chart 挑功率最高的命盤；wish 指定第一個有掛鉤的目標 */
+function rollChoices(rolling: GameState): GameState {
+  let s = rolling;
+  if (strategy === "chart" && s.altCharts.length > 0) {
+    const powers = [chartPower(currentChart(s), gameData), ...s.altCharts.map((c) => chartPower(c, gameData))];
+    const best = powers.indexOf(Math.max(...powers));
+    if (best > 0) s = pickChart(s, best - 1);
+  }
+  if (strategy === "wish") {
+    const goal = wishChoices(s, gameData).find((g) => g.tilt !== undefined);
+    if (goal) s = setWish(s, goal.id, gameData);
+  }
+  return s;
+}
+
+/** omen 策略的抉擇：依序窺看選項，看到吉就選它；窺看到凶的不選，其餘隨機 */
+function omenPick(state: GameState): [GameState, number] {
+  const ev = eventOf(state.pendingEvent!, gameData);
+  let s = state;
+  for (let c = 0; c < (ev.choices?.length ?? 0) && s.omenLeft > 0; c++) {
+    if (!canPeek(s, c, gameData)) continue;
+    s = peekOmen(s, c, gameData);
+    if (s.omen[s.omen.length - 1].omen === "good") return [s, c];
+  }
+  const bad = new Set(s.omen.filter((o) => o.omen === "bad").map((o) => o.choice));
+  const open = (ev.choices ?? []).map((c, i) => (canChoose(s, c) && !bad.has(i) ? i : -1)).filter((i) => i >= 0);
+  if (open.length === 0) return [s, randomChoice(s.pendingEvent!, s)];
+  const [v, next] = nextRandom(policySeed);
+  policySeed = next;
+  return [s, open[Math.floor(v * open.length)]];
 }
 
 /** 採藥丹修策略的每月操作：一直採藥，凡人以外有錢就買聚氣丹、能服就服 */
@@ -252,7 +294,7 @@ function playLife(start: GameState): GameState {
   let jindanEntered: number | null = null;
   let jindanLeft: number | null = null;
   const forgeStart = strategy === "forge" ? { ...start, methodId: "jixing", equipment: { weapon: "ningqi_zhu", ward: "zhenhun_pei" } } : start;
-  let state = startLife(forcedMethod !== null ? { ...start, methodId: forcedMethod } : forgeStart, gameData);
+  let state = startLife(forcedMethod !== null ? { ...start, methodId: forcedMethod } : rollChoices(forgeStart), gameData);
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
     state = settleEncounter(state);
@@ -269,7 +311,10 @@ function playLife(start: GameState): GameState {
         pushStats.seen++;
         if (state.meta.lives === 0) pushStats.seenFirst++;
       }
-      state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
+      let pick: number;
+      if (strategy === "omen") [state, pick] = omenPick(state);
+      else pick = randomChoice(state.pendingEvent, state);
+      state = chooseEvent(state, pick, gameData);
       if (pushing) {
         const e = state.log[state.log.length - 1];
         if (e?.choice === 1) pushStats.calm++;
@@ -529,13 +574,14 @@ function campaigns(): void {
       }
       // 把道韻優先花在宿慧
       if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect" || strategy === "tribulation" || strategy === "alchemy" || strategy === "forge" || strategy === "focus" || strategy === "hunt" || strategy === "rotate") state = buyTalentsBalanced(state);
+      else if (isTalentStrategy(strategy)) state = buyTalentsBalanced(state, { ...TALENT_TARGETS, [TALENT_STRATEGIES[strategy]]: gameData.talents.find((t) => t.id === TALENT_STRATEGIES[strategy])!.maxLevel });
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹", forge: "法寶", focus: "運功", hunt: "打怪", rotate: "輪流安排" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗", tribulation: "天劫", alchemy: "煉丹", forge: "法寶", focus: "運功", hunt: "打怪", rotate: "輪流安排", chart: "擇身", wish: "夙願", omen: "靈犀" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(
@@ -625,6 +671,11 @@ function campaigns(): void {
     console.log(`遇怪 ${n} 次：勝 ${pct(huntStats.win)}%、敗 ${pct(huntStats.lose)}%、平手 ${pct(huntStats.draw)}%、逃成 ${pct(huntStats.flee)}%、逃敗 ${pct(huntStats.fleeFail)}%；每勝平均修為 ${(huntStats.win > 0 ? huntStats.gain / huntStats.win : 0).toFixed(1)}`);
     console.log("對照第 38 節（打怪，最壞情況：永遠外出歷練）：");
     console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
+    console.log(`  ${ok(hours >= 3.5)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
+  }
+  if (isTalentStrategy(strategy)) {
+    console.log(`對照第 16.5 節（${TALENT_STRATEGIES[strategy]}：mixed 加該天賦滿級，最貪的用法）：`);
+    console.log(`  ${ok(cMed >= 8)} 首次金丹：中位數第 ${cMed} 世（不得低於第 8 世）`);
     console.log(`  ${ok(hours >= 3.5)} 通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
   }
   if (strategy === "rotate") {

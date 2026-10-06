@@ -8,6 +8,9 @@ import { setMethod } from "./core/method";
 import { cancelBrew, startBrew } from "./core/alchemy";
 import { attemptBreakthrough, faceWave } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
+import { pickChart } from "./core/chart";
+import { peekOmen } from "./core/omen";
+import { setWish } from "./core/wish";
 import { applyOffline } from "./core/offline";
 import { createInitialState, newLife, reroll, startLife } from "./core/life";
 import { deserialize, importSave, serialize } from "./core/save";
@@ -99,6 +102,9 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onStart: () => update(startLife(state, data)),
   onAutoChoice: (enabled) => update(setAutoChoice(state, enabled, data)),
   onChoose: (i) => update(chooseEvent(state, i, data)),
+  onPeek: (i) => update(peekOmen(state, i, data)),
+  onPickChart: (i) => update(pickChart(state, i)),
+  onSetWish: (id) => update(setWish(state, id, data)),
   onNewLife: () => update(newLife(state, data)),
   onBuyTalent: (id) => update(buyTalent(state, id, data)),
   onSchedule: (id) => update(setSchedule(state, id, data)),

@@ -2,6 +2,13 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：改變玩法的輪迴天賦（M44，GDD 第 46 節）
+
+- 分支 `master`（本機，尚未 push）。擇身、夙願、靈犀三個天賦；存檔 v26。核心：`core/chart.ts`、`wish.ts`、`omen.ts`，`life.ts` 把抽命盤抽成 `drawChart`，`events.ts` 加 `pickOutcome` 與夙願權重；資料：`talents.json`（新增三個並重排推薦順序）、`goals.json`（`tilt`、新目標「遇見故人」）、`reunion.json`（設 `reunion_met`）、`config.json` 三個數值。介面：擲骰畫面夙願與備選命盤區塊、抉擇彈窗窺看鈕（`rollview.ts`、`render.ts`、`components.css`）。sim 新增 `chart`／`wish`／`omen`。
+- 驗證：`npm run verify`；`tests/talents44.test.ts` 與 `ui-smoke.test.ts` 新增測試；`simple` 1／16 世、`mixed` 1 世在改核心前後逐字相同；瀏覽器看過擲骰畫面（兩份備選命盤、九個夙願選項、改選命盤會清夙願）與抉擇彈窗窺看。sim：三個策略首次金丹不低於第 8 世（見 GDD 第 46 節）。
+- 沒驗證：手機寬度的擲骰畫面（區塊變長）；2 級夙願的清單很長（九個，只是記號的排後面）；靈犀實際玩起來的手感；`method:*`。
+- 給 ChatGPT（請看一眼）：擲骰畫面兩個新區塊的版面與文案、窺看鈕與「吉兆／凶兆」標示、夙願清單太長時要不要收合。
+
 ## 2026-10-06：介面表現強化（M43，GDD 第 45 節）
 
 - 分支 `master`（本機，尚未 push），五個 commit：場景、過場、日誌、事件彈窗、未開放分頁。新增 `ui/sceneLogic.ts`、`veil.ts`、`logGroups.ts`、`tabinfo.ts`、`styles/transition.css`；改 `scene.ts`、`render.ts`、`vignette.ts`、`format.ts`（修為變化小數）、`tokens.css`（`--veil-ink`、`--veil-ms`、`--z-veil`、`--scene-hair`）。
