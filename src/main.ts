@@ -39,13 +39,32 @@ function load(): GameState {
   return newGame();
 }
 
+// 一般的月份 tick 每隔這麼久才寫一次存檔；抉擇、突破、死亡與玩家操作立即寫
+const SAVE_INTERVAL_MS = 3000;
+let lastSavedAt = 0;
+let dirty = false;
+
 function save(s: GameState): void {
+  dirty = false;
+  lastSavedAt = performance.now();
   try {
     localStorage.setItem(SAVE_KEY, serialize(s));
     localStorage.setItem(SEEN_KEY, String(Date.now()));
   } catch {
     // 存檔失敗（空間不足或被禁用）時不中斷遊戲
   }
+}
+
+/** 狀態進入需要玩家處理或結算的節點：不能等節流，下一刻關分頁就會丟進度 */
+function isCheckpoint(prev: GameState, next: GameState): boolean {
+  return (
+    next.phase !== prev.phase ||
+    next.realmId !== prev.realmId ||
+    next.stage !== prev.stage ||
+    next.pendingEvent !== null ||
+    next.tribulation !== null ||
+    next.encounter !== null
+  );
 }
 
 /** 距離上次存檔過了多久（毫秒）；沒有紀錄時為 0 */
@@ -65,9 +84,11 @@ let state = load();
   if (notice === "") notice = formatOffline(off.summary);
 }
 
-function update(next: GameState): void {
+function update(next: GameState, throttled = false): void {
+  const prev = state;
   state = next;
-  save(state);
+  if (throttled && !isCheckpoint(prev, next) && performance.now() - lastSavedAt < SAVE_INTERVAL_MS) dirty = true;
+  else save(state);
   ui.render(state);
 }
 
@@ -141,11 +162,13 @@ function frame(now: number): void {
     const months = Math.min(Math.floor(acc), data.config.maxCatchUpMonths);
     if (months > 0) {
       acc -= Math.floor(acc); // 超過補算上限的部分直接捨棄
-      update(tick(state, months, data));
+      update(tick(state, months, data), true);
     }
   } else {
     acc = 0;
   }
+  // 節流期間累積的變更，過了間隔補寫
+  if (dirty && now - lastSavedAt >= SAVE_INTERVAL_MS) save(state);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
