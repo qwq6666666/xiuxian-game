@@ -1,9 +1,10 @@
 // 日誌分段與加強顯示：每十年一段、年紀當小標；有代價或有後續的紀錄標出來。純函式，與 DOM 無關。
 import type { GameData } from "../data/types";
 import type { LogEntry, LogKind } from "../core/state";
+import { composeRetreat } from "../core/retreattext";
 import { toChineseNumber } from "./format";
 
-export type LogMark = "cost" | "follow";
+export type LogMark = "cost" | "follow" | "rare";
 
 /** 本身就是損失的紀錄種類 */
 const COST_KINDS: readonly LogKind[] = ["breakthroughFail", "huntLose", "adventureDeath", "alchemyFail", "forgeFail"];
@@ -59,12 +60,13 @@ function leadsOn(entry: LogEntry, data: GameData): boolean {
   return data.events.some((other) => other.id !== ev.id && (other.conditions.flags ?? []).some((f) => produced.has(f)));
 }
 
-/** 加強顯示的標記：有代價（損失或失敗）、有後續（事件鏈前段） */
+/** 加強顯示的標記：有代價（損失或失敗）、有後續（事件鏈前段）、偶得的閉關見聞 */
 export function logMarks(entry: LogEntry, data: GameData): LogMark[] {
   const marks: LogMark[] = [];
   if (COST_KINDS.includes(entry.kind) || hasLoss(entry)) marks.push("cost");
   if (entry.kind === "event" && leadsOn(entry, data)) marks.push("follow");
+  if (entry.kind === "retreat" && composeRetreat(entry, data).startsWith("【偶得】")) marks.push("rare");
   return marks;
 }
 
-export const MARK_LABEL: Record<LogMark, string> = { cost: "代價", follow: "後續" };
+export const MARK_LABEL: Record<LogMark, string> = { cost: "代價", follow: "後續", rare: "偶得" };

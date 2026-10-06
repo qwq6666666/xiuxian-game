@@ -38,10 +38,10 @@
 .log li:last-child { border-bottom: 0; }
 .log li.log-decade { position: sticky; top: 0; z-index: 1; padding: var(--sp-1) 0; border-bottom: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: var(--fs-sm); letter-spacing: 0.15em; }
 .log li.log-cost { border-left: 2px solid var(--bad); padding-left: var(--sp-2); }
-.log li.log-follow { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
+.log li.log-follow, .log li.log-rare { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
 .log li .log-mark { display: inline-block; margin-right: var(--sp-2); padding: 0 var(--sp-1); border: 1px solid currentColor; border-radius: var(--r-sm); font-size: var(--fs-xs); }
 .log li.log-cost .log-mark { color: var(--bad); }
-.log li.log-follow:not(.log-cost) .log-mark { color: var(--accent); }
+.log li.log-follow:not(.log-cost) .log-mark, .log li.log-rare:not(.log-cost) .log-mark { color: var(--accent); }
 .side > * + * { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
 
 /* 新日誌淡入；數值變動浮字（aria-hidden，不進螢幕閱讀器） */
