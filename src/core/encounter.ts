@@ -128,7 +128,7 @@ function win(state: GameState, data: GameData): GameState {
 
 /**
  * 選一招：穩打、強攻、符籙，或逃。
- * 每回合玩家先出手，怪物沒倒就反擊；氣血先歸零者敗，打滿回合數算平手（怪物退走，沒有獎勵也沒有損失）。
+ * 每回合玩家先出手，怪物沒倒就反擊；氣血先歸零者敗，打滿回合數算平手（怪物退走，沒有獎勵，只損失一點修為）。
  */
 export function huntChoose(state: GameState, choice: HuntChoice, data: GameData = gameData): GameState {
   const e = state.encounter;
@@ -158,7 +158,10 @@ export function huntChoose(state: GameState, choice: HuntChoice, data: GameData 
     const [lost, loss] = lose({ ...s, encounter: { ...e, monsterHp, myHp: 0 } }, rules.lossFrac);
     return finish(lost, "huntLose", data, { changes: loss > 0 ? { cultivation: -loss } : {} });
   }
-  if (e.round + 1 >= rules.rounds) return finish({ ...s, encounter: { ...e, monsterHp, myHp } }, "huntDraw", data);
+  if (e.round + 1 >= rules.rounds) {
+    const [tired, loss] = lose({ ...s, encounter: { ...e, monsterHp, myHp } }, rules.drawLossFrac);
+    return finish(tired, "huntDraw", data, { changes: loss > 0 ? { cultivation: -loss } : {} });
+  }
   return { ...s, encounter: { ...e, round: e.round + 1, monsterHp, myHp } };
 }
 

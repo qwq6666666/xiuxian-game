@@ -9,6 +9,7 @@
     "ratioHit": 0.25,
     "variance": 0.2,
     "lossFrac": 0.05,
+    "drawLossFrac": 0.003,
     "flee": { "base": 0.55, "perRatio": 0.3, "perFortune": 0.02, "min": 0.15, "max": 0.9, "failLoss": 0.03 },
     "autoMinRatio": 0.85,
     "actions": {

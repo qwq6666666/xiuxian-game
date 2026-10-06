@@ -47,6 +47,7 @@ import {
   eraTransition,
   collectionSummary,
   acquaintanceRows,
+  choiceOdds,
   bestiarySummary,
   BESTIARY_LORE_WINS,
   formatChanges,
@@ -138,6 +139,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <button id="mobile-codex-open" class="menu-mobile-only" type="button"></button>
             <button id="mobile-map-open" class="menu-mobile-only" type="button"></button>
             <button id="mobile-collection-open" class="menu-mobile-only" type="button">收藏</button>
+            <button id="odds-toggle" type="button" aria-pressed="false">機率提示：關</button>
             <button id="export" type="button">匯出存檔</button>
             <button id="import" type="button">匯入存檔</button>
             <button id="reset" type="button" class="danger">重新開始</button>
@@ -171,6 +173,32 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
   // 「更多」選單：點選項、點選單外面或按 Escape 都會收起
   const menuEl = root.querySelector<HTMLDetailsElement>("#menu")!;
+  // 機率提示：偏好存在瀏覽器，不進存檔；預設關閉，維持原本的氣質
+  const ODDS_KEY = "xiuxian-odds";
+  let showOdds = false;
+  try {
+    showOdds = localStorage.getItem(ODDS_KEY) === "1";
+  } catch {
+    showOdds = false;
+  }
+  let renderRef: ((state: GameState) => void) | null = null;
+  const oddsBtn = root.querySelector<HTMLButtonElement>("#odds-toggle")!;
+  const paintOddsBtn = (): void => {
+    oddsBtn.textContent = `機率提示：${showOdds ? "開" : "關"}`;
+    oddsBtn.setAttribute("aria-pressed", String(showOdds));
+  };
+  paintOddsBtn();
+  oddsBtn.addEventListener("click", () => {
+    showOdds = !showOdds;
+    try {
+      localStorage.setItem(ODDS_KEY, showOdds ? "1" : "0");
+    } catch {
+      /* 無法儲存也不影響本次顯示 */
+    }
+    paintOddsBtn();
+    menuEl.open = false;
+    if (lastState && renderRef) renderRef(lastState);
+  });
   document.addEventListener("click", (ev) => {
     if (menuEl.open && !menuEl.contains(ev.target as Node)) menuEl.open = false;
   });
@@ -1521,7 +1549,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     }
 
     // 抉擇事件：時間暫停，等玩家選擇
-    const pendingKey = state.pendingEvent === null ? "" : `${state.pendingEvent}|${state.spiritStones}|${JSON.stringify(state.items)}`;
+    const pendingKey = state.pendingEvent === null ? "" : `${state.pendingEvent}|${state.spiritStones}|${JSON.stringify(state.items)}|${showOdds}|${JSON.stringify(state.attributes)}`;
     if (pendingKey !== eventKey) {
       eventKey = pendingKey;
       e.eventModal.hidden = state.pendingEvent === null;
@@ -1552,9 +1580,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           const b = document.createElement("button");
           b.type = "button";
           b.disabled = reason !== null;
-          b.innerHTML = `<strong></strong>${reason ? "<small></small>" : ""}`;
+          const odds = showOdds ? choiceOdds(choice, state.attributes) : [];
+          b.innerHTML = `<strong></strong>${reason || odds.length > 0 ? "<small></small>" : ""}`;
           b.querySelector("strong")!.textContent = fillSlots(choice.text, slots);
           if (reason) b.querySelector("small")!.textContent = reason;
+          else if (odds.length > 0) b.querySelector("small")!.textContent = `結果機率約 ${odds.map((p) => `${p}%`).join("／")}`;
           b.addEventListener("click", () => handlers.onChoose(i));
           e.eventChoices.appendChild(b);
         });
@@ -1725,7 +1755,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     e.modalBody.replaceChildren(modalView === "review" ? buildReview(state) : buildTalents(state));
   }
 
-  return {
+  const ui: Ui = {
     render(state) {
       const arrivedAt = lastState?.travel.targetId && !state.travel.targetId && state.travel.locationId === lastState.travel.targetId
         ? placesAt(state, data).find((place) => place.id === state.travel.locationId)?.name : null;
@@ -1762,4 +1792,6 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       noticeEl.hidden = message === "";
     },
   };
+  renderRef = (state) => ui.render(state);
+  return ui;
 }

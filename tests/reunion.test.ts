@@ -5,7 +5,7 @@ import { deserialize, serialize } from "../src/core/save";
 import { emptyMeta } from "../src/core/state";
 import { gameData as data } from "../src/data/load";
 import { validateEvents, validateGameData } from "../src/data/validate";
-import { acquaintanceRows, formatLogEntry } from "../src/ui/format";
+import { acquaintanceRows, choiceOdds, formatLogEntry } from "../src/ui/format";
 import { living } from "./helpers";
 
 const base = data.events.find((e) => e.type === "anecdote")!;
@@ -106,5 +106,32 @@ describe("故人收藏摘要（介面用）", () => {
     const row = acquaintanceRows(meta, data).find((r) => r.id === "gu_yuanzhou")!;
     expect(row.firstLife).toBe(3);
     expect(row.gap).toBe(3);
+  });
+});
+
+describe("事件鏈後續（chains.json）與機率提示", () => {
+  it("丹師與散修的後續事件要靠前段的旗標才出現，且會設定結束旗標", () => {
+    for (const [id, need, done] of [["alchemist_002", "alchemist_helped", "alchemist_done"], ["rival_002", "rival_spared", "rival_done"]]) {
+      const ev = data.events.find((e) => e.id === id)!;
+      expect(ev.conditions.flags).toEqual([need]);
+      expect(ev.conditions.flagsNot).toEqual([done]);
+      expect(ev.weight).toBeGreaterThanOrEqual(20);
+      expect(eventAvailable(living(1, { realmId: "lianqi", flags: [] }), ev, data)).toBe(false);
+      expect(eventAvailable(living(1, { realmId: "lianqi", flags: [need] }), ev, data)).toBe(true);
+      expect(eventAvailable(living(1, { realmId: "lianqi", flags: [need, done] }), ev, data)).toBe(false);
+      for (const c of ev.choices!) for (const o of c.outcomes) expect(o.effects.flags).toContain(done);
+    }
+  });
+  it("choiceOdds：依屬性加權，總和 100，單一結果不顯示", () => {
+    const one = { text: "a", outcomes: [{ weight: 1, text: "x", effects: {} }] };
+    expect(choiceOdds(one, living(1).attributes)).toEqual([]);
+    const two = { text: "b", outcomes: [{ weight: 70, text: "x", effects: {} }, { weight: 30, text: "y", effects: {} }] };
+    expect(choiceOdds(two, living(1).attributes)).toEqual([70, 30]);
+    const three = { text: "c", outcomes: [1, 1, 1].map((w) => ({ weight: w, text: "z", effects: {} })) };
+    const odds = choiceOdds(three, living(1).attributes);
+    expect(odds.reduce((a, b) => a + b, 0)).toBe(100);
+    const weighted = { text: "d", outcomes: [{ weight: 50, text: "x", effects: {}, weightPerAttribute: { fortune: 10 } }, { weight: 50, text: "y", effects: {} }] };
+    const lucky = choiceOdds(weighted, { ...living(1).attributes, fortune: 10 });
+    expect(lucky[0]).toBeGreaterThan(lucky[1]);
   });
 });

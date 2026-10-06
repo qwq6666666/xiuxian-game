@@ -1,9 +1,10 @@
 import type { VersusLine } from "../core/goals";
 import { eraName } from "../core/era";
+import { outcomeWeight } from "../core/formulas";
 import type { OfflineSummary } from "../core/offline";
 import type { BestiaryEntry, Changes, LifeReview, LogEntry, Meta } from "../core/state";
 import { DEFAULT_SLOTS, fillSlots, type SlotValues } from "../data/slots";
-import { ATTRIBUTE_KEYS, type AttributeKey, type ChoiceRequires, type GameData, type RealmDef, type TalentDef } from "../data/types";
+import { ATTRIBUTE_KEYS, type AttributeKey, type ChoiceDef, type ChoiceRequires, type GameData, type RealmDef, type TalentDef } from "../data/types";
 
 export const ATTR_LABEL: Record<AttributeKey, string> = {
   bone: "根骨",
@@ -341,6 +342,19 @@ export function acquaintanceRows(meta: Meta, data: GameData): AcquaintanceRow[] 
     const seen = meta.met[a.id];
     return { id: a.id, name: a.name, desc: a.desc, firstLife: seen ? seen.firstLife + 1 : null, gap: seen ? meta.lives - seen.firstLife : null };
   });
+}
+
+/** 一個選項各結果的機率（百分比，加總為 100），依目前的屬性算；只有一個結果時回傳空陣列 */
+export function choiceOdds(choice: ChoiceDef, attributes: Record<AttributeKey, number>): number[] {
+  if (choice.outcomes.length < 2) return [];
+  const weights = choice.outcomes.map((o) => outcomeWeight(o.weight, o.weightPerAttribute, attributes));
+  const total = weights.reduce((a, b) => a + b, 0);
+  if (total <= 0) return [];
+  const pct = weights.map((w) => Math.round((w / total) * 100));
+  // 四捨五入後補差額到最大的一項，讓總和剛好 100
+  const diff = 100 - pct.reduce((a, b) => a + b, 0);
+  pct[pct.indexOf(Math.max(...pct))] += diff;
+  return pct;
 }
 
 /** 離線回歸提示，例如「閉關 3 年 2 個月，修為增加 360。」；沒有閉關則回傳空字串 */

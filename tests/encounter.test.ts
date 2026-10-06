@@ -97,7 +97,7 @@ describe("戰鬥", () => {
     expect((after.items[talisman] ?? 0)).toBe(1);
   });
 
-  it("勝利得修為與靈石，敗北損失修為，平手什麼都不變", () => {
+  it("勝利得修為與靈石，敗北損失修為，平手損失較少的修為", () => {
     const outcomes = { huntWin: 0, huntLose: 0, huntDraw: 0 } as Record<string, number>;
     for (let seed = 1; seed <= 400; seed++) {
       for (const choice of ["steady", "fierce"] as const) {
@@ -113,7 +113,8 @@ describe("戰鬥", () => {
         } else if (last.kind === "huntLose") {
           expect(s.cultivation).toBeCloseTo(before * (1 - rules.lossFrac), 6);
         } else {
-          expect(s.cultivation).toBe(before);
+          expect(s.cultivation).toBeCloseTo(before * (1 - rules.drawLossFrac), 6);
+          expect(rules.drawLossFrac).toBeLessThan(rules.lossFrac);
         }
       }
     }

@@ -923,6 +923,7 @@ export function validateMonsters(raw: unknown, realmIds: string[], itemIds: stri
     ratioHit: num(r, "ratioHit", rw, { min: 0, max: 1 }),
     variance: num(r, "variance", rw, { min: 0, max: 0.5 }),
     lossFrac: num(r, "lossFrac", rw, { min: 0, max: 0.5 }),
+    drawLossFrac: num(r, "drawLossFrac", rw, { min: 0, max: 0.5 }),
     flee: {
       base: num(f, "base", fw, { min: 0, max: 1 }),
       perRatio: num(f, "perRatio", fw, { min: 0, max: 1 }),

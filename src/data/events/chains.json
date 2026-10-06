@@ -1,0 +1,134 @@
+[
+  {
+    "id": "alchemist_002",
+    "type": "choice",
+    "title": "丹師回禮",
+    "text": "先前那位丹師尋到你，手裡捧著一只小匣，說上回的藥材讓他的爐火多撐了三日。他沒說是哪三日，也沒說爐子後來怎麼樣了。",
+    "weight": 30,
+    "tone": "good",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "flags": [
+        "alchemist_helped"
+      ],
+      "flagsNot": [
+        "alchemist_done"
+      ]
+    },
+    "choices": [
+      {
+        "text": "收下小匣",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "匣裡是幾味品相不差的藥材。丹師拱了拱手，這次走得不急了。",
+            "effects": {
+              "items": {
+                "ling_cao": 3
+              },
+              "flags": [
+                "alchemist_done"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "text": "向他討教煉丹的心得",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "丹師講了半個時辰，你記住了三成，另外七成都在火候上。",
+            "effects": {
+              "attributes": {
+                "insight": 1
+              },
+              "flags": [
+                "alchemist_done"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "text": "只道一聲不必",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "丹師堅持留下一包藥渣，說可以拿去肥田。你不確定他是不是在開玩笑。",
+            "effects": {
+              "flags": [
+                "alchemist_done"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rival_002",
+    "type": "choice",
+    "title": "崖邊舊識",
+    "text": "坊間有人遠遠朝你拱手，是先前在崖邊與你爭過靈草的那名散修。他身上的傷好了，神色也和緩了些。",
+    "weight": 30,
+    "tone": "neutral",
+    "highlight": 1.2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "flags": [
+        "rival_spared"
+      ],
+      "flagsNot": [
+        "rival_done"
+      ]
+    },
+    "choices": [
+      {
+        "text": "上前寒暄",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "他說近來尋到幾處採藥的好地方，順口告訴了你兩處。你循著去找，倒真撿了些靈石。",
+            "effects": {
+              "spiritStones": 15,
+              "flags": [
+                "rival_done"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "text": "結伴同行一段",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "兩人沿溪走了半日，話不多，倒也沒有冷場。分手時，他把乾糧分了你一半。",
+            "effects": {
+              "cultivation": 0.06,
+              "flags": [
+                "rival_done"
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "text": "點頭示意便走",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "他也點了點頭。彼此都像是鬆了口氣。",
+            "effects": {
+              "flags": [
+                "rival_done"
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

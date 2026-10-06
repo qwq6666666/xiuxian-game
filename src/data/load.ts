@@ -12,6 +12,7 @@ import itemsJson from "./items.json";
 import erasJson from "./eras.json";
 import acquaintancesJson from "./acquaintances.json";
 import reunionEventsJson from "./events/reunion.json";
+import chainsEventsJson from "./events/chains.json";
 import namesJson from "./names.json";
 import methodsJson from "./methods.json";
 import originsJson from "./origins.json";
@@ -79,6 +80,7 @@ export const gameData: GameData = validateGameData({
     { file: "events/opening.json", raw: openingEventsJson },
     { file: "events/lianqi.json", raw: lianqiEventsJson },
     { file: "events/reunion.json", raw: reunionEventsJson },
+    { file: "events/chains.json", raw: chainsEventsJson },
     { file: "events/sect.json", raw: sectEventsJson },
     { file: "events/zhuji.json", raw: zhujiEventsJson },
   ]),

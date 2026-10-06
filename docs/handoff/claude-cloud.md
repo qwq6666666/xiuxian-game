@@ -3,6 +3,12 @@
 > 雲端工作階段專用，新的一筆寫在最上面；本機的紀錄在 `claude.md`。規則見 `AGENTS.md`「本機與雲端並行」。
 > 雲端只推 `ai/claude-cloud`，由本機整合者合併進 `master`。
 
+### 2026-10-06 M39 遇怪風險感、機率提示、事件鏈後續（GDD 38.3、第 42 節）
+- 遇怪：`monsters.json` 新增 `rules.drawLossFrac`（0.003），`encounter.ts` 平手時損失修為，`types.ts`／`validate.ts`。機率提示：`ui/format.ts` 的 `choiceOdds`、`ui/render.ts`（「更多」選單的切換鈕、選項小字，偏好存 `localStorage` 的 `xiuxian-odds`）。事件鏈：`events.json` 兩處結果加旗標，新增 `events/chains.json`（`alchemist_002`、`rival_002`）並登記。測試：`tests/reunion.test.ts`、`tests/encounter.test.ts`。
+- 驗證：`npm run verify` 全過；`hunt` 16 世首次金丹 10→13 世（調值過程見 GDD 38.3，1.5% 太重已放棄）；`mixed`、`simple` 抉擇 15.6／14.7，全 ✓。
+- 沒驗證：機率提示在遊戲內的外觀與手機點擊；遇怪平手日誌顯示的修為變化。本機請補跑 `post`（`... 100 post`）與其他策略。
+- 注意：機率提示的偏好不進存檔，所以不升 `SAVE_VERSION`。`src/ui/` 由雲端代做，請 ChatGPT 日後審視。
+
 ### 2026-10-06 M38 開場句分流與隔世重逢的故人（GDD 第 41 節，存檔 v24）
 - 核心：`state.ts`（`MetEntry`、`Meta.met`、`LogEntry.originId/spiritRootId`、v24）、`save.ts`（23→24 遷移、`met` 與日誌欄位載入檢查）、`life.ts`（開場日誌帶欄位）、`events.ts`（條件 `acquaintance`、抽到時記錄）、`review.ts`（跨世保留）。資料：`acquaintances.json`、`events/reunion.json`、`text.json` 的 `era.origin/root`、`types.ts`／`validate.ts`／`load.ts`。介面：`ui/format.ts`（開場句、`acquaintanceRows`）、`ui/render.ts`（收藏視窗「故人」）。測試：`tests/reunion.test.ts`；`tests/save-shape.json` 升 v24。
 - 驗證：`npm run verify` 全過（588 測試）；sim 結果與判讀見 GDD 41.3。**請本機補跑 `... 100 post` 與多個種子**：40 場樣本太小，`f01 與 f02`、元嬰累計時間在邊緣上下跳，我無法分辨是否真有偏移；我已把新增事件的權重壓低（開場 8、練氣見聞 2、故人 3）。

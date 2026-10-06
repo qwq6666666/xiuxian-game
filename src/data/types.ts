@@ -565,6 +565,8 @@ export interface HuntRules {
   variance: number;
   /** 敗北損失目前修為的比例 */
   lossFrac: number;
+  /** 打滿回合算平手時，損失目前修為的比例（M39：平手也要付點代價） */
+  drawLossFrac: number;
   flee: { base: number; perRatio: number; perFortune: number; min: number; max: number; failLoss: number };
   /** 自動抉擇時，戰力比低於這個值就逃，否則穩打 */
   autoMinRatio: number;

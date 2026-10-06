@@ -491,12 +491,12 @@
           {
             "weight": 70,
             "text": "丹師大喜，以一枚丹藥相酬，說是物盡其用。",
-            "effects": { "items": { "juqi_dan": 1 } }
+            "effects": { "items": { "juqi_dan": 1 }, "flags": ["alchemist_helped"] }
           },
           {
             "weight": 30,
             "text": "丹師收下藥材，匆匆趕回丹爐，連那句多謝都是邊跑邊喊的。",
-            "effects": {}
+            "effects": { "flags": ["alchemist_helped"] }
           }
         ]
       },
@@ -544,7 +544,7 @@
           {
             "weight": 100,
             "text": "你提議對半分，對方略一思索便應了。兩人各取一半，相視一笑，各自走遠。",
-            "effects": { "cultivation": 0.08 }
+            "effects": { "cultivation": 0.08, "flags": ["rival_spared"] }
           }
         ]
       },
@@ -554,7 +554,7 @@
           {
             "weight": 100,
             "text": "你拱手相讓。對方道了聲謝，轉身走得比來時快多了。",
-            "effects": { "attributes": { "fortune": 1 } }
+            "effects": { "attributes": { "fortune": 1 }, "flags": ["rival_spared"] }
           }
         ]
       }
