@@ -26,10 +26,11 @@ export interface LogGroup {
 
 export type LogRow = { kind: "entry"; entry: LogEntry } | { kind: "retreats"; entries: LogEntry[]; label: string };
 
-const routineRetreat = (entry: LogEntry, data: GameData): boolean => entry.kind === "retreat" && !composeRetreat(entry, data).startsWith("【偶得】");
+const routineRetreat = (entry: LogEntry, data: GameData): boolean =>
+  entry.kind === "retreat" && entry.stop === "elapsed" && !composeRetreat(entry, data).startsWith("【偶得】");
 
 /**
- * 只在顯示層把相鄰的例行閉關見聞收成一行；事件、突破與「偶得」都會中斷。
+ * 只在顯示層把相鄰的例行閉關見聞收成一行；事件、突破、「偶得」與特殊收關原因都會中斷。
  * 呼叫端以十年分組後再傳入，所以摘要不會跨越年代小標。
  */
 export function collapseRoutineRetreats(entries: readonly LogEntry[], data: GameData): LogRow[] {
