@@ -51,6 +51,12 @@
 - [x] 規則寫入 `AGENTS.md`「兩位助手的職責」，交接檔在 `docs/handoff/`，事件可分檔載入（`src/data/events/`）。
 - 目前指派：Claude → M20 化神；ChatGPT → 動畫第三批、階段 5 插畫、手機實測（詳見 `docs/handoff/chatgpt.md`）。
 
+## M25–M27：加入宗門（GDD 第 29 節）
+
+- [x] M25 核心（Claude）：`sects.json`、入宗、離宗、晉升、差事、月例、同門、存檔 v15、sim `sect` 策略；全部 ✓。
+- [ ] M26 介面（ChatGPT）：宗門面板、地圖山門「求入宗」、回顧「宗門：外門 → 內門」、收藏的歷代最高位階。介面介面見 GDD 29.12。
+- [ ] M27 宗門事件（ChatGPT，Claude 審稿）：`src/data/events/sect.json`，約 12–16 則；任務用 `contribution` 效果，同門用 `{peer}`、`{steward}`、`{elder}`，閉山或覆滅接 `sect_collapse` 旗標。
+
 ## 階段 5（選做）：少量場景插畫
 
 - [ ] 只做可重複使用的場景：開局、山野、坊市、渡口、突破、輪迴。不替所有事件逐一出圖。

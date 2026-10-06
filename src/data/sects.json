@@ -1,0 +1,22 @@
+{
+  "join": {
+    "minRealm": "lianqi",
+    "minStage": 2,
+    "baseRate": { "great": 0.25, "school": 0.5 },
+    "stateMult": { "prosper": 1.2, "stable": 1, "decline": 0.7 },
+    "insightBonus": 0.02,
+    "boneBonus": 0.01,
+    "rootBonus": { "za": 0, "san": 0.03, "shuang": 0.08, "tian": 0.15 }
+  },
+  "scale": { "great": 1, "school": 0.7 },
+  "maxRank": { "great": 3, "school": 2 },
+  "bonusState": { "prosper": 1.2, "stable": 1, "decline": 0.6 },
+  "ranks": [
+    { "id": "outer", "name": "外門弟子", "bonus": 0.06, "stipend": 2, "duty": 1 },
+    { "id": "inner", "name": "內門弟子", "bonus": 0.12, "stipend": 4, "duty": 2, "promote": { "realm": "zhuji", "contribution": 200 } },
+    { "id": "deacon", "name": "執事", "bonus": 0.18, "stipend": 8, "duty": 3, "promote": { "realm": "jindan", "contribution": 800 } },
+    { "id": "elder", "name": "長老", "bonus": 0.25, "stipend": 16, "duty": 4, "promote": { "realm": "yuanying", "contribution": 2500 } }
+  ],
+  "discount": { "itemIds": ["juqi_dan", "zhuji_dan"], "mult": 0.9 },
+  "dutySchedule": "sectDuty"
+}

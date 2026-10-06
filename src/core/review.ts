@@ -82,6 +82,11 @@ export function highlightScore(entry: LogEntry, data: GameData = gameData): numb
       return 2;
     case "find":
       return 0.8;
+    case "sectJoin":
+    case "sectPromote":
+      return 3;
+    case "sectLeave":
+      return 2;
     case "event": {
       const ev = eventOf(entry.eventId!, data);
       return ev.highlight ?? (ev.type === "choice" ? 1 : 0.5);
@@ -169,6 +174,7 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
     highlights: selectHighlights(state.log, data),
     goals: goalStatuses(state, data).map((g) => ({ id: g.def.id, done: g.done })),
     prev: state.meta.lastLife,
+    sectPeak: state.sectPeak,
   };
   // 目標達成次數：只收藏
   const goals = { ...state.meta.goals };
@@ -193,6 +199,7 @@ export function endLife(state: GameState, cause: ReviewCause, data: GameData = g
       clears: earned.meta.clears,
       yuanying,
       huashen,
+      sectBest: Math.max(state.meta.sectBest, state.sectPeak),
       goals,
       lastLife: lifeBrief(state),
     },

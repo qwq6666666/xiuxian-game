@@ -23,6 +23,7 @@ export function formatChanges(changes: Changes | undefined, data: GameData, slot
   if (changes.cultivation) out.push(`修為 ${signed(changes.cultivation)}`);
   if (changes.spiritStones) out.push(`靈石 ${signed(changes.spiritStones)}`);
   if (changes.lifespan) out.push(`壽元上限 ${signed(changes.lifespan)} 年`);
+  if (changes.contribution) out.push(`貢獻 ${signed(changes.contribution)}`);
   for (const k of ATTRIBUTE_KEYS) {
     const d = changes.attributes?.[k];
     if (d) out.push(`${ATTR_LABEL[k]} ${signed(d)}`);
@@ -160,6 +161,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
     item: data.items.find((i) => i.id === entry.itemId)?.name ?? entry.itemId ?? "",
     name,
     era: entry.eraIndex === undefined ? "" : eraName(entry.eraIndex, data),
+    sect: entry.sectName ?? "",
   };
   const pick = (list: string[]) => list[entry.month % list.length];
   const pickBy = (list: string[], n: number) => list[n % list.length];
@@ -194,6 +196,18 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
       break;
     case "zuohua":
       template = log.zuohua;
+      break;
+    case "sectJoin":
+      template = log.sect.join;
+      break;
+    case "sectRefuse":
+      template = log.sect.refuse;
+      break;
+    case "sectLeave":
+      template = log.sect.leave;
+      break;
+    case "sectPromote":
+      template = log.sect.promote[data.sects.ranks[entry.rank ?? 1]?.id] ?? log.sect.join;
       break;
     case "retreat": {
       const months = entry.retreatMonths ?? 0;

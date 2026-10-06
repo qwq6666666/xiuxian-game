@@ -55,5 +55,7 @@ export function itemPrice(state: GameState, itemId: string, data: GameData = gam
   let mult = 1;
   for (const e of activeWorldEffects(state, data)) mult *= e.market[itemId] ?? 1;
   if (marketTerritory(state, data)?.contested) mult *= data.map.territoryRules.marketMultiplier;
+  // 入宗者在庫房買部分丹藥打折（M25）
+  if (state.sect && data.sects.discount.itemIds.includes(itemId)) mult *= data.sects.discount.mult;
   return Math.max(1, Math.round(item.price * mult));
 }

@@ -1,7 +1,7 @@
 // 名稱欄位：玩家看得到的文字不得寫死會每世重抽的名字，一律用 {guard} 這類欄位，顯示時填入當世名稱。
 // 這個檔案不依賴 core，載入資料時也用它檢查。
 
-export const SLOT_NAMES = ["guard", "merchant", "wanderers", "village", "market", "mountain", "country"] as const;
+export const SLOT_NAMES = ["guard", "merchant", "wanderers", "village", "market", "mountain", "country", "peer", "steward", "elder"] as const;
 export type SlotName = (typeof SLOT_NAMES)[number];
 export type SlotValues = Record<SlotName, string>;
 
@@ -17,6 +17,9 @@ export const DEFAULT_SLOTS: SlotValues = {
   market: "渡頭集",
   mountain: "青垣山",
   country: "玄朔",
+  peer: "同門師兄",
+  steward: "執事",
+  elder: "長老",
 };
 
 const SLOT_PATTERN = /\{([^}]*)\}/g;

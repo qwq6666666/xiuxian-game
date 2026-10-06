@@ -18,6 +18,7 @@ export function scheduleOf(state: GameState, data: GameData = gameData): Schedul
 
 /** 這個安排目前是否開放（有 realmMin 的要達到該境界） */
 export function scheduleOpen(state: GameState, sched: ScheduleDef, data: GameData = gameData): boolean {
+  if (sched.requiresSect && state.sect === null) return false;
   if (sched.realmMin === undefined) return true;
   const idx = (id: string): number => data.realms.findIndex((r) => r.id === id);
   return idx(state.realmId) >= idx(sched.realmMin);

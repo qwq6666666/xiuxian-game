@@ -8,9 +8,12 @@
 // 通關後策略（post，第 5 個參數）：通關前與 mixed 相同；第一次通關之後道韻先買神光到結嬰門檻，
 // 再依較高的目標均衡購買，並量測首次元嬰、金丹期單世時長與結嬰嘗試次數（對照 GDD 第 23.6 節）。
 // post 另在第一次元嬰之後買凝神到化神門檻、嘗試化神，並量測首次化神、元嬰期單世時長與化神嘗試次數（GDD 第 25.6 節）。
+// 入宗策略（sect，第 5 個參數）：同 mixed，另外練氣三層起旅行到最近的開放宗門求入宗，入宗後依晉升條件做差事並晉升，量測入宗成功率與位階分布（GDD 第 29 節）。
 // 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
 // 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
 // 例：npm run sim -- 300 1 40 post
+import { beginTravel, placesAt, routeTo } from "../src/core/travel";
+import { canJoinSect, canPromoteSect, joinSect, nextRank, promoteSect } from "../src/core/sect";
 import { buyItem, buyTalent, canBuyItem, canBuyTalent, canUseItem, canZuohua, setSchedule, useItem, zuohua } from "../src/core/actions";
 import { attemptBreakthrough, canBreakthrough } from "../src/core/breakthrough";
 import { canChoose, chooseEvent, eventOf } from "../src/core/events";
@@ -24,7 +27,7 @@ import { realmLabel } from "../src/ui/format";
 const runs = Number(process.argv[2] ?? 1000);
 const baseSeed = Number(process.argv[3] ?? 1);
 const lives = Number(process.argv[4] ?? 1);
-const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : "simple";
+const strategy = process.argv[5] === "mixed" ? "mixed" : process.argv[5] === "post" ? "post" : process.argv[5] === "herb" ? "herb" : process.argv[5] === "wander" ? "wander" : process.argv[5] === "sect" ? "sect" : "simple";
 
 let policySeed = baseSeed + 7919;
 
@@ -55,6 +58,36 @@ function herbActions(state: GameState): GameState {
   let s = setSchedule(state, "herb", gameData);
   while (s.realmId !== "mortal" && canBuyItem(s, "juqi_dan", gameData)) s = buyItem(s, "juqi_dan", gameData);
   while (canUseItem(s, "juqi_dan", gameData)) s = useItem(s, "juqi_dan", gameData);
+  return s;
+}
+
+/** 入宗策略的每月操作：練氣三層起去最近的開放宗門求入宗；入宗後境界夠了但貢獻不足就做差事，條件滿足就晉升 */
+const sectStats = { tries: 0, joins: 0, lives: 0, peaks: [0, 0, 0, 0, 0] };
+function sectActions(state: GameState): GameState {
+  let s = state;
+  if (s.sect === null) {
+    if (canJoinSect(s, gameData)) {
+      const before = s.sectsTried.length;
+      s = joinSect(s, gameData);
+      if (s.sectsTried.length > before) sectStats.tries++;
+      if (s.sect !== null) sectStats.joins++;
+      return s;
+    }
+    const ready = s.realmId !== "mortal" && (s.realmId !== "lianqi" || s.stage >= gameData.sects.join.minStage);
+    if (ready && s.travel.targetId === null && s.pendingEvent === null) {
+      const options = placesAt(s, gameData)
+        .filter((p) => p.kind === "sect" && !s.sectsTried.includes(p.id.slice(5)) && !p.status.includes("閉山") && !p.status.includes("覆滅"))
+        .map((p) => ({ p, months: routeTo(s, p.id, gameData)?.months ?? Infinity }))
+        .sort((a, b) => a.months - b.months);
+      if (options.length > 0 && Number.isFinite(options[0].months)) s = beginTravel(s, options[0].p.id, gameData);
+    }
+    return s;
+  }
+  if (canPromoteSect(s, gameData)) s = promoteSect(s, gameData);
+  const next = nextRank(s, gameData);
+  const idx = (id: string): number => gameData.realms.findIndex((r) => r.id === id);
+  const wantDuty = next?.def.promote !== undefined && idx(s.realmId) >= idx(next.def.promote.realm) - 0 && s.sect!.contribution < next.def.promote.contribution;
+  s = setSchedule(s, wantDuty ? gameData.sects.dutySchedule : "retreat", gameData);
   return s;
 }
 
@@ -125,6 +158,7 @@ function playLife(start: GameState): GameState {
     else if (strategy === "wander" && state.phase === "living") state = wanderActions(state);
     else if (strategy !== "simple" && state.phase === "living") state = mixedActions(state);
     if (state.pendingEvent !== null) state = chooseEvent(state, randomChoice(state.pendingEvent, state), gameData);
+    if (strategy === "sect" && state.phase === "living" && state.pendingEvent === null) state = sectActions(state);
     // 卡在瓶頸時反覆嘗試突破，直到成功或老死
     while (state.phase === "living" && atBottleneck(state, gameData) && canBreakthrough(state, gameData)) {
       if (state.realmId === "jindan") lifeStats.attempts++;
@@ -313,6 +347,10 @@ function campaigns(): void {
         gotAll = true;
         allLives.push(k + 1);
       }
+      if (strategy === "sect") {
+        sectStats.lives++;
+        sectStats.peaks[state.sectPeak]++;
+      }
       row.progress += progressOf(state);
       row.years += (state.ageMonths - start) / 12;
       months += state.ageMonths - start;
@@ -362,14 +400,14 @@ function campaigns(): void {
         yuanyingHours.push((months * gameData.config.msPerMonth) / 3_600_000);
       }
       // 把道韻優先花在宿慧
-      if (strategy === "mixed" || strategy === "herb" || strategy === "wander") state = buyTalentsBalanced(state);
+      if (strategy === "mixed" || strategy === "herb" || strategy === "wander" || strategy === "sect") state = buyTalentsBalanced(state);
       else if (strategy === "post") state = buyTalentsPost(state);
       else while (canBuyTalent(state, "suhui", gameData)) state = buyTalent(state, "suhui", gameData);
       state = newLife(state, gameData);
     }
   }
 
-  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧" }[strategy]}）`);
+  console.log(`模擬 ${runs} 場戰役，每場 ${lives} 世（種子 ${baseSeed}；策略：${{ mixed: "混合", post: "通關後", herb: "採藥丹修", wander: "走訪渡口", simple: "優先買宿慧", sect: "入宗" }[strategy]}）`);
   console.log("世數 | 開局宿慧 | 平均進度(階段) | 到練氣五層(年) | 平均享年 | 平均道韻 | 已達築基 | 已達金丹");
   perLife.forEach((r, k) => {
     console.log(
@@ -435,6 +473,14 @@ function campaigns(): void {
     console.log(`  ${ok(ym >= 20 && ym <= 45)} 元嬰期單世時長：平均 ${ym.toFixed(1)} 分鐘（目標 20–45 分鐘，僅計凝神已到門檻的 ${yuanyingMinutes.length} 世）`);
     const ha = mean(huashenAttemptCounts);
     console.log(`  ${ok(ha >= 2 && ha <= 5)} 每世化神嘗試：平均 ${ha.toFixed(1)} 次（目標 2–5 次，僅計有嘗試的 ${huashenAttemptCounts.length} 世）`);
+  }
+  if (strategy === "sect") {
+    const pct = (n: number): string => `${((n / Math.max(1, sectStats.lives)) * 100).toFixed(1)}%`;
+    console.log("對照第 29.10 節（入宗）：");
+    console.log(`  試煉 ${sectStats.tries} 次，成功 ${sectStats.joins} 次（${((sectStats.joins / Math.max(1, sectStats.tries)) * 100).toFixed(0)}%）；${sectStats.lives} 世中入宗 ${pct(sectStats.joins)}`);
+    console.log(`  各世最高位階：未入宗 ${pct(sectStats.peaks[0])}、外門 ${pct(sectStats.peaks[1])}、內門 ${pct(sectStats.peaks[2])}、執事 ${pct(sectStats.peaks[3])}、長老 ${pct(sectStats.peaks[4])}`);
+    console.log(`  ${ok(cMed >= 7)} 入宗路線首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
+    console.log(`  ${ok(hours >= 3.5)} 入宗路線通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
   }
   console.log(`  ${lives} 世內已築基 ${((zhujiLives.length / runs) * 100).toFixed(0)}%、已通關 ${((clearLives.length / runs) * 100).toFixed(0)}%`);
 }

@@ -105,6 +105,8 @@ export interface ScheduleDef {
   deathChance: number;
   /** 達到這個境界才開放（預設一開始就能選） */
   realmMin?: string;
+  /** 只有入宗者才開放（宗門差事） */
+  requiresSect?: boolean;
   /** 世局符合條件時，在這個安排旁顯示的提示，可用名稱欄位 */
   worldHints?: { when: WorldWhen; text: string }[];
 }
@@ -131,6 +133,8 @@ export interface Effects {
   items?: Record<string, number>;
   flags?: string[];
   death?: boolean;
+  /** 宗門貢獻增減（只有入宗者生效） */
+  contribution?: number;
   /** 給殘卷：指定一份，或從未持有、已解鎖、非 fixed 且層級不超過 maxTier 的殘卷中抽一份（chance 為觸發機率，預設 1） */
   fragment?: { id: string } | { maxTier: number; chance?: number };
 }
@@ -159,6 +163,10 @@ export interface EventConditions {
   territoryConflict?: boolean;
   /** 目前所在地是否在開放宗門的靈脈範圍內 */
   sectInfluence?: boolean;
+  /** 是否正在宗門中（宗門事件用；寫了同門欄位的事件必須設為 true） */
+  sect?: boolean;
+  /** 在宗門中且位階不低於此索引（0 外門、1 內門、2 執事、3 長老） */
+  sectRankMin?: number;
 }
 
 export interface OutcomeDef {
@@ -265,6 +273,8 @@ export interface TextData {
     adventureDeath: string;
     /** 閉關坐化的日誌 */
     zuohua: string;
+    /** 宗門日誌（M25）：{sect} 填宗門名稱；promote 以位階 id 為鍵（外門以外的位階都要寫） */
+    sect: { join: string; refuse: string; leave: string; promote: Record<string, string> };
     /** 閉關見聞：依閉關長短分檔，結束原因的補句接在後面（時間用完不補） */
     retreat: {
       short: string[];
@@ -389,6 +399,42 @@ export interface MapBlurbs {
   mountain: string;
 }
 
+/** 宗門位階（外門到長老）的資料 */
+export interface SectRankDef {
+  id: string;
+  name: string;
+  /** 修煉加成（乘上宗門規模與興衰） */
+  bonus: number;
+  /** 每年月例靈石，入宗滿一年發一次（乘上宗門規模與興衰，四捨五入） */
+  stipend: number;
+  /** 做宗門差事時每月得到的貢獻 */
+  duty: number;
+  /** 晉升到這個位階需要的境界與貢獻；外門沒有 */
+  promote?: { realm: string; contribution: number };
+}
+
+/** 宗門系統的數值（M25）：入宗試煉、位階、加成、庫房 */
+export interface SectsData {
+  join: {
+    minRealm: string;
+    minStage: number;
+    baseRate: Record<"great" | "school", number>;
+    stateMult: Record<"prosper" | "stable" | "decline", number>;
+    insightBonus: number;
+    boneBonus: number;
+    /** 靈根 id → 額外成功率 */
+    rootBonus: Record<string, number>;
+  };
+  scale: Record<"great" | "school", number>;
+  /** 各種宗門最高能到的位階索引 */
+  maxRank: Record<"great" | "school", number>;
+  bonusState: Record<"prosper" | "stable" | "decline", number>;
+  ranks: SectRankDef[];
+  discount: { itemIds: string[]; mult: number };
+  /** 宗門差事對應的日常安排 id */
+  dutySchedule: string;
+}
+
 export const SECT_STATES = ["prosper", "stable", "decline", "closed", "fallen"] as const;
 export type SectState = (typeof SECT_STATES)[number];
 
@@ -486,6 +532,7 @@ export interface GameData {
   worldEvents: WorldEventDef[];
   worldEffects: WorldEffectDef[];
   goals: GoalDef[];
+  sects: SectsData;
   /** 年號清單，依世數循環使用 */
   eras: string[];
 }

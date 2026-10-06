@@ -9,6 +9,7 @@ import namesJson from "./names.json";
 import originsJson from "./origins.json";
 import realmsJson from "./realms.json";
 import schedulesJson from "./schedules.json";
+import sectsJson from "./sects.json";
 import spiritRootsJson from "./spiritRoots.json";
 import talentsJson from "./talents.json";
 import textJson from "./text.json";
@@ -29,6 +30,7 @@ import {
   validateOrigins,
   validateRealms,
   validateSchedules,
+  validateSects,
   validateSpiritRoots,
   validateTalents,
   validateMap,
@@ -59,6 +61,7 @@ export const gameData: GameData = validateGameData({
   worldEvents: validateWorldEvents(worldEventsJson),
   worldEffects: validateWorldEffects(worldEffectsJson),
   goals: validateGoals(goalsJson),
+  sects: validateSects(sectsJson),
   eras: validateEras(erasJson),
 });
 

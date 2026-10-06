@@ -7,6 +7,7 @@ import { endLife } from "./review";
 import { nextInt, nextRandom } from "./rng";
 import type { GameState } from "./state";
 import { advanceTravel } from "./travel";
+import { sectBonus, stepSect } from "./sect";
 
 // 其他模組一直從 tick 取用這些函式，維持原本的匯入路徑
 export { addLog, atBottleneck, lifespanYears, nextRealm, realmOf, resolveStages, scheduleOf, scheduleOpen } from "./progress";
@@ -71,6 +72,7 @@ export function monthlyGain(state: GameState, sched: ScheduleDef, data: GameData
     scheduleMult: sched.cultivationMult,
     originBonus: state.cultivationBonus,
     reincarnationBonus: talentBonus(state.meta, data.talents, "cultivation"),
+    sectBonus: sectBonus(state, data),
   });
 }
 
@@ -87,6 +89,7 @@ function stepMonth(state: GameState, data: GameData): GameState {
   if (!atBottleneck(state, data)) s = addCultivation(s, sched, month, data);
   s = applySchedule(s, sched, month, data);
   if (s.phase !== "living") return s;
+  s = stepSect(s, data);
   if (month >= lifespanMonths(realmOf(s, data), s.lifespanBonus)) {
     const died = addLog(s, { month, kind: "death", realmId: s.realmId, stage: s.stage }, data.config.logLimit);
     return endLife(died, "lifespan", data);

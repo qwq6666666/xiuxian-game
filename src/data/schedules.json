@@ -44,5 +44,17 @@
     "stones": { "chance": 0, "min": 0, "max": 0 },
     "finds": [],
     "deathChance": 0
+  },
+  {
+    "id": "sectDuty",
+    "name": "宗門差事",
+    "desc": "替山門辦些雜務，修行稍緩，換得貢獻。",
+    "realmMin": "lianqi",
+    "requiresSect": true,
+    "cultivationMult": 0.4,
+    "eventRateMult": 1.5,
+    "stones": { "chance": 0, "min": 0, "max": 0 },
+    "finds": [],
+    "deathChance": 0
   }
 ]

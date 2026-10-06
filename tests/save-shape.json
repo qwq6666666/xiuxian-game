@@ -1,5 +1,5 @@
 {
-  "version": 14,
+  "version": 15,
   "shape": {
     "TravelState": [
       "locationId",
@@ -17,6 +17,7 @@
       "lastLife",
       "lives",
       "reached",
+      "sectBest",
       "talents",
       "yuanying"
     ],
@@ -38,11 +39,13 @@
       "originId",
       "prev",
       "realmId",
+      "sectPeak",
       "spiritRootId",
       "stage"
     ],
     "Changes": [
       "attributes",
+      "contribution",
       "cultivation",
       "fragment",
       "items",
@@ -58,10 +61,18 @@
       "kind",
       "month",
       "outcome",
+      "rank",
       "realmId",
       "retreatMonths",
+      "sectName",
       "stage",
       "stop"
+    ],
+    "SectMembership": [
+      "contribution",
+      "id",
+      "joinedAge",
+      "rank"
     ],
     "GameState": [
       "ageMonths",
@@ -93,6 +104,9 @@
       "review",
       "rngSeed",
       "schedule",
+      "sect",
+      "sectPeak",
+      "sectsTried",
       "speed",
       "spiritRootId",
       "spiritStones",

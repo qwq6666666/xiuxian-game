@@ -103,6 +103,16 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   12: (d) => ({ ...d, version: 13, travel: { locationId: "village", targetId: null, totalMonths: 0, remainingMonths: 0, trail: ["village"] } }),
   // v13 沒有化神紀錄：補上空的紀錄
   13: (d) => ({ ...d, version: 14, meta: { ...obj(d.meta, "meta"), huashen: {} } }),
+  // v14 沒有宗門：補上未入宗的狀態，跨世與回顧補上最高位階 0
+  14: (d) => ({
+    ...d,
+    version: 15,
+    sect: null,
+    sectsTried: [],
+    sectPeak: 0,
+    meta: { ...obj(d.meta, "meta"), sectBest: 0 },
+    review: d.review === null || d.review === undefined ? null : { ...obj(d.review, "review"), sectPeak: 0 },
+  }),
 };
 
 function fail(field: string, msg: string): never {
@@ -138,7 +148,7 @@ function intRecord(o: Obj, key: string, path = key): Record<string, number> {
 function parseChanges(v: unknown, path: string): Changes {
   const o = obj(v, path);
   const c: Changes = {};
-  for (const k of ["cultivation", "spiritStones", "lifespan"] as const) {
+  for (const k of ["cultivation", "spiritStones", "lifespan", "contribution"] as const) {
     if (o[k] !== undefined) c[k] = num(o, k, {}, `${path}.${k}`);
   }
   if (o.fragment !== undefined) c.fragment = str(o, "fragment", `${path}.fragment`);
@@ -181,6 +191,8 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
     if (!(OFFLINE_STOPS as readonly string[]).includes(stop)) fail(`${p}.stop`, `不是合法的閉關結束原因：${stop}`);
     entry.stop = stop as OfflineStop;
   }
+  if (eo.sectName !== undefined) entry.sectName = str(eo, "sectName", `${p}.sectName`);
+  if (eo.rank !== undefined) entry.rank = num(eo, "rank", { integer: true, min: 0 }, `${p}.rank`);
   if (eo.eraIndex !== undefined) entry.eraIndex = num(eo, "eraIndex", { integer: true, min: 0 }, `${p}.eraIndex`);
   if (kind === "era" && entry.eraIndex === undefined) fail(p, "開場日誌必須有 eraIndex");
   if (kind === "retreat" && (entry.retreatMonths === undefined || entry.stop === undefined)) {
@@ -240,6 +252,7 @@ function parseMeta(v: unknown, data: GameData): Meta {
     clears: originCounts("clears"),
     yuanying: originCounts("yuanying"),
     huashen: originCounts("huashen"),
+    sectBest: num(o, "sectBest", { integer: true, min: 0 }, "meta.sectBest"),
     daoYun: num(o, "daoYun", { integer: true, min: 0 }, "meta.daoYun"),
     talents,
     reached: o.reached as string[],
@@ -285,6 +298,7 @@ function parseReview(v: unknown, data: GameData): LifeReview | null {
     highlights: o.highlights.map((e, i) => parseLogEntry(e, `review.highlights[${i}]`, data)),
     goals: parseGoalResults(o.goals, "review.goals", data),
     prev: o.prev === null ? null : parseBrief(o.prev, "review.prev", data),
+    sectPeak: num(o, "sectPeak", { integer: true, min: 0 }, "review.sectPeak"),
   };
 }
 
@@ -362,6 +376,16 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     fail("travel.trail", "必須是非空的地點 id 陣列");
   }
 
+  const sectRaw = o.sect === null ? null : obj(o.sect, "sect");
+  if (sectRaw !== null) {
+    const sid = str(sectRaw, "id", "sect.id");
+    const srank = num(sectRaw, "rank", { integer: true, min: 0 }, "sect.rank");
+    if (srank >= data.sects.ranks.length) fail("sect.rank", `超出位階數 ${data.sects.ranks.length}，目前為 ${srank}`);
+    num(sectRaw, "contribution", { integer: true, min: 0 }, "sect.contribution");
+    num(sectRaw, "joinedAge", { integer: true, min: 0 }, "sect.joinedAge");
+    if (!sid) fail("sect.id", "不可為空");
+  }
+  if (!Array.isArray(o.sectsTried) || !o.sectsTried.every((id) => typeof id === "string")) fail("sectsTried", "必須是字串陣列");
   const state: GameState = {
     version,
     rngSeed: num(o, "rngSeed", { integer: true }),
@@ -390,6 +414,9 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     breakthroughs: num(o, "breakthroughs", { integer: true, min: 0 }),
     goalIds,
     startFragments: num(o, "startFragments", { integer: true, min: 0 }),
+    sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
+    sectsTried: o.sectsTried as string[],
+    sectPeak: num(o, "sectPeak", { integer: true, min: 0 }),
     flags: o.flags as string[],
     eventCounts: intRecord(o, "eventCounts"),
     eventClock: num(o, "eventClock", { min: 0 }),

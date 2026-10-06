@@ -1,7 +1,7 @@
 // 世界生成與快照：每一世由世界種子生成一份世界，一世之內隨年齡推進而變化。
 // 全是純函式，不讀時間、不碰 state 的亂數；世界本身不進存檔，由種子重算。
 import { gameData } from "../data/load";
-import type { SlotValues } from "../data/slots";
+import { DEFAULT_SLOTS, type SlotValues } from "../data/slots";
 import type { GameData, SectState, WorldEventDef } from "../data/types";
 import { deriveSeed, nextRandom } from "./rng";
 
@@ -519,6 +519,10 @@ export function worldSlots(world: World): WorldSlots {
     market: world.birth.market,
     mountain: world.birth.mountain,
     country: birthPolity.name,
+    // 同門名字要看入宗的人，由 core/sect.ts 的 slotsFor 覆寫；這裡只放通用稱呼
+    peer: DEFAULT_SLOTS.peer,
+    steward: DEFAULT_SLOTS.steward,
+    elder: DEFAULT_SLOTS.elder,
   };
 }
 

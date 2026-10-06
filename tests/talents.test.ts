@@ -140,7 +140,7 @@ describe("天賦效果", () => {
 
 describe("轉世保留跨世資料", () => {
   it("道韻、天賦、已達成階段、世數都保留，其餘重來", () => {
-    const meta: Meta = { daoYun: 7, talents: { suhui: 3, daoxin: 1 }, reached: ["lianqi:0"], lives: 2, fragments: ["f01"], clears: {}, yuanying: {}, huashen: {}, goals: {}, lastLife: null };
+    const meta: Meta = { daoYun: 7, talents: { suhui: 3, daoxin: 1 }, reached: ["lianqi:0"], lives: 2, fragments: ["f01"], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, goals: {}, lastLife: null };
     const dead = ended({
       meta,
       realmId: "zhuji",
@@ -152,6 +152,7 @@ describe("轉世保留跨世資料", () => {
       review: {
         cause: "lifespan", closing: 0, ageMonths: 1440, originId: "farmer", spiritRootId: "san",
         realmId: "zhuji", stage: 1, breakthroughs: 3, daoYunBase: 1, daoYunBonus: 0, highlights: [], goals: [], prev: null,
+      sectPeak: 0,
       },
       speed: 4,
     });

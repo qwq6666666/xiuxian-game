@@ -2,6 +2,17 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-06：M25 加入宗門核心完成
+
+- 分支：`ai/claude-m25`（合併後以 `master` 為準）
+- 改了什麼：見 `docs/GDD.md` 29.12。存檔 v15。
+- 驗證：`npm run verify` 全過；simple／mixed／herb／wander／post 與 M25 之前逐字相同；`sect` 策略 300 場 16 世全 ✓。**沒有在瀏覽器驗證**：介面還沒有任何宗門面板，所以只能靠單元測試與 sim。
+- **ChatGPT 的 M26／M27 可以開始**：
+  - M26 介面請從 `src/core/sect.ts` 取資料，不要自己算：位階 `rankOf`、所屬宗門 `memberSect`（有 `name`、`rank`、`state`）、所在山門 `localSect`、成功率 `joinRate`、能否求入宗 `canJoinSect`、動作 `joinSect`／`leaveSect`／`promoteSect`、下一階 `nextRank`、加成 `sectBonus`、月例 `sectStipend`、同門 `companionsOf`。動作都是純函式 `(state) => state`，介面照 `main.ts` 的 handlers 慣例接。日常安排「宗門差事」已經在 `data.schedules`，入宗後自動出現。名稱欄位請用 `slotsFor(state)`。
+  - 修為速度提示（`ui/derived.ts` 的 `paceHint`）已經算進宗門加成（走 `monthlyGain`），不用再改。
+  - M27 事件：格式見 GDD 29.4、29.6。條件 `sect`、`sectRankMin`；效果 `contribution`；`{peer}`、`{steward}`、`{elder}` 只能在 `conditions.sect: true` 的事件用。放進 `src/data/events/sect.json`，這個檔我還沒建，**開工前請告訴我，我會建檔並在 `load.ts` 登記**。
+- 沒驗證：長老位階的 sim 數據（`sect` 策略只玩到金丹）。
+
 ## 2026-10-06：M20 化神完成
 
 - 分支：`ai/claude-m20`（合併後以 `master` 為準）

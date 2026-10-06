@@ -1,6 +1,6 @@
 import type { AttributeKey, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 /** 當世旅行：地點 id 由世界種子重建；行程期間照常推進修行與事件。 */
 export interface TravelState {
@@ -30,6 +30,8 @@ export interface Meta {
   yuanying: Record<string, number>;
   /** 各出身化神大成的次數（出身 id → 次數），只收藏，不影響任何數值 */
   huashen: Record<string, number>;
+  /** 歷代在宗門裡到過的最高位階（1 外門到 4 長老，0 沒入過宗），只收藏 */
+  sectBest: number;
   /** 各目標達成的次數（目標 id → 次數），只收藏，不影響任何數值 */
   goals: Record<string, number>;
   /** 上一世的簡要結果，供一生回顧比較；還沒走完過一世為 null */
@@ -45,7 +47,7 @@ export interface LifeBrief {
 }
 
 export function emptyMeta(): Meta {
-  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, goals: {}, lastLife: null };
+  return { daoYun: 0, talents: {}, reached: [], lives: 0, fragments: [], clears: {}, yuanying: {}, huashen: {}, sectBest: 0, goals: {}, lastLife: null };
 }
 
 /** 一生回顧：死亡或通關時結算一次 */
@@ -71,6 +73,8 @@ export interface LifeReview {
   goals: { id: string; done: boolean }[];
   /** 上一世的簡要結果（第一世為 null），一生回顧用它列出差別 */
   prev: LifeBrief | null;
+  /** 這一世在宗門裡到過的最高位階（1 外門到 4 長老，0 沒入過宗） */
+  sectPeak: number;
 }
 
 /** cleared：這一世以通關或元嬰大成結束（死亡為 dead） */
@@ -92,6 +96,10 @@ export const LOG_KINDS = [
   "event",
   "retreat",
   "era",
+  "sectJoin",
+  "sectRefuse",
+  "sectLeave",
+  "sectPromote",
 ] as const;
 export type LogKind = (typeof LOG_KINDS)[number];
 
@@ -110,6 +118,8 @@ export interface Changes {
   items?: Record<string, number>;
   /** 得到的殘卷 id */
   fragment?: string;
+  /** 宗門貢獻變化 */
+  contribution?: number;
 }
 
 /** 日誌只存事件類型，文字由介面依資料檔組出 */
@@ -131,6 +141,17 @@ export interface LogEntry {
   stop?: OfflineStop;
   /** 開場日誌：這一世是第幾世（從 0 起算），年號由它算出 */
   eraIndex?: number;
+  /** 宗門日誌：當時的宗門名稱（日誌存名字，之後世局再變也不影響）與位階索引 */
+  sectName?: string;
+  rank?: number;
+}
+
+/** 入宗後的身分 */
+export interface SectMembership {
+  id: string;
+  rank: number;
+  contribution: number;
+  joinedAge: number;
 }
 
 export interface GameState {
@@ -175,6 +196,12 @@ export interface GameState {
   goalIds: string[];
   /** 這一世開始時已有的殘卷數，用來算「本世取得」 */
   startFragments: number;
+  /** 目前所屬宗門（M25）；rank 是位階索引（0 外門），joinedAge 是入宗年齡（月） */
+  sect: SectMembership | null;
+  /** 本世試過或離開的宗門 id，不能再入 */
+  sectsTried: string[];
+  /** 這一世到過的最高位階（1 外門到 4 長老） */
+  sectPeak: number;
   /** 本世累積的事件旗標 */
   flags: string[];
   /** 本世各事件已出現的次數 */

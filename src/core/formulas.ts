@@ -28,6 +28,8 @@ export interface CultivationParams {
   originBonus: number;
   /** 輪迴加成（M4 才有，目前固定 0） */
   reincarnationBonus: number;
+  /** 宗門加成（M25），0.1 代表 +10%；沒入宗為 0 */
+  sectBonus?: number;
 }
 
 /** 每月修為 = 基礎 × 靈根 × (1 + 根骨 × 係數) × 境界 × 安排 × (1 + 出身) × (1 + 輪迴) */
@@ -39,7 +41,8 @@ export function cultivationPerMonth(p: CultivationParams): number {
     p.realmMult *
     p.scheduleMult *
     (1 + p.originBonus) *
-    (1 + p.reincarnationBonus)
+    (1 + p.reincarnationBonus) *
+    (1 + (p.sectBonus ?? 0))
   );
 }
 

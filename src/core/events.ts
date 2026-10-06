@@ -33,6 +33,8 @@ export function eventAvailable(state: GameState, ev: EventDef, data: GameData = 
   }
   if (c.territoryConflict !== undefined && Boolean(localTerritory(state, data)?.contested) !== c.territoryConflict) return false;
   if (c.sectInfluence !== undefined && localSectInfluence(state, data) !== c.sectInfluence) return false;
+  if (c.sect !== undefined && (state.sect !== null) !== c.sect) return false;
+  if (c.sectRankMin !== undefined && (state.sect === null || state.sect.rank < c.sectRankMin)) return false;
   if (c.bottleneck !== undefined && atBottleneck(state, data) !== c.bottleneck) return false;
   if (c.fragmentAvailable !== undefined && availableFragments(state, c.fragmentAvailable, data).length === 0) return false;
   return true;
@@ -122,6 +124,11 @@ function applyEffects(
     }
     s = { ...s, items };
     if (Object.keys(delta).length > 0) changes.items = delta;
+  }
+  if (effects.contribution && s.sect !== null) {
+    const next = Math.max(0, s.sect.contribution + effects.contribution);
+    if (next !== s.sect.contribution) changes.contribution = next - s.sect.contribution;
+    s = { ...s, sect: { ...s.sect, contribution: next } };
   }
   if (effects.flags) {
     const flags = [...s.flags];
