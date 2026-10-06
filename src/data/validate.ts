@@ -162,6 +162,8 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     logLimit: num(o, "logLimit", file, { gt: 0, integer: true }),
     breakthroughFailLoss: num(o, "breakthroughFailLoss", file, { min: 0 }),
     cultivationBonusCap: num(o, "cultivationBonusCap", file, { gt: 0 }),
+    focusBonus: num(o, "focusBonus", file, { min: 0, max: 0.5 }),
+    focusCooldown: num(o, "focusCooldown", file, { min: 1, max: 24, integer: true }),
     mindLossReduction: num(o, "mindLossReduction", file, { min: 0 }),
     priceRefItemId: str(o, "priceRefItemId", file),
     eventIntervalMin: eventMin,
@@ -882,6 +884,7 @@ export function validateTribulation(raw: unknown, file = "tribulation.json"): Tr
   return {
     guard: { perMind: num(g, "perMind", gw, { min: 0 }), max: num(g, "max", gw, { min: 0, max: 0.5 }), extraLoss: num(g, "extraLoss", gw, { min: 0, max: 0.5 }) },
     maxChance: num(o, "maxChance", file, { gt: 0, max: 1 }),
+    focusBonus: num(o, "focusBonus", file, { min: 0, max: 0.1 }),
     images,
   };
 }

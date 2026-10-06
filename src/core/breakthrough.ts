@@ -129,10 +129,12 @@ export function waveBaseChance(state: GameState): number {
 }
 
 /** 這一道選擇該方式的成功率；符籙不夠或不在天劫中為 0 */
-export function waveChance(state: GameState, choice: WaveChoice, data: GameData = gameData): number {
+export function waveChance(state: GameState, choice: WaveChoice, data: GameData = gameData, focus = false): number {
   if (!state.tribulation) return 0;
-  const base = waveBaseChance(state);
+  // 凝神：在光圈收攏時選擇，這一道的把握再加一點（不超過上限）
   const cap = data.tribulation.maxChance;
+  const plain = waveBaseChance(state);
+  const base = focus ? Math.max(plain, Math.min(cap, plain + data.tribulation.focusBonus)) : plain;
   if (choice === "brace") return base;
   if (choice === "guard") {
     const g = data.tribulation.guard;
@@ -157,10 +159,10 @@ export function waveImage(state: GameState, data: GameData = gameData) {
  * 面對這一道劫波：用累積門檻判定，不再抽亂數（亂數在天劫開始時抽定）。
  * 通過最後一道即突破成功；任何一道失敗即突破失敗（不致死）。
  */
-export function faceWave(state: GameState, choice: WaveChoice, data: GameData = gameData): GameState {
+export function faceWave(state: GameState, choice: WaveChoice, data: GameData = gameData, focus = false): GameState {
   const t = state.tribulation;
   if (!t || !canChooseWave(state, choice, data)) return state;
-  const threshold = t.threshold * waveChance(state, choice, data);
+  const threshold = t.threshold * waveChance(state, choice, data, focus);
   let s = state;
   if (choice === "ward") {
     const ward = wardItem(data)!;

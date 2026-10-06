@@ -20,6 +20,10 @@ export interface GameConfig {
   breakthroughFailLoss: number;
   /** 各項修煉加成合計的設計上限（宗門、心法、法寶最大值相乘後須不超過它；由測試守住） */
   cultivationBonusCap: number;
+  /** 運功（點擊）的加成：若每次冷卻一到就運功，整體修煉速度增加這個比例 */
+  focusBonus: number;
+  /** 運功的冷卻（月）。一次運功得到的修為 = 當月修為 × focusBonus × 冷卻月數 */
+  focusCooldown: number;
   /** 每點心性減少的損失比例 */
   mindLossReduction: number;
   /** 安排資訊面拿來換算「攢多久買得起」的參考物品 id */
@@ -498,6 +502,8 @@ export interface TribulationData {
   guard: { perMind: number; max: number; extraLoss: number };
   /** 每一道的成功率上限 */
   maxChance: number;
+  /** 在光圈收攏時選擇（凝神），這一道的成功率增加多少 */
+  focusBonus: number;
   /** 劫波意象，依道數循環使用 */
   images: { name: string; arrive: string; pass: string; fail: string }[];
 }

@@ -23,6 +23,7 @@ import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { sectPanel } from "./sectinfo";
 import { statPanel } from "./statinfo";
+import { canFocus, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { icon, itemIcon, scheduleIcon } from "./icons";
 import { vignetteHtml } from "./vignette";
@@ -72,7 +73,8 @@ export interface UiHandlers {
   onBuyItem(itemId: string): void;
   onZuohua(): void;
   onTravel(targetId: string): void;
-  onWave(choice: WaveChoice): void;
+  onWave(choice: WaveChoice, focused: boolean): void;
+  onFocus(): void;
   onMethod(methodId: string): void;
   onForge(recipeId: string): void;
   onEquip(itemId: string): void;
@@ -90,6 +92,8 @@ export interface Ui {
 }
 
 /** 側欄的分頁；每個區塊以 data-tab 歸屬其中一頁 */
+/** 天劫光圈一輪的長度（毫秒），要與 styles/layout.css 的 trib-close 動畫一致 */
+const RING_MS = 1600;
 const SIDE_TABS = [
   { id: "play", label: "修行" },
   { id: "make", label: "煉製" },
@@ -698,7 +702,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     stageEl.innerHTML = `
       <section class="status" aria-label="狀態">
         ${sceneHtml()}
-        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
+        <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="focusBtn" type="button" class="focus-btn" hidden></button><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
         <p id="pace" class="pace"></p>
         <div id="resbar" class="resbar" aria-label="隨身"></div>
@@ -741,6 +745,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         <div class="card event">
           <h2 id="tribTitle"></h2>
           <p id="tribText"></p>
+          <div id="tribRing" class="trib-ring" aria-hidden="true"><span class="ring-target"></span><span class="ring-close"></span></div>
           <p id="tribInfo" class="desc"></p>
           <div id="tribChoices" class="choices"></div>
         </div>
@@ -830,6 +835,15 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       marketLink: q<HTMLButtonElement>("#marketLink"),
     };
     els.btButton.addEventListener("click", () => handlers.onBreakthrough(els!.pill.checked));
+    const doFocus = (): void => {
+      if (!lastState || !canFocus(lastState, data)) return;
+      floatDelta(els!.progress, Math.max(1, Math.round(focusGain(lastState, data))), "bar");
+      stageEl.querySelector<HTMLElement>("#scene")?.classList.add("pulse");
+      window.setTimeout(() => stageEl.querySelector<HTMLElement>("#scene")?.classList.remove("pulse"), 600);
+      handlers.onFocus();
+    };
+    q("#focusBtn").addEventListener("click", doFocus);
+    q("#scene").addEventListener("click", doFocus);
     stageEl.querySelectorAll<HTMLButtonElement>("#sideTabs button").forEach((b) => b.addEventListener("click", () => showSideTab(b.dataset.go as SideTab)));
     showSideTab(sideTab);
     els.marketLink.addEventListener("click", openMap);
@@ -944,6 +958,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     }
   }
 
+  /** 天劫的光圈：這一刻是否在收攏的時間窗內（凝神）；偏好減少動態時一律算中，不靠反應速度 */
+  let ringStart = 0;
+  function ringHit(): boolean {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return true;
+    const phase = ((performance.now() - ringStart) % RING_MS) / RING_MS;
+    return phase >= 0.5 && phase <= 0.82;
+  }
+
   /** 煉丹、煉器有結果：煉製頁閃一下，人在別的分頁時分頁列亮提示點 */
   function markMake(cls: "flash-up" | "flash-down"): void {
     flash("#alchemyBox", cls);
@@ -984,10 +1006,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     e.tribModal.hidden = t === null;
     e.tribChoices.replaceChildren();
     if (!t) return;
+    ringStart = performance.now();
     const image = waveImage(state, data);
     e.tribTitle.textContent = `${image.name}劫・第 ${t.wave + 1} 道，共 ${t.waves} 道`;
     e.tribText.textContent = image.arrive;
-    e.tribInfo.textContent = t.wave === 0 ? "劫雲已聚。備得好把握更大，失敗只損修為。" : `已度過 ${t.wave} 道。`;
+    e.tribInfo.textContent = t.wave === 0 ? "劫雲已聚。光圈收攏時選擇，把握再高一分。" : `已度過 ${t.wave} 道。`;
     const pct = (c: WaveChoice): string => `${Math.round(waveChance(state, c, data) * 100)}%`;
     const ward = wardItem(data);
     const rows: { choice: WaveChoice; name: string; note: string }[] = [
@@ -1000,7 +1023,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       b.type = "button";
       b.innerHTML = `<strong>${r.name}</strong><small>${r.note}</small>`;
       b.disabled = !canChooseWave(state, r.choice, data);
-      b.addEventListener("click", () => handlers.onWave(r.choice));
+      b.addEventListener("click", () => handlers.onWave(r.choice, ringHit()));
       e.tribChoices.append(b);
     }
   }
@@ -1290,6 +1313,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       hint.hidden = hint.textContent === "";
     }
     updateScene(stageEl.querySelector<HTMLElement>("#scene"), state);
+    const fb = stageEl.querySelector<HTMLButtonElement>("#focusBtn");
+    if (fb) {
+      const ok = canFocus(state, data);
+      fb.hidden = state.phase !== "living" || atBottleneck(state, data);
+      fb.disabled = !ok;
+      fb.textContent = ok ? `運功 +${Math.max(1, Math.round(focusGain(state, data)))}` : `運功・${focusWait(state, data)}`;
+    }
     renderStatDetail(state);
     renderResources(state);
     renderSect(state, e);
