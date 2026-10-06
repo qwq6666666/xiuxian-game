@@ -4,6 +4,8 @@ import { deserialize, serialize } from "../src/core/save";
 import { tick } from "../src/core/tick";
 import { beginTravel, placesAt, regionRoute, routeTo } from "../src/core/travel";
 import { travelMonths } from "../src/core/formulas";
+import { polityLabel, worldAt, worldFor } from "../src/core/world";
+import { gameData } from "../src/data/load";
 
 describe("天下圖旅行", () => {
   it("地域路線固定、月數隨跨域增加", () => {
@@ -41,5 +43,26 @@ describe("天下圖旅行", () => {
     const invalid = JSON.parse(serialize(underway));
     invalid.travel.targetId = "sect:missing";
     expect(() => deserialize(JSON.stringify(invalid))).toThrow("travel.targetId");
+  });
+});
+
+describe("諸部地域的旅行地點", () => {
+  it("沒有都城的諸部不會產生空名稱或「都城」標籤，其餘地點名稱都不為空", () => {
+    let tribalSeen = 0;
+    for (let seed = 1; seed <= 200; seed++) {
+      const state = startLife(createInitialState(seed));
+      const places = placesAt(state);
+      for (const place of places) expect(place.name, `seed ${seed} ${place.id}`).not.toBe("");
+      const world = worldFor(state.worldSeed, gameData);
+      const snap = worldAt(world, Math.floor(state.ageMonths / 12));
+      for (const polity of snap.polities.filter((p) => p.tribal)) {
+        tribalSeen++;
+        const region = Object.keys(snap.owners).find((r) => snap.owners[r] === polity.id)!;
+        const place = places.find((p) => p.id === `capital:${region}`)!;
+        expect(place.name).toBe(polityLabel(polity));
+        expect(place.status).toBe("諸部聚居地");
+      }
+    }
+    expect(tribalSeen).toBeGreaterThan(0);
   });
 });

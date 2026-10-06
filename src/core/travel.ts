@@ -4,7 +4,7 @@ import type { GameData, Point } from "../data/types";
 import { travelMonths } from "./formulas";
 import { sectReach, territoriesAt, territoryForPoint } from "./territory";
 import type { GameState, TravelState } from "./state";
-import { worldAt, worldFor } from "./world";
+import { polityLabel, worldAt, worldFor } from "./world";
 
 export type PlaceKind = "village" | "market" | "mountain" | "capital" | "ferry" | "sect" | "merchant";
 
@@ -31,7 +31,9 @@ export function placesAt(state: GameState, data: GameData = gameData): TravelPla
   ];
   for (const r of data.map.regions.filter((x) => x.land)) {
     const polity = snap.polities.find((p) => p.id === snap.owners[r.id]);
-    places.push({ id: `capital:${r.id}`, name: polity?.capital ?? r.name, kind: "capital", region: r.id, point: r.capital!, status: "都城" });
+    // 諸部（尚未立國）沒有都城，名稱是空字串：改用「某某諸部」，狀態說明是聚居地
+    const tribal = polity?.tribal === true;
+    places.push({ id: `capital:${r.id}`, name: tribal ? polityLabel(polity!) : polity?.capital || r.name, kind: "capital", region: r.id, point: r.capital!, status: tribal ? "諸部聚居地" : "都城" });
   }
   for (const f of snap.ferries) {
     places.push({ id: `ferry:${f.id}`, name: `${region(f.region).name}第${f.index + 1}渡口`, kind: "ferry", region: f.region, point: region(f.region).ferries![f.index], status: f.broken ? "渡口已毀，可至舊址" : "渡口可通行" });
