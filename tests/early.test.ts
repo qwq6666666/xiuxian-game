@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { eventAvailable, pickEvent } from "../src/core/events";
+import { createInitialState, startLife } from "../src/core/life";
+import { tick } from "../src/core/tick";
 import { gameData as data } from "../src/data/load";
 import { validateEvents, validateGameData, validateText } from "../src/data/validate";
 import { formatLogEntry } from "../src/ui/format";
@@ -56,9 +58,16 @@ describe("正式的開場引路事件", () => {
   const real = data.events.find((e) => e.id === "intro_guide_001")!;
   it("只在第一世、前幾年、一定先出", () => {
     expect(real.guaranteed).toBe(true);
-    expect(real.conditions).toEqual({ ageMax: 14, livesMax: 0 });
+    expect(real.conditions).toEqual({ ageMax: 19, livesMax: 0 });
     expect(pickEvent(living(9), data)[0]?.id).toBe("intro_guide_001");
     expect(eventAvailable(living(9, { meta: { ...emptyMeta(), lives: 1 } }), real, data)).toBe(false);
+  });
+  it("預設閉關（事件頻率 ×0.5）下，第一世的第一個事件也一定是它", () => {
+    // 事件門檻最長 48 個月、閉關每月只累計 0.5，所以最慢要 8 年才輪到第一件事；ageMax 必須蓋得住
+    for (let seed = 1; seed <= 60; seed++) {
+      const s = tick(startLife(createInitialState(seed, data), data), 12 * 10, data);
+      expect(s.eventCounts.intro_guide_001, `seed ${seed}`).toBe(1);
+    }
   });
   it("每個選項都有一個固定結果，且都是小獎勵", () => {
     expect(real.choices).toHaveLength(3);

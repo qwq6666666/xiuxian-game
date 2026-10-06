@@ -543,7 +543,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
   /** 擲骰畫面的心法選擇：未解鎖的列出條件，已選的標示 */
   function methodHtml(state: GameState): string {
-    const rows = methodRows(state, data)
+    const all = methodRows(state, data);
+    // 還沒解鎖任何心法時只留一行提示，第一世的擲骰畫面不要被四個選項塞滿
+    if (all.filter((m) => m.unlocked).length <= 1) {
+      const next = data.methods.find((m) => m.unlock.fragments > state.meta.fragments.length);
+      return next ? `<p class="desc methods">殘卷錄集到 ${next.unlock.fragments} 份，可解鎖第一個心法（目前 ${state.meta.fragments.length} 份）。</p>` : "";
+    }
+    const rows = all
       .map(
         (m) =>
           `<button type="button" data-method="${m.id}" aria-pressed="${m.selected}" class="${m.selected ? "active" : ""}"${m.unlocked ? "" : " disabled"}><strong>${m.name}</strong><small>${m.desc}</small><small>${m.effectText}</small>${m.unlocked ? "" : `<small>${m.lockText}</small>`}</button>`,

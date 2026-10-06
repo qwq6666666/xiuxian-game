@@ -9,7 +9,7 @@
     "maxPerLife": 1,
     "guaranteed": true,
     "highlight": 1,
-    "conditions": { "ageMax": 14, "livesMax": 0 },
+    "conditions": { "ageMax": 19, "livesMax": 0 },
     "choices": [
       {
         "text": "道謝，收下他遞來的丹藥",

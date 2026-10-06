@@ -45,7 +45,7 @@ export function statPanel(state: GameState, data: GameData): StatPanel {
   ];
   for (const [label, v] of extras) if (v !== 0) breakdown.push({ label, value: signed(v) });
 
-  const main: StatRow[] = [{ label: "每月修為", value: `+${formatGain(monthlyGain(state, sched, data))}` }];
+  const main: StatRow[] = [{ label: "心法", value: methodOf(state, data).name }, { label: "每月修為", value: `+${formatGain(monthlyGain(state, sched, data))}` }];
   const rule = realm.breakthroughRule;
   if (rule) {
     main.push({ label: "突破成功率", value: `${Math.round(currentBreakthroughRate(state, false, data) * 100)}%` });
