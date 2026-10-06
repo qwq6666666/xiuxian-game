@@ -16,39 +16,35 @@ import { eventOf } from "../core/events";
 import { placesAt } from "../core/travel";
 import { activeWorldEffects, itemPrice } from "../core/worldeffects";
 import { marketTerritory } from "../core/travel";
-import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { fillSlots, type SlotValues } from "../data/slots";
-import { goalStatuses, type GoalProgress } from "../core/goals";
+import { goalStatuses } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { sectPanel } from "./sectinfo";
 import { statPanel } from "./statinfo";
 import { canFocus, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { button, el } from "./dom";
+import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./rollview";
 import { installModalFocus, createReviewModal } from "./modals";
 import { createOverlays } from "./overlays";
 import { icon, itemIcon, scheduleIcon } from "./icons";
 import { huntVignetteHtml, vignetteHtml } from "./vignette";
 import { canHunt, fleeChance, actionHit, monsterOf, powerRatio, type HuntChoice, huntTalisman } from "../core/encounter";
-import { methodRows } from "./methodinfo";
 import { alchemyPanel } from "./alchemyinfo";
-import { attributeGuide, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
+import { formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
 import { eraName, lifeIndex } from "../core/era";
 import { pillPower, splitAge, stageNeed } from "../core/formulas";
 import type { GameState } from "../core/state";
 import { CLEARED_FLAG, YUANYING_FLAG } from "../core/review";
 import { atBottleneck, lifespanYears, realmOf, scheduleOpen } from "../core/tick";
-import { ARTIFACT_SLOTS, ATTRIBUTE_KEYS, type ArtifactSlot, type GameData } from "../data/types";
+import { ARTIFACT_SLOTS, type ArtifactSlot, type GameData } from "../data/types";
 import {
-  ATTR_LABEL,
   choiceBlockReason,
-  eraTransition,
   choiceOdds,
   BESTIARY_LORE_WINS,
   formatChanges,
   formatLogEntry,
   realmLabel,
-  talentSummary,
 } from "./format";
 
 export interface UiHandlers {
@@ -257,109 +253,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     )).map((candidate) => candidate.id);
   }
 
-  const statsHtml = (state: GameState): string =>
-    `<dl class="stats">${ATTRIBUTE_KEYS.map(
-      (k) => `<div><dt>${ATTR_LABEL[k]}</dt><dd>${state.attributes[k]}</dd></div>`,
-    ).join("")}</dl>`;
-
-  /** 這一世的目標：只作收藏，不給任何數值，所以措辭上不強求 */
-  const goalLine = (g: GoalProgress): string => {
-    // 境界與旗標的進度數字沒有意義，只有年歲、殘卷、見聞才顯示
-    const counted = ["age", "fragments", "events"].includes(g.def.condition.kind) && !g.done;
-    return `${g.done ? "✓ " : ""}${g.def.name}｜${g.def.desc}${counted ? `（${g.current} / ${g.target}）` : ""}`;
-  };
-
-  const goalsHtml = (state: GameState): string => {
-    const items = goalStatuses(state, data);
-    if (items.length === 0) return "";
-    return `<section class="goals-box"><h3>這一世的目標</h3><ul class="goals">${items.map((g) => `<li>${goalLine(g)}</li>`).join("")}</ul><p class="desc">只記入收藏，不強求。</p></section>`;
-  };
-
-  /** 屬性與靈根各自影響什麼，收在可展開的說明裡 */
-  const guideHtml = (): string => {
-    const g = attributeGuide(data);
-    return `<details class="guide"><summary>屬性說明</summary><ul>${ATTRIBUTE_KEYS.map(
-      (k) => `<li><strong>${g.attributes[k].label}</strong>　${g.attributes[k].text}</li>`,
-    ).join("")}<li><strong>靈根</strong>　${g.spiritRoot}</li></ul></details>`;
-  };
-
-  const identityHtml = (state: GameState): string => {
-    const spiritRoot = data.spiritRoots.find((r) => r.id === state.spiritRootId);
-    const origin = data.origins.find((o) => o.id === state.originId);
-    return `
-      <p><span class="tag">靈根</span>${spiritRoot?.name ?? "—"}</p>
-      <p><span class="tag">出身</span>${origin?.name ?? "—"}</p>
-      <p class="desc">${origin?.desc ?? ""}</p>`;
-  };
-
-  /** 擲骰畫面的出生地：國家與村名，讓玩家看見每次重擲世界都不一樣 */
-  const birthHtml = (state: GameState): string => {
-    const world = worldFor(state.worldSeed, data);
-    const slots = worldSlots(world);
-    const polity = world.polities.find((p) => p.id === world.owners[world.birth.region])!;
-    const region = data.map.regions.find((r) => r.id === world.birth.region)!;
-    return `<p><span class="tag">出生地</span>${polityLabel(polity)}・${slots.village}（${region.name}）</p>`;
-  };
-
-  // ---- 擲骰畫面 ----
+  const rollView = createRoll({
+    stageEl,
+    data,
+    handlers,
+    getBuilt: () => built,
+    setBuilt: (view) => { built = view; },
+  });
   let built: "roll" | "life" | null = null;
-  let rollKey = "";
-  let currentName = "";
-
-  /** 擲骰畫面的心法選擇：未解鎖的列出條件，已選的標示 */
-  function methodHtml(state: GameState): string {
-    const all = methodRows(state, data);
-    // 還沒解鎖任何心法時只留一行提示，第一世的擲骰畫面不要被四個選項塞滿
-    if (all.filter((m) => m.unlocked).length <= 1) {
-      const next = data.methods.find((m) => m.unlock.fragments > state.meta.fragments.length);
-      return next ? `<p class="desc methods">殘卷錄集到 ${next.unlock.fragments} 份，可解鎖第一個心法（目前 ${state.meta.fragments.length} 份）。</p>` : "";
-    }
-    const rows = all
-      .map(
-        (m) =>
-          `<button type="button" data-method="${m.id}" aria-pressed="${m.selected}" class="${m.selected ? "active" : ""}"${m.unlocked ? "" : " disabled"}><strong>${m.name}</strong><small>${m.desc}</small><small>${m.effectText}</small>${m.unlocked ? "" : `<small>${m.lockText}</small>`}</button>`,
-      )
-      .join("");
-    return `<section class="methods"><h2>心法</h2><p class="desc">每世選一種，開始後不可換。</p><div class="choices">${rows}</div></section>`;
-  }
-
-  function renderRoll(state: GameState): void {
-    const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.methodId}|${state.meta.fragments.length}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}`;
-    if (built === "roll" && key === rollKey) return;
-    built = "roll";
-    rollKey = key;
-    currentName = state.name;
-    const perks = talentSummary(state.meta.talents, data);
-    stageEl.innerHTML = `
-      <main class="card roll">
-        <h1>一念輪迴</h1>
-        <div class="scene-art scene-art-opening" role="img" aria-label="晨霧村舍外，一名旅人走向遠山"></div>
-        <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲。</p>
-        ${eraTransition(lifeIndex(state), data) !== "" ? `<p class="desc">${eraTransition(lifeIndex(state), data)}</p>` : ""}
-        <label class="namebox">姓名 <input id="name" type="text" maxlength="${data.config.nameMaxLength}" /></label>
-        ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
-        ${statsHtml(state)}
-        ${guideHtml()}
-        ${identityHtml(state)}
-        ${birthHtml(state)}
-        ${goalsHtml(state)}
-        ${methodHtml(state)}
-        <div class="actions">
-          <button id="reroll" type="button" ${state.rerolls > 0 ? "" : "disabled"}>重擲（剩 ${state.rerolls} 次）</button>
-          <button id="start" type="button" class="primary">開始修行</button>
-        </div>
-      </main>`;
-    const nameInput = stageEl.querySelector<HTMLInputElement>("#name")!;
-    nameInput.value = state.name;
-    // 改完（按 Enter 或離開欄位）才送出；不合格時由狀態還原欄位內容
-    nameInput.addEventListener("change", () => {
-      handlers.onRename(nameInput.value);
-      nameInput.value = currentName;
-    });
-    stageEl.querySelectorAll<HTMLButtonElement>("[data-method]").forEach((b) => b.addEventListener("click", () => handlers.onMethod(b.dataset.method!)));
-    stageEl.querySelector("#reroll")!.addEventListener("click", () => handlers.onReroll());
-    stageEl.querySelector("#start")!.addEventListener("click", () => handlers.onStart());
-  }
 
   // ---- 修行畫面（含死亡與通關彈窗）----
   interface LifeEls {
@@ -470,7 +371,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
           <details class="fold s-goals" id="goalsFold" data-tab="me" open><summary>目標</summary><ul id="goals" class="goals"></ul><p id="goalHint" class="desc"></p><button id="goalGo" type="button" hidden></button></details>
-          <details class="fold s-role" data-tab="me" open><summary>角色</summary>${statsHtml(state)}<div id="statDetail" class="stat-detail"></div>${guideHtml()}${identityHtml(state)}</details>
+          <details class="fold s-role" data-tab="me" open><summary>角色</summary>${statsHtml(state)}<div id="statDetail" class="stat-detail"></div>${guideHtml(data)}${identityHtml(state, data)}</details>
           <details class="fold s-bag" data-tab="pack" open><summary>背包</summary><ul id="bag" class="items"></ul></details>
           <details class="fold s-market" data-tab="pack" open><summary>坊市</summary><div class="scene-art scene-art-market" role="img" aria-label="暮色中的坊市，攤棚下陳列藥材與器物"></div><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>世局</button></details>
         </aside>
@@ -1293,7 +1194,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       overlays.update(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));
-      if (state.phase === "rolling") renderRoll(state);
+      if (state.phase === "rolling") rollView.render(state);
       else renderLife(state);
       if (arrivedAt) {
         noticeText.textContent = `已抵達${arrivedAt}。此處的風物，總算不只在圖上。`;
