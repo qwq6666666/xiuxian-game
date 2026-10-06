@@ -4,6 +4,7 @@ import { createInitialState } from "../src/core/life";
 import { tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { mountUi, type UiHandlers } from "../src/ui/render";
+import { esc } from "../src/ui/dom";
 import { living } from "./helpers";
 
 // UI 煙霧測試：確認畫面能掛載、各階段能繪製、點擊會呼叫對應處理器。
@@ -90,5 +91,33 @@ describe("UI 煙霧測試", () => {
     expect(speedBtns.length).toBe(gameData.config.speeds.length);
     speedBtns[1].click();
     expect(handlers.onSpeed).toHaveBeenCalledWith(gameData.config.speeds[1]);
+  });
+
+  it("資料裡的 < 與 & 不會被當成標籤", () => {
+    const evil = '<img src="x" onerror="alert(1)">';
+    const bad = {
+      ...gameData,
+      items: gameData.items.map((i) => ({ ...i, name: evil, desc: evil })),
+      schedules: gameData.schedules.map((x) => ({ ...x, name: evil, desc: evil })),
+      origins: gameData.origins.map((o) => ({ ...o, name: evil, desc: evil })),
+      spiritRoots: gameData.spiritRoots.map((r) => ({ ...r, name: evil })),
+      methods: gameData.methods.map((m) => ({ ...m, name: evil, desc: evil })),
+      goals: gameData.goals.map((g) => ({ ...g, name: evil, desc: evil })),
+    };
+    for (const state of [createInitialState(1), living(1)]) {
+      document.body.innerHTML = "";
+      const root = document.createElement("div");
+      document.body.append(root);
+      mountUi(root, bad, spyHandlers()).render(state);
+      expect(root.querySelector("img")).toBeNull();
+      expect(root.innerHTML).toContain("&lt;img");
+    }
+  });
+});
+
+describe("esc", () => {
+  it("跳脫 HTML 特殊字元", () => {
+    expect(esc(`<a href="x">&'</a>`)).toBe("&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;");
+    expect(esc(3)).toBe("3");
   });
 });

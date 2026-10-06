@@ -18,7 +18,7 @@ import { atBottleneck } from "../core/tick";
 import { ARTIFACT_SLOTS, type GameData } from "../data/types";
 import type { SlotValues } from "../data/slots";
 import { alchemyPanel } from "./alchemyinfo";
-import { button, el } from "./dom";
+import { button, el, esc } from "./dom";
 import { BESTIARY_LORE_WINS } from "./format";
 import { icon, itemIcon } from "./icons";
 import { sectPanel } from "./sectinfo";
@@ -95,7 +95,7 @@ export function createPanels(ctx: PanelContext): Panels {
       const id = state.equipment[slot];
       const li = document.createElement("li");
       const name = id ? (data.items.find((i) => i.id === id)?.name ?? id) : "（空）";
-      li.innerHTML = `<div><strong>${SLOT_LABEL[slot]}</strong> ${id ? itemIcon(data, id) : ""}${name}</div>`;
+      li.innerHTML = `<div><strong>${SLOT_LABEL[slot]}</strong> ${id ? itemIcon(data, id) : ""}${esc(name)}</div>`;
       if (id) {
         const b = document.createElement("button");
         b.type = "button";
@@ -126,7 +126,7 @@ export function createPanels(ctx: PanelContext): Panels {
         e.bag.appendChild(head);
       }
       const li = document.createElement("li");
-      li.innerHTML = `<div><strong>${itemIcon(data, item.id)}${item.name}</strong> ×${state.items[item.id]}</div>`;
+      li.innerHTML = `<div><strong>${itemIcon(data, item.id)}${esc(item.name)}</strong> ×${state.items[item.id]}</div>`;
       if (item.effect.kind === "cultivationFraction" || item.effect.kind === "lifespan") {
         const b = document.createElement("button");
         b.type = "button";
@@ -216,7 +216,7 @@ export function createPanels(ctx: PanelContext): Panels {
     for (const r of rows) {
       const b = document.createElement("button");
       b.type = "button";
-      b.innerHTML = `<strong>${r.name}</strong><small>${r.note}</small>`;
+      b.innerHTML = `<strong>${esc(r.name)}</strong><small>${esc(r.note)}</small>`;
       b.disabled = !canChooseWave(state, r.choice, data);
       b.addEventListener("click", () => handlers.onWave(r.choice, ringHit()));
       e.tribChoices.append(b);
@@ -242,7 +242,7 @@ export function createPanels(ctx: PanelContext): Panels {
     e.huntTitle.textContent = `遭遇${m.name}`;
     e.huntText.textContent = m.lore !== undefined && (state.meta.bestiary[m.id]?.win ?? 0) >= BESTIARY_LORE_WINS ? `${m.appear}${m.lore}` : m.appear;
     const bar = (label: string, hp: number, cls: string): string =>
-      `<div class="hunt-bar ${cls}"><span>${label}</span><i><b style="width:${Math.max(0, Math.round(hp * 100))}%"></b></i></div>`;
+      `<div class="hunt-bar ${cls}"><span>${esc(label)}</span><i><b style="width:${Math.max(0, Math.round(hp * 100))}%"></b></i></div>`;
     e.huntBars.innerHTML = bar(m.name, h.monsterHp, "foe") + bar("你", h.myHp, "me");
     const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";
     e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・勝了有修為與靈石，打不贏可以逃。`;
@@ -256,7 +256,7 @@ export function createPanels(ctx: PanelContext): Panels {
     for (const r of rows) {
       const b = document.createElement("button");
       b.type = "button";
-      b.innerHTML = `<strong>${r.name}</strong><small>${r.note}</small>`;
+      b.innerHTML = `<strong>${esc(r.name)}</strong><small>${esc(r.note)}</small>`;
       b.disabled = !canHunt(state, r.choice, data);
       b.addEventListener("click", () => handlers.onHunt(r.choice));
       e.huntChoices.append(b);

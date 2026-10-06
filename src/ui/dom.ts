@@ -14,3 +14,7 @@ export const button = (text: string, onClick: () => void, primary = false): HTML
   b.addEventListener("click", onClick);
   return b;
 };
+
+/** 把文字放進 innerHTML 模板前先跳脫；資料檔的字串一律走這裡，避免 < 或 & 破壞畫面 */
+export const esc = (text: string | number): string =>
+  String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

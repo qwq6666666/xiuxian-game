@@ -6,12 +6,13 @@ import { polityLabel, worldFor, worldSlots } from "../core/world";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
 import { attributeGuide } from "./derived";
 import { ATTR_LABEL, eraTransition, talentSummary } from "./format";
+import { esc } from "./dom";
 import { methodRows } from "./methodinfo";
 import type { UiHandlers } from "./render";
 
 export const statsHtml = (state: GameState): string =>
   `<dl class="stats">${ATTRIBUTE_KEYS.map(
-    (k) => `<div><dt>${ATTR_LABEL[k]}</dt><dd>${state.attributes[k]}</dd></div>`,
+    (k) => `<div><dt>${esc(ATTR_LABEL[k])}</dt><dd>${state.attributes[k]}</dd></div>`,
   ).join("")}</dl>`;
 
 /** 這一世的目標：只作收藏，不給任何數值，所以措辭上不強求 */
@@ -24,24 +25,24 @@ export const goalLine = (g: GoalProgress): string => {
 export const goalsHtml = (state: GameState, data: GameData): string => {
   const items = goalStatuses(state, data);
   if (items.length === 0) return "";
-  return `<section class="goals-box"><h3>這一世的目標</h3><ul class="goals">${items.map((g) => `<li>${goalLine(g)}</li>`).join("")}</ul><p class="desc">只記入收藏，不強求。</p></section>`;
+  return `<section class="goals-box"><h3>這一世的目標</h3><ul class="goals">${items.map((g) => `<li>${esc(goalLine(g))}</li>`).join("")}</ul><p class="desc">只記入收藏，不強求。</p></section>`;
 };
 
 /** 屬性與靈根各自影響什麼，收在可展開的說明裡 */
 export const guideHtml = (data: GameData): string => {
   const g = attributeGuide(data);
   return `<details class="guide"><summary>屬性說明</summary><ul>${ATTRIBUTE_KEYS.map(
-    (k) => `<li><strong>${g.attributes[k].label}</strong>　${g.attributes[k].text}</li>`,
-  ).join("")}<li><strong>靈根</strong>　${g.spiritRoot}</li></ul></details>`;
+    (k) => `<li><strong>${esc(g.attributes[k].label)}</strong>　${esc(g.attributes[k].text)}</li>`,
+  ).join("")}<li><strong>靈根</strong>　${esc(g.spiritRoot)}</li></ul></details>`;
 };
 
 export const identityHtml = (state: GameState, data: GameData): string => {
   const spiritRoot = data.spiritRoots.find((r) => r.id === state.spiritRootId);
   const origin = data.origins.find((o) => o.id === state.originId);
   return `
-    <p><span class="tag">靈根</span>${spiritRoot?.name ?? "—"}</p>
-    <p><span class="tag">出身</span>${origin?.name ?? "—"}</p>
-    <p class="desc">${origin?.desc ?? ""}</p>`;
+    <p><span class="tag">靈根</span>${esc(spiritRoot?.name ?? "—")}</p>
+    <p><span class="tag">出身</span>${esc(origin?.name ?? "—")}</p>
+    <p class="desc">${esc(origin?.desc ?? "")}</p>`;
 };
 
 /** 擲骰畫面的出生地：國家與村名，讓玩家看見每次重擲世界都不一樣 */
@@ -50,7 +51,7 @@ export const birthHtml = (state: GameState, data: GameData): string => {
   const slots = worldSlots(world);
   const polity = world.polities.find((p) => p.id === world.owners[world.birth.region])!;
   const region = data.map.regions.find((r) => r.id === world.birth.region)!;
-  return `<p><span class="tag">出生地</span>${polityLabel(polity)}・${slots.village}（${region.name}）</p>`;
+  return `<p><span class="tag">出生地</span>${esc(polityLabel(polity))}・${esc(slots.village)}（${esc(region.name)}）</p>`;
 };
 
 export interface RollContext {
@@ -79,7 +80,7 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
     const rows = all
       .map(
         (m) =>
-          `<button type="button" data-method="${m.id}" aria-pressed="${m.selected}" class="${m.selected ? "active" : ""}"${m.unlocked ? "" : " disabled"}><strong>${m.name}</strong><small>${m.desc}</small><small>${m.effectText}</small>${m.unlocked ? "" : `<small>${m.lockText}</small>`}</button>`,
+          `<button type="button" data-method="${esc(m.id)}" aria-pressed="${m.selected}" class="${m.selected ? "active" : ""}"${m.unlocked ? "" : " disabled"}><strong>${esc(m.name)}</strong><small>${esc(m.desc)}</small><small>${esc(m.effectText)}</small>${m.unlocked ? "" : `<small>${esc(m.lockText)}</small>`}</button>`,
       )
       .join("");
     return `<section class="methods"><h2>心法</h2><p class="desc">每世選一種，開始後不可換。</p><div class="choices">${rows}</div></section>`;
@@ -97,9 +98,9 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
         <h1>一念輪迴</h1>
         <div class="scene-art scene-art-opening" role="img" aria-label="晨霧村舍外，一名旅人走向遠山"></div>
         <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲。</p>
-        ${eraTransition(lifeIndex(state), data) !== "" ? `<p class="desc">${eraTransition(lifeIndex(state), data)}</p>` : ""}
+        ${eraTransition(lifeIndex(state), data) !== "" ? `<p class="desc">${esc(eraTransition(lifeIndex(state), data))}</p>` : ""}
         <label class="namebox">姓名 <input id="name" type="text" maxlength="${data.config.nameMaxLength}" /></label>
-        ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
+        ${perks.length > 0 ? `<ul class="perks">${perks.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
         ${statsHtml(state)}
         ${guideHtml(data)}
         ${identityHtml(state, data)}

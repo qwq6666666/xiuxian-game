@@ -15,6 +15,7 @@ import { goalStatuses } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { canFocus, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
+import { esc } from "./dom";
 import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./rollview";
 import { createPanels } from "./panels";
 import { installModalFocus, createReviewModal } from "./modals";
@@ -404,7 +405,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const b = document.createElement("button");
       b.type = "button";
       b.setAttribute("aria-pressed", "false");
-      b.innerHTML = `<strong>${scheduleIcon(s.id)}${s.name}</strong><small>${s.desc}</small><small class="sched-facts"></small><small class="sched-hint"></small>`;
+      b.innerHTML = `<strong>${scheduleIcon(s.id)}${esc(s.name)}</strong><small>${esc(s.desc)}</small><small class="sched-facts"></small><small class="sched-hint"></small>`;
       b.addEventListener("click", () => handlers.onSchedule(s.id));
       schedBox.appendChild(b);
       return { id: s.id, b, facts: b.querySelector<HTMLElement>(".sched-facts")!, hint: b.querySelector<HTMLElement>(".sched-hint")! };
@@ -414,7 +415,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     // 材料不在坊市賣
     const market = data.items.filter((item) => item.effect.kind !== "material").map((item) => {
       const li = document.createElement("li");
-      li.innerHTML = `<div><strong>${itemIcon(data, item.id)}${item.name}</strong> <span class="price"></span><small>${item.desc}</small></div>`;
+      li.innerHTML = `<div><strong>${itemIcon(data, item.id)}${esc(item.name)}</strong> <span class="price"></span><small>${esc(item.desc)}</small></div>`;
       const owned = document.createElement("span");
       owned.className = "owned";
       const b = document.createElement("button");
