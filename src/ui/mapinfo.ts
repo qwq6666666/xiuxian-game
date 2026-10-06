@@ -1,6 +1,7 @@
 // 天下圖的純邏輯：點選某個標記時顯示什麼、標記該畫成什麼樣子。不碰 DOM，方便測試。
 import type { World, WorldPolity, WorldSect, WorldSnapshot } from "../core/world";
-import { polityStrength, regionFight, territoryHistory, type GeoCell } from "../core/frontier";
+import { polityStrength, regionFight, territoryHistory, type TerritoryMap } from "../core/frontier";
+import type { Terrain } from "../core/terrain";
 import { polityLabel, worldAt, worldSlots } from "../core/world";
 import { fillSlots } from "../data/slots";
 import type { GameData, MapRef, WorldEffectDef } from "../data/types";
@@ -183,31 +184,47 @@ export function progressWords(progress: number): string {
 }
 
 /** 領土資訊：掌握者、起算年、推進進度與預計底定、國勢 */
-export function territoryLines(world: World, cells: GeoCell[], cellId: string, data: GameData, ageYears: number): string[] {
-  const cell = cells.find((c) => c.id === cellId);
-  if (!cell) return [];
+export function territoryLines(world: World, map: TerritoryMap, terrain: Terrain, cellId: number, data: GameData, ageYears: number): string[] {
+  const ri = terrain.region[cellId];
+  if (ri < 0 || map.owner[cellId] < 0) return [];
+  const region = terrain.regionIds[ri];
+  const ownerId = map.polityIds[map.owner[cellId]];
   const snap = worldAt(world, ageYears);
   const polity = polityLookup(world, snap);
-  const owner = polity(cell.ownerId);
+  const owner = polity(ownerId);
   const name = owner ? polityLabel(owner) : "諸部";
-  const history = territoryHistory(world, data, ageYears).filter((e) => e.region === cell.region);
-  const last = history.at(-1);
+  const last = territoryHistory(world, data, ageYears).filter((e) => e.region === region).at(-1);
   const lines: string[] = [];
-  const fight = regionFight(cells, cell.region);
+  const fight = regionFight(map, region);
   if (fight) {
     const attacker = polity(fight.attacker);
     const rest = Math.max(1, Math.round((1 - fight.progress) * data.map.territoryRules.transitionYears));
-    lines.push(`${attacker ? polityLabel(attacker) : "他國"}正向此處推進，${progressWords(fight.progress)}；預計約 ${rest} 年後底定。`);
-    lines.push(`交戰期間行路與交易會受影響。`);
+    lines.push(`${attacker ? polityLabel(attacker) : "他國"}正向${data.map.regions.find((r) => r.id === region)!.name}推進，${progressWords(fight.progress)}；預計約 ${rest} 年後底定。`);
+    lines.push("交戰期間行路與交易會受影響。");
   } else {
     lines.push(`現由${name}掌握，${last ? `自 ${last.age} 歲起` : "本世一開始便是如此"}；邊界暫時安定。`);
   }
   // 交戰中看進攻方：被攻的一方多半已不在世局名單上
-  const lead = fight ? polity(fight.attacker) : owner;
-  const leadName = lead ? polityLabel(lead) : "諸部";
-  const strength = polityStrength(world, ageYears, data, snap)[fight ? fight.attacker : cell.ownerId];
-  if (strength) lines.push(`${leadName}國勢 ${strength.score.toFixed(1)}：持有 ${strength.regions} 處地域，興盛宗門 ${strength.prosperSects} 家${strength.recent !== 0 ? `，近年${strength.recent > 0 ? "得" : "失"}地 ${Math.abs(strength.recent)} 處` : ""}。`);
+  const leadId = fight ? fight.attacker : ownerId;
+  const lead = polity(leadId);
+  const strength = polityStrength(world, ageYears, data, snap)[leadId];
+  if (strength) lines.push(`${lead ? polityLabel(lead) : "諸部"}國勢 ${strength.score.toFixed(1)}：持有 ${strength.regions} 處地域，興盛宗門 ${strength.prosperSects} 家${strength.recent !== 0 ? `，近年${strength.recent > 0 ? "得" : "失"}地 ${Math.abs(strength.recent)} 處` : ""}。`);
   return lines;
+}
+
+const CLIMATE = ["極寒", "寒冷", "溫和", "溫暖", "炎熱"];
+const WETNESS = ["乾燥", "適中", "濕潤", "潮濕"];
+
+/** 某格的地形與氣候一行字：生態區、寒暖與乾濕、海拔、有沒有河 */
+export function terrainLine(terrain: Terrain, data: GameData, cellId: number): string {
+  if (!terrain.land[cellId]) return "海域。";
+  const t = terrain.T[cellId];
+  const m = terrain.M[cellId];
+  const climate = CLIMATE[t < 0.22 ? 0 : t < 0.38 ? 1 : t < 0.62 ? 2 : t < 0.8 ? 3 : 4];
+  const wet = WETNESS[m < 0.3 ? 0 : m < 0.55 ? 1 : m < 0.75 ? 2 : 3];
+  const kind = terrain.lake[cellId] ? "湖泊" : data.mapart.biomes[terrain.biome[cellId]].name;
+  const river = terrain.acc[cellId] >= data.mapart.river.minAccumulation ? "，有河流經過" : "";
+  return `${kind}・${climate}${wet}・海拔約 ${Math.round(terrain.E[cellId] * 2800)} 公尺${river}。`;
 }
 
 export interface TimelineEntry {

@@ -575,20 +575,25 @@ export interface MapView {
 
 type Rgb = [number, number, number];
 
+/** 地圖繪製用的墨色與標記色，名稱固定，數值在 mapart.json */
+export const MAP_INK_KEYS = ["coast", "border", "province", "river", "lake", "shallow", "seaWash", "grid", "symbol", "hill", "forest", "leaf", "jungle", "grass", "reed", "snow", "sand", "land", "gold", "goldLine", "cold", "coldLine", "neutral", "frame", "label", "labelHalo"] as const;
+export type MapInkKey = (typeof MAP_INK_KEYS)[number];
+
 /** 地圖的繪製與地形生成參數（只影響顯示） */
 export interface MapArtData {
   cells: { count: number; min: number; max: number; jitter: number };
   provinces: { count: number; min: number; max: number; minPerRegion: number };
   edgeMargin: number;
   markerRadius: number;
-  coast: { large: number; small: number; islandCutoff: number; islandNear: number; islandFar: number; islandStrength: number; edgePenalty: number };
-  relief: { inlandRange: number; inlandWeight: number; ridgeWeight: number; ridgeSharp: number; ridgeRamp: number; base: number; slope: number; north: number; west: number; detail: number; floor: number; smoothPasses: number };
+  coast: { large: number; small: number; islandCutoff: number; islandNear: number; islandFar: number; islandStrength: number; edgePenalty: number; regionJitter: number };
+  relief: { inlandRange: number; inlandWeight: number; ridgeWeight: number; ridgeSharp: number; ridgeRamp: number; base: number; slope: number; power: number; north: number; west: number; detail: number; floor: number; smoothPasses: number };
   climate: { base: number; noise: number; coast: number; coastRange: number; south: number; east: number; wetOffset: number; coldGradient: number; coldNoise: number; heightChill: number; chillStart: number };
   river: { minAccumulation: number; lakeFillDelta: number; lakeMinAccumulation: number; jitter: number };
   biome: { peak: number; warmPeak: number; snowTemp: number; coldTemp: number; coldWet: number; mountain: number; hill: number; hotTemp: number; dry: number; wetTemp: number; wet: number; swampHeight: number; forestWet: number; grassWet: number };
   /** 依序對應 12 種生態區 */
   biomes: { name: string; color: Rgb }[];
   parchment: Rgb;
+  ink: Record<MapInkKey, Rgb>;
 }
 
 /** 世界骨架：每世都一樣 */

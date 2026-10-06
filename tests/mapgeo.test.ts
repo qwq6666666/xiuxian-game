@@ -1,37 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { alignStart, brushLine, brushOffset, compassNames, placeLabels, polyTween, resample, zoomView, clampView } from "../src/ui/mapgeo";
-import { placeHistory, progressWords, targetKindLabel, territoryLines, timelineEntries } from "../src/ui/mapinfo";
+import { placeLabels } from "../src/ui/mapgeo";
+import { clampZoom, zoomAt, MAX_ZOOM, IDENTITY } from "../src/ui/mapart/zoom";
+import { mixRgb, parseHex, tint } from "../src/ui/mapart/color";
+import { placeHistory, progressWords, targetKindLabel, terrainLine, territoryLines, timelineEntries } from "../src/ui/mapinfo";
 import { generateWorld, worldAt } from "../src/core/world";
-import { territoryGeometryAt } from "../src/core/frontier";
+import { territoryMapAt } from "../src/core/frontier";
+import { terrainFor } from "../src/core/terrain";
 import { gameData } from "../src/data/load";
-import type { Point } from "../src/data/types";
-
-const square: Point[] = [[0, 0], [10, 0], [10, 10], [0, 10]];
 
 describe("天下圖繪製輔助", () => {
-  it("筆刷抖動對同一點永遠相同，相接的線段端點不會斷開", () => {
-    expect(brushOffset(12, 34, 5, 0.7)).toEqual(brushOffset(12, 34, 5, 0.7));
-    const a = brushLine([0, 0], [30, 0], 7);
-    const b = brushLine([30, 0], [30, 30], 7);
-    expect(a.at(-1)).toEqual(b[0]);
-    expect(a.length).toBeGreaterThan(3);
-    expect(Math.max(...a.map((p) => Math.abs(p[1])))).toBeLessThan(3);
-  });
-
-  it("重新取樣得到指定頂點數，內插端點分別是舊形與新形", () => {
-    expect(resample(square, 16)).toHaveLength(16);
-    const to: Point[] = [[0, 0], [20, 0], [20, 20], [0, 20]];
-    const tween = polyTween(square, to);
-    expect(tween(1)).toBe(to);
-    const mid = tween(0.5);
-    expect(Math.max(...mid.map((p) => p[0]))).toBeCloseTo(15, 0);
-    // 起點錯位的同一個形狀，對齊後內插不會扭轉
-    const shifted = [square[2], square[3], square[0], square[1]];
-    const aligned = alignStart(resample(square, 8), resample(shifted, 8));
-    expect(aligned[0]).toEqual(resample(square, 8)[0]);
-    expect(polyTween(undefined, to)(0.3)).toBe(to);
-  });
-
   it("標籤避讓：重疊的依優先度隱藏，被選取的（優先 0）一定留下", () => {
     const items = [
       { key: "a", x: 100, y: 100, text: "栖梧閣", anchor: "start" as const, priority: 4 },
@@ -44,28 +21,27 @@ describe("天下圖繪製輔助", () => {
     expect(placeLabels([{ ...items[0], priority: 0 }, items[1]]).shown[0].key).toBe("a");
   });
 
-  it("方位名：不重複，同名加序號", () => {
-    const nodes = gameData.map.regions.find((r) => r.id === "north")!.nodes!;
-    const names = compassNames(nodes);
-    expect(names).toHaveLength(nodes.length);
-    expect(new Set(names).size).toBe(names.length);
-    expect(names.some((n) => n.includes("北"))).toBe(true);
+  it("縮放限制在 1 到 4 倍，平移不會露出地圖外", () => {
+    const z = zoomAt(IDENTITY, 600, 460, 590, 450, 10);
+    expect(z.scale).toBe(MAX_ZOOM);
+    expect(z.x).toBeGreaterThanOrEqual(600 - 600 * MAX_ZOOM);
+    expect(z.x).toBeLessThanOrEqual(0);
+    expect(zoomAt(z, 600, 460, 300, 200, 0.001)).toEqual(IDENTITY);
+    expect(clampZoom({ scale: 2, x: 50, y: -9999 }, 600, 460)).toEqual({ scale: 2, x: 0, y: 460 - 920 });
   });
 
-  it("縮放限制在 1 到 4 倍，且不會移出地圖", () => {
-    const box: Point = [400, 520];
-    const full = { x: 0, y: 0, w: 400, h: 520 };
-    const zoomed = zoomView(full, box, 390, 510, 10);
-    expect(zoomed.w).toBeCloseTo(100, 6);
-    expect(zoomed.x + zoomed.w).toBeLessThanOrEqual(400.0001);
-    expect(zoomView(zoomed, box, 200, 200, 0.001)).toEqual(full);
-    expect(clampView({ x: -50, y: 900, w: 100, h: 130 }, box)).toEqual({ x: 0, y: 390, w: 100, h: 130 });
+  it("顏色格式化：來自資料的色值轉成 canvas 字串", () => {
+    expect(parseHex("#c0715a")).toEqual([192, 113, 90]);
+    expect(parseHex("壞值")).toEqual([128, 128, 128]);
+    expect(tint([1, 2, 3], 0.5)).toBe("rgba(1,2,3,0.5)");
+    expect(mixRgb([0, 0, 0], [100, 200, 50], 0.5)).toEqual([50, 100, 25]);
   });
 });
 
 describe("天下圖資訊卡與時間軸", () => {
   const world = generateWorld(17);
   const merge = world.changes.find((c) => c.kind === "merge")!;
+  const terrain = terrainFor(world.seed, gameData);
 
   it("時間軸只列到目前年齡為止的變化，並帶牽涉的地域", () => {
     const early = timelineEntries(world, gameData, merge.age - 1);
@@ -76,15 +52,26 @@ describe("天下圖資訊卡與時間軸", () => {
   });
 
   it("領土資訊：交戰中說明進攻方、進度與預計底定，安定時說明起算年", () => {
-    const during = territoryGeometryAt(world, (merge.age + 2) * 4, gameData);
-    const fighting = during.find((c) => c.fight)!;
-    const lines = territoryLines(world, during, fighting.id, gameData, merge.age + 2);
+    const during = territoryMapAt(world, (merge.age + 2) * 4, gameData, terrain);
+    const fight = during.fights[0];
+    const cell = terrain.grid.cells.find((c) => terrain.land[c.id] && terrain.regionIds[terrain.region[c.id]] === fight.region)!;
+    const lines = territoryLines(world, during, terrain, cell.id, gameData, merge.age + 2);
     expect(lines.join("")).toMatch(/推進/);
     expect(lines.join("")).toMatch(/年後底定/);
     expect(lines.join("")).toMatch(/國勢/);
-    const calm = territoryGeometryAt(world, (merge.age + 20) * 4, gameData);
-    const settled = territoryLines(world, calm, calm.find((c) => c.region === fighting.region)!.id, gameData, merge.age + 20);
+    const calm = territoryMapAt(world, (merge.age + 20) * 4, gameData, terrain);
+    const settled = territoryLines(world, calm, terrain, cell.id, gameData, merge.age + 20);
     expect(settled[0]).toMatch(/自 \d+ 歲起/);
+    // 海沒有領土資訊
+    const sea = terrain.grid.cells.find((c) => !terrain.land[c.id])!;
+    expect(territoryLines(world, calm, terrain, sea.id, gameData, merge.age + 20)).toEqual([]);
+  });
+
+  it("地形一行字：生態區、寒暖乾濕、海拔", () => {
+    const land = terrain.grid.cells.find((c) => terrain.land[c.id] && !terrain.lake[c.id])!;
+    expect(terrainLine(terrain, gameData, land.id)).toMatch(/・.*海拔約 \d+ 公尺/);
+    const sea = terrain.grid.cells.find((c) => !terrain.land[c.id])!;
+    expect(terrainLine(terrain, gameData, sea.id)).toBe("海域。");
   });
 
   it("推進程度口語、類型與地點大事", () => {

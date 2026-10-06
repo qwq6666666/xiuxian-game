@@ -1,26 +1,155 @@
 {
-  "cells": { "count": 3500, "min": 1500, "max": 6000, "jitter": 0.85 },
-  "provinces": { "count": 80, "min": 30, "max": 100, "minPerRegion": 2 },
+  "cells": {
+    "count": 3500,
+    "min": 1500,
+    "max": 6000,
+    "jitter": 0.85
+  },
+  "provinces": {
+    "count": 80,
+    "min": 30,
+    "max": 100,
+    "minPerRegion": 2
+  },
   "edgeMargin": 28,
   "markerRadius": 7,
-  "coast": { "large": 33, "small": 7, "islandCutoff": 0.7, "islandNear": 9, "islandFar": 80, "islandStrength": 70, "edgePenalty": 4 },
-  "relief": { "inlandRange": 70, "inlandWeight": 0.3, "ridgeWeight": 0.62, "ridgeSharp": 2.2, "ridgeRamp": 22, "base": 0.55, "slope": 0.9, "north": 0.6, "west": 0.4, "detail": 0.14, "floor": 0.06, "smoothPasses": 2 },
-  "climate": { "base": 0.22, "noise": 0.5, "coast": 0.38, "coastRange": 48, "south": 0.22, "east": 0.18, "wetOffset": -0.2, "coldGradient": 0.88, "coldNoise": 0.18, "heightChill": 0.75, "chillStart": 0.3 },
-  "river": { "minAccumulation": 22, "lakeFillDelta": 0.035, "lakeMinAccumulation": 14, "jitter": 0.05 },
-  "biome": { "peak": 0.82, "warmPeak": 0.5, "snowTemp": 0.2, "coldTemp": 0.36, "coldWet": 0.42, "mountain": 0.62, "hill": 0.46, "hotTemp": 0.6, "dry": 0.28, "wetTemp": 0.52, "wet": 0.7, "swampHeight": 0.22, "forestWet": 0.5, "grassWet": 0.32 },
+  "coast": {
+    "large": 33,
+    "small": 7,
+    "islandCutoff": 0.7,
+    "islandNear": 9,
+    "islandFar": 80,
+    "islandStrength": 70,
+    "edgePenalty": 4,
+    "regionJitter": 24
+  },
+  "relief": {
+    "inlandRange": 70,
+    "inlandWeight": 0.15,
+    "ridgeWeight": 1,
+    "ridgeSharp": 2.6,
+    "ridgeRamp": 22,
+    "base": 0.05,
+    "slope": 1.5,
+    "north": 0.75,
+    "west": 0.45,
+    "detail": 0.14,
+    "floor": 0.06,
+    "smoothPasses": 2,
+    "power": 2
+  },
+  "climate": {
+    "base": 0.22,
+    "noise": 0.5,
+    "coast": 0.38,
+    "coastRange": 48,
+    "south": 0.22,
+    "east": 0.18,
+    "wetOffset": -0.2,
+    "coldGradient": 0.88,
+    "coldNoise": 0.18,
+    "heightChill": 0.75,
+    "chillStart": 0.3
+  },
+  "river": {
+    "minAccumulation": 22,
+    "lakeFillDelta": 0.035,
+    "lakeMinAccumulation": 14,
+    "jitter": 0.05
+  },
+  "biome": {
+    "peak": 0.95,
+    "warmPeak": 0.5,
+    "snowTemp": 0.2,
+    "coldTemp": 0.36,
+    "coldWet": 0.42,
+    "mountain": 0.62,
+    "hill": 0.46,
+    "hotTemp": 0.6,
+    "dry": 0.28,
+    "wetTemp": 0.52,
+    "wet": 0.7,
+    "swampHeight": 0.22,
+    "forestWet": 0.5,
+    "grassWet": 0.32
+  },
   "biomes": [
-    { "name": "雪原", "color": [236, 241, 243] },
-    { "name": "苔原", "color": [186, 195, 168] },
-    { "name": "針葉林", "color": [104, 144, 110] },
-    { "name": "高山", "color": [158, 150, 138] },
-    { "name": "山地", "color": [172, 156, 128] },
-    { "name": "丘陵", "color": [190, 170, 118] },
-    { "name": "闊葉林", "color": [128, 164, 92] },
-    { "name": "草原", "color": [190, 208, 126] },
-    { "name": "乾草原", "color": [214, 192, 134] },
-    { "name": "荒漠", "color": [224, 198, 140] },
-    { "name": "雨林", "color": [78, 140, 90] },
-    { "name": "沼澤", "color": [116, 142, 118] }
+    {
+      "name": "雪原",
+      "color": [236, 241, 243]
+    },
+    {
+      "name": "苔原",
+      "color": [186, 195, 168]
+    },
+    {
+      "name": "針葉林",
+      "color": [104, 144, 110]
+    },
+    {
+      "name": "高山",
+      "color": [158, 150, 138]
+    },
+    {
+      "name": "山地",
+      "color": [172, 156, 128]
+    },
+    {
+      "name": "丘陵",
+      "color": [190, 170, 118]
+    },
+    {
+      "name": "闊葉林",
+      "color": [128, 164, 92]
+    },
+    {
+      "name": "草原",
+      "color": [190, 208, 126]
+    },
+    {
+      "name": "乾草原",
+      "color": [214, 192, 134]
+    },
+    {
+      "name": "荒漠",
+      "color": [224, 198, 140]
+    },
+    {
+      "name": "雨林",
+      "color": [78, 140, 90]
+    },
+    {
+      "name": "沼澤",
+      "color": [116, 142, 118]
+    }
   ],
-  "parchment": [233, 215, 166]
+  "parchment": [233, 215, 166],
+  "ink": {
+    "coast": [70, 52, 36],
+    "border": [70, 50, 36],
+    "province": [90, 74, 52],
+    "river": [48, 118, 142],
+    "lake": [92, 150, 168],
+    "shallow": [110, 96, 70],
+    "seaWash": [140, 160, 150],
+    "grid": [90, 110, 100],
+    "symbol": [70, 56, 44],
+    "hill": [90, 70, 48],
+    "forest": [30, 70, 44],
+    "leaf": [52, 84, 36],
+    "jungle": [24, 76, 40],
+    "grass": [96, 110, 52],
+    "reed": [48, 84, 70],
+    "snow": [255, 255, 255],
+    "sand": [150, 110, 60],
+    "land": [205, 190, 140],
+    "gold": [236, 192, 70],
+    "goldLine": [200, 150, 30],
+    "cold": [86, 104, 196],
+    "coldLine": [176, 48, 40],
+    "neutral": [120, 96, 64],
+    "frame": [40, 30, 20],
+    "label": [44, 32, 22],
+    "labelHalo": [240, 226, 184]
+  }
 }

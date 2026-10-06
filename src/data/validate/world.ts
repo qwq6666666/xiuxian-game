@@ -6,6 +6,7 @@ import {
   SECT_STATES,
   type SectState,
   MAP_REFS,
+  MAP_INK_KEYS,
   type MapRef,
   type WorldWhen,
   type WorldEffectDef,
@@ -280,12 +281,13 @@ export function validateMapArt(raw: unknown, file = "mapart.json"): MapArtData {
     provinces,
     edgeMargin: num(o, "edgeMargin", file, { min: 0 }),
     markerRadius: num(o, "markerRadius", file, { min: 0 }),
-    coast: numGroup(o, "coast", file, { large: { min: 0 }, small: { min: 0 }, islandCutoff: { min: 0, max: 1 }, islandNear: { min: 0 }, islandFar: { min: 0 }, islandStrength: { min: 0 }, edgePenalty: { min: 0 } }),
-    relief: numGroup(o, "relief", file, { inlandRange: { gt: 0 }, inlandWeight: { min: 0 }, ridgeWeight: { min: 0 }, ridgeSharp: { gt: 0 }, ridgeRamp: { gt: 0 }, base: { min: 0 }, slope: { min: 0 }, north: { min: 0 }, west: { min: 0 }, detail: { min: 0 }, floor: { min: 0 }, smoothPasses: { min: 0, integer: true } }),
+    coast: numGroup(o, "coast", file, { large: { min: 0 }, small: { min: 0 }, islandCutoff: { min: 0, max: 1 }, islandNear: { min: 0 }, islandFar: { min: 0 }, islandStrength: { min: 0 }, edgePenalty: { min: 0 }, regionJitter: { min: 0 } }),
+    relief: numGroup(o, "relief", file, { inlandRange: { gt: 0 }, inlandWeight: { min: 0 }, ridgeWeight: { min: 0 }, ridgeSharp: { gt: 0 }, ridgeRamp: { gt: 0 }, base: { min: 0 }, slope: { min: 0 }, power: { gt: 0 }, north: { min: 0 }, west: { min: 0 }, detail: { min: 0 }, floor: { min: 0 }, smoothPasses: { min: 0, integer: true } }),
     climate: numGroup(o, "climate", file, { base: {}, noise: { min: 0 }, coast: { min: 0 }, coastRange: { gt: 0 }, south: { min: 0 }, east: { min: 0 }, wetOffset: {}, coldGradient: { min: 0 }, coldNoise: { min: 0 }, heightChill: { min: 0 }, chillStart: { min: 0 } }),
     river: numGroup(o, "river", file, { minAccumulation: { gt: 0 }, lakeFillDelta: { min: 0 }, lakeMinAccumulation: { min: 0 }, jitter: { min: 0 } }),
     biome: numGroup(o, "biome", file, { peak: { min: 0 }, warmPeak: { min: 0 }, snowTemp: { min: 0 }, coldTemp: { min: 0 }, coldWet: { min: 0 }, mountain: { min: 0 }, hill: { min: 0 }, hotTemp: { min: 0 }, dry: { min: 0 }, wetTemp: { min: 0 }, wet: { min: 0 }, swampHeight: { min: 0 }, forestWet: { min: 0 }, grassWet: { min: 0 } }),
     biomes,
     parchment: rgb(o.parchment, file, "parchment"),
+    ink: Object.fromEntries(MAP_INK_KEYS.map((k) => [k, rgb(obj(o.ink, `${file} 欄位 ink`)[k], `${file} 欄位 ink`, k)])) as MapArtData["ink"],
   };
 }

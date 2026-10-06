@@ -1,67 +1,60 @@
-/* 天下圖：SVG 標記的顏色全走 token；國家顏色由資料（map.json 的 palette）決定 */
+/* 天下圖：底層 canvas（程式畫的羊皮紙地圖）加上層 SVG（標記、路線、國名）。
+   標記的顏色全走 token；國家顏色由資料（map.json 的 palette）決定，地形色由 mapart.json 決定 */
 .map-card { max-width: 1040px; }
-.map-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, 0.7fr); gap: var(--sp-4); align-items: start; }
-.map-pane, .map-side { min-width: 0; }
-.map-side { max-height: 76vh; overflow-y: auto; }
-.map-svg { display: block; width: 100%; max-width: 600px; max-height: 76vh; max-height: 76dvh; margin: var(--sp-2) auto; color: var(--muted); touch-action: manipulation; background: url('../jiudu-map.webp') center / 100% 100% no-repeat; border: 1px solid var(--line); border-radius: var(--r-md); }
-.map-region { cursor: pointer; stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; fill-opacity: 0.1; }
-.map-region:hover { fill-opacity: 0.3; }
-.map-region-void { fill: var(--map-void); }
-.map-region-land { fill: transparent; fill-opacity: 1; stroke-dasharray: none; }
-.map-region-land:hover { fill-opacity: 1; }
+.map-pane { display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0; }
+.map-zoomwrap { position: relative; width: 100%; max-width: min(100%, calc(76vh * 1.283)); margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); touch-action: manipulation; }
+.map-stage { position: relative; width: 100%; transform-origin: 0 0; }
+.map-art { display: block; width: 100%; height: 100%; }
+.map-svg { position: absolute; inset: 0; width: 100%; height: 100%; color: var(--map-ink); }
 .map-hit { cursor: pointer; outline: none; }
 .map-hit:focus-visible { filter: drop-shadow(0 0 2px var(--map-marker-focus)); }
 .map-hit.selected { stroke: var(--accent); stroke-width: 2; }
-.map-region.selected { stroke-opacity: 1; fill-opacity: 0.28; }
-/* 國家色塊不描邊，國界另外用 .map-front 畫，同國內線不畫 */
-.map-territory { fill-opacity: 0.44; stroke: none; cursor: pointer; transition: fill-opacity var(--dur-fast) var(--ease); }
-.map-territory:hover, .map-territory.selected { fill-opacity: 0.62; }
-.map-territory.contested { fill-opacity: 0.5; }
-.map-territory.highlight { fill-opacity: 0.66; }
-.map-front { fill: none; stroke: var(--text); stroke-opacity: 0.6; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-.map-front.fighting { stroke: var(--bad); stroke-opacity: 0.95; stroke-width: 1.8; stroke-dasharray: 5 4; animation: map-front-flow calc(var(--dur-slow) * 4) linear infinite; }
-.map-fronts.settling { animation: map-front-in var(--dur-slow) var(--ease) both; }
-.map-arrow { fill: none; stroke: var(--bad); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-@keyframes map-front-flow { to { stroke-dashoffset: -18; } }
-@keyframes map-front-in { from { opacity: 0; } to { opacity: 1; } }
-.map-influence { fill: var(--accent); fill-opacity: 0.12; stroke: var(--accent); stroke-opacity: 0.8; stroke-width: 1.6; stroke-dasharray: 3 3; cursor: pointer; transition: r var(--dur-slow) var(--ease); }
-.map-influence.prosper { fill-opacity: 0.18; stroke-width: 2; }
-.map-influence.decline { fill-opacity: 0.06; stroke-opacity: 0.5; }
-.map-label { font-size: 14px; fill: var(--text); stroke: var(--panel); stroke-width: 2.5px; paint-order: stroke; pointer-events: none; }
-.map-small { font-size: 10.5px; fill: var(--text); stroke: var(--panel); stroke-width: 2px; paint-order: stroke; pointer-events: none; }
-.map-capital { fill: var(--text); fill-opacity: 0.7; pointer-events: none; }
-.map-stairs { fill: var(--map-stairs); stroke: var(--map-marker-outline); stroke-width: 1.5; }
-.map-ferry { fill: var(--map-ferry); stroke: var(--map-marker-outline); stroke-width: 1.5; }
-.map-ferry-broken { stroke: var(--map-broken); stroke-width: 2; fill: none; }
-.map-merchant, .map-merchant-hq { fill: var(--map-merchant); stroke: var(--map-marker-outline); stroke-width: 1.5; }
-.map-mountain { fill: var(--map-mountain); stroke: var(--map-marker-outline); stroke-width: 1.5; }
-.map-sect-dot { stroke: var(--map-marker-outline); stroke-width: 1.6; }
-.map-sect-solid .map-sect-dot { fill: var(--accent); }
-.map-sect-hollow .map-sect-dot { fill: var(--bg); }
-.map-sect-dashed .map-sect-dot { fill: var(--bg); stroke-dasharray: 2 2; }
+.map-nation { fill: var(--map-ink); fill-opacity: 0.88; stroke: var(--map-paper-halo); stroke-opacity: 0.65; stroke-width: 2.4px; paint-order: stroke; font-weight: 700; font-family: "Noto Serif TC", "Songti TC", "PMingLiU", serif; letter-spacing: 0.14em; pointer-events: none; }
+.map-highlight { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; animation: map-pulse calc(var(--dur-slow) * 4) var(--ease) infinite; transform-box: fill-box; transform-origin: center; }
+.map-arrow { fill: none; stroke: var(--bad); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.map-small { font-size: 10.5px; fill: var(--map-ink); stroke: var(--map-paper-halo); stroke-opacity: 0.85; stroke-width: 2.2px; paint-order: stroke; font-family: "Noto Serif TC", "Songti TC", serif; font-weight: 600; pointer-events: none; }
+.map-capital { fill: var(--map-ink); fill-opacity: 0.85; pointer-events: none; }
+.map-stairs { fill: var(--map-stairs); stroke: var(--map-marker-outline); stroke-width: 1.2; }
+.map-ferry { fill: var(--map-ferry); stroke: var(--map-marker-outline); stroke-width: 1.2; }
+.map-ferry-broken { stroke: var(--map-broken); stroke-width: 1.8; fill: none; }
+.map-merchant, .map-merchant-hq { fill: var(--map-merchant); stroke: var(--map-marker-outline); stroke-width: 1.2; }
+.map-mountain { fill: var(--map-mountain); stroke: var(--map-marker-outline); stroke-width: 1.2; }
+.map-sect-dot { stroke: var(--map-marker-outline); stroke-width: 1.5; }
+.map-sect-solid .map-sect-dot { fill: var(--map-ink); }
+.map-sect-hollow .map-sect-dot { fill: var(--map-sect-paper); }
+.map-sect-dashed .map-sect-dot { fill: var(--map-sect-paper); stroke-dasharray: 2 2; }
 .map-sect-gray .map-sect-dot { fill: var(--map-gray); }
 .map-sect-fallen .map-sect-dot { fill: none; stroke: var(--map-fallen); }
-.map-sect-x { stroke: var(--map-broken); stroke-width: 1.6; fill: none; }
-.map-sect-ring { fill: none; stroke: var(--accent); stroke-width: 1; }
-.map-you-dot { fill: var(--accent); stroke: var(--panel); stroke-width: 2.5; }
+.map-sect-x { stroke: var(--map-broken); stroke-width: 1.5; fill: none; }
+.map-sect-ring { fill: none; stroke: var(--map-ink); stroke-width: 1; }
+.map-you-dot { fill: var(--accent); stroke: var(--map-marker-outline); stroke-width: 2; }
 .map-you { transition: transform var(--dur-slow) var(--ease); }
-.map-you-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; animation: map-pulse calc(var(--dur-slow) * 4) var(--ease) infinite; transform-box: fill-box; transform-origin: center; }
-.map-you-label { font-size: 11px; fill: var(--accent); font-weight: bold; pointer-events: none; }
-.map-village-dot { fill: var(--text); stroke: var(--map-marker-outline); stroke-width: 2; }
-.map-route { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 2 6; pointer-events: none; }
-.map-route.active { stroke-width: 4; stroke-opacity: 0.28; stroke-dasharray: 6 5; }
-.map-route-progress { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; pointer-events: none; transition: stroke-dasharray var(--dur-slow) var(--ease); }
-.map-visited { fill: none; stroke: var(--good); stroke-width: 3; stroke-opacity: 0.9; pointer-events: none; }
-.map-travel { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--sunken); }
-.map-travel h3 { margin-top: 0; }
-.map-travel-status { color: var(--accent); }
-.map-trail-text { font-size: var(--fs-sm); color: var(--muted); }
-.map-destination-label { display: block; margin: var(--sp-2) 0; color: var(--muted); }
-.map-destination { display: block; width: 100%; margin-top: var(--sp-1); padding: var(--sp-2); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); font: inherit; }
+.map-you-ring { fill: none; stroke: var(--accent); stroke-width: 2.2; animation: map-pulse calc(var(--dur-slow) * 4) var(--ease) infinite; transform-box: fill-box; transform-origin: center; }
+.map-village-dot { fill: var(--map-sect-paper); stroke: var(--map-marker-outline); stroke-width: 1.8; }
+.map-route { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 2 5; pointer-events: none; }
+.map-route.active { stroke-width: 3.2; stroke-opacity: 0.4; stroke-dasharray: 6 5; }
+.map-route-progress { fill: none; stroke: var(--accent); stroke-width: 3.2; stroke-linecap: round; pointer-events: none; transition: stroke-dasharray var(--dur-slow) var(--ease); }
+.map-visited { fill: none; stroke: var(--good); stroke-width: 2.4; stroke-opacity: 0.9; pointer-events: none; }
 @keyframes map-pulse { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.35; transform: scale(1.35); } }
 
-.map-timeline { margin: var(--sp-2) 0; padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--sunken); }
-.map-timeline h3 { margin: 0 0 var(--sp-1); }
+/* 圖層鈕：預設只有五個，其餘收進「更多」 */
+.map-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.map-chip-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.map-chip-toggle span { display: inline-block; padding: 0 var(--sp-3); min-height: var(--tap); line-height: var(--tap); border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--muted); cursor: pointer; user-select: none; }
+.map-chip-toggle input:checked + span { border-color: var(--accent); color: var(--text); background: var(--sunken); }
+.map-chip-toggle input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* 一張資訊卡：點選什麼就顯示什麼 */
+.map-info { padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--accent); background: var(--panel); min-height: 6.4em; }
+.map-info p { margin: var(--sp-1) 0 0; }
+.map-info-title { margin: 0; }
+.map-info-title small { color: var(--muted); }
+.map-effect-line { color: var(--accent); }
+.map-travel-status { color: var(--accent); }
+
+/* 折疊區 */
+.map-more, .map-timeline, .map-travel, .map-effects { padding: var(--sp-2) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--sunken); }
+.map-more > summary, .map-timeline > summary, .map-travel > summary, .map-effects > summary { cursor: pointer; color: var(--accent); min-height: var(--tap); line-height: var(--tap); }
 .map-tl-row { display: flex; align-items: center; gap: var(--sp-2); }
 .map-tl-slider { flex: 1; min-width: 0; min-height: var(--tap); accent-color: var(--accent); }
 .map-tl-age { min-width: 4.5em; text-align: right; color: var(--accent); }
@@ -71,39 +64,27 @@
 .map-tl-note { margin: var(--sp-1) 0 0; color: var(--accent); }
 .map-note-btn { display: block; width: 100%; margin: 2px 0; padding: var(--sp-1) var(--sp-2); text-align: left; font: inherit; color: var(--text); background: transparent; border: 1px solid transparent; border-radius: var(--r-sm); cursor: pointer; overflow-wrap: anywhere; }
 .map-note-btn:hover, .map-note-btn.current { border-color: var(--accent); }
-.map-info-title { margin: 0; }
-.map-info-title small { color: var(--muted); }
-.map-zoom { display: none; gap: var(--sp-2); margin: var(--sp-1) 0; }
-.map-zoom-btn { min-width: var(--tap); min-height: var(--tap); }
+.map-trail-text { font-size: var(--fs-sm); color: var(--muted); }
+.map-destination-label { display: block; margin: var(--sp-2) 0; color: var(--muted); }
+.map-destination { display: block; width: 100%; margin-top: var(--sp-1); padding: var(--sp-2); color: var(--text); background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-sm); font: inherit; }
+.map-prov-slider { display: block; width: 100%; min-height: var(--tap); accent-color: var(--accent); }
 .map-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0; }
 .map-chip { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-md); }
 .map-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
 .map-symbols { font-size: var(--fs-sm); margin: var(--sp-1) 0 10px; }
-.map-notes h3 { margin: 10px 0 var(--sp-1); }
 .map-notes p { margin: 2px 0; }
-/* 簡介固定在彈窗底部，手機點選標記後不必捲動找 */
-.map-info { position: sticky; bottom: -14px; margin-top: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--accent); background: var(--panel); min-height: 3.4em; box-shadow: 0 -8px 8px -4px var(--panel); }
-.map-effects h3 { margin: 10px 0 var(--sp-1); }
 .map-effects p { margin: 2px 0; }
 .map-effects small { color: var(--muted); }
 .map-effect.related { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
-.map-effect-line { color: var(--accent); }
-.map-info p { margin: var(--sp-1) 0 0; }
+.map-zoom { display: none; gap: var(--sp-2); margin: var(--sp-1) 0; }
+.map-zoom-btn { min-width: var(--tap); min-height: var(--tap); }
 @media (max-width: 760px) {
   .map-card { min-width: 0; overflow-x: hidden; }
-  .map-layout { display: flex; flex-direction: column; width: 100%; }
-  .map-pane { order: 2; }
-  .map-side { display: contents; }
-  .map-travel { order: 1; }
-  .map-info { order: 3; }
-  .map-notes { order: 4; }
-  .map-effects { order: 5; }
-  .map-svg { max-width: 100%; height: auto; max-height: 58vh; max-height: 58dvh; touch-action: none; }
+  .map-zoomwrap { max-width: 100%; touch-action: none; }
   .map-zoom { display: flex; }
-  /* 渡口插畫縮成頂部橫幅，首屏先看到行跡與地圖 */
-  .map-card > .scene-art-ferry { aspect-ratio: auto; height: 56px; background-size: cover; background-position: center 60%; margin: var(--sp-1) auto var(--sp-2); }
+  /* 手機首屏只留地圖、圖層鈕與資訊卡：渡口插畫與副標收起來 */
+  .map-card > .scene-art-ferry, .map-card > .map-sub { display: none; }
   .map-destination { min-width: 0; max-width: 100%; }
   .map-travel-status { overflow-wrap: anywhere; }
   .map-travel-go { width: 100%; min-height: var(--tap); }
-  .map-info { position: static; }
 }

@@ -60,6 +60,8 @@ describe("樣式 token", () => {
       ...readdirSync(join(UI, "styles")).filter((f) => f !== "tokens.css").map((f) => join(UI, "styles", f)),
       join(UI, "style.css"),
       ...readdirSync(UI).filter((f) => f.endsWith(".ts")).map((f) => join(UI, f)),
+      // 地圖繪製的子資料夾也要掃；只有 color.ts 負責把資料裡的色值格式化成 rgba()，其餘不得出現
+      ...readdirSync(join(UI, "mapart")).filter((f) => f.endsWith(".ts") && f !== "color.ts").map((f) => join(UI, "mapart", f)),
     ];
     for (const f of files) {
       const hits = readFileSync(f, "utf8").match(/#[0-9a-fA-F]{3,8}\b|rgba?\(/g) ?? [];
@@ -113,10 +115,10 @@ describe("手機回顧彈窗", () => {
 });
 
 describe("手機地圖旅行", () => {
-  it("先顯示旅行操作區，選單不溢出且啟程鈕可單手點擊", () => {
-    expect(mapText).toMatch(/@media \(max-width: 760px\)[\s\S]*\.map-layout\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
-    expect(mapText).toMatch(/\.map-travel\s*\{[^}]*order:\s*1/);
-    expect(mapText).toMatch(/\.map-pane\s*\{[^}]*order:\s*2/);
+  it("手機首屏只留地圖、圖層鈕與資訊卡，選單不溢出且啟程鈕可單手點擊", () => {
+    expect(mapText).toMatch(/\.map-pane\s*\{[^}]*display:\s*flex[^}]*flex-direction:\s*column/);
+    expect(mapText).toMatch(/@media \(max-width: 760px\)[\s\S]*\.map-card > \.scene-art-ferry[^{]*\{[^}]*display:\s*none/);
+    expect(mapText).toMatch(/\.map-chip-toggle span\s*\{[^}]*min-height:\s*var\(--tap\)/);
     expect(mapText).toMatch(/\.map-destination\s*\{[^}]*min-width:\s*0[^}]*max-width:\s*100%/);
     expect(mapText).toMatch(/\.map-travel-go\s*\{[^}]*width:\s*100%[^}]*min-height:\s*var\(--tap\)/);
     expect(worldMapText).toContain('"primary map-travel-go"');

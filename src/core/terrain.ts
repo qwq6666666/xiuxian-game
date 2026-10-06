@@ -58,9 +58,9 @@ function shapesOf(data: GameData): Shapes {
 /** 生態區：依高度、氣溫、濕度判定，回傳 mapart.biomes 的索引 */
 export function biomeOf(e: number, t: number, m: number, b: MapArtData["biome"]): number {
   if (e > b.peak) return t < b.warmPeak ? 0 : 3;
+  if (e > b.mountain) return t < b.coldTemp ? 3 : 4;
   if (t < b.snowTemp) return 0;
   if (t < b.coldTemp) return m > b.coldWet ? 2 : 1;
-  if (e > b.mountain) return 4;
   if (e > b.hill) return 5;
   if (t > b.hotTemp && m < b.dry) return 9;
   if (m > b.wet && t > b.wetTemp) return e < b.swampHeight ? 11 : 10;
@@ -147,7 +147,9 @@ function generate(worldSeed: number, data: GameData, count: number): Terrain {
   // 所屬地域（邏輯座標）：落在輪廓內就是該地域，輪廓外的島嶼歸最近的地域
   const region = new Int8Array(N).fill(-1);
   for (const id of landIds) {
-    const p = fromView(data.map, [cells[id].x, cells[id].y]);
+    // 地域邊界加一點雜訊，國界才不會是直線；位移很小，都城與標記仍在自己的地域內
+    const q = fromView(data.map, [cells[id].x, cells[id].y]);
+    const p: Point = [q[0] + (fbm(q[0] / 28, q[1] / 28, seed + 41, 3) - 0.5) * art.coast.regionJitter, q[1] + (fbm(q[0] / 28, q[1] / 28, seed + 42, 3) - 0.5) * art.coast.regionJitter];
     let best = -1;
     let bd = Infinity;
     shapes.logical.forEach((l, k) => {
@@ -169,7 +171,7 @@ function generate(worldSeed: number, data: GameData, count: number): Terrain {
   for (const id of landIds) {
     const { x, y } = cells[id];
     const inland = Math.max(0, dl[id]) * grid.spacing;
-    const bias = rl.base + rl.slope * ((1 - y / H) * rl.north + (1 - x / W) * rl.west);
+    const bias = rl.base + rl.slope * (Math.pow(1 - y / H, rl.power) * rl.north + Math.pow(1 - x / W, rl.power) * rl.west);
     const ridge = Math.pow(1 - Math.abs(2 * fbm(x / 55, y / 55, seed + 11, 4) - 1), rl.ridgeSharp);
     E[id] = clamp(Math.min(1, inland / rl.inlandRange) * rl.inlandWeight + ridge * rl.ridgeWeight * bias * Math.min(1, inland / rl.ridgeRamp) + (fbm(x / 17, y / 17, seed + 13, 3) - 0.5) * rl.detail + rl.floor, 0, 1.2);
     T[id] = clamp(1 - cl.coldGradient * (1 - y / H) + (fbm(x / 90, y / 90, seed + 17, 3) - 0.5) * cl.coldNoise - Math.max(0, E[id] - cl.chillStart) * cl.heightChill, 0, 1);
