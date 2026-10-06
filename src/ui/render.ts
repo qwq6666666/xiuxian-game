@@ -787,6 +787,16 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     }
   }
 
+  /** 重播一次樣式動畫：移除再加回 class，動畫結束自行拿掉 */
+  function flash(selector: string, cls: string): void {
+    const el = stageEl.querySelector<HTMLElement>(selector);
+    if (!el) return;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    el.addEventListener("animationend", () => el.classList.remove(cls), { once: true });
+  }
+
   /** 數值變動浮字：放在 anchor 內，aria-hidden，動畫結束自行移除 */
   function floatDelta(anchor: HTMLElement, delta: number, extra: string): void {
     if (delta === 0) return;
@@ -936,6 +946,12 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       const added = state.log.length - logLen;
       const fresh = logLen > 0 && added >= 1 && added <= 3 ? added : 0;
       logLen = state.log.length;
+      // 突破與升階的短暫回饋：成功金框、失敗朱砂框，升階只讓進度條亮一下
+      for (const entry of state.log.slice(state.log.length - fresh)) {
+        if (entry.kind === "breakthroughSuccess" || entry.kind === "realmUp") flash(".status", "flash-up");
+        else if (entry.kind === "breakthroughFail") flash(".status", "flash-down");
+        else if (entry.kind === "stageUp") flash(".progress", "flash-up");
+      }
       if (last) e.live.textContent = formatLogEntry(last, data, state.name, slotsOf(state));
       e.log.innerHTML = "";
       let shown = 0;

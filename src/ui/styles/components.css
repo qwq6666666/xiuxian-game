@@ -84,3 +84,7 @@ blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }
 .talents li.recommended { border-left: 2px solid var(--accent); padding-left: var(--sp-2); }
 .talents .advice { color: var(--accent); }
 .talents .preview { color: var(--muted); }
+
+/* 一生回顧（死亡與通關）：比一般彈窗慢，作為轉世前的轉場 */
+#modal:not([hidden]) { animation-duration: var(--dur-slow); }
+#modal:not([hidden]) .card { animation-duration: var(--dur-slow); animation-delay: var(--dur-base); animation-fill-mode: backwards; }
