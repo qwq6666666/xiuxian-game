@@ -491,6 +491,8 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   c.schedules = optStrList(o, "schedules", where);
   c.world = optStrList(o, "world", where);
   c.worldNot = optStrList(o, "worldNot", where);
+  c.origins = optStrList(o, "origins", where);
+  c.roots = optStrList(o, "roots", where);
   if (o.territoryConflict !== undefined) {
     if (typeof o.territoryConflict !== "boolean") fail(where, "territoryConflict", "必須是 true 或 false");
     c.territoryConflict = o.territoryConflict;
@@ -514,7 +516,7 @@ function parseConditions(raw: unknown, where: string): EventConditions {
   }
   for (const k of Object.keys(c) as (keyof EventConditions)[]) if (c[k] === undefined) delete c[k];
   for (const k of Object.keys(o)) {
-    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin", "livesMax"].includes(k)) {
+    if (!["realmMin", "realmMax", "ageMin", "ageMax", "flags", "flagsNot", "schedules", "bottleneck", "fragmentAvailable", "world", "worldNot", "territoryConflict", "sectInfluence", "sect", "sectRankMin", "livesMax", "origins", "roots"].includes(k)) {
       fail(where, k, "不是合法的條件");
     }
   }
@@ -1424,6 +1426,7 @@ export function validateGameData(data: GameData): GameData {
   const rootIds = new Set(data.spiritRoots.map((r) => r.id));
   for (const id of Object.keys(sj.join.rootBonus)) has(rootIds, id, "sects.json 的 join.rootBonus", "spiritRoots.json");
   for (const id of sj.discount.itemIds) has(itemIds, id, "sects.json 的 discount.itemIds", "items.json");
+  const originIds = new Set(data.origins.map((o) => o.id));
   const effectIds = new Set(data.worldEffects.map((x) => x.id));
   has(itemIds, data.config.priceRefItemId, "config.json 的 priceRefItemId", "items.json");
   data.worldEffects.forEach((x, i) => {
@@ -1481,6 +1484,8 @@ export function validateGameData(data: GameData): GameData {
     const c = ev.conditions;
     for (const r of [c.realmMin, c.realmMax]) if (r !== undefined) has(realmIds, r, `${from} 的 conditions`, "realms.json");
     for (const s of c.schedules ?? []) has(scheduleIds, s, `${from} 的 conditions.schedules`, "schedules.json");
+    for (const id of c.origins ?? []) has(originIds, id, `${from} 的 conditions.origins`, "origins.json");
+    for (const id of c.roots ?? []) has(rootIds, id, `${from} 的 conditions.roots`, "spiritRoots.json");
     for (const s of Object.keys(ev.scheduleWeights ?? {})) has(scheduleIds, s, `${from} 的 scheduleWeights`, "schedules.json");
     // 要求的旗標必須有某個結果會設定，抓拼字錯誤
     for (const f of c.flags ?? []) {

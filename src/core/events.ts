@@ -37,6 +37,8 @@ export function eventAvailable(state: GameState, ev: EventDef, data: GameData = 
   if (c.livesMax !== undefined && state.meta.lives > c.livesMax) return false;
   if (c.sect !== undefined && (state.sect !== null) !== c.sect) return false;
   if (c.sectRankMin !== undefined && (state.sect === null || state.sect.rank < c.sectRankMin)) return false;
+  if (c.origins && !c.origins.includes(state.originId)) return false;
+  if (c.roots && !c.roots.includes(state.spiritRootId)) return false;
   if (c.bottleneck !== undefined && atBottleneck(state, data) !== c.bottleneck) return false;
   if (c.fragmentAvailable !== undefined && availableFragments(state, c.fragmentAvailable, data).length === 0) return false;
   return true;

@@ -254,6 +254,10 @@ export interface EventConditions {
   livesMax?: number;
   /** 在宗門中且位階不低於此索引（0 外門、1 內門、2 執事、3 長老） */
   sectRankMin?: number;
+  /** 限定的出身 id（origins.json）；開場文字依出身分流用 */
+  origins?: string[];
+  /** 限定的靈根 id（spiritRoots.json） */
+  roots?: string[];
 }
 
 export interface OutcomeDef {

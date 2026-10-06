@@ -1,0 +1,194 @@
+[
+  {
+    "id": "open_farmer_001",
+    "type": "anecdote",
+    "title": "田埂晨起",
+    "text": "天未亮，你已隨家人下田。露水浸透褲腳，母親說今年雨水夠，你卻在想昨夜夢裡那一口吐納的法子。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "origins": [
+        "farmer"
+      ]
+    }
+  },
+  {
+    "id": "open_farmer_002",
+    "type": "anecdote",
+    "title": "風露之說",
+    "text": "村裡的老人說，修仙人吃的是風，喝的是露。你看了看自家的飯碗，決定這話還得再考證。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "origins": [
+        "farmer"
+      ]
+    }
+  },
+  {
+    "id": "open_merchant_001",
+    "type": "anecdote",
+    "title": "賬房算盤",
+    "text": "賬房裡算盤聲不斷，父親頭也不抬，只說凡事都有行情。你想，若靈氣也有行情，這筆賬又該怎麼記。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "origins": [
+        "merchant"
+      ]
+    }
+  },
+  {
+    "id": "open_merchant_002",
+    "type": "anecdote",
+    "title": "碎玉開價",
+    "text": "有行商帶回一塊據說是仙家遺落的碎玉，開價是尋常的三倍。父親只看了一眼便搖頭，說賣的人比貨還急。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "origins": [
+        "merchant"
+      ]
+    }
+  },
+  {
+    "id": "open_noble_001",
+    "type": "anecdote",
+    "title": "祖祠舊卷",
+    "text": "祖祠的供桌擦得一塵不染，族中長輩把一卷殘舊的吐納訣放到你手上。他說這卷東西傳了好幾代，沒有一個人修明白過。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "origins": [
+        "noble"
+      ]
+    }
+  },
+  {
+    "id": "open_noble_002",
+    "type": "anecdote",
+    "title": "堂前比試",
+    "text": "族中子弟聚在堂前比試吐納，你坐在最末。長輩看了一圈，只說了句慢慢來，不知是在勸你，還是在勸自己。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "origins": [
+        "noble"
+      ]
+    }
+  },
+  {
+    "id": "open_orphan_001",
+    "type": "anecdote",
+    "title": "破廟避雨",
+    "text": "你縮在破廟的屋簷下躲雨。香案上的灰有半寸厚，神像的臉早已看不清，你還是朝它拜了一拜。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "origins": [
+        "orphan"
+      ]
+    }
+  },
+  {
+    "id": "open_orphan_002",
+    "type": "anecdote",
+    "title": "半個饃",
+    "text": "你替人跑腿，討得半個饃，蹲在牆角吃完。街上有人御劍掠過，影子從你的碗上滑過，你沒有抬頭，只把最後一口嚥下。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "origins": [
+        "orphan"
+      ]
+    }
+  },
+  {
+    "id": "open_root_za",
+    "type": "anecdote",
+    "title": "天地一點",
+    "text": "夜裡盤膝，你再度感應天地靈氣，只覺四面八方都有一點，每一點都不大。當年測靈的老者說這叫廣結善緣，你至今不知是不是誇獎。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "roots": [
+        "za"
+      ]
+    }
+  },
+  {
+    "id": "open_root_san",
+    "type": "anecdote",
+    "title": "舊日測靈",
+    "text": "你想起當年測靈石亮起的三色，光不強也不弱。老者說這樣的人最多，所以不必自覺特別，也不必自覺不如人。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "roots": [
+        "san"
+      ]
+    }
+  },
+  {
+    "id": "open_root_shuang",
+    "type": "anecdote",
+    "title": "舊日測靈",
+    "text": "你想起測靈石上那兩道交纏的清光。旁觀的人嘖了一聲，老者把石頭收回袖裡，什麼也沒說。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "roots": [
+        "shuang"
+      ]
+    }
+  },
+  {
+    "id": "open_root_tian",
+    "type": "anecdote",
+    "title": "舊日測靈",
+    "text": "你想起測靈石的光幾乎要刺破屋頂，滿座皆靜。老者語氣平穩地說，這是福氣，也是麻煩。",
+    "weight": 25,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 1,
+    "conditions": {
+      "ageMax": 24,
+      "roots": [
+        "tian"
+      ]
+    }
+  }
+]
