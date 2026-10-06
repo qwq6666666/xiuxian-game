@@ -106,7 +106,7 @@ docs/
 
 | | Claude（核心與整合者） | ChatGPT（介面與內容） |
 |---|---|---|
-| 負責寫 | `src/core/`、`src/data/` 的結構與數值（`types.ts`、`validate.ts`、`load.ts`、各 JSON）、`scripts/`、`tests/`、`.github/`、`AGENTS.md`、`docs/GDD.md` | `src/ui/`、圖片資產、`src/data/events/*.json` 的事件文字 |
+| 負責寫 | `src/core/`、`src/data/` 的結構與數值（`types.ts`、`validate/`、`load.ts`、各 JSON）、`scripts/`、`tests/`、`.github/`、`AGENTS.md`、`docs/GDD.md` | `src/ui/`、圖片資產、`src/data/events/*.json` 的事件文字 |
 | 負責做 | 里程碑設計與實作計畫、存檔升版與遷移、`npm run sim` 與數值調整、審查與合併進 `master`、部署 | 畫面、樣式、動畫、地圖繪製、手機與鍵盤實測、事件與日誌文字草稿 |
 | 只提案不直接改 | — | `docs/WORLD.md`、`docs/GDD.md`、`src/data/` 結構檔 |
 
