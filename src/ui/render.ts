@@ -22,6 +22,7 @@ import { fillSlots, type SlotValues } from "../data/slots";
 import { compareLives, goalStatuses, type GoalProgress } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { sectPanel } from "./sectinfo";
+import { statPanel } from "./statinfo";
 import { methodRows } from "./methodinfo";
 import { alchemyPanel } from "./alchemyinfo";
 import { attributeGuide, recommendTalent, talentPreview, formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
@@ -684,7 +685,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <div class="actions"><button id="zuohua" type="button">坐化</button></div>
           </section>
           <details class="fold s-goals" id="goalsFold"${wide ? " open" : ""}><summary>本世目標</summary><ul id="goals" class="goals"></ul><p id="goalHint" class="desc"></p><button id="goalGo" type="button" hidden></button></details>
-          <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}${guideHtml()}${identityHtml(state)}</details>
+          <details class="fold s-role"${wide ? " open" : ""}><summary>角色</summary>${statsHtml(state)}<div id="statDetail" class="stat-detail"></div>${guideHtml()}${identityHtml(state)}</details>
           <details class="fold s-bag"${wide ? " open" : ""}><summary>背包</summary><ul id="bag" class="items"></ul></details>
           <details class="fold s-market"${wide ? " open" : ""}><summary>坊市</summary><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>查看世局原因</button></details>
         </aside>
@@ -971,6 +972,35 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     box.append(actions);
   }
 
+  /** 當前數值：主要數字加每月修為的乘數明細；內容沒變就不重畫 */
+  let statKey = "";
+  function renderStatDetail(state: GameState): void {
+    const box = stageEl.querySelector<HTMLElement>("#statDetail");
+    if (!box) return;
+    const panel = statPanel(state, data);
+    const key = JSON.stringify(panel);
+    if (key === statKey && box.childElementCount > 0) return;
+    statKey = key;
+    // 重畫時保留「怎麼算」的展開狀態
+    const wasOpen = box.querySelector("details")?.open ?? false;
+    box.replaceChildren();
+    const dl = el("dl", "facts");
+    for (const r of panel.main) {
+      const row = el("div");
+      row.append(el("dt", undefined, r.label), el("dd", undefined, r.value));
+      dl.append(row);
+    }
+    box.append(dl);
+    const det = document.createElement("details");
+    det.className = "guide";
+    det.open = wasOpen;
+    det.append(el("summary", undefined, "每月修為怎麼算"));
+    const list = el("ul");
+    for (const r of panel.breakdown) list.append(el("li", undefined, `${r.label}　${r.value}`));
+    det.append(list);
+    box.append(det);
+  }
+
   /** 煉丹面板：內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
   let alchemyKey = "";
   function renderAlchemy(state: GameState, e: LifeEls): void {
@@ -1113,6 +1143,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       hint.textContent = scheduleHints(state, sched, slotsOf(state), data).join("　");
       hint.hidden = hint.textContent === "";
     }
+    renderStatDetail(state);
     renderSect(state, e);
     renderAlchemy(state, e);
     renderTribulation(state, e);
