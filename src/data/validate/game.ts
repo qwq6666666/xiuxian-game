@@ -45,6 +45,7 @@ export function checkSlotRules(data: GameData): void {
   data.goals.forEach((x, i) => check(`goals.json 第 ${i + 1} 筆（${x.id}）`, x, false));
   data.worldEffects.forEach((x, i) => check(`worldEffects.json 第 ${i + 1} 筆（${x.id}）`, { reason: x.reason }, true));
   data.worldEvents.forEach((x, i) => check(`worldEvents.json 第 ${i + 1} 筆（${x.id}）`, { note: x.note.replace(SLOT_PATTERN_FOR_NOTE, "") }, false));
+  data.worldRelations.changes.forEach((x, i) => check(`worldRelations.json 第 ${i + 1} 筆（${x.id}）`, { note: x.note.replace(SLOT_PATTERN_FOR_NOTE, "") }, false));
   check("map.json", data.map, false);
   // text.json 的日誌模板用自己的 {realm}、{item} 等，只檢查參考名
   check("text.json", data.text, false);

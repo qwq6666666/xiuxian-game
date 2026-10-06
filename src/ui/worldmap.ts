@@ -5,12 +5,13 @@ import { localTerritory, marketTerritory, placesAt, routeTo, type TravelPlace } 
 import { polityLabel, worldAt, worldFor } from "../core/world";
 import { sectReach, territoriesAt, territoryForPoint } from "../core/territory";
 import { ageQuarters, regionFight, territoryMapAt } from "../core/frontier";
+import { relationOf } from "../core/relations";
 import { provincesFor } from "../core/provinces";
 import { terrainFor, type Terrain } from "../core/terrain";
 import { toView } from "../core/mapview";
 import type { GameData, Point } from "../data/types";
 import { joinInfo } from "./sectinfo";
-import { activeEffectsAt, describeEffect, describeTarget, effectsForTarget, legendOf, mapAgeYears, placeHistory, polityLookup, sectMarker, targetKindLabel, terrainLine, territoryLines, timelineEntries, type MapTarget } from "./mapinfo";
+import { activeEffectsAt, describeEffect, describeTarget, effectsForTarget, legendOf, mapAgeYears, placeHistory, polityLookup, relationEdges, relationLines, sectMarker, targetKindLabel, terrainLine, territoryLines, timelineEntries, type MapTarget } from "./mapinfo";
 import { placeLabels, type LabelItem } from "./mapgeo";
 import { drawMapCanvas, polityAnchors, MAP_MARGIN, type HaloDraw, type MapLayers } from "./mapart/draw";
 import { parseHex } from "./mapart/color";
@@ -215,7 +216,9 @@ export function buildWorldMap(
         cover = sectCover(terrain, provinces, data, regionById(sect.region).sites![sect.site], reach, prefs.halo);
         byKey.set(key, cover);
       }
-      return [{ cover, tone: "none" as const }];
+      const rel = relationOf(sn, sect.id);
+      const tone = rel.ally && rel.feud ? "both" : rel.ally ? "ally" : rel.feud ? "feud" : "none";
+      return [{ cover, tone: tone as HaloDraw["tone"] }];
     });
   };
   const colorsOf = (ids: string[]) => ids.map((id) => parseHex(polityById(id)?.color ?? data.map.palette[0]));
@@ -263,6 +266,25 @@ export function buildWorldMap(
     const text = svg("text", { x: a.x, y: a.y, class: "map-nation", "text-anchor": "middle", "font-size": Math.max(10, Math.min(26, 7 + Math.sqrt(a.cells) * 0.55)) });
     text.textContent = polityLabel(polity);
     nationLayer.append(text);
+  }
+  // 關係線：只有選取宗門或國家時才畫；互惠實線、世仇虛線
+  const relTarget = selected?.kind === "sect" ? { sect: selected.id } : selected?.kind === "territory" && map.polityIds[map.owner[Number(selected.id.slice(5))]] ? { polity: map.polityIds[map.owner[Number(selected.id.slice(5))]] } : null;
+  if (relTarget) {
+    const anchors = new Map(polityAnchors(terrain, map).map((a) => [map.polityIds[a.index], a]));
+    const relLayer = svg("g", { class: "map-relations" });
+    root.append(relLayer);
+    for (const e of relationEdges(snap, relTarget)) {
+      const sect = snap.sects.find((s) => s.id === e.sect)!;
+      const to = anchors.get(e.polity);
+      if (!to) continue;
+      const [x1, y1] = tv(regionById(sect.region).sites![sect.site]);
+      const len = Math.hypot(to.x - x1, to.y - y1);
+      if (len < 14) continue;
+      const bend = Math.min(30, len * 0.18) * (e.kind === "ally" ? 1 : -1);
+      const cx = (x1 + to.x) / 2 - ((to.y - y1) / len) * bend;
+      const cy = (y1 + to.y) / 2 + ((to.x - x1) / len) * bend;
+      relLayer.append(svg("path", { d: `M${x1},${y1} Q${cx},${cy} ${to.x},${to.y}`, class: `map-rel map-rel-${e.kind}` }), svg("circle", { cx: to.x, cy: to.y, r: 3, class: "map-rel-end" }));
+    }
   }
   for (const id of highlightRegions) {
     const cap = regionById(id).capital;
@@ -442,7 +464,9 @@ export function buildWorldMap(
     title.append(html("strong", undefined, d.title), html("small", undefined, `　${targetKindLabel(selected, snap)}`));
     info.append(title);
     for (const line of d.lines) info.append(html("p", undefined, line));
+    if (selected.kind === "sect") for (const line of relationLines(snap, { sect: selected.id })) info.append(html("p", "map-effect-line", line));
     if (selected.kind === "territory") {
+      if (relTarget) for (const line of relationLines(snap, relTarget)) info.append(html("p", "map-effect-line", line));
       const cellId = Number(selected.id.slice(5));
       for (const line of territoryLines(world, map, terrain, cellId, data, viewYears)) info.append(html("p", "map-effect-line", line));
       info.append(html("p", "desc", `此處：${terrainLine(terrain, data, cellId)}`));

@@ -851,6 +851,7 @@ export interface GameData {
   map: MapData;
   mapart: MapArtData;
   worldEvents: WorldEventDef[];
+  worldRelations: WorldRelationsData;
   worldEffects: WorldEffectDef[];
   goals: GoalDef[];
   sects: SectsData;
@@ -859,4 +860,26 @@ export interface GameData {
   eras: string[];
   /** 隔世重逢的故人 */
   acquaintances: AcquaintanceDef[];
+}
+
+export type WorldRelationType = "ally" | "feud" | "allyEnd" | "feudEnd";
+
+/** 宗門與國家關係的世局變化候選 */
+export interface WorldRelationChangeDef {
+  id: string;
+  type: WorldRelationType;
+  ageMin: number;
+  ageMax: number;
+  weight: number;
+  /** 模板欄位只有 {sect}、{polity} */
+  note: string;
+}
+
+export interface WorldRelationsData {
+  initial: { allyChance: number; feudChance: number };
+  /** 邏輯座標：宗門到國家（最近的地域標記點）在此距離內才算候選 */
+  candidateDistance: number;
+  /** 每世的關係變動次數 */
+  changeCount: { min: number; max: number };
+  changes: WorldRelationChangeDef[];
 }

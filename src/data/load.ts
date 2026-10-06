@@ -29,6 +29,7 @@ import mapJson from "./map.json";
 import mapartJson from "./mapart.json";
 import worldEffectsJson from "./worldEffects.json";
 import worldEventsJson from "./worldEvents.json";
+import worldRelationsJson from "./worldRelations.json";
 import worldNamesJson from "./worldNames.json";
 import type { GameData } from "./types";
 import {
@@ -56,6 +57,7 @@ import {
   validateText,
   validateWorldEffects,
   validateWorldEvents,
+  validateWorldRelations,
   validateWorldNames,
 } from "./validate";
 
@@ -96,6 +98,7 @@ export const gameData: GameData = validateGameData({
   map: validateMap(mapJson),
   mapart: validateMapArt(mapartJson),
   worldEvents: validateWorldEvents(worldEventsJson),
+  worldRelations: validateWorldRelations(worldRelationsJson),
   worldEffects: validateWorldEffects(worldEffectsJson),
   goals: validateGoals(goalsJson),
   sects: validateSects(sectsJson),

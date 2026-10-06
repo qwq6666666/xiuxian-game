@@ -78,7 +78,7 @@ describe("世局變化", () => {
     for (const seed of SEEDS) {
       const w = generateWorld(seed);
       expect(w.changes.length, String(seed)).toBeGreaterThanOrEqual(6);
-      expect(w.changes.length).toBeLessThanOrEqual(14);
+      expect(w.changes.filter((c) => c.kind !== "relation").length).toBeLessThanOrEqual(14);
       const ages = w.changes.map((c) => c.age);
       expect([...ages].sort((a, b) => a - b)).toEqual(ages);
       expect(ages.some((a) => a >= 30 && a <= 70), `seed ${seed}`).toBe(true);

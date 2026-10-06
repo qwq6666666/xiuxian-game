@@ -11,6 +11,9 @@ import {
   type WorldWhen,
   type WorldEffectDef,
   type WorldEventDef,
+  type WorldRelationChangeDef,
+  type WorldRelationsData,
+  type WorldRelationType,
   WORLD_EVENT_KINDS,
   type WorldEventKind,
 } from "../types";
@@ -289,5 +292,52 @@ export function validateMapArt(raw: unknown, file = "mapart.json"): MapArtData {
     biomes,
     parchment: rgb(o.parchment, file, "parchment"),
     ink: Object.fromEntries(MAP_INK_KEYS.map((k) => [k, rgb(obj(o.ink, `${file} 欄位 ink`)[k], `${file} 欄位 ink`, k)])) as MapArtData["ink"],
+  };
+}
+
+const RELATION_TYPES: WorldRelationType[] = ["ally", "feud", "allyEnd", "feudEnd"];
+
+/** 宗門與國家關係的資料：初始機率、候選距離、每世變動次數與模板 */
+export function validateWorldRelations(raw: unknown, file = "worldRelations.json"): WorldRelationsData {
+  const o = obj(raw, file);
+  const init = obj(o.initial, `${file} 欄位 initial`);
+  const initial = {
+    allyChance: num(init, "allyChance", `${file} 欄位 initial`, { min: 0, max: 1 }),
+    feudChance: num(init, "feudChance", `${file} 欄位 initial`, { min: 0, max: 1 }),
+  };
+  const cc = obj(o.changeCount, `${file} 欄位 changeCount`);
+  const changeCount = {
+    min: num(cc, "min", `${file} 欄位 changeCount`, { min: 0, integer: true }),
+    max: num(cc, "max", `${file} 欄位 changeCount`, { min: 0, integer: true }),
+  };
+  if (changeCount.max < changeCount.min) fail(`${file} 欄位 changeCount`, "max", `不可小於 min（${changeCount.min}）`);
+  const changes = list(o.changes, `${file} 欄位 changes`).map((r, i): WorldRelationChangeDef => {
+    const where = `${file} 欄位 changes 第 ${i + 1} 筆`;
+    const co = obj(r, where);
+    const id = str(co, "id", where);
+    const w = `${where}（${id}）`;
+    const type = str(co, "type", w);
+    if (!(RELATION_TYPES as string[]).includes(type)) fail(w, "type", `必須是 ${RELATION_TYPES.join("、")} 之一，目前為 ${type}`);
+    const def: WorldRelationChangeDef = {
+      id,
+      type: type as WorldRelationType,
+      ageMin: num(co, "ageMin", w, { min: 0 }),
+      ageMax: num(co, "ageMax", w, { min: 0 }),
+      weight: num(co, "weight", w, { gt: 0 }),
+      note: str(co, "note", w),
+    };
+    if (def.ageMax < def.ageMin) fail(w, "ageMax", `不可小於 ageMin（${def.ageMin}），目前為 ${def.ageMax}`);
+    for (const m of def.note.matchAll(/\{([^}]*)\}/g)) {
+      if (m[1] !== "sect" && m[1] !== "polity") fail(w, "note", `模板只能用 {sect}、{polity}，出現了 {${m[1]}}`);
+    }
+    if (!def.note.includes("{sect}") || !def.note.includes("{polity}")) fail(w, "note", "必須同時有 {sect} 與 {polity}");
+    return def;
+  });
+  uniqueIds(changes, file);
+  return {
+    initial,
+    candidateDistance: num(o, "candidateDistance", file, { gt: 0 }),
+    changeCount,
+    changes,
   };
 }

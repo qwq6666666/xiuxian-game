@@ -1,6 +1,14 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：S1 宗門與國家關係（M50 步驟 5，GDD 第 50.7、50.13）
+
+- 分支 `ai/claude-m50`。新增 `core/relations.ts`、`src/data/worldRelations.json`（驗證 `validateWorldRelations`、`types.ts` 三個型別、`GameData.worldRelations`）；`core/world.ts` 加 `World.relations`、`WorldSnapshot.relations`、`WorldChange` 的 `relation`，`applyChange` 處理併國改記與閉山清除，並匯出 `makeRng` 等輔助；`frontier.ts` 的國勢多算互惠宗門。UI：`mapinfo.ts`（`relationEdges`、`relationLines`）、`worldmap.ts`（光暈色分互惠／世仇／兩者、只在選取宗門或國家時畫關係線、資訊卡關係行）、`map.css` 與 `tokens.css`（`--map-ally`、`--map-feud`）。存檔不動（v28）。
+- 驗證：`npm run verify` 全過（719 測試、建置 943 KB）；新增 `tests/relations.test.ts`（決定性、既有世局不位移、盟仇規則、變化次數與年齡、併國、驗證訊息）與 `mapgeo.test.ts` 的關係兩則；sim `simple`／`mixed` 1、16 世與 `post` 40 場與基準逐字相同。瀏覽器：桌面看過選取宗門畫出世仇虛線與資訊卡，逐個點過八個宗門的關係行；375px 無橫向捲動、資訊卡可讀。
+- 沒驗證：關係變化發生當下的大事記顯示（只看了單元測試）；其他世界種子的視覺；時間軸往回拖時關係線的變化；手機雙指縮放。
+- 給 ChatGPT：請看關係線顏色與粗細（`--map-ally` 金、`--map-feud` 暗紅虛線）、光暈暖冷色在羊皮紙上的辨識度、資訊卡「互惠／世仇」行的樣式。note 文字（`worldRelations.json` 六條）請審語氣。
+- 下一步：檢查點 2 等使用者看；之後步驟 6 介面簡化、步驟 7 收尾（WORLD.md 提案與例外、sim、verify、桌面與 375px 驗收）。
+
 ## 2026-10-07：維諾格網向量地圖（M50 步驟 1–3，GDD 第 50 節，進行中）
 
 - 分支 `ai/claude-m50`（本機，已 push，最新 6663c0f）。M49 已合併 master（97affb1）並部署成功。步驟 1 `a4e7f9e`：`core/{noise,shape,heap,cells,terrain}.ts`（維諾格網約 3500 格、陸海、高程氣溫濕度、河、湖、12 生態區）；步驟 2 `407104a`：`core/frontier.ts` 改寫成「格子歸屬」（`territoryMapAt`、`regionFight`），新增 `core/provinces.ts`（國界格 30–100）；步驟 3 `6663c0f`：`ui/worldmap.ts` 重寫（canvas 底圖加 SVG 疊層）、`ui/mapart/*`、`mapinfo.ts`、`mapprefs.ts`、`styles/map.css`，刪除 `jiudu-map.webp`。資料：`map.json` 加 `view`、`territoryRules` 簡化；新增 `mapart.json`。存檔不動（v28）。

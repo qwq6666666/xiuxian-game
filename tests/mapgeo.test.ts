@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { placeLabels } from "../src/ui/mapgeo";
 import { clampZoom, zoomAt, MAX_ZOOM, IDENTITY } from "../src/ui/mapart/zoom";
 import { mixRgb, parseHex, tint } from "../src/ui/mapart/color";
-import { placeHistory, progressWords, targetKindLabel, terrainLine, territoryLines, timelineEntries } from "../src/ui/mapinfo";
+import { placeHistory, progressWords, relationEdges, relationLines, targetKindLabel, terrainLine, territoryLines, timelineEntries } from "../src/ui/mapinfo";
 import { generateWorld, worldAt } from "../src/core/world";
 import { territoryMapAt } from "../src/core/frontier";
 import { terrainFor } from "../src/core/terrain";
@@ -86,5 +86,31 @@ describe("天下圖資訊卡與時間軸", () => {
       expect(placeHistory(world, [name], 200).length).toBeGreaterThan(0);
     }
     expect(placeHistory(world, ["x"], 200)).toEqual([]);
+  });
+});
+
+describe("天下圖的宗門與國家關係", () => {
+  const world = generateWorld(17);
+  const snap = worldAt(world, 0);
+  const withAlly = snap.sects.find((s) => snap.relations[s.id]?.ally);
+
+  it("選取宗門：只列它自己的盟與仇；選取國家：列與該國相關的宗門", () => {
+    const s = withAlly ?? snap.sects[0];
+    const edges = relationEdges(snap, { sect: s.id });
+    expect(edges.every((e) => e.sect === s.id)).toBe(true);
+    expect(edges.length).toBe([snap.relations[s.id]?.ally, snap.relations[s.id]?.feud].filter(Boolean).length);
+    const lines = relationLines(snap, { sect: s.id });
+    expect(lines.length).toBeGreaterThan(0);
+    if (snap.relations[s.id]?.ally) {
+      const polity = snap.relations[s.id].ally!;
+      expect(relationEdges(snap, { polity }).some((e) => e.sect === s.id && e.kind === "ally")).toBe(true);
+      expect(relationLines(snap, { polity }).join("")).toContain(s.name);
+    }
+  });
+
+  it("沒有選取時不產生連線，閉山的宗門沒有關係線", () => {
+    const closed = { ...snap, sects: snap.sects.map((s) => ({ ...s, state: "closed" as const })) };
+    expect(relationEdges(closed, { sect: snap.sects[0].id })).toEqual([]);
+    expect(relationLines(closed, { sect: snap.sects[0].id })).toEqual([]);
   });
 });

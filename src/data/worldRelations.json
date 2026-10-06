@@ -1,0 +1,13 @@
+{
+  "initial": { "allyChance": 0.6, "feudChance": 0.45 },
+  "candidateDistance": 190,
+  "changeCount": { "min": 0, "max": 2 },
+  "changes": [
+    { "id": "rel_ally_a", "type": "ally", "ageMin": 15, "ageMax": 90, "weight": 5, "note": "{sect}與{polity}互換盟帖，往後山貨與關稅都多了幾分人情。" },
+    { "id": "rel_ally_b", "type": "ally", "ageMin": 60, "ageMax": 160, "weight": 4, "note": "{sect}和{polity}結了盟，兩邊使者吃了三頓宴席，才談妥一張紙。" },
+    { "id": "rel_ally_end", "type": "allyEnd", "ageMin": 40, "ageMax": 180, "weight": 3, "note": "{sect}與{polity}的盟約不了了之，雙方都說是對方先沒回信。" },
+    { "id": "rel_feud_a", "type": "feud", "ageMin": 20, "ageMax": 120, "weight": 3, "note": "{sect}與{polity}結下樑子，兩邊的人在路上碰面，連茶也不肯同桌喝。" },
+    { "id": "rel_feud_b", "type": "feud", "ageMin": 80, "ageMax": 200, "weight": 2, "note": "{sect}與{polity}反目，據說起因只是一塊界石擺錯了半尺。" },
+    { "id": "rel_feud_end", "type": "feudEnd", "ageMin": 50, "ageMax": 200, "weight": 2, "note": "{sect}與{polity}的舊怨擱下了，大約是兩邊的帳都算累了。" }
+  ]
+}

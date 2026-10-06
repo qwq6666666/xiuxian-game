@@ -6,6 +6,7 @@ import { polityLabel, worldAt, worldSlots } from "../core/world";
 import { fillSlots } from "../data/slots";
 import type { GameData, MapRef, WorldEffectDef } from "../data/types";
 import { effectApplies } from "../core/worldeffects";
+import { relationOf, type RelationKind } from "../core/relations";
 
 export type MapTarget =
   | { kind: "region"; id: string }
@@ -102,6 +103,57 @@ export function describeTarget(target: MapTarget, world: World, snap: WorldSnaps
       return { title: target.kind === "village" ? `${name}（出生地）` : name, lines: [text] };
     }
   }
+}
+
+export interface RelationEdge {
+  sect: string;
+  polity: string;
+  kind: RelationKind;
+}
+
+const livingSect = (s: WorldSect): boolean => s.state !== "closed" && s.state !== "fallen";
+
+/** 選取宗門：它的盟與仇；選取國家：與該國互惠或世仇的宗門。只有選取時才畫線。 */
+export function relationEdges(snap: WorldSnapshot, target: { sect?: string; polity?: string }): RelationEdge[] {
+  const out: RelationEdge[] = [];
+  for (const s of snap.sects.filter(livingSect)) {
+    if (target.sect !== undefined && s.id !== target.sect) continue;
+    const r = relationOf(snap, s.id);
+    for (const kind of ["ally", "feud"] as const) {
+      const polity = r[kind];
+      if (polity === null || (target.polity !== undefined && polity !== target.polity)) continue;
+      out.push({ sect: s.id, polity, kind });
+    }
+  }
+  return out;
+}
+
+/** 資訊卡的關係行：宗門看盟與仇，國家看與它互惠或世仇的宗門與境內宗門 */
+export function relationLines(snap: WorldSnapshot, target: { sect?: string; polity?: string }): string[] {
+  const polName = (id: string): string => {
+    const p = snap.polities.find((x) => x.id === id);
+    return p ? polityLabel(p) : "已併入他國";
+  };
+  const sectName = (id: string): string => snap.sects.find((s) => s.id === id)!.name;
+  if (target.sect !== undefined) {
+    const s = snap.sects.find((x) => x.id === target.sect)!;
+    if (!livingSect(s)) return [];
+    const r = relationOf(snap, s.id);
+    const lines: string[] = [];
+    if (r.ally) lines.push(`互惠：${polName(r.ally)}。`);
+    if (r.feud) lines.push(`世仇：${polName(r.feud)}。`);
+    if (!r.ally && !r.feud) lines.push("與各國沒有特別的交情，也沒有過節。");
+    return lines;
+  }
+  const id = target.polity!;
+  const edges = relationEdges(snap, { polity: id });
+  const names = (kind: RelationKind): string => edges.filter((e) => e.kind === kind).map((e) => sectName(e.sect)).join("、");
+  const inside = snap.sects.filter((s) => livingSect(s) && snap.owners[s.region] === id).map((s) => s.name);
+  const lines: string[] = [];
+  if (inside.length) lines.push(`境內宗門：${inside.join("、")}。`);
+  if (names("ally")) lines.push(`互惠宗門：${names("ally")}。`);
+  if (names("feud")) lines.push(`世仇宗門：${names("feud")}。`);
+  return lines;
 }
 
 /** 世局效果的一行說明：原因加上影響的物價 */

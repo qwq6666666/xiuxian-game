@@ -4,6 +4,7 @@ import { gameData } from "../data/load";
 import { DEFAULT_SLOTS, type SlotValues } from "../data/slots";
 import type { GameData, SectState, WorldEventDef } from "../data/types";
 import { deriveSeed, nextRandom } from "./rng";
+import { addRelations, type SectRelation } from "./relations";
 
 export type SectKind = "guard" | "greatSect" | "school";
 export type SectRank = "great" | "school";
@@ -49,6 +50,7 @@ export type WorldChange = { age: number; note: string } & (
   | { kind: "capital"; polity: string; capital: string }
   | { kind: "ferry"; ferry: string; broken: boolean }
   | { kind: "merchant"; region: string }
+  | { kind: "relation"; sect: string; polity: string; relation: "ally" | "feud"; on: boolean }
 );
 
 /** 地圖、文字與擲骰畫面用到的當世名稱（就是名稱欄位的值） */
@@ -64,6 +66,8 @@ export interface World {
   ferries: WorldFerry[];
   merchantBranches: string[];
   changes: WorldChange[];
+  /** 各宗門的初始關係（互惠與世仇的國家） */
+  relations: ({ sect: string } & SectRelation)[];
 }
 
 /** 某個年齡時的世界 */
@@ -74,6 +78,8 @@ export interface WorldSnapshot {
   sects: WorldSect[];
   ferries: WorldFerry[];
   merchantBranches: string[];
+  /** 宗門 id → 互惠與世仇的國家；沒有關係的宗門不在其中 */
+  relations: Record<string, SectRelation>;
   /** 到這個年齡為止最近的幾條變化（由舊到新） */
   notes: string[];
   changeCount: number;
@@ -87,9 +93,9 @@ const RECENT_NOTES = 2;
 
 const SECT_BAD: SectState[] = ["fallen"];
 
-type Rng = () => number;
+export type Rng = () => number;
 
-function makeRng(seed: number): Rng {
+export function makeRng(seed: number): Rng {
   let s = seed >>> 0;
   return () => {
     const [v, n] = nextRandom(s);
@@ -98,7 +104,7 @@ function makeRng(seed: number): Rng {
   };
 }
 
-const pickOne = <T>(rng: Rng, items: readonly T[]): T => items[Math.floor(rng() * items.length)];
+export const pickOne = <T>(rng: Rng, items: readonly T[]): T => items[Math.floor(rng() * items.length)];
 
 function takeName(rng: Rng, pool: string[], used: Set<string>): string | null {
   const free = pool.filter((n) => !used.has(n));
@@ -108,7 +114,7 @@ function takeName(rng: Rng, pool: string[], used: Set<string>): string | null {
   return name;
 }
 
-function weightedIndex(rng: Rng, weights: number[]): number {
+export function weightedIndex(rng: Rng, weights: number[]): number {
   let r = rng() * weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < weights.length; i++) {
     r -= weights[i];
@@ -122,10 +128,12 @@ const landIds = (data: GameData): string[] => data.map.regions.filter((r) => r.l
 const regionName = (data: GameData, id: string): string => data.map.regions.find((r) => r.id === id)?.name ?? id;
 
 /** 套用一次變化到快照上（生成與快照共用） */
-function applyChange(snap: WorldSnapshot, c: WorldChange): void {
+export function applyChange(snap: WorldSnapshot, c: WorldChange): void {
   switch (c.kind) {
     case "sectState":
       snap.sects.find((s) => s.id === c.sect)!.state = c.to;
+      // 閉山與覆滅的宗門不再有關係
+      if (c.to === "closed" || c.to === "fallen") delete snap.relations[c.sect];
       break;
     case "sectRank":
       snap.sects.find((s) => s.id === c.sect)!.rank = c.to;
@@ -135,6 +143,12 @@ function applyChange(snap: WorldSnapshot, c: WorldChange): void {
       break;
     case "merge":
       for (const r of Object.keys(snap.owners)) if (snap.owners[r] === c.from) snap.owners[r] = c.to;
+      // 被併的國家，宗門的關係改記到併入的國家；盟仇同國時盟約優先
+      for (const rel of Object.values(snap.relations)) {
+        if (rel.ally === c.from) rel.ally = c.to;
+        if (rel.feud === c.from) rel.feud = c.to;
+        if (rel.ally !== null && rel.ally === rel.feud) rel.feud = null;
+      }
       snap.polities = snap.polities.filter((p) => p.id !== c.from);
       break;
     case "split":
@@ -162,12 +176,24 @@ function applyChange(snap: WorldSnapshot, c: WorldChange): void {
     case "merchant":
       if (!snap.merchantBranches.includes(c.region)) snap.merchantBranches.push(c.region);
       break;
+    case "relation": {
+      const rel = (snap.relations[c.sect] ??= { ally: null, feud: null });
+      rel[c.relation] = c.on ? c.polity : null;
+      break;
+    }
+  }
+  // 國界變動後，宗門的山門若落進仇國境內，世仇就此作罷（互惠不受影響）
+  if (c.kind === "merge" || c.kind === "owner" || c.kind === "split") {
+    for (const sect of snap.sects) {
+      const rel = snap.relations[sect.id];
+      if (rel && rel.feud !== null && rel.feud === snap.owners[sect.region]) rel.feud = null;
+    }
   }
   snap.notes.push(c.note);
   snap.changeCount++;
 }
 
-const fill = (note: string, vars: Record<string, string>): string =>
+export const fill = (note: string, vars: Record<string, string>): string =>
   note.replace(/\{([^}]*)\}/g, (_, k: string) => vars[k] ?? `{${k}}`);
 
 interface BindContext {
@@ -418,19 +444,22 @@ export function generateWorld(seed: number, data: GameData = gameData): World {
     ferries,
     merchantBranches,
     changes: [],
+    relations: [],
   };
 
   base.changes = buildChanges(base, deriveSeed(seed, 23), data, used);
+  addRelations(base, data);
   return base;
 }
 
-function initialSnapshot(world: World): WorldSnapshot {
+export function initialSnapshot(world: World): WorldSnapshot {
   return {
     owners: { ...world.owners },
     polities: world.polities.map((p) => ({ ...p })),
     sects: world.sects.map((s) => ({ ...s })),
     ferries: world.ferries.map((f) => ({ ...f })),
     merchantBranches: [...world.merchantBranches],
+    relations: Object.fromEntries(world.relations.map((r) => [r.sect, { ally: r.ally, feud: r.feud }])),
     notes: [],
     changeCount: 0,
   };

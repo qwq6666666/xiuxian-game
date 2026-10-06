@@ -193,6 +193,8 @@ export interface PolityStrength {
   regions: number;
   prosperSects: number;
   openSects: number;
+  /** 與該國互惠、但山門在別國境內的宗門數 */
+  allySects: number;
   /** 近年淨得失地域數 */
   recent: number;
   score: number;
@@ -201,13 +203,15 @@ export interface PolityStrength {
 /** 國勢：持有地域、興盛／開放宗門、近年得失地。給拉鋸偏向與資訊卡用。 */
 export function polityStrength(world: World, ageYears: number, data: GameData, snap: WorldSnapshot = worldAt(world, ageYears)): Record<string, PolityStrength> {
   const out: Record<string, PolityStrength> = {};
-  const get = (id: string) => (out[id] ??= { regions: 0, prosperSects: 0, openSects: 0, recent: 0, score: 0 });
+  const get = (id: string) => (out[id] ??= { regions: 0, prosperSects: 0, openSects: 0, allySects: 0, recent: 0, score: 0 });
   for (const p of snap.polities) get(p.id);
   for (const r of data.map.regions.filter((x) => x.land)) get(snap.owners[r.id]).regions++;
   for (const s of snap.sects) {
     const owner = snap.owners[s.region];
     if (s.state === "prosper") get(owner).prosperSects++;
     if (s.state !== "closed" && s.state !== "fallen") get(owner).openSects++;
+    const ally = snap.relations[s.id]?.ally;
+    if (ally && ally !== owner) get(ally).allySects++;
   }
   const recentYears = data.map.territoryRules.strengthWindowYears;
   const owners = { ...world.owners };
@@ -223,7 +227,7 @@ export function polityStrength(world: World, ageYears: number, data: GameData, s
       owners[r] = to;
     }
   }
-  for (const v of Object.values(out)) v.score = v.regions * 2 + v.prosperSects + v.openSects * 0.5 + v.recent;
+  for (const v of Object.values(out)) v.score = v.regions * 2 + v.prosperSects + v.openSects * 0.5 + v.allySects * 0.5 + v.recent;
   return out;
 }
 
