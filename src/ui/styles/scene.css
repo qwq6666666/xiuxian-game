@@ -14,6 +14,24 @@
 .sc-body { transform-box: fill-box; transform-origin: 50% 100%; animation: sc-breathe 4s ease-in-out infinite; }
 .sc-qi { fill: var(--scene-qi); opacity: 0; animation: sc-rise 3.6s ease-out infinite; animation-delay: var(--d); }
 .sc-fallp { fill: var(--scene-fall); opacity: 0; animation: sc-fall 7s linear infinite; animation-delay: var(--d); }
+.sc-lean { transform-box: fill-box; transform-origin: 50% 100%; }
+.sc-staff { display: none; fill: none; stroke: var(--scene-figure); stroke-width: 1.4; stroke-linecap: round; }
+.sc-aura-outer { stroke-width: 0.5; }
+/* 背景景物：靜室（山洞口）、山道、坊市、渡口，同一時間只顯示一組 */
+.sc-set { display: none; }
+.sc-set path, .sc-set rect { fill: var(--scene-figure); opacity: 0.7; }
+.sc-set-road path { stroke: none; }
+.sc-set-road .sc-road { fill: var(--scene-ink); opacity: 0.35; }
+.sc-set-road path:not(.sc-road) { fill: none; stroke: var(--scene-figure); stroke-width: 2.2; stroke-linecap: round; opacity: 0.8; }
+.sc-set-ferry path { fill: none; stroke: var(--scene-figure); stroke-width: 1.6; stroke-linecap: round; }
+.sc-river { fill: var(--scene-water); opacity: 0.55; }
+.sc-lantern { fill: var(--scene-warm); opacity: 0.85; animation: sc-flicker 2.4s ease-in-out infinite; }
+.scene[data-setting="cave"] .sc-set-cave, .scene[data-setting="road"] .sc-set-road, .scene[data-setting="market"] .sc-set-market, .scene[data-setting="ferry"] .sc-set-ferry { display: block; }
+/* 人物隨年齡：少年矮小，老年微駝、白髮、拄杖 */
+.scene[data-age="young"] .sc-hero { transform: translate(400px, 108px) scale(1.25); }
+.scene[data-age="elder"] .sc-lean { transform: rotate(8deg); }
+.scene[data-age="elder"] .sc-head { fill: var(--scene-hair); }
+.scene[data-age="elder"] .sc-staff { display: block; }
 .sc-furnace, .sc-herbs, .sc-banner, .sc-boat { display: none; }
 .sc-furnace path, .sc-furnace rect { fill: var(--scene-figure); }
 .sc-glow { fill: var(--scene-warm); opacity: 0.8; animation: sc-flicker 1.6s ease-in-out infinite; }
@@ -28,6 +46,11 @@
 .scene[data-realm="zhuji"] .sc-aura { opacity: 0.5; }
 .scene[data-realm="jindan"] .sc-aura, .scene[data-realm="yuanying"] .sc-aura, .scene[data-realm="huashen"] .sc-aura { opacity: 0.7; stroke-width: 1.2; }
 .scene[data-realm="mortal"] .sc-aura, .scene[data-realm="mortal"] .sc-qi { display: none; }
+/* 靈氣粒子隨境界增加（練氣 3 顆、築基 5 顆、金丹以上 8 顆），金丹以上多一圈外光，化神更亮 */
+.scene[data-qi="1"] .sc-qi:nth-child(n+4), .scene[data-qi="2"] .sc-qi:nth-child(n+6) { display: none; }
+.sc-aura-outer { display: none; }
+.scene[data-qi="3"] .sc-aura-outer, .scene[data-qi="4"] .sc-aura-outer, .scene[data-qi="5"] .sc-aura-outer { display: block; opacity: 0.35; }
+.scene[data-qi="5"] .sc-qi { r: 1.9; }
 .scene:not([data-sched="retreat"]):not([data-sched="alchemy"]) .sc-qi { animation-duration: 6s; }
 
 @keyframes sc-drift { from { transform: translateX(-30px); } to { transform: translateX(60px); } }

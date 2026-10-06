@@ -85,6 +85,7 @@
   --scene-water: #3d5670;
   --scene-warm: #c98f4e;
   --scene-ink: #8f9aae;
+  --scene-hair: #cfcabb;
   --d: 0s; /* 場景粒子的動畫延遲，由各粒子的 style 覆寫 */
 }
 .scene[data-realm="lianqi"], .vignette[data-realm="lianqi"] { --scene-sky-top: #14222a; --scene-sky-bottom: #28434a; --scene-far: #23393f; --scene-mid: #1b2d33; --scene-near: #131f24; }

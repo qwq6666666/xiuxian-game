@@ -627,7 +627,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       hint.textContent = scheduleHints(state, sched, slotsOf(state), data).join("　");
       hint.hidden = hint.textContent === "";
     }
-    updateScene(stageEl.querySelector<HTMLElement>("#scene"), state);
+    updateScene(stageEl.querySelector<HTMLElement>("#scene"), state, data);
     const fb = stageEl.querySelector<HTMLButtonElement>("#focusBtn");
     if (fb) {
       const ok = canFocus(state, data);
