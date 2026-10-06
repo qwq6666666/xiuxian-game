@@ -7,8 +7,8 @@
 
 | 項目 | 佔用者 | 狀態 |
 |---|---|---|
-| 存檔版本 v23 | （未佔用） | 目前是 v22（M34） |
-| 下一個里程碑編號 M35 | （未佔用） | |
+| 存檔版本 v23 | Claude（雲端，分支 master-mxid6d） | 怪物圖鑑 `meta.bestiary`（GDD 16.3）；動 `types.ts`、`state.ts`、`save.ts`、`encounter.ts`、`tests/save-shape.json` |
+| 下一個里程碑編號 M35 | Claude（雲端） | 怪物圖鑑 |
 
 要動存檔結構或 `types.ts`、共用核心函式前，先把這張表改成自己佔用並 push，另一邊看到就不要同時動。
 
