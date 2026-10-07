@@ -132,6 +132,36 @@ export function choiceBlockReason(
   return lacks.length > 0 ? `需要 ${lacks.join("、")}` : null;
 }
 
+/** 已備齊的門檻說明，例如「門檻：悟性 7、300 靈石」；沒有門檻回傳空陣列（沒備齊時由 choiceBlockReason 說明） */
+export function choiceRequireLine(requires: ChoiceRequires | undefined, data: GameData): string[] {
+  if (!requires) return [];
+  const parts: string[] = [];
+  if (requires.spiritStones !== undefined) parts.push(`${requires.spiritStones} 靈石`);
+  for (const [id, n] of Object.entries(requires.items ?? {})) parts.push(`${data.items.find((i) => i.id === id)?.name ?? id} ×${n}`);
+  for (const [k, n] of Object.entries(requires.attributes ?? {})) parts.push(`${ATTR_LABEL[k as AttributeKey]} ${n}`);
+  if ((requires.fragments ?? []).length > 0) parts.push("一則舊聞");
+  return parts.length > 0 ? [`門檻：${parts.join("、")}`] : [];
+}
+
+const consumedFlagsCache = new WeakMap<GameData, Set<string>>();
+
+/** 有任何事件把它當成「需要具備」的旗標（事件前提、本世目標）；只看資料，不洩漏是哪件事 */
+function consumedFlags(data: GameData): Set<string> {
+  let set = consumedFlagsCache.get(data);
+  if (!set) {
+    set = new Set(data.events.flatMap((e) => e.conditions.flags ?? []));
+    for (const g of data.goals) if (g.condition.kind === "flag") set.add(g.condition.flagId);
+    consumedFlagsCache.set(data, set);
+  }
+  return set;
+}
+
+/** 這個選項的任一結果會留下日後有用的旗標（養育、結緣之類）：只提示「有後續」，不說是什麼 */
+export function choiceHasFollowUp(choice: ChoiceDef, data: GameData): boolean {
+  const used = consumedFlags(data);
+  return choice.outcomes.some((o) => (o.effects.flags ?? []).some((flag) => used.has(flag)));
+}
+
 const DIGITS = "零一二三四五六七八九";
 
 /** 0–999 轉中文數字：十、三十二、一百一十九 */

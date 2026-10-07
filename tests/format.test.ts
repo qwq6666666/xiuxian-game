@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LOG_KINDS } from "../src/core/state";
 import { gameData } from "../src/data/load";
-import { choiceBlockReason, choiceSureCost, formatAgeZh, formatChanges, formatLogEntry, formatOffline, toChineseNumber } from "../src/ui/format";
+import { choiceBlockReason, choiceHasFollowUp, choiceRequireLine, choiceSureCost, formatAgeZh, formatChanges, formatLogEntry, formatOffline, toChineseNumber } from "../src/ui/format";
 
 describe("format", () => {
   it("中文數字", () => {
@@ -160,5 +160,17 @@ describe("choiceSureCost", () => {
   it("有結果不扣就不顯示", () => {
     expect(choiceSureCost({ text: "a", outcomes: [out(-8), out(0)] })).toEqual([]);
     expect(choiceSureCost({ text: "a", outcomes: [out(5)] })).toEqual([]);
+  });
+});
+
+describe("選項的門檻與後續提示", () => {
+  it("門檻列出靈石、物品與屬性，沒有門檻就空", () => {
+    expect(choiceRequireLine(undefined, gameData)).toEqual([]);
+    expect(choiceRequireLine({ spiritStones: 300, attributes: { insight: 7 } }, gameData)).toEqual(["門檻：300 靈石、悟性 7"]);
+  });
+  it("結果會留下被事件或目標用到的旗標才算有後續", () => {
+    const orphan = gameData.events.find((e) => e.id === "orphan_001")!;
+    expect(choiceHasFollowUp(orphan.choices![0], gameData)).toBe(true); // orphan_adopted 有後續事件
+    expect(choiceHasFollowUp(orphan.choices![2], gameData)).toBe(false); // 只當沒看見：只設 orphan_done
   });
 });

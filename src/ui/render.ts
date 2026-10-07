@@ -44,6 +44,8 @@ import {
   choiceBlockReason,
   choiceOdds,
   choiceSureCost,
+  choiceRequireLine,
+  choiceHasFollowUp,
   eraBorn,
   eraTransition,
   formatChanges,
@@ -934,7 +936,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
           b.disabled = reason !== null;
           const odds = showOdds ? choiceOdds(choice, state.attributes) : [];
           const sure = choiceSureCost(choice);
-          const note = reason || ([...sure, odds.length > 0 ? `結果機率約 ${odds.map((p) => `${p}%`).join("／")}` : ""].filter(Boolean).join("　") || null);
+          const note = reason || ([...choiceRequireLine(choice.requires, data), ...sure, ...(choiceHasFollowUp(choice, data) ? ["會留下後續"] : []), odds.length > 0 ? `結果機率約 ${odds.map((p) => `${p}%`).join("／")}` : ""].filter(Boolean).join("　") || null);
           b.innerHTML = `<strong></strong>${note ? "<small></small>" : ""}`;
           b.querySelector("strong")!.textContent = fillSlots(choice.text, slots);
           if (note) b.querySelector("small")!.textContent = note;
