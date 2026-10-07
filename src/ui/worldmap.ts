@@ -164,6 +164,42 @@ const MIN_HIT_RADIUS = 20;
 
 const coverCache = new WeakMap<Terrain, Map<string, number[]>>();
 
+const KIND_LABEL: Record<TravelPlace["kind"], string> = { village: "村", market: "坊市", mountain: "山", capital: "都城", ferry: "渡口", sect: "宗門", merchant: "商行" };
+
+/** 快速前往清單：離現在所在最近的幾處排在前面，其餘收進「全部目的地」；點選只是預覽路線 */
+function buildQuickGo(state: GameState, data: GameData, places: TravelPlace[], selected: MapTarget | null, onSelect: (target: MapTarget | null) => void): HTMLElement {
+  const box = html("section", "map-quick");
+  const here = places.find((p) => p.id === state.travel.locationId);
+  box.append(html("p", "map-quick-title", `快速前往${here ? `　（你在${here.name}）` : ""}`));
+  const rows = places
+    .filter((p) => p.id !== state.travel.locationId)
+    .map((p) => ({ place: p, months: routeTo(state, p.id, data)?.months ?? Infinity }))
+    .filter((r) => Number.isFinite(r.months))
+    .sort((a, b) => a.months - b.months || a.place.name.localeCompare(b.place.name, "zh-Hant"));
+  const chip = (r: { place: TravelPlace; months: number }): HTMLButtonElement => {
+    const b = html("button", "map-quick-chip");
+    b.type = "button";
+    const on = selected !== null && placeIdOf(selected) === r.place.id;
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    b.append(html("strong", undefined, r.place.name), html("small", undefined, `${KIND_LABEL[r.place.kind]}・${r.months} 個月`));
+    b.addEventListener("click", () => onSelect(on ? null : targetOfPlace(r.place)));
+    return b;
+  };
+  const NEAR = 6;
+  const near = html("div", "map-quick-list");
+  near.append(...rows.slice(0, NEAR).map(chip));
+  box.append(near);
+  if (rows.length > NEAR) {
+    const more = html("details", "map-quick-more");
+    more.append(html("summary", undefined, `全部目的地（${rows.length}）`));
+    const list = html("div", "map-quick-list");
+    list.append(...rows.slice(NEAR).map(chip));
+    more.append(list);
+    box.append(more);
+  }
+  return box;
+}
+
 /** 常駐的標記圖例：用地圖上同樣的形狀與樣式，一行說完 */
 function buildMapKey(): HTMLElement {
   const key = html("div", "map-key");
@@ -465,7 +501,11 @@ export function buildWorldMap(
   const current = tv(places.find((place) => place.id === state.travel.locationId)?.point ?? birthRegion.birth!.village);
   const markerPoint = activeRoute ? along(activeRoute.points.map(tv), travelProgress(state)) : current;
   const you = svg("g", { class: "map-you" });
-  you.append(keepPhase(svg("circle", { cx: 0, cy: 0, r: 8, class: "map-you-ring" }), 2800), svg("circle", { cx: 0, cy: 0, r: 4, class: "map-you-dot" }));
+  you.append(
+    keepPhase(svg("circle", { cx: 0, cy: 0, r: 12, class: "map-you-ring" }), 2800),
+    svg("circle", { cx: 0, cy: 0, r: 5.5, class: "map-you-dot" }),
+    Object.assign(svg("text", { x: 0, y: -16, class: "map-you-label", "text-anchor": "middle" }), { textContent: "你在此" }),
+  );
   moveTraveler(you, markerPoint);
   root.append(you);
 
@@ -508,6 +548,9 @@ export function buildWorldMap(
     mapPane.append(bar);
   }
 
+  // ---- 快速前往：依路程由近到遠，一點就預覽路線（前往鈕在上方資訊卡）----
+  if (state.phase === "living" && state.travel.targetId === null) mapPane.append(buildQuickGo(state, data, places, selected, handlers.onSelect));
+
   // ---- 常駐圖例：標記的形狀各代表什麼，不必展開「更多」才知道 ----
   mapPane.append(buildMapKey());
 
@@ -525,7 +568,7 @@ export function buildWorldMap(
     return label;
   };
   const chips = html("div", "map-chips");
-  chips.append(toggle("nation", "國家"), toggle("terrain", "地形"), toggle("river", "河流"), toggle("sect", "宗門靈脈"), toggle("symbol", "山林符號"));
+  chips.append(toggle("nation", "國家"), toggle("terrain", "地形"), toggle("sect", "宗門靈脈"));
   mapPane.append(chips);
 
   // ---- 資訊卡 ----
@@ -601,7 +644,7 @@ export function buildWorldMap(
   const more = html("details", "map-more");
   more.append(html("summary", undefined, "更多圖層與圖例"));
   const moreChips = html("div", "map-chips");
-  moreChips.append(toggle("border", "國界省界"), toggle("sea", "淺海虛線"), toggle("grid", "經緯格線"));
+  moreChips.append(toggle("river", "河流"), toggle("symbol", "山林符號"), toggle("border", "國界省界"), toggle("sea", "淺海虛線"), toggle("grid", "經緯格線"));
   more.append(moreChips);
   const haloLabel = html("label", "map-destination-label", "靈脈範圍畫法");
   const haloSelect = html("select", "map-destination");

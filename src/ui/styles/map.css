@@ -113,3 +113,18 @@
 .map-key-item { display: inline-flex; align-items: center; gap: var(--sp-1); }
 .map-key-icon { width: 1.2em; height: 1.2em; }
 .map-key-sect { fill: var(--map-sect-paper); stroke: var(--map-marker-outline); stroke-width: 1.5; }
+
+/* 玩家位置：加大的光圈與「你在此」標示 */
+.map-you-label { fill: var(--accent); stroke: var(--map-marker-outline); stroke-width: 3; paint-order: stroke; font-size: 11px; font-weight: 700; pointer-events: none; }
+
+/* 快速前往：由近到遠的目的地，每顆是一個大按鈕 */
+.map-quick { margin: var(--sp-2) 0; }
+.map-quick-title { margin: 0 0 var(--sp-1); color: var(--muted); }
+.map-quick-list { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.map-quick-chip { display: inline-flex; flex-direction: column; align-items: flex-start; min-height: var(--tap); padding: var(--sp-1) var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--panel); color: var(--text); cursor: pointer; }
+.map-quick-chip small { color: var(--muted); }
+.map-quick-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--sunken); }
+.map-quick-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.map-quick-more { margin-top: var(--sp-2); }
+.map-quick-more summary { cursor: pointer; color: var(--muted); }
+.map-quick-more .map-quick-list { margin-top: var(--sp-2); }
