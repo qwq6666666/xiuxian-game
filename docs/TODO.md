@@ -79,7 +79,9 @@
 4. 日常安排只能點擊切換，沒有長按說明。
 5. （更正）手機寬度本來就有固定在底部的分頁列（`responsive.css`），只是分頁只能點，不能滑動。
 
-**階段 1 已做（分支 ai/claude-m48）**：動畫 token（`--dur-press`、`--press-scale`、`--stagger`）；按鈕 `:active` 縮放與 `touch-action: manipulation`；事件選項依序進場（只限事件視窗）；`src/ui/gesture.ts`（`swipeOf`、`onSwipe`、`neighbourOf`，只認觸控與手寫筆）；手機左右滑動切換側欄分頁（略過鎖住的分頁，到頭不循環）；`src/ui/haptics.ts`（`navigator.vibrate`，更多選單可關，偏好存 localStorage `xiuxian-haptics`）。尚未做：數字滾動、月內節拍、場景隨安排反應、長按說明、日誌點開詳情。
+**階段 1 已做（分支 ai/claude-m48）**：動畫 token（`--dur-press`、`--press-scale`、`--stagger`）；按鈕 `:active` 縮放與 `touch-action: manipulation`；事件選項依序進場（只限事件視窗）；`src/ui/gesture.ts`（`swipeOf`、`onSwipe`、`neighbourOf`，只認觸控與手寫筆）；手機左右滑動切換側欄分頁（略過鎖住的分頁，到頭不循環）；`src/ui/haptics.ts`（`navigator.vibrate`，更多選單可關，偏好存 localStorage `xiuxian-haptics`）。尚未做：場景隨安排反應（實測更正：場景本來就會隨安排換道具，缺的是歷練與閉關的差異）、長按說明、日誌點開詳情。
+
+**階段 2 已做（修行主畫面，同分支）**：`src/ui/tween.ts` 數字滾動（靈石與修為順著進度條爬升，換階段或歸零不滾動，背景頁與減少動態直接跳）；一年十二格月份刻度（`#yearPips`，目前月亮起）；修為圓滿且可突破時進度條邊框呼吸（`.progress.ready`）；新出現的「偶得」「後續」日誌條目多一次底色閃動。
 
 **驗收原則（階段 1 起沿用）**：只動 `src/ui/`；動畫可跳過且遵守 `prefers-reduced-motion`；色碼只進 `tokens.css`；`npm run sim` 輸出必須逐字不變；每個畫面在 375px 與桌面都實測。
 

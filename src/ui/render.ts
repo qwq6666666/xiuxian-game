@@ -17,6 +17,7 @@ import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { createVeil } from "./veil";
 import { neighbourOf, onSwipe } from "./gesture";
+import { resetRolls, rollNumber } from "./tween";
 import { haptic, hapticsEnabled, setHapticsEnabled } from "./haptics";
 import { canPeek } from "../core/omen";
 import { collapseRoutineRetreats, groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
@@ -381,6 +382,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   function buildLife(state: GameState): void {
     built = "life";
     logKey = "";
+    resetRolls();
     panels.reset();
     logLen = 0;
     prevStones = null;
@@ -394,6 +396,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         ${sceneHtml()}
         <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="focusBtn" type="button" class="focus-btn" hidden></button><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
+        <div id="yearPips" class="year-pips" aria-hidden="true">${"<i></i>".repeat(12)}</div>
         <p id="pace" class="pace"></p>
         <div id="resbar" class="resbar" aria-label="隨身"></div>
         <div id="todo" class="todo" hidden><span id="todoText"></span><button id="todoGo" type="button" class="primary">前往突破</button></div>
@@ -599,9 +602,19 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     const left = yearsLeft(state.ageMonths, lifespan);
     e.age.textContent = `${years} 歲 ${months} 個月 ／ 壽元 ${lifespan}（餘 ${left} 年）`;
     // 只改文字節點，避免把進行中的浮字一併清掉
-    const stonesText = `靈石 ${state.spiritStones}`;
-    if (e.stones.firstChild?.nodeType === Node.TEXT_NODE) e.stones.firstChild.nodeValue = stonesText;
-    else e.stones.prepend(stonesText);
+    // 靈石數字順著過渡滾到新值（短過渡，讓大額進帳看得出來）
+    rollNumber("stones", state.spiritStones, data.config.msPerMonth / Math.max(1, state.speed), (v) => {
+      const text = `靈石 ${v}`;
+      if (e.stones.firstChild?.nodeType === Node.TEXT_NODE) e.stones.firstChild.nodeValue = text;
+      else e.stones.prepend(text);
+    });
+    // 一年十二格：目前的月份亮起，讓「一個月一秒」有看得見的刻度
+    const pips = stageEl.querySelectorAll<HTMLElement>("#yearPips i");
+    const monthNow = state.ageMonths % 12;
+    pips.forEach((p, i) => {
+      p.classList.toggle("on", i <= monthNow);
+      p.classList.toggle("now", i === monthNow);
+    });
     if (prevStones !== null && state.spiritStones !== prevStones && !document.hidden) {
       panels.floatDelta(e.stones, state.spiritStones - prevStones, "");
     }
@@ -635,7 +648,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     prevStageKey = stageKey;
     const cultivation = Math.floor(state.cultivation);
     const stuck = atBottleneck(state, data);
-    e.barText.textContent = `修為 ${cultivation} / ${need}${stuck ? "　瓶頸" : ""}`;
+    // 修為數字與進度條同步爬升；換階段或歸零時不滾動
+    const barMs = resets ? 0 : data.config.msPerMonth / Math.max(1, state.speed);
+    rollNumber("cultivation", cultivation, barMs, (v) => {
+      e.barText.textContent = `修為 ${v} / ${need}${stuck ? "　瓶頸" : ""}`;
+    });
     e.progress.setAttribute("aria-valuemin", "0");
     e.progress.setAttribute("aria-valuemax", String(need));
     e.progress.setAttribute("aria-valuenow", String(Math.min(cultivation, need)));
@@ -655,6 +672,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
 
     // 待辦：此刻最需要玩家處理的一件事（抉擇事件另以彈窗處理）
     const canBt = canBreakthrough(state, data);
+    // 修為圓滿且能突破時，進度條微微呼吸，提醒玩家這一刻該動手
+    e.progress.classList.toggle("ready", canBt && stuck);
     const gated = stuck && !canBt && breakthroughRuleOf(state, data) !== null && missingTalent(state, data) !== null;
     if (canBt && stuck) {
       e.todoText.textContent = "修為圓滿，可以嘗試突破。";

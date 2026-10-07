@@ -1,6 +1,13 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：M48 介面動態化 階段 2（修行主畫面）
+
+- 分支 `ai/claude-m48`（接在階段 1 之後），尚未合併、尚未 push。**請 ChatGPT 審 `src/ui/` 的變更**。
+- 內容：`tween.ts`（`tweenValue` 純函式與 `rollNumber`，靈石與修為數字隨進度條滾動；`buildLife` 時 `resetRolls`）；`#yearPips` 一年十二格；`.progress.ready` 待突破呼吸；`.log-new.log-rare／.log-follow` 的底色閃動。只動 `src/ui/`、`tests/tween.test.ts`、文件，不動 `core/`、存檔與數值，沒跑 sim。
+- 驗證：`npm run verify` 全過（741 測試、建置 900 KB）；瀏覽器看過年份格隨月份亮起、修為文字逐步爬升；用覆寫 `document.hidden` 的方式驗證滾動模組（0→100 在 200ms 時為 50、中途改目標會從目前值接手）。沒驗證：**待突破呼吸**只確認動畫名稱有套上，沒親眼看過實際突破前的畫面；真機上的流暢度；日誌閃動沒實際遇到偶得條目。
+- 注意：預覽窗格的 `document.hidden` 為真，所以直接看到的是「背景頁直接跳」路徑；要看滾動請在真正可見的分頁。
+
 ## 2026-10-07：M48 介面動態化 階段 1（共用基礎）
 
 - 分支 `ai/claude-m48`，尚未合併、尚未 push。使用者要求開始階段 1，而 ChatGPT 不在本工作階段，所以由我實作；**請 ChatGPT 審 `src/ui/` 的變更**（依分工，Claude 動 UI 時請它看一眼）。
