@@ -883,7 +883,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           else if (odds.length > 0) b.querySelector("small")!.textContent = `結果機率約 ${odds.map((p) => `${p}%`).join("／")}`;
           b.addEventListener("click", () => {
             // 選中的選項亮起、其餘淡出，停一小下再結算，讓「選了什麼」有個落點
-            if (e.eventChoices.classList.contains("picked") || reducedMotion()) return void handlers.onChoose(i);
+            // 已選定、正等結算時，再按任何選項（含鍵盤）一律忽略，不能改掉先前的選擇
+            if (e.eventChoices.classList.contains("picked")) return;
+            if (reducedMotion()) return void handlers.onChoose(i);
             e.eventChoices.classList.add("picked");
             b.classList.add("pick");
             window.setTimeout(() => handlers.onChoose(i), 170);
@@ -904,7 +906,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             peek.className = "peek";
             peek.textContent = "窺看";
             peek.setAttribute("aria-label", `以靈犀窺看「${fillSlots(choice.text, slots)}」的吉凶，本世還剩 ${state.omenLeft} 次`);
-            peek.addEventListener("click", () => handlers.onPeek(i));
+            peek.addEventListener("click", () => {
+              if (!e.eventChoices.classList.contains("picked")) handlers.onPeek(i);
+            });
             row.append(b, peek);
             e.eventChoices.appendChild(row);
           } else e.eventChoices.appendChild(b);

@@ -30,6 +30,8 @@ import type { LifeEls, SideTab, UiHandlers } from "./render";
 
 /** 天劫光圈一輪的長度（毫秒），要與 styles/layout.css 的 trib-close 動畫一致 */
 const RING_MS = 1600;
+/** flash 的 class 最久留多久（毫秒）；比最長的樣式動畫長一些 */
+const FLASH_MAX_MS = 1600;
 
 export interface PanelContext {
   stageEl: HTMLElement;
@@ -181,19 +183,34 @@ export function createPanels(ctx: PanelContext): Panels {
   }
 
   /** 重播一次樣式動畫：移除再加回 class，動畫結束自行拿掉 */
+  /** 進行中的 flash：同一元素同一個 class 重播時先取消舊的收尾，免得舊計時提早拿掉新的 class */
+  const flashing = new WeakMap<HTMLElement, Record<string, () => void>>();
   function flash(selector: string, cls: string): void {
     const el = stageEl.querySelector<HTMLElement>(selector);
     if (!el) return;
+    const slot = flashing.get(el) ?? {};
+    flashing.set(el, slot);
+    slot[cls]?.();
     el.classList.remove(cls);
     void el.offsetWidth;
     el.classList.add(cls);
-    // 子元素的動畫結束也會冒泡上來，只認自己這個元素的
-    const done = (ev: AnimationEvent): void => {
-      if (ev.target !== el) return;
+    // 動畫結束就拿掉 class。子元素的動畫結束也會冒泡上來，只認自己這個元素的；
+    // 另設超時保險：偏好減少動態、或動畫根本沒跑時不會有 animationend，class 也不能一直留著
+    const finish = (): void => {
       el.classList.remove(cls);
-      el.removeEventListener("animationend", done);
+      cancel();
     };
-    el.addEventListener("animationend", done);
+    const onEnd = (ev: AnimationEvent): void => {
+      if (ev.target === el) finish();
+    };
+    const timer = window.setTimeout(finish, FLASH_MAX_MS);
+    const cancel = (): void => {
+      el.removeEventListener("animationend", onEnd);
+      window.clearTimeout(timer);
+      delete slot[cls];
+    };
+    el.addEventListener("animationend", onEnd);
+    slot[cls] = cancel;
   }
 
   /** 數值變動浮字：放在 anchor 內，aria-hidden，動畫結束自行移除 */

@@ -170,7 +170,9 @@
   100% { filter: none; border-color: var(--line); }
 }
 /* 凝神結果：抓到時機靶圈脹開一下；沒抓到整個光圈晃一下 */
-#tribRing.ring-hit .ring-target { animation: ring-hit var(--dur-slow) var(--ease); }
+/* 凝神成功的擴散圈畫在 ::after 上，不去動靶圈本身的視窗動畫，所以不會蓋住下一道的收攏提示 */
+#tribRing::after { content: ""; position: absolute; inset: 22px; border-radius: 50%; border: 2px solid var(--accent); opacity: 0; pointer-events: none; }
+#tribRing.ring-hit::after { animation: ring-hit var(--dur-slow) var(--ease); }
 #tribRing.ring-miss { animation: ring-miss var(--dur-slow) var(--ease); }
 @keyframes ring-hit { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
 @keyframes ring-miss { 0%, 100% { transform: none; } 20% { transform: translateX(calc(var(--shake-base) * -1)); } 60% { transform: translateX(var(--shake-base)); } }
