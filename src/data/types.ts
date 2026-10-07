@@ -778,6 +778,27 @@ export interface TrialsData {
   trials: TrialDef[];
 }
 
+/** 年度行止（M64）：每年選一次的取捨，沒選就是順其自然（倍率全是 1，沒有任何結算） */
+export interface StanceDef {
+  id: string;
+  name: string;
+  desc: string;
+  /** 修為增量倍率 */
+  cultivationMult: number;
+  /** 事件計時倍率 */
+  eventRateMult: number;
+  /** 滿一年時的結算：固定給靈石、或有機率損失目前修為的一部分 */
+  yearEnd?: { stones?: number; risk?: { chance: number; lossFrac: number } };
+  /** 日誌用句：結算時寫入；有 risk 的另有 hitText（沒中時用 endText） */
+  endText: string;
+  hitText?: string;
+}
+
+export interface StancesData {
+  rules: { intervalYears: number };
+  stances: StanceDef[];
+}
+
 /** 天劫的數值與文字（M28） */
 export interface TribulationData {
   /** 運功護體：成功率 + 心性 × perMind（上限 max），這一道失敗時額外損失 extraLoss 的修為 */
@@ -923,6 +944,7 @@ export interface GameData {
   recipes: RecipesData;
   monsters: MonstersData;
   trials: TrialsData;
+  stances: StancesData;
   methods: MethodDef[];
   events: EventDef[];
   talents: TalentDef[];

@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, Omen, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 32;
+export const SAVE_VERSION = 33;
 
 /** 沒有選擇過時的國家數（與 map.json 的 nations.default 相同，由載入檢查守住） */
 export const DEFAULT_NATIONS = 5;
@@ -137,6 +137,7 @@ export const LOG_KINDS = [
   "huntFlee",
   "huntDraw",
   "trialEnter",
+  "stance",
   "trialClear",
   "trialFail",
 ] as const;
@@ -322,6 +323,8 @@ export interface GameState {
   breakthroughStudy: number;
   /** 疲勞（M46）：連續從事會疲勞的安排（閉關）的月數，做別的安排時逐月回復，轉世歸零 */
   retreatStreak: number;
+  /** 今年的行止（M64）：id 與選定的月份；沒選為 null（順其自然） */
+  stance: { id: string; since: number } | null;
   /** 這一世抽出的目標 id */
   goalIds: string[];
   /** 這一世開始時已有的殘卷數，用來算「本世取得」 */

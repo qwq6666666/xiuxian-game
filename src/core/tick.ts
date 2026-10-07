@@ -10,6 +10,7 @@ import { deriveSeed, nextInt, nextRandom } from "./rng";
 import type { GameState } from "./state";
 import { advanceTravel } from "./travel";
 import { stepSect } from "./sect";
+import { stepStance } from "./stance";
 import { stepAlchemy } from "./alchemy";
 import { accrueFocus } from "./focus";
 import { advanceStreak } from "./fatigue";
@@ -90,6 +91,7 @@ function stepMonth(state: GameState, data: GameData): GameState {
   if (s.phase !== "living") return s;
   s = stepAlchemy(s, data);
   s = stepSect(s, data);
+  s = stepStance(s, month, data);
   if (month >= lifespanMonths(realmOf(s, data), s.lifespanBonus)) {
     const died = addLog(s, { month, kind: "death", realmId: s.realmId, stage: s.stage }, data.config.logLimit);
     return endLife(died, "lifespan", data);

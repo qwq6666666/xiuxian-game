@@ -148,6 +148,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   },
   // v29 沒有秘境試煉：補上沒有進行中的秘境、本世沒入過
   29: (d) => ({ ...d, version: 30, trial: null, trialsDone: [] }),
+  // v33（M64）：年度行止，舊檔視為沒選
+  32: (d) => ({ ...d, version: 33, stance: null }),
   // v32（M61）：事件冷卻，補上空的「上次出現月份」（舊檔視為沒有冷卻中的事件）
   31: (d) => ({ ...d, version: 32, eventLastMonth: {} }),
   // v31（M58）：進行中的秘境加上層間調息次數
@@ -255,6 +257,7 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
     if (!data.monsters.monsters.some((m) => m.id === entry.monsterId)) fail(`${p}.monsterId`, `找不到怪物 ${entry.monsterId}`);
   }
   if (kind.startsWith("hunt") && entry.monsterId === undefined) fail(`${p}.monsterId`, "遇怪日誌必須有 monsterId");
+  if (kind === "stance" && (entry.choice === undefined || entry.choice >= data.stances.stances.length)) fail(`${p}.choice`, "行止日誌必須有合法的 choice（行止索引）");
   if (eo.trialId !== undefined) {
     entry.trialId = str(eo, "trialId", `${p}.trialId`);
     if (!data.trials.trials.some((t) => t.id === entry.trialId)) fail(`${p}.trialId`, `找不到秘境 ${entry.trialId}`);
@@ -615,6 +618,15 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   } else if (o.alchemy === undefined) {
     fail("alchemy", "不可缺少（沒有煉丹時為 null）");
   }
+  let stance: GameState["stance"] = null;
+  if (o.stance !== null && o.stance !== undefined) {
+    const so = obj(o.stance, "stance");
+    const stanceId = str(so, "id", "stance.id");
+    if (!data.stances.stances.some((s) => s.id === stanceId)) fail("stance.id", `找不到行止 ${stanceId}`);
+    stance = { id: stanceId, since: num(so, "since", { integer: true, min: 0 }, "stance.since") };
+  } else if (o.stance === undefined) {
+    fail("stance", "不可缺少（沒有行止時為 null）");
+  }
   const eqRaw = obj(o.equipment, "equipment");
   const equipment = { weapon: null, ward: null } as GameState["equipment"];
   for (const slot of ARTIFACT_SLOTS) {
@@ -665,6 +677,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     breakthroughs: num(o, "breakthroughs", { integer: true, min: 0 }),
     breakthroughStudy: num(o, "breakthroughStudy", { integer: true, min: 0 }),
     retreatStreak: num(o, "retreatStreak", { integer: true, min: 0 }),
+    stance,
     goalIds,
     startFragments: num(o, "startFragments", { integer: true, min: 0 }),
     tribulation,

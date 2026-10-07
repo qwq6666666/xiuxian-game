@@ -14,6 +14,7 @@ import {
 } from "../core/breakthrough";
 import { haptic } from "./haptics";
 import { keepView } from "./keepview";
+import { canSetStance, stanceMonthsLeft, stanceOf } from "../core/stance";
 import { canTrialRest, trialBanked, trialBlockReason, trialOf, trialRuleOf, trialsFor } from "../core/trial";
 import { actionPreview, canHunt, fleeChance, monsterOf, powerRatio, traitOf, type HuntChoice, huntTalisman } from "../core/encounter";
 import type { GameState, LogEntry } from "../core/state";
@@ -50,6 +51,7 @@ export interface Panels {
   renderTribulation(state: GameState, e: LifeEls): void;
   renderHunt(state: GameState, e: LifeEls): void;
   renderSect(state: GameState, e: LifeEls): void;
+  renderStance(state: GameState, e: LifeEls): void;
   renderTrial(state: GameState, e: LifeEls): void;
   showTrialResult(state: GameState, entry: LogEntry, e: LifeEls): void;
   renderResources(state: GameState): void;
@@ -415,6 +417,36 @@ export function createPanels(ctx: PanelContext): Panels {
     }
   }
 
+  /** 年度行止（M64）：沒選時列出四個取捨；選了就顯示今年的行止與剩幾個月。內容沒變就不重畫 */
+  let stanceKey = "";
+  function renderStance(state: GameState, e: LifeEls): void {
+    const cur = stanceOf(state, data);
+    const key = JSON.stringify([state.phase, cur?.id ?? null, cur ? stanceMonthsLeft(state, data) : null]);
+    if (key === stanceKey) return;
+    stanceKey = key;
+    e.stanceBox.hidden = state.phase !== "living";
+    e.stanceBox.replaceChildren();
+    if (e.stanceBox.hidden) return;
+    e.stanceBox.append(el("h2", undefined, "今年行止"));
+    if (cur) {
+      e.stanceBox.append(el("p", undefined, `${cur.name}：${cur.desc}`), el("small", "changes", `還有 ${stanceMonthsLeft(state, data)} 個月結算`));
+      return;
+    }
+    e.stanceBox.append(el("p", "desc", "不選就是順其自然。選一項，這一年照它走，年底結算。"));
+    const list = el("div", "choices");
+    for (const s of data.stances.stances) {
+      const b = document.createElement("button");
+      b.type = "button";
+      const pct = (m: number): string => `${m >= 1 ? "+" : ""}${Math.round((m - 1) * 100)}%`;
+      const notes = [`修為 ${pct(s.cultivationMult)}`, `事件 ${pct(s.eventRateMult)}`, ...(s.yearEnd?.stones ? [`年底 +${s.yearEnd.stones} 靈石`] : []), ...(s.yearEnd?.risk ? [`年底 ${Math.round(s.yearEnd.risk.chance * 100)}% 損修為 ${Math.round(s.yearEnd.risk.lossFrac * 100)}%`] : [])];
+      b.innerHTML = `<strong>${esc(s.name)}</strong><small>${esc(s.desc)}　${esc(notes.join("・"))}</small>`;
+      b.disabled = !canSetStance(state, s.id, data);
+      b.addEventListener("click", () => handlers.onStance(s.id));
+      list.append(b);
+    }
+    e.stanceBox.append(list);
+  }
+
   /** 樓層進度：文字與 aria-current 讓狀態不只靠顏色表達。 */
   function trialProgress(name: string, floors: number, current?: number): HTMLElement {
     const wrap = el("div", "trial-progress");
@@ -757,6 +789,7 @@ export function createPanels(ctx: PanelContext): Panels {
     renderTribulation: kept((e) => e.tribChoices)(renderTribulation),
     renderHunt: kept((e) => e.huntChoices)(renderHunt),
     renderSect: kept((e) => e.sectBox)(renderSect),
+    renderStance: kept((e) => e.stanceBox)(renderStance),
     renderTrial: kept((e) => e.trialBox)(renderTrial),
     showTrialResult,
     renderResources,

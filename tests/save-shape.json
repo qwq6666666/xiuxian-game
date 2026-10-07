@@ -1,5 +1,5 @@
 {
-  "version": 32,
+  "version": 33,
   "shape": {
     "TravelState": [
       "locationId",
@@ -188,6 +188,7 @@
       "spiritRootId",
       "spiritStones",
       "stage",
+      "stance",
       "startFragments",
       "travel",
       "trial",
