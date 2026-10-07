@@ -60,3 +60,6 @@
 #app[data-ui="game"] #stage:has(> .roll) { overflow-y: auto; -webkit-overflow-scrolling: touch; }
 #app[data-ui="game"]:has(#stage > .roll) .game-nav,
 #app[data-ui="game"]:has(#stage > .roll) .log-ticker { display: none; }
+/* 抽屜裡不放區塊橫幅：全螢幕場景已經是畫面，橫幅只會把安排與按鈕擠到下面 */
+#app[data-ui="game"] .cols .scene-art { display: none; }
+#app[data-ui="game"] .cols { scrollbar-color: var(--line) transparent; }
