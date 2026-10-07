@@ -84,6 +84,7 @@ describe("手機工具列", () => {
   it("維持單列，並把次要入口收進更多選單", () => {
     expect(responsiveText).toMatch(/\.bar\s*\{[^}]*flex-wrap:\s*nowrap/);
     expect(responsiveText).toContain("#codex-open, #map-open, #collection-open { display: none; }");
+    expect(renderText).toContain('mode === "game" || isPhone');
     for (const id of ["mobile-codex-open", "mobile-map-open", "mobile-collection-open"]) {
       expect(renderText).toContain(`id="${id}"`);
     }
