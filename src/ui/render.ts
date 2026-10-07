@@ -106,6 +106,8 @@ export interface Ui {
   render(state: GameState): void;
   /** action：提示列上多一個按鈕（例如「繼續」）；按它或關閉提示都會執行 */
   notice(message: string, action?: { label: string; run(): void }): void;
+  /** 玩家正在讀彈窗或抽屜（天下圖、殘卷錄、行囊等）：主迴圈據此暫停歲月 */
+  reading(): boolean;
 }
 
 /** 側欄的分頁；每個區塊以 data-tab 歸屬其中一頁 */
@@ -1111,6 +1113,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       }
       noticeEl.hidden = message === "";
       replaced?.();
+    },
+    reading() {
+      // 修行抽屜是操作安排用的，開著不算閱讀；其餘抽屜與所有彈窗都算
+      const sheet = stageEl.dataset.sheet;
+      const reading = root.querySelector(".modal:not([hidden])") !== null || (sheet !== undefined && sheet !== "play");
+      root.toggleAttribute("data-reading", reading);
+      return reading;
     },
   };
   renderRef = (state) => ui.render(state);
