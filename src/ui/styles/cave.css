@@ -6,9 +6,8 @@
 .cave-view svg { display: block; width: 100%; height: 100%; }
 
 /* 石壁、地面與器物：全部取場景色票，境界與季節換色時一起變 */
-.cv-wall { fill: var(--scene-mid); }
-.cv-floor { fill: var(--scene-near); }
-.cv-sky { fill: var(--scene-sky-bottom); }
+/* 牆與地面的漸層、質感由圖裡的 fill 屬性與 DEFS 提供，這裡不再覆蓋 */
+.cave-defs { position: absolute; width: 0; height: 0; }
 .cv-frame { fill: none; stroke: var(--scene-figure); stroke-width: 14; }
 .cv-seat { fill: var(--scene-figure); opacity: 0.85; }
 .cv-sleeve { fill: var(--scene-figure); }
@@ -21,8 +20,11 @@
 .cv-furnace { fill: var(--scene-figure); stroke: var(--scene-figure); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
 .cv-mouth { fill: var(--scene-near); }
 .cv-fire, .cv-fireglow { display: none; }
-.cave[data-brew="on"] .cv-fire { display: block; fill: var(--scene-warm); animation: sc-flicker 1.6s ease-in-out infinite; }
-.cave[data-brew="on"] .cv-fireglow { display: block; fill: var(--scene-warm); opacity: 0.18; }
+.cave[data-brew="on"] .cv-fire { display: block; animation: sc-flicker 1.6s ease-in-out infinite; }
+.cv-fire.sparks { stroke-linecap: round; }
+.fire-wall { opacity: 0; transition: opacity var(--dur-slow) var(--ease); }
+.cave[data-brew="on"] .fire-wall { opacity: 0.35; }
+.cave[data-brew="on"] .cv-fireglow { display: block; opacity: 0.55; }
 .cave .sc-smoke { display: none; }
 .cave[data-brew="on"] .sc-smoke { display: block; }
 .cv-bottle, .cv-bag { fill: var(--scene-figure); stroke: var(--scene-ink); stroke-width: 2; opacity: 0.95; }
@@ -63,3 +65,7 @@
 @media (max-width: 640px) {
   .scene.cave { aspect-ratio: 4 / 3; max-height: 52vh; }
   }
+
+/* 香爐的煙絲輕輕搖 */
+.smoke-thread { animation: cv-sway 5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes cv-sway { 0%, 100% { transform: skewX(-4deg); } 50% { transform: skewX(5deg); } }

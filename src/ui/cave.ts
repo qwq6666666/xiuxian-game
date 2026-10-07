@@ -10,63 +10,115 @@ import { ageBand, qiLevel } from "./sceneLogic";
 const QI = [[-22, 0], [-14, 0.9], [-6, 1.8], [4, 0.4], [12, 1.3], [20, 2.2], [-18, 2.6], [8, 3]];
 const qis = (): string => QI.map(([x, d]) => `<circle class="sc-qi" cx="${x}" cy="0" r="1.4" style="--d:${d}s"/>`).join("");
 
-/** 四個朝向各一張圖，viewBox 都是 800×450 */
+/** 四個朝向各一張圖，viewBox 都是 800×450；熱點另外畫在最上層（見 buildHotspots） */
+const wall = (extra = ""): string => `<rect class="cv-wall" x="-40" y="-20" width="880" height="500" fill="url(#wallGrad)"/><rect x="-40" y="-20" width="880" height="500" fill="url(#stone)" opacity=".5"/>${extra}<rect x="-40" y="-20" width="880" height="500" filter="url(#grain)" opacity=".22" style="mix-blend-mode:overlay"/>`;
+const plank = (y: number): string => `<path class="cv-floor" d="M-40 ${y} L840 ${y} L840 480 L-40 480Z" fill="url(#floorGrad)"/><path d="M-40 ${y + 26} H840 M-40 ${y + 62} H840 M-40 ${y + 108} H840 M120 ${y} L60 480 M330 ${y} L300 480 M520 ${y} L540 480 M720 ${y} L780 480" stroke="var(--scene-figure)" stroke-width="2" opacity=".35" fill="none"/>`;
+const mist = (y: number, o = 0.18): string => `<ellipse cx="260" cy="${y}" rx="220" ry="16" fill="var(--scene-orb)" opacity="${o}" filter="url(#blur12)"/><ellipse cx="560" cy="${y + 20}" rx="260" ry="14" fill="var(--scene-orb)" opacity="${o * 0.8}" filter="url(#blur12)"/>`;
+const stars = "";
+const window_ = (cx: number, top: number, bottom: number, half: number, moon = true): string => `
+  <path d="M${cx - half} ${bottom} V${top + 120} Q${cx} ${top - 120} ${cx + half} ${top + 120} V${bottom}Z" fill="url(#skyGrad)"/>
+  ${stars}
+  ${moon ? `<circle class="sc-halo" cx="${cx + 45}" cy="${top + 60}" r="46"/><circle class="sc-orb" cx="${cx + 45}" cy="${top + 60}" r="21"/><circle cx="${cx + 38}" cy="${top + 54}" r="5" fill="var(--scene-sky-bottom)" opacity=".25"/>` : ""}
+  <path class="sc-far" d="M${cx - half} ${bottom} V${bottom - 60} L${cx - 62} ${bottom - 104} L${cx - 22} ${bottom - 68} L${cx + 26} ${bottom - 118} L${cx + 70} ${bottom - 76} L${cx + half} ${bottom - 92} V${bottom}Z" filter="url(#ink)"/>
+  <path class="sc-mid" d="M${cx - half} ${bottom} V${bottom - 30} Q${cx - 40} ${bottom - 54} ${cx + 10} ${bottom - 34} T${cx + half} ${bottom - 38} V${bottom}Z"/>
+  ${mist(bottom - 36, 0.2)}
+  <path d="M${cx} ${top - 8} V${bottom} M${cx - half} ${top + 100} H${cx + half}" stroke="var(--scene-figure)" stroke-width="5" opacity=".8"/>
+  <path class="cv-frame" d="M${cx - half} ${bottom} V${top + 120} Q${cx} ${top - 120} ${cx + half} ${top + 120} V${bottom}Z" filter="url(#ink)"/>`;
+
 const VIEWS: Record<Facing, string> = {
-  front: `<svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">
-    <rect class="cv-wall" width="800" height="450"/>
-    <path class="cv-sky" d="M300 250 V130 Q400 10 500 130 V250Z"/>
-    <circle class="sc-halo" cx="445" cy="110" r="34"/><circle class="sc-orb" cx="445" cy="110" r="20"/>
-    <path class="sc-far" d="M300 250 V190 L340 150 L380 185 L430 135 L470 175 L500 160 V250Z"/>
-    <path class="cv-frame" d="M300 250 V130 Q400 10 500 130 V250Z"/>
-    <path class="cv-floor" d="M0 300 L800 300 L800 450 L0 450Z"/>
-    <ellipse class="cv-seat" cx="400" cy="428" rx="260" ry="46"/>
-    <path class="cv-sleeve" d="M240 450 Q280 385 352 352 L398 376 Q338 404 326 450Z"/>
-    <path class="cv-sleeve" d="M560 450 Q520 385 448 352 L402 376 Q462 404 474 450Z"/>
-    <ellipse class="cv-hand" cx="385" cy="360" rx="22" ry="12"/><ellipse class="cv-hand" cx="415" cy="360" rx="22" ry="12"/>
-    <circle class="sc-aura" cx="400" cy="350" r="52"/><circle class="sc-aura sc-aura-outer" cx="400" cy="350" r="76"/>
-    <g transform="translate(400 330) scale(3.4)">${qis()}</g>
-    <circle class="sc-burst" cx="400" cy="350" r="10"/>
-  </svg>`,
-  left: `<svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">
-    <rect class="cv-wall" width="800" height="450"/>
-    <path class="cv-floor" d="M0 330 L800 330 L800 450 L0 450Z"/>
-    <rect class="cv-shelf" x="60" y="130" width="230" height="12"/><rect class="cv-shelf" x="60" y="210" width="230" height="12"/>
-    <path class="cv-herb" d="M90 130 Q84 100 100 92 M120 130 Q124 96 142 100 M210 130 Q204 108 222 102 M100 210 Q96 186 114 180 M240 210 Q246 184 262 188"/>
-    <path class="cv-furnace" d="M300 400 L322 260 H508 L530 400Z"/>
-    <rect class="cv-furnace" x="336" y="226" width="158" height="38" rx="6"/>
-    <path class="cv-furnace" d="M332 400 L322 430 M498 400 L508 430 M415 400 L415 430"/>
-    <ellipse class="cv-mouth" cx="415" cy="345" rx="52" ry="32"/>
-    <ellipse class="cv-fire" cx="415" cy="352" rx="38" ry="22"/>
-    <circle class="sc-smoke" cx="400" cy="214" r="9" style="--d:0s"/><circle class="sc-smoke" cx="428" cy="214" r="8" style="--d:1.2s"/><circle class="sc-smoke" cx="414" cy="214" r="10" style="--d:2.1s"/>
-    <circle class="sc-halo cv-fireglow" cx="415" cy="352" r="130"/>
-  </svg>`,
-  right: `<svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">
-    <rect class="cv-wall" width="800" height="450"/>
-    <path class="cv-floor" d="M0 380 L800 380 L800 450 L0 450Z"/>
-    <path class="cv-table" d="M0 300 L800 300 L800 450 L0 450Z"/>
-    <path class="cv-bottle" d="M110 300 L110 250 Q110 232 128 232 L148 232 Q166 232 166 250 L166 300Z M130 232 L130 216 L146 216 L146 232Z"/>
-    <path class="cv-bottle" d="M180 300 L180 262 Q180 248 194 248 L210 248 Q224 248 224 262 L224 300Z M194 248 L194 236 L210 236 L210 248Z"/>
-    <rect class="cv-scroll" x="300" y="268" width="170" height="30" rx="4"/><rect class="cv-scrollend" x="292" y="264" width="14" height="38" rx="6"/><rect class="cv-scrollend" x="464" y="264" width="14" height="38" rx="6"/>
-    <path class="cv-bag" d="M530 300 Q520 240 560 214 Q580 204 600 214 Q640 240 630 300Z"/><path class="cv-bagtie" d="M560 218 Q580 232 600 218"/>
-    <circle class="sc-lantern" cx="690" cy="190" r="14"/><path class="cv-hang" d="M690 120 V176"/>
-  </svg>`,
-  back: `<svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">
-    <rect class="cv-wall" width="800" height="450"/>
-    <path class="cv-sky cv-sky-wide" d="M170 450 V210 Q400 -30 630 210 V450Z"/>
-    <circle class="sc-halo" cx="520" cy="130" r="40"/><circle class="sc-orb" cx="520" cy="130" r="22"/>
-    <path class="sc-far" d="M170 340 L250 250 L320 310 L400 220 L480 300 L560 240 L630 320 V450 H170Z"/>
-    <path class="sc-mid" d="M170 400 Q280 350 400 390 T630 380 V450 H170Z"/>
-    <path class="cv-tree" d="M230 450 V380 M230 400 L206 418 M230 392 L254 410 M560 450 V372 M560 392 L536 410 M560 384 L584 402"/>
-    <path class="cv-frame" d="M170 450 V210 Q400 -30 630 210 V450Z"/>
-    <path class="cv-floor" d="M0 420 L800 420 L800 450 L0 450Z"/>
-    <rect class="cv-sign" x="684" y="300" width="54" height="86" rx="4"/><path class="cv-signpost" d="M711 386 V450"/>
-    <path class="sc-near" d="M0 450 Q200 430 400 440 T800 438 V450Z"/>
-  </svg>`,
+  front: `<g>${wall()}
+      ${window_(400, 130, 262, 112)}
+      <polygon points="288,262 512,262 640,480 160,480" fill="url(#beam)" style="mix-blend-mode:screen" opacity=".45"/></g>
+    <g>
+      <g transform="translate(80 120)"><path d="M0 0 V-18 M120 0 V-18" stroke="var(--scene-ink)" stroke-width="2"/><rect x="0" y="0" width="120" height="170" rx="3" fill="var(--scene-ink)" opacity=".78"/><rect x="0" y="0" width="120" height="14" fill="var(--scene-figure)"/><rect x="0" y="156" width="120" height="14" fill="var(--scene-figure)"/><path d="M14 126 L44 70 L64 104 L86 54 L108 126Z" fill="var(--scene-far)" filter="url(#ink)"/><circle cx="92" cy="40" r="9" fill="var(--scene-warm)" opacity=".7"/><path d="M20 44 H60 M20 56 H46" stroke="var(--scene-figure)" stroke-width="3" opacity=".6"/></g>
+      <g transform="translate(640 232)"><path d="M0 70 H70" stroke="var(--scene-figure)" stroke-width="8"/><path d="M12 70 V40 Q12 28 35 28 Q58 28 58 40 V70Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/><rect x="26" y="20" width="18" height="8" fill="var(--scene-figure)"/><path class="smoke-thread" d="M35 18 Q26 4 36 -10 Q46 -24 34 -40" fill="none" stroke="var(--scene-orb)" stroke-width="3" opacity=".3" filter="url(#blur4)"/></g>
+      ${plank(300)}
+      <ellipse cx="400" cy="440" rx="330" ry="40" fill="var(--scene-figure)" opacity=".28" filter="url(#blur12)"/></g>
+    <g><ellipse cx="400" cy="424" rx="262" ry="48" fill="var(--scene-figure)" opacity=".92"/><ellipse cx="400" cy="418" rx="250" ry="42" fill="none" stroke="var(--scene-ink)" stroke-width="2" opacity=".35"/><ellipse cx="400" cy="418" rx="206" ry="34" fill="none" stroke="var(--scene-ink)" stroke-width="2" opacity=".28"/><ellipse cx="400" cy="418" rx="160" ry="26" fill="none" stroke="var(--scene-ink)" stroke-width="2" opacity=".22"/><ellipse cx="400" cy="418" rx="110" ry="18" fill="none" stroke="var(--scene-ink)" stroke-width="2" opacity=".16"/></g>
+    <g>
+      <ellipse cx="400" cy="372" rx="120" ry="60" fill="url(#seal)" style="mix-blend-mode:screen"/>
+      <path class="cv-sleeve" d="M236 450 Q276 380 350 346 L398 372 Q334 402 322 450Z" fill="var(--scene-figure)" filter="url(#ink)"/><path d="M270 430 Q304 392 350 366 M296 440 Q324 410 360 386" stroke="var(--scene-ink)" stroke-width="2" fill="none" opacity=".35"/>
+      <path class="cv-sleeve" d="M564 450 Q524 380 450 346 L402 372 Q466 402 478 450Z" fill="var(--scene-figure)" filter="url(#ink)"/><path d="M530 430 Q496 392 450 366 M504 440 Q476 410 440 386" stroke="var(--scene-ink)" stroke-width="2" fill="none" opacity=".35"/>
+      <rect x="338" y="350" width="26" height="9" rx="4.5" fill="var(--scene-hair)" opacity=".4" transform="rotate(14 351 355)"/>
+      <ellipse class="cv-hand" cx="386" cy="360" rx="23" ry="12"/><ellipse class="cv-hand" cx="414" cy="360" rx="23" ry="12"/>
+      <path d="M378 354 Q400 342 422 354" stroke="var(--scene-hair)" stroke-width="2" fill="none" opacity=".45"/>
+      <circle class="sc-aura" cx="400" cy="350" r="54"/><circle class="sc-aura sc-aura-outer" cx="400" cy="350" r="80"/>
+      <g transform="translate(400 330) scale(3.4)">${qis()}</g></g>`,
+
+  left: `<g>${wall(`<polygon points="-40,480 320,200 560,200 840,480" fill="url(#fireLight)" style="mix-blend-mode:screen" opacity=".0" class="fire-wall"/>`)}
+      <g><rect class="cv-shelf" x="50" y="134" width="250" height="12" fill="var(--scene-figure)"/><rect class="cv-shelf" x="50" y="214" width="250" height="12" fill="var(--scene-figure)"/>
+        <path d="M70 134 V104 Q54 96 56 82 Q70 72 86 82 Q88 98 80 104 V134Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/><path d="M110 134 V110 Q100 100 108 88 Q124 82 134 94 Q132 104 124 110 V134Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/>
+        <rect x="176" y="96" width="46" height="38" rx="6" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/><rect x="184" y="88" width="30" height="8" rx="3" fill="var(--scene-ink)" opacity=".7"/>
+        <path d="M70 214 Q64 178 84 170 M96 214 Q104 176 124 180 M214 214 Q208 184 228 176 M240 214 Q248 186 266 192" class="cv-herb"/>
+        <path d="M150 70 V104 M150 76 Q132 92 140 112 M150 76 Q168 92 160 112" stroke="var(--scene-ink)" stroke-width="2" fill="none"/><ellipse cx="140" cy="116" rx="6" ry="12" fill="var(--scene-warm)" opacity=".55"/><ellipse cx="160" cy="116" rx="6" ry="12" fill="var(--scene-warm)" opacity=".55"/></g></g>
+    <g>${plank(330)}<ellipse cx="415" cy="420" rx="260" ry="36" fill="var(--scene-figure)" opacity=".3" filter="url(#blur12)"/><circle class="cv-fireglow" cx="415" cy="352" r="170" fill="url(#fireLight)"/>
+      <g transform="translate(600 360)"><path d="M0 60 H110 M10 40 H100 M20 20 H90" stroke="var(--scene-figure)" stroke-width="14" stroke-linecap="round"/><path d="M0 60 H110 M10 40 H100 M20 20 H90" stroke="var(--scene-ink)" stroke-width="2" opacity=".3"/></g></g>
+    <g>
+      <path d="M300 404 L322 262 H508 L530 404Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="3"/>
+      <path d="M312 330 H518 M306 366 H524" stroke="var(--scene-ink)" stroke-width="2" opacity=".4"/>
+      <circle cx="342" cy="298" r="4" fill="var(--scene-ink)" opacity=".5"/><circle cx="415" cy="292" r="4" fill="var(--scene-ink)" opacity=".5"/><circle cx="488" cy="298" r="4" fill="var(--scene-ink)" opacity=".5"/>
+      <rect x="334" y="228" width="162" height="38" rx="8" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="3"/><rect x="396" y="206" width="38" height="26" rx="10" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="3"/>
+      <path d="M322 268 Q296 266 296 290 M508 268 Q534 266 534 290" fill="none" stroke="var(--scene-ink)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M332 404 L318 436 M498 404 L512 436 M415 404 L415 438" stroke="var(--scene-figure)" stroke-width="14" stroke-linecap="round"/>
+      <ellipse class="cv-mouth" cx="415" cy="346" rx="54" ry="34" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="3"/>
+      <ellipse class="cv-fire" cx="415" cy="352" rx="40" ry="24" fill="url(#fireCore)"/>
+      <path class="cv-fire sparks" d="M392 332 l3 -10 M430 326 l-3 -12 M414 320 l2 -12" stroke="var(--scene-warm)" stroke-width="2.5" stroke-linecap="round"/>
+      <circle class="sc-smoke" cx="398" cy="204" r="10" style="--d:0s" filter="url(#blur4)"/><circle class="sc-smoke" cx="430" cy="204" r="9" style="--d:1.2s" filter="url(#blur4)"/><circle class="sc-smoke" cx="414" cy="204" r="11" style="--d:2.1s" filter="url(#blur4)"/></g>`,
+
+  right: `<g>${wall(`<polygon points="560,60 840,60 840,300 480,300" fill="url(#lampLight)" style="mix-blend-mode:screen" opacity=".35"/>`)}
+      <path d="M690 -20 V150" stroke="var(--scene-ink)" stroke-width="2"/><path d="M670 150 H710 L718 196 H662Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/><ellipse class="sc-lantern" cx="690" cy="176" rx="20" ry="16"/><circle cx="690" cy="176" r="70" fill="url(#lampLight)" style="mix-blend-mode:screen" opacity=".55"/>
+      <g transform="translate(110 80)" opacity=".8"><rect width="14" height="130" fill="var(--scene-figure)"/><path d="M0 8 H14 M0 30 H14 M0 52 H14" stroke="var(--scene-ink)" stroke-width="2"/><rect x="34" width="14" height="130" fill="var(--scene-figure)"/><path d="M34 14 H48 M34 40 H48 M34 66 H48" stroke="var(--scene-ink)" stroke-width="2"/></g></g>
+    <g>${plank(386)}<path class="cv-table" d="M-40 300 L840 300 L840 480 L-40 480Z" fill="var(--scene-figure)"/><path d="M-40 300 H840" stroke="var(--scene-ink)" stroke-width="3" opacity=".5"/><path d="M-40 330 Q200 322 400 332 T840 326 M-40 372 Q240 366 440 374 T840 368 M-40 420 Q260 414 460 422 T840 416" stroke="var(--scene-ink)" stroke-width="2" fill="none" opacity=".22"/>
+      <ellipse cx="690" cy="304" rx="120" ry="12" fill="var(--scene-warm)" opacity=".16" filter="url(#blur12)"/>
+      <g transform="translate(640 270)"><rect x="0" y="12" width="64" height="24" rx="4" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/><path d="M8 12 Q32 -4 56 12" fill="var(--scene-far)"/><path d="M80 34 V-6 M80 -6 Q88 -22 96 -6" stroke="var(--scene-ink)" stroke-width="3" fill="none" stroke-linecap="round"/></g></g>
+    <g>
+      <path d="M110 300 L110 250 Q110 232 128 232 L148 232 Q166 232 166 250 L166 300Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/><rect x="128" y="206" width="22" height="26" rx="4" fill="var(--scene-ink)" opacity=".8"/><path d="M118 244 Q116 266 120 288" stroke="var(--scene-orb)" stroke-width="3" fill="none" opacity=".35" stroke-linecap="round"/><rect x="114" y="262" width="48" height="22" fill="var(--scene-warm)" opacity=".45"/>
+      <path d="M180 300 L180 262 Q180 248 194 248 L210 248 Q224 248 224 262 L224 300Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/><rect x="194" y="226" width="18" height="22" rx="4" fill="var(--scene-ink)" opacity=".8"/><path d="M188 258 Q186 276 190 292" stroke="var(--scene-orb)" stroke-width="3" fill="none" opacity=".35" stroke-linecap="round"/>
+    
+      <rect x="300" y="266" width="172" height="32" rx="4" fill="var(--scene-ink)" opacity=".85"/><path d="M314 276 H452 M314 284 H430 M314 292 H446" stroke="var(--scene-figure)" stroke-width="2.5" opacity=".55"/><circle cx="440" cy="283" r="6" fill="var(--scene-warm)" opacity=".7"/>
+      <rect x="290" y="262" width="16" height="40" rx="7" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/><rect x="466" y="262" width="16" height="40" rx="7" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2"/>
+    
+      <path d="M530 300 Q518 240 556 212 Q580 200 604 212 Q642 240 630 300Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2.5"/><path d="M552 222 Q580 240 608 222" fill="none" stroke="var(--scene-ink)" stroke-width="4"/><path d="M556 226 L552 252 M604 226 L608 252" stroke="var(--scene-ink)" stroke-width="2.5"/><path d="M544 262 Q530 280 536 296 M616 262 Q630 280 624 296" stroke="var(--scene-ink)" stroke-width="2" stroke-dasharray="4 5" fill="none" opacity=".6"/></g>`,
+
+  back: `<g>${wall()}
+      <path d="M170 450 V210 Q400 -30 630 210 V450Z" fill="url(#skyGradDay)"/>
+      <polygon points="500,60 760,480 280,480" fill="url(#beam)" style="mix-blend-mode:screen" opacity=".3"/>
+      ${stars}<circle class="sc-halo" cx="520" cy="130" r="48"/><circle class="sc-orb" cx="520" cy="130" r="22"/>
+      <path class="sc-far" d="M170 346 L240 262 L300 312 L372 226 L440 304 L520 244 L590 318 L630 292 V450 H170Z" filter="url(#ink)"/>${mist(330, 0.28)}
+      <path class="sc-mid" d="M170 404 Q270 352 390 392 T630 382 V450 H170Z"/>${mist(392, 0.2)}</g>
+    <g>
+      <path class="cv-tree" d="M226 450 V374 M226 400 L202 420 M226 390 L252 410 M226 376 L212 392 M566 450 V366 M566 392 L540 412 M566 382 L592 402 M566 370 L580 386" stroke-width="7"/>
+      <g fill="var(--scene-figure)" opacity=".85"><ellipse cx="206" cy="372" rx="34" ry="18"/><ellipse cx="248" cy="364" rx="30" ry="16"/><ellipse cx="548" cy="360" rx="34" ry="18"/><ellipse cx="594" cy="366" rx="28" ry="14"/></g>
+      <path d="M170 450 V210 Q400 -30 630 210 V450Z" class="cv-frame" filter="url(#rock)" stroke-width="22"/>
+      <path d="M210 108 l-8 36 l14 -22 M256 78 l-6 44 l12 -26 M340 36 l-4 40 l10 -24 M468 34 l-4 40 l10 -24 M550 70 l-6 44 l12 -26" fill="var(--scene-figure)" stroke="var(--scene-figure)" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M190 160 Q184 200 192 240 M212 150 Q204 196 214 236 M610 170 Q618 206 608 244" stroke="var(--scene-ink)" stroke-width="2" fill="none" opacity=".4"/></g>
+    <g>
+      <path class="cv-floor" d="M-40 420 L840 420 L840 480 L-40 480Z" fill="var(--scene-near)"/><path d="M300 450 L340 420 H460 L500 450Z M250 450 L300 450 L330 428" fill="var(--scene-far)" opacity=".7"/><path d="M340 420 H460 M322 434 H478" stroke="var(--scene-ink)" stroke-width="2" opacity=".3"/>
+      <rect x="684" y="298" width="56" height="90" rx="5" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2.5"/><path d="M696 320 H728 M696 338 H722 M696 356 H728" stroke="var(--scene-ink)" stroke-width="3" opacity=".55"/><path d="M712 388 V450" stroke="var(--scene-figure)" stroke-width="9"/>
+      <ellipse cx="400" cy="446" rx="300" ry="10" fill="var(--scene-figure)" opacity=".25" filter="url(#blur4)"/></g>`
 };
+
+const DEFS = `<svg width="0" height="0" class="cave-defs" aria-hidden="true"><defs>
+  <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1.4 -.35"/></filter>
+  <filter id="rock" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".025 .06" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="14"/></filter>
+  <filter id="ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="2"/><feDisplacementMap in="SourceGraphic" scale="4"/></filter>
+  <filter id="blur4"><feGaussianBlur stdDeviation="4"/></filter><filter id="blur12" x="-30%" y="-100%" width="160%" height="300%"><feGaussianBlur stdDeviation="12"/></filter>
+  <linearGradient id="wallGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--scene-near)"/><stop offset=".55" style="stop-color:var(--scene-mid)"/><stop offset="1" style="stop-color:var(--scene-near)"/></linearGradient>
+  <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--scene-mid)"/><stop offset="1" style="stop-color:var(--scene-figure)"/></linearGradient>
+  <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--scene-sky-top)"/><stop offset="1" style="stop-color:var(--scene-sky-bottom)"/></linearGradient>
+  <linearGradient id="skyGradDay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--scene-sky-top)"/><stop offset=".7" style="stop-color:var(--scene-sky-bottom)"/><stop offset="1" style="stop-color:var(--scene-orb);stop-opacity:.35"/></linearGradient>
+  <linearGradient id="beam" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--scene-orb);stop-opacity:.55"/><stop offset="1" style="stop-color:var(--scene-orb);stop-opacity:0"/></linearGradient>
+  <radialGradient id="seal"><stop offset="0" style="stop-color:var(--scene-qi);stop-opacity:.6"/><stop offset="1" style="stop-color:var(--scene-qi);stop-opacity:0"/></radialGradient>
+  <radialGradient id="fireLight"><stop offset="0" style="stop-color:var(--scene-warm);stop-opacity:.8"/><stop offset="1" style="stop-color:var(--scene-warm);stop-opacity:0"/></radialGradient>
+  <radialGradient id="fireCore"><stop offset="0" style="stop-color:var(--scene-orb)"/><stop offset=".45" style="stop-color:var(--scene-warm)"/><stop offset="1" style="stop-color:var(--scene-warm);stop-opacity:.2"/></radialGradient>
+  <radialGradient id="lampLight"><stop offset="0" style="stop-color:var(--scene-warm);stop-opacity:.7"/><stop offset="1" style="stop-color:var(--scene-warm);stop-opacity:0"/></radialGradient>
+  <pattern id="stone" width="120" height="60" patternUnits="userSpaceOnUse"><path d="M0 0 H120 M0 30 H120 M60 0 V30 M0 30 V60 M120 30 V60" stroke="var(--scene-figure)" stroke-width="2" fill="none" opacity=".35"/></pattern>
+</defs></svg>`;
 
 export function caveHtml(): string {
   return `<div id="cave" class="scene cave" data-facing="front" data-realm="mortal" data-sched="retreat" data-season="spring" data-age="adult" data-qi="0" data-no-swipe hidden>
-  <div class="cave-views">${FACINGS.map((f) => `<div class="cave-view" data-view="${f}">${VIEWS[f]}</div>`).join("")}</div>
+  ${DEFS}
+  <div class="cave-views">${FACINGS.map((f) => `<div class="cave-view" data-view="${f}"><svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">${VIEWS[f]}</svg></div>`).join("")}</div>
   <button type="button" class="cave-turn cave-turn-left" aria-label="向左轉身">‹</button>
   <button type="button" class="cave-turn cave-turn-right" aria-label="向右轉身">›</button>
   <div class="cave-name" aria-live="polite"></div>

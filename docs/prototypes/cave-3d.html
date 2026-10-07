@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>洞府偽 3D 原型</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #171b22; --text: #e8e4d6; --muted: #9aa0ab; --line: #2b313c; --accent: #c9a45c;
+    --sky-top: #14222a; --sky-bottom: #28434a; --orb: #d9d2b4; --far: #23393f; --mid: #1b2d33; --near: #131f24;
+    --figure: #0d1015; --qi: #c9a45c; --warm: #c98f4e; --ink: #8f9aae; --hair: #cfcabb;
+  }
+  :root[data-realm="zhuji"] { --sky-top:#1d1a2c; --sky-bottom:#3b3456; --far:#322d4a; --mid:#28243b; --near:#1a1727; --orb:#e3d6b8; --qi:#d8c38d; }
+  :root[data-realm="jindan"] { --sky-top:#2a1f14; --sky-bottom:#5a4224; --far:#4a3822; --mid:#382a19; --near:#221a10; --orb:#f0d9a0; --qi:#f0cf86; }
+  :root[data-realm="yuanying"] { --sky-top:#101635; --sky-bottom:#2c3a73; --far:#232f63; --mid:#1a234c; --near:#101635; --orb:#f2eed8; --qi:#b9c8f2; }
+  :root[data-night="1"] { --sky-top:#070a12; --sky-bottom:#121a2a; --orb:#c9cfe0; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 "Noto Serif TC", "PingFang TC", "Microsoft JhengHei", serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 1.1rem; margin: 0 0 4px; color: var(--accent); }
+  p.sub { margin: 0 0 12px; color: var(--muted); }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; align-items: center; }
+  .controls label, .controls button { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font: inherit; cursor: pointer; }
+  .controls select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; font: inherit; }
+  .controls button[aria-pressed="true"] { border-color: var(--accent); }
+
+  /* 舞台：透視容器 */
+  .stage { position: relative; aspect-ratio: 16 / 9; max-height: 70vh; margin: 0 auto; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--figure); perspective: 900px; perspective-origin: 50% 55%; touch-action: pan-y; user-select: none; }
+  .room { position: absolute; inset: 0; transform-style: preserve-3d; transition: transform 700ms cubic-bezier(.2,.7,.2,1); transform: rotateX(calc(var(--py) * -1.2deg)) rotateY(calc(var(--px) * 1.6deg)); }
+  .view { position: absolute; inset: -4%; opacity: 0; pointer-events: none; transition: opacity 600ms ease, transform 700ms cubic-bezier(.2,.7,.2,1); transform: translateX(10%) rotateY(-28deg) scale(1.06); transform-origin: 50% 50%; }
+  .view.on { opacity: 1; pointer-events: auto; transform: none; }
+  .view.out-left { transform: translateX(-10%) rotateY(28deg) scale(1.06); }
+  .view svg { width: 100%; height: 100%; display: block; }
+
+  /* 視差：每層依深度位移，近的動得多 */
+  .L { transform: translate(calc(var(--px) * var(--d) * -22px), calc(var(--py) * var(--d) * -12px)); transition: transform 120ms linear; }
+  .L.far { --d: 0.2; } .L.mid { --d: 0.6; } .L.near { --d: 1.3; } .L.front { --d: 2.1; }
+
+  .cv-wall { fill: var(--mid); } .cv-floor { fill: var(--near); } .cv-sky { fill: var(--sky-bottom); }
+  .cv-frame { fill: none; stroke: var(--figure); stroke-width: 14; }
+  .sc-orb { fill: var(--orb); } .sc-halo { fill: var(--orb); opacity: .12; } .sc-far { fill: var(--far); } .sc-mid { fill: var(--mid); } .sc-near { fill: var(--near); }
+  .cv-seat, .cv-sleeve, .cv-shelf, .cv-table, .cv-furnace { fill: var(--figure); } .cv-seat { opacity: .85; }
+  .cv-furnace { stroke: var(--figure); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
+  .cv-hand { fill: var(--ink); opacity: .85; }
+  .cv-herb { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; opacity: .7; }
+  .cv-mouth { fill: var(--near); } .cv-fire, .cv-fireglow { display: none; }
+  :root[data-brew="1"] .cv-fire { display: block; fill: var(--warm); animation: flicker 1.6s ease-in-out infinite; }
+  :root[data-brew="1"] .cv-fireglow { display: block; fill: var(--warm); opacity: .2; }
+  .sc-smoke { display: none; fill: var(--orb); opacity: 0; animation: smoke 3.2s ease-out infinite; animation-delay: var(--d2); }
+  :root[data-brew="1"] .sc-smoke { display: block; }
+  .cv-bottle, .cv-bag { fill: var(--figure); stroke: var(--ink); stroke-width: 2; }
+  .cv-bagtie { fill: none; stroke: var(--ink); stroke-width: 3; }
+  .cv-scroll { fill: var(--ink); opacity: .8; } .cv-scrollend { fill: var(--figure); stroke: var(--ink); stroke-width: 1.5; }
+  .cv-hang { stroke: var(--ink); stroke-width: 2; fill: none; }
+  .sc-lantern { fill: var(--warm); opacity: .9; animation: flicker 2.4s ease-in-out infinite; }
+  .cv-tree { fill: none; stroke: var(--figure); stroke-width: 6; stroke-linecap: round; opacity: .85; }
+  .cv-sign { fill: var(--figure); stroke: var(--ink); stroke-width: 2; } .cv-signpost { stroke: var(--figure); stroke-width: 8; }
+  .sc-aura { fill: none; stroke: var(--qi); stroke-width: 1.2; opacity: .7; animation: breathe 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  .sc-aura-outer { stroke-width: .7; opacity: .35; animation-delay: .8s; }
+  .sc-qi { fill: var(--qi); opacity: 0; animation: rise 3.6s ease-out infinite; animation-delay: var(--d2); }
+  .glow { fill: var(--warm); opacity: 0; pointer-events: none; mix-blend-mode: screen; transition: opacity .6s; }
+  :root[data-brew="1"] .glow { opacity: .14; }
+  @keyframes flicker { 0%,100% { opacity: .55 } 50% { opacity: 1 } }
+  @keyframes smoke { 0% { transform: translateY(0) scale(.6); opacity: 0 } 25% { opacity: .35 } 100% { transform: translateY(-70px) scale(1.8); opacity: 0 } }
+  @keyframes rise { 0% { transform: translateY(0); opacity: 0 } 20% { opacity: .9 } 100% { transform: translateY(-34px); opacity: 0 } }
+  @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+  /* 熱點：滑過時上浮並微放大，像是物件靠近了 */
+  .hot { cursor: pointer; outline: none; }
+  .hot .hit { fill: transparent; stroke: transparent; stroke-width: 3; stroke-dasharray: 10 8; transition: all .25s; }
+  .hot .item { transition: transform .35s cubic-bezier(.2,.7,.2,1); transform-box: fill-box; transform-origin: 50% 100%; }
+  .hot:hover .item, .hot:focus-visible .item { transform: translateY(-8px) scale(1.05); }
+  .hot:hover .hit, .hot:focus-visible .hit { stroke: var(--qi); fill: var(--qi); fill-opacity: .08; }
+  .cap rect { fill: var(--sky-top); opacity: .88; } .cap text { fill: var(--orb); font-size: 24px; pointer-events: none; }
+
+  .turn { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--sky-top); color: var(--orb); font-size: 1.4rem; cursor: pointer; opacity: .85; z-index: 3; }
+  .turn.l { left: 10px; } .turn.r { right: 10px; }
+  .name { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); padding: 0 12px; border-radius: 999px; background: var(--sky-top); color: var(--orb); font-size: .85rem; opacity: .85; z-index: 3; }
+  .vignette { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, transparent 55%, rgba(0,0,0,.55) 100%); }
+  .toast { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--accent); border-radius: 8px; padding: 6px 14px; opacity: 0; transition: opacity .3s; z-index: 4; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .note { color: var(--muted); font-size: .9rem; margin-top: 10px; }
+  @media (prefers-reduced-motion: reduce) { .room, .view, .L, .sc-aura, .sc-qi, .sc-smoke, .cv-fire, .sc-lantern { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>洞府偽 3D 原型</h1>
+  <p class="sub">滑鼠在畫面上移動（手機可傾斜或拖曳）會有視差與微小的透視轉動；按左右箭頭、鍵盤方向鍵或左右滑動轉身，轉身時視角會旋轉過去。</p>
+  <div class="controls" role="group" aria-label="預覽設定">
+    <label>境界 <select id="realm"><option value="lianqi">練氣</option><option value="zhuji">築基</option><option value="jindan">金丹</option><option value="yuanying">元嬰</option></select></label>
+    <button id="night" aria-pressed="false">夜晚</button>
+    <button id="brew" aria-pressed="false">煉丹中</button>
+    <button id="tilt" aria-pressed="true">視差開</button>
+  </div>
+  <div class="stage" id="stage" tabindex="0" aria-label="洞府">
+    <div class="room" id="room"></div>
+    <div class="vignette"></div>
+    <button class="turn l" aria-label="向左轉身">‹</button>
+    <button class="turn r" aria-label="向右轉身">›</button>
+    <div class="name" id="name"></div>
+    <div class="toast" id="toast"></div>
+  </div>
+  <p class="note">這只是原型：圖用向量程式畫，沒有任何外部檔案；視差用 CSS 變數、轉身用 CSS 3D 轉場，不需要 3D 函式庫，所以不增加遊戲的檔案大小。</p>
+</main>
+<script>
+const NAMES = { front: "面壁靜坐", right: "石案", back: "洞口", left: "丹爐" };
+const ORDER = ["front", "right", "back", "left"];
+const QI = [[-22,0],[-14,.9],[-6,1.8],[4,.4],[12,1.3],[20,2.2],[-18,2.6],[8,3]];
+const qis = () => QI.map(([x,d]) => `<circle class="sc-qi" cx="${x}" cy="0" r="1.4" style="--d2:${d}s"/>`).join("");
+const hot = (id, label, x, y, w, h, inner) => `<g class="hot" tabindex="0" role="button" data-id="${id}" aria-label="${label}">
+  <g class="item">${inner}</g><rect class="hit" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>
+  <g class="cap" transform="translate(${x + w/2} ${y + h - 18})"><rect x="${-(label.length*13+11)}" y="-20" width="${label.length*26+22}" height="32" rx="16"/><text x="0" y="3" text-anchor="middle">${label}</text></g></g>`;
+
+const VIEWS = {
+  front: `<g class="L far"><rect class="cv-wall" x="-40" y="-20" width="880" height="500"/><path class="cv-sky" d="M300 250 V130 Q400 10 500 130 V250Z"/><circle class="sc-halo" cx="445" cy="110" r="34"/><circle class="sc-orb" cx="445" cy="110" r="20"/><path class="sc-far" d="M300 250 V190 L340 150 L380 185 L430 135 L470 175 L500 160 V250Z"/></g>
+    <g class="L mid"><path class="cv-frame" d="M300 250 V130 Q400 10 500 130 V250Z"/><path class="cv-floor" d="M-40 300 L840 300 L840 480 L-40 480Z"/></g>
+    <g class="L near"><ellipse class="cv-seat" cx="400" cy="428" rx="260" ry="46"/></g>
+    <g class="L front">${hot("focus","運功",300,290,200,160,`<path class="cv-sleeve" d="M240 450 Q280 385 352 352 L398 376 Q338 404 326 450Z"/><path class="cv-sleeve" d="M560 450 Q520 385 448 352 L402 376 Q462 404 474 450Z"/><ellipse class="cv-hand" cx="385" cy="360" rx="22" ry="12"/><ellipse class="cv-hand" cx="415" cy="360" rx="22" ry="12"/><circle class="sc-aura" cx="400" cy="350" r="52"/><circle class="sc-aura sc-aura-outer" cx="400" cy="350" r="76"/><g transform="translate(400 330) scale(3.4)">${qis()}</g>`)}</g>`,
+  left: `<g class="L far"><rect class="cv-wall" x="-40" y="-20" width="880" height="500"/><rect class="cv-shelf" x="60" y="130" width="230" height="12"/><rect class="cv-shelf" x="60" y="210" width="230" height="12"/><path class="cv-herb" d="M90 130 Q84 100 100 92 M120 130 Q124 96 142 100 M210 130 Q204 108 222 102 M100 210 Q96 186 114 180 M240 210 Q246 184 262 188"/></g>
+    <g class="L mid"><path class="cv-floor" d="M-40 330 L840 330 L840 480 L-40 480Z"/><circle class="cv-fireglow" cx="415" cy="352" r="130"/></g>
+    <g class="L near">${hot("furnace","丹爐",300,210,240,230,`<path class="cv-furnace" d="M300 400 L322 260 H508 L530 400Z"/><rect class="cv-furnace" x="336" y="226" width="158" height="38" rx="6"/><path class="cv-furnace" d="M332 400 L322 430 M498 400 L508 430 M415 400 L415 430"/><ellipse class="cv-mouth" cx="415" cy="345" rx="52" ry="32"/><ellipse class="cv-fire" cx="415" cy="352" rx="38" ry="22"/><circle class="sc-smoke" cx="400" cy="214" r="9" style="--d2:0s"/><circle class="sc-smoke" cx="428" cy="214" r="8" style="--d2:1.2s"/><circle class="sc-smoke" cx="414" cy="214" r="10" style="--d2:2.1s"/>`)}</g>`,
+  right: `<g class="L far"><rect class="cv-wall" x="-40" y="-20" width="880" height="500"/><circle class="sc-lantern" cx="690" cy="190" r="14"/><path class="cv-hang" d="M690 120 V176"/></g>
+    <g class="L mid"><path class="cv-floor" d="M-40 380 L840 380 L840 480 L-40 480Z"/><path class="cv-table" d="M-40 300 L840 300 L840 480 L-40 480Z"/></g>
+    <g class="L near">${hot("pill","聚氣丹",70,200,190,110,`<path class="cv-bottle" d="M110 300 L110 250 Q110 232 128 232 L148 232 Q166 232 166 250 L166 300Z M130 232 L130 216 L146 216 L146 232Z"/><path class="cv-bottle" d="M180 300 L180 262 Q180 248 194 248 L210 248 Q224 248 224 262 L224 300Z M194 248 L194 236 L210 236 L210 248Z"/>`)}
+    ${hot("scrolls","殘卷",285,240,200,80,`<rect class="cv-scroll" x="300" y="268" width="170" height="30" rx="4"/><rect class="cv-scrollend" x="292" y="264" width="14" height="38" rx="6"/><rect class="cv-scrollend" x="464" y="264" width="14" height="38" rx="6"/>`)}
+    ${hot("bag","行囊",510,190,140,130,`<path class="cv-bag" d="M530 300 Q520 240 560 214 Q580 204 600 214 Q640 240 630 300Z"/><path class="cv-bagtie" d="M560 218 Q580 232 600 218"/>`)}</g>`,
+  back: `<g class="L far"><rect class="cv-wall" x="-40" y="-20" width="880" height="500"/><path class="cv-sky" d="M170 450 V210 Q400 -30 630 210 V450Z"/><circle class="sc-halo" cx="520" cy="130" r="40"/><circle class="sc-orb" cx="520" cy="130" r="22"/><path class="sc-far" d="M170 340 L250 250 L320 310 L400 220 L480 300 L560 240 L630 320 V450 H170Z"/></g>
+    <g class="L mid"><path class="sc-mid" d="M170 400 Q280 350 400 390 T630 380 V450 H170Z"/><path class="cv-tree" d="M230 450 V380 M230 400 L206 418 M230 392 L254 410 M560 450 V372 M560 392 L536 410 M560 384 L584 402"/><path class="cv-frame" d="M170 450 V210 Q400 -30 630 210 V450Z"/></g>
+    <g class="L near">${hot("mouth","洞口",210,130,380,300,``)}${hot("mountain","遠山",600,60,160,120,``)}<path class="cv-floor" d="M-40 420 L840 420 L840 480 L-40 480Z"/><rect class="cv-sign" x="684" y="300" width="54" height="86" rx="4"/><path class="cv-signpost" d="M711 386 V450"/></g>`
+};
+const MSG = { focus: "運功：氣機一轉，修為 +1", furnace: "丹爐：切到煉製頁開爐", pill: "服下一顆聚氣丹", scrolls: "翻開殘卷錄", bag: "打開行囊", mouth: "洞口：換個營生（歷練、採藥、走訪）", mountain: "遠山：打開天下圖" };
+
+const room = document.getElementById("room");
+const stage = document.getElementById("stage");
+const views = {};
+for (const f of ORDER) {
+  const d = document.createElement("div");
+  d.className = "view"; d.dataset.view = f;
+  d.innerHTML = `<svg viewBox="0 0 800 450" preserveAspectRatio="xMidYMax slice" aria-hidden="false">${VIEWS[f]}<rect class="glow" x="-40" y="-20" width="880" height="500"/></svg>`;
+  room.appendChild(d); views[f] = d;
+}
+let facing = "front";
+function show(next, dir) {
+  Object.entries(views).forEach(([f, el]) => {
+    el.classList.toggle("on", f === next);
+    el.classList.toggle("out-left", f !== next && dir === "r");
+  });
+  facing = next;
+  document.getElementById("name").textContent = `${NAMES[next]}・左右轉身`;
+}
+function turn(dir) {
+  const i = ORDER.indexOf(facing);
+  show(ORDER[(i + (dir === "r" ? 1 : ORDER.length - 1)) % ORDER.length], dir);
+}
+document.querySelector(".turn.l").onclick = () => turn("l");
+document.querySelector(".turn.r").onclick = () => turn("r");
+stage.addEventListener("keydown", (e) => { if (e.key === "ArrowLeft") turn("l"); if (e.key === "ArrowRight") turn("r"); });
+show("front", "r");
+
+// 視差：滑鼠位置（或手機陀螺儀）換成 -1..1 的偏移，丟給 CSS 變數
+let tiltOn = true;
+const set = (x, y) => { if (!tiltOn) { x = 0; y = 0; } stage.style.setProperty("--px", x.toFixed(3)); stage.style.setProperty("--py", y.toFixed(3)); };
+set(0, 0);
+stage.addEventListener("pointermove", (e) => {
+  if (e.pointerType === "touch") return;
+  const r = stage.getBoundingClientRect();
+  set(((e.clientX - r.left) / r.width - 0.5) * 2, ((e.clientY - r.top) / r.height - 0.5) * 2);
+});
+stage.addEventListener("pointerleave", () => set(0, 0));
+window.addEventListener("deviceorientation", (e) => { if (e.gamma == null) return; set(Math.max(-1, Math.min(1, e.gamma / 25)), Math.max(-1, Math.min(1, (e.beta - 45) / 25))); });
+// 滑動轉身（觸控與手寫筆）
+let sx = null;
+stage.addEventListener("pointerdown", (e) => { if (e.pointerType !== "mouse") sx = e.clientX; });
+stage.addEventListener("pointerup", (e) => { if (sx == null) return; const dx = e.clientX - sx; sx = null; if (Math.abs(dx) > 56) turn(dx < 0 ? "r" : "l"); });
+
+// 熱點
+const toast = document.getElementById("toast");
+let t;
+stage.addEventListener("click", (e) => {
+  const h = e.target.closest(".hot"); if (!h) return;
+  toast.textContent = MSG[h.dataset.id]; toast.classList.add("show");
+  clearTimeout(t); t = setTimeout(() => toast.classList.remove("show"), 1600);
+});
+stage.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.classList?.contains("hot")) { e.preventDefault(); e.target.dispatchEvent(new MouseEvent("click", { bubbles: true })); } });
+
+// 預覽控制
+const root = document.documentElement;
+document.getElementById("realm").onchange = (e) => { root.dataset.realm = e.target.value; };
+for (const [id, attr] of [["night", "night"], ["brew", "brew"]]) {
+  const b = document.getElementById(id);
+  b.onclick = () => { const on = b.getAttribute("aria-pressed") !== "true"; b.setAttribute("aria-pressed", String(on)); root.dataset[attr] = on ? "1" : "0"; };
+}
+document.getElementById("tilt").onclick = (e) => { tiltOn = !tiltOn; e.target.setAttribute("aria-pressed", String(tiltOn)); e.target.textContent = tiltOn ? "視差開" : "視差關"; set(0, 0); };
+</script>
+</body>
+</html>
