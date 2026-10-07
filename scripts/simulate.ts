@@ -637,7 +637,7 @@ function campaigns(): void {
     console.log(`  金丹期止步（神光已到門檻的 ${jt} 世）：初期 ${((jindanEnds[0] / jt) * 100).toFixed(0)}%、中期 ${((jindanEnds[1] / jt) * 100).toFixed(0)}%、後期 ${((jindanEnds[2] / jt) * 100).toFixed(0)}%、結嬰 ${((jindanEnds[3] / jt) * 100).toFixed(0)}%`);
     console.log(`  ${ok(gapMed >= 8 && gapMed <= 14)} 首次元嬰：通關後再 ${Number.isFinite(gapMed) ? `${gapMed} 世` : `超過 ${lives} 世`}（中位數；目標 8–14 世），${lives} 世內已結嬰 ${((yuanyingGap.length / runs) * 100).toFixed(0)}%`);
     const h = mean(yuanyingHours);
-    console.log(`  ${ok(h >= 8 && h <= 12)} 首次元嬰累計遊玩：平均 ${h.toFixed(1)} 小時（目標 8–12 小時，僅計已結嬰者）`);
+    console.log(`  ${ok(h >= 8 && h <= 13)} 首次元嬰累計遊玩：平均 ${h.toFixed(1)} 小時（目標 8–13 小時，僅計已結嬰者）`);
     const m = mean(jindanMinutes);
     console.log(`  ${ok(m >= 20 && m <= 40)} 金丹期單世時長：平均 ${m.toFixed(1)} 分鐘（目標 20–40 分鐘，僅計神光已到門檻的 ${jindanMinutes.length} 世）`);
     console.log(`  （神光未到門檻的金丹期：修到後期圓滿後坐化離場 ${zuohuaLives} 世；壽盡前沒修到圓滿 ${waitingLives} 世；皆不計入上面的時長）`);

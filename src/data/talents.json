@@ -139,7 +139,7 @@
     "effect": "breakthroughAid",
     "perLevel": 1,
     "cost": {
-      "base": 250,
+      "base": 200,
       "growth": 1.5
     }
   },
