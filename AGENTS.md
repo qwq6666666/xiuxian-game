@@ -29,7 +29,8 @@ src/
   ui/        畫面繪製與事件綁定
   main.ts    進入點，負責計時與串接 core 和 ui
 scripts/
-  simulate.ts   模擬腳本
+  simulate.ts   模擬腳本（主流程與輸出）
+  strategies/   各策略的每月操作與統計（context、common、combat、economy、talents）
 tests/
 docs/
   GDD.md     系統規格
