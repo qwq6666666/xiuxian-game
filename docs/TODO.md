@@ -7,7 +7,7 @@
 
 | 項目 | 佔用者 | 狀態 |
 |---|---|---|
-| 存檔版本 v32 | （未佔用） | 目前是 v31（M58 秘境 trial.rests、encounter.rest）；v30（M47 秘境 trial、trialsDone）；v29 是 M51 國家數 nationCount |
+| 存檔版本 v33 | （未佔用） | M61 已佔用 v32（事件冷卻 eventLastMonth，Claude 本機，分支 ai/claude-m61）；v31（M58 秘境 trial.rests、encounter.rest）；v30（M47 秘境 trial、trialsDone）；v29 是 M51 國家數 nationCount |
 | M50 向量地圖、山川氣候與宗門國家關係（GDD 第 50 節） | Claude（本機） | 已完成並合併 master（維諾格網地形、格子歸屬、向量地圖、S1 宗門國家關係）；不動存檔；之後候選 M51（地域與國家脫鉤）、M52（S2）、M53（S3） |
 | M51 領與國家脫鉤、國家數可調（GDD 第 51 節）、M52 S2、M53 S3 | Claude（本機） | 已完成，分支 ai/claude-m51（存檔 v29）；使用者已授權自主執行至 M53 |
 | M54 關鍵決策與措辭（2026-10 實玩評測）→ M55 歷練戰鬥深度 → M56 坊市與輪迴頁整理 | Claude（本機） | M54 已完成；M55 已完成（遇怪機率 0.08、怪物特性、戰鬥預覽、鎮妖符，不動存檔）；M57 閉關中段決策已完成（A 壽元預算預測、B 叩關前夜三事件、C 靜坐岔路，不動存檔；`events/prep.json`）；M56 已完成（坊市不列價錢 0 的煉製法寶；輪迴天賦頁只突出推薦與買得起的前三項，其餘折疊，滿級總價超過 1000 不顯示） |

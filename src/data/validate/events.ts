@@ -189,6 +189,7 @@ export function validateEvents(raw: unknown, file = "events.json"): EventDef[] {
       maxPerLife: o.maxPerLife === undefined ? 1 : num(o, "maxPerLife", where, { gt: 0, integer: true }),
       conditions: parseConditions(o.conditions, `${where} 欄位 conditions`),
     };
+    if (o.cooldownYears !== undefined) ev.cooldownYears = num(o, "cooldownYears", where, { min: 0 });
     if (o.highlight !== undefined) ev.highlight = num(o, "highlight", where, { min: 0 });
     if (o.guaranteed !== undefined) {
       if (typeof o.guaranteed !== "boolean") fail(where, "guaranteed", "必須是 true 或 false");

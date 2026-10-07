@@ -1,6 +1,13 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-08：M61 事件冷卻（存檔 v32，分支 `ai/claude-m61`）
+
+- **改了什麼**：事件新增選填 `cooldownYears`，`config.eventCooldownYears`（6）為預設，只對 `maxPerLife` 大於 1 的 34 個事件有意義；狀態新增 `eventLastMonth`（每世重置），`SAVE_VERSION` 31 升 32，遷移函式與 `tests/save-shape.json` 已更新；`eventAvailable` 判冷卻，`advanceEvents` 寫月份。GDD 第 61 節。
+- **驗證**：新增冷卻、驗證器、v31 遷移、每世重置的測試；`npm run verify` 全過；完整 `npm run sim`（simple、mixed、post 與 herb、wander、alchemy、forge、hunt、trial、method 各檢查）全部符合規則，與 master 對照差異很小。
+- **沒驗證**：沒有在瀏覽器實測（純核心與資料，介面不變）；沒有改任何事件文字，34 個事件沒有逐一設 `cooldownYears`，全用預設 6 年。
+- **下一步**：#3 每年行止選擇、#7 坊市遠購，各開 M 編號先登記。注意 `mixed` 抉擇 16.8（上限 17）與 `post` 元嬰累計 12.6 小時（上限 13）已貼邊。
+
 ## 2026-10-08：實玩評測第一批（#1–#9、#11，`[scope-ok]`）
 
 - **分支**：`ai/claude-playtest` 合併進 `master`，同時併入 ChatGPT 的 `ai/chatgpt-playtest-ui`（#13，手機經典介面橫向溢出，已審）。

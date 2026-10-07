@@ -20,6 +20,9 @@ export { eventOf };
 /** 事件目前能否出現：條件、重複上限都要符合 */
 export function eventAvailable(state: GameState, ev: EventDef, data: GameData = gameData): boolean {
   if ((state.eventCounts[ev.id] ?? 0) >= ev.maxPerLife) return false;
+  // 冷卻：能重複的事件，離上次出現不到幾年就不再抽（只在出現過後才有紀錄）
+  const last = state.eventLastMonth[ev.id];
+  if (last !== undefined && state.ageMonths - last < (ev.cooldownYears ?? data.config.eventCooldownYears) * 12) return false;
   const c = ev.conditions;
   const realmIdx = data.realms.findIndex((r) => r.id === state.realmId);
   if (c.realmMin !== undefined && realmIdx < data.realms.findIndex((r) => r.id === c.realmMin)) return false;
@@ -279,7 +282,7 @@ export function advanceEvents(state: GameState, month: number, data: GameData = 
   const [ev, seed2] = pickEvent(s, data);
   s = { ...s, rngSeed: seed2 };
   if (!ev) return s;
-  s = { ...s, eventCounts: { ...s.eventCounts, [ev.id]: (s.eventCounts[ev.id] ?? 0) + 1 } };
+  s = { ...s, eventCounts: { ...s.eventCounts, [ev.id]: (s.eventCounts[ev.id] ?? 0) + 1 }, eventLastMonth: { ...s.eventLastMonth, [ev.id]: s.ageMonths } };
   const who = ev.conditions.acquaintance?.id;
   if (who !== undefined) {
     const lives = s.meta.lives;

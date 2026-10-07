@@ -85,6 +85,7 @@ export function createInitialState(
       sectPeak: 0,
       flags: [],
       eventCounts: {},
+      eventLastMonth: {},
       eventClock: 0,
       eventThreshold: 0,
       pendingEvent: null,

@@ -70,6 +70,38 @@ describe("事件資料", () => {
   });
 });
 
+describe("冷卻（M61）", () => {
+  const def = (patch: Partial<EventDef> = {}) => anecdote("c", { maxPerLife: 3, ...patch });
+  const at = (ageMonths: number, last?: number) => living(1, { realmId: "lianqi", ageMonths, eventLastMonth: last === undefined ? {} : { c: last } });
+  const years = gameData.config.eventCooldownYears;
+
+  it("沒出現過就沒有冷卻；出現後要隔滿預設年數才能再出", () => {
+    expect(eventAvailable(at(30 * 12), def())).toBe(true);
+    expect(eventAvailable(at(30 * 12, 30 * 12 - 1), def())).toBe(false);
+    expect(eventAvailable(at(30 * 12, 30 * 12 - years * 12 + 1), def())).toBe(false);
+    expect(eventAvailable(at(30 * 12, 30 * 12 - years * 12), def())).toBe(true);
+  });
+
+  it("事件自己的 cooldownYears 覆寫預設，0 代表不冷卻", () => {
+    expect(eventAvailable(at(30 * 12, 29 * 12), def({ cooldownYears: 0 }))).toBe(true);
+    expect(eventAvailable(at(30 * 12, 29 * 12), def({ cooldownYears: 2 }))).toBe(false);
+    expect(eventAvailable(at(30 * 12, 28 * 12), def({ cooldownYears: 2 }))).toBe(true);
+  });
+
+  it("抽出事件時記下月份，冷卻中的事件同一世不會連著出現", () => {
+    const only = withEvents([def({ weight: 10 })]);
+    let s = at(30 * 12);
+    s = { ...s, eventClock: 999, eventThreshold: 1 };
+    s = advanceEvents(s, s.ageMonths, only);
+    expect(s.eventLastMonth.c).toBe(30 * 12);
+    expect(pickEvent(s, only)[0]).toBeNull();
+  });
+
+  it("每世重置：新的一世沒有冷卻中的事件", () => {
+    expect(newLife({ ...at(30 * 12, 30 * 12 - 1), phase: "dead" }).eventLastMonth).toEqual({});
+  });
+});
+
 describe("條件與重複上限", () => {
   it("境界、年齡、旗標、安排、瓶頸、次數都會篩選", () => {
     const base = living(1, { realmId: "lianqi", ageMonths: 20 * 12 });
