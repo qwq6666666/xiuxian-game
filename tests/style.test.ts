@@ -137,3 +137,11 @@ describe("地圖鍵盤操作", () => {
     expect(mapText).toMatch(/\.map-hit:focus-visible\s*\{[^}]*map-marker-focus/);
   });
 });
+
+describe("遊戲介面的擲骰頁", () => {
+  const css = readFileSync(join(UI, "styles", "gamemode.css"), "utf8");
+  it("擲骰頁（一張長卡片）在遊戲介面時舞台可以捲動，導航列與日誌行先收起", () => {
+    expect(css).toMatch(/#stage:has\(> \.roll\)\s*\{[^}]*overflow-y:\s*auto/);
+    expect(css).toMatch(/:has\(#stage > \.roll\) \.game-nav/);
+  });
+});

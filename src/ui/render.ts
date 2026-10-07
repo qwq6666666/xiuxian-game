@@ -1060,6 +1060,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       lastState = state;
       const newest = state.log[state.log.length - 1];
       game.setTicker(newest ? formatLogEntry(newest, data, state.name, slotsOf(state)) : "");
+      if (state.phase !== "living") game.closeSheet();
       overlays.update(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));
