@@ -58,12 +58,13 @@ export function mountGameMode(root: HTMLElement, stage: HTMLElement, hooks: Game
   const toggle = root.querySelector<HTMLButtonElement>("#ui-toggle")!;
   const ticker = root.querySelector<HTMLElement>("#logTicker")!;
 
-  // 遊戲介面把「自動抉擇」「關鍵時刻暫停」收進「更多」選單，頂部列只剩流速與選單；回到經典介面時放回原位
+  // 遊戲介面與手機把「自動抉擇」「關鍵時刻暫停」收進「更多」選單，
+  // 避免 375px 的經典介面被兩個長標籤撐出橫向捲軸；桌面經典介面仍放在工具列。
   const autos = Array.from(root.querySelectorAll<HTMLElement>(".bar-left > label.auto"));
   const barLeft = root.querySelector<HTMLElement>(".bar-left")!;
   const menuList = root.querySelector<HTMLElement>(".menu-list")!;
   const placeAutos = (): void => {
-    if (mode === "game") for (const el of autos.slice().reverse()) menuList.prepend(el);
+    if (mode === "game" || isPhone) for (const el of autos.slice().reverse()) menuList.prepend(el);
     else for (const el of autos) barLeft.append(el);
   };
   const sync = (): void => {

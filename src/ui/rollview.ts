@@ -19,11 +19,14 @@ export const statsHtml = (state: GameState): string =>
     (k) => `<div><dt>${esc(ATTR_LABEL[k])}</dt><dd>${state.attributes[k]}</dd></div>`,
   ).join("")}</dl>`;
 
+/** 目標的可控程度：境界靠自己安排，壽數要慢慢熬，其餘看人事機緣 */
+const goalTag = (kind: GoalProgress["def"]["condition"]["kind"]): string => (kind === "realm" ? "可規劃" : kind === "age" ? "長期" : "隨緣");
+
 /** 這一世的目標：只作收藏，不給任何數值，所以措辭上不強求 */
 export const goalLine = (g: GoalProgress, wished = false): string => {
   // 境界與旗標的進度數字沒有意義，只有年歲、殘卷、見聞才顯示
   const counted = ["age", "fragments", "events"].includes(g.def.condition.kind) && !g.done;
-  return `${g.done ? "✓ " : ""}${wished ? "【夙願】" : ""}${g.def.name}｜${g.def.desc}${counted ? `（${g.current} / ${g.target}）` : ""}`;
+  return `${g.done ? "✓ " : ""}${wished ? "【夙願】" : ""}【${goalTag(g.def.condition.kind)}】${g.def.name}｜${g.def.desc}${counted ? `（${g.current} / ${g.target}）` : ""}`;
 };
 
 export const goalsHtml = (state: GameState, data: GameData): string => {

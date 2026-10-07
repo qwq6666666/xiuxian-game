@@ -106,6 +106,8 @@ export interface Ui {
   render(state: GameState): void;
   /** action：提示列上多一個按鈕（例如「繼續」）；按它或關閉提示都會執行 */
   notice(message: string, action?: { label: string; run(): void }): void;
+  /** 玩家正在讀彈窗或抽屜（天下圖、殘卷錄、行囊等）：主迴圈據此暫停歲月 */
+  reading(): boolean;
 }
 
 /** 側欄的分頁；每個區塊以 data-tab 歸屬其中一頁 */
@@ -128,6 +130,7 @@ export interface LifeEls {
   sched: HTMLElement;
   travelOpen: HTMLButtonElement;
   pace: HTMLElement;
+  paceFix: HTMLElement;
   todo: HTMLElement;
   todoText: HTMLElement;
   todoGo: HTMLButtonElement;
@@ -375,6 +378,21 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     jumpTo: (target) => jumpTo(target),
   });
 
+  let paceFixKey = "";
+  function renderPaceFix(e: LifeEls, fixes: { key: string; label: string; run: () => void }[]): void {
+    const key = fixes.map((f) => f.key + f.label).join("|");
+    if (key === paceFixKey) return;
+    paceFixKey = key;
+    e.paceFix.hidden = fixes.length === 0;
+    e.paceFix.replaceChildren(...fixes.map((f) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = f.label;
+      b.addEventListener("click", f.run);
+      return b;
+    }));
+  }
+
   function jumpTo(target: "market" | "schedules" | "breakthrough" | "goals" | "bag"): void {
     if (!els) return;
     if (game.isGame()) game.openSheet(target === "schedules" || target === "breakthrough" ? "play" : target === "goals" ? "me" : "pack");
@@ -442,6 +460,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
         <div id="yearPips" class="year-pips" aria-hidden="true">${"<i></i>".repeat(12)}</div>
         <p id="pace" class="pace"></p>
+        <div id="paceFix" class="pace-fix" hidden></div>
         <div id="resbar" class="resbar" aria-label="隨身"></div>
         <div id="todo" class="todo" hidden><span id="todoText"></span><button id="todoGo" type="button" class="primary">前往突破</button></div>
       </section>
@@ -558,6 +577,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       sched: q("#sched"),
       travelOpen: q<HTMLButtonElement>("#travelOpen"),
       pace: q("#pace"),
+      paceFix: q("#paceFix"),
       todo: q("#todo"),
       todoText: q("#todoText"),
       todoGo: q<HTMLButtonElement>("#todoGo"),
@@ -752,10 +772,17 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       const tail = toBreakthrough > 0 ? `再 ${toBreakthrough} 層築基。` : "";
       const forecast = lifeForecast(state, data);
       e.pace.textContent = `每月約 +${formatGain(pace.perMonth)}，約 ${formatDuration(pace.seconds)}後升階。${tail}${forecast ? formatForecast(forecast) : ""}`;
-    } else if (pace.kind === "bottleneck") {
-      e.pace.textContent = "修為已圓滿，不再增長，要靠突破才能再進一步。";
+      // 來不及圓滿：警告旁直接給下一步（內容沒變就不重畫，免得按鈕在每個 tick 被換掉）
+      const fixes: { key: string; label: string; run: () => void }[] = [];
+      if (forecast && forecast.leftAtFull < 0) {
+        if (state.schedule !== "retreat") fixes.push({ key: "retreat", label: "改回閉關", run: () => handlers.onSchedule("retreat") });
+        if ((state.items[QUICK_PILL] ?? 0) > 0) fixes.push({ key: "pill", label: `服用${itemName(QUICK_PILL)}`, run: () => handlers.onUseItem(QUICK_PILL) });
+        fixes.push({ key: "market", label: "查看延壽丹", run: () => jumpTo("market") });
+      }
+      renderPaceFix(e, fixes);
     } else {
-      e.pace.textContent = "";
+      renderPaceFix(e, []);
+      e.pace.textContent = pace.kind === "bottleneck" ? "修為已圓滿，不再增長，要靠突破才能再進一步。" : "";
     }
 
     // 待辦：此刻最需要玩家處理的一件事（抉擇事件另以彈窗處理）
@@ -1111,6 +1138,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       }
       noticeEl.hidden = message === "";
       replaced?.();
+    },
+    reading() {
+      // 修行抽屜是操作安排用的，開著不算閱讀；其餘抽屜與所有彈窗都算
+      const sheet = stageEl.dataset.sheet;
+      const reading = root.querySelector(".modal:not([hidden])") !== null || (sheet !== undefined && sheet !== "play");
+      root.toggleAttribute("data-reading", reading);
+      return reading;
     },
   };
   renderRef = (state) => ui.render(state);

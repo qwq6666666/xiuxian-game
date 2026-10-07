@@ -212,9 +212,10 @@ function catchUp(elapsedMs: number): void {
 function frame(now: number): void {
   const dt = now - last;
   last = now;
+  const reading = ui.reading();
   if (dt > data.config.frameGapSeconds * 1000) {
     catchUp(dt);
-  } else if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null && state.encounter === null) {
+  } else if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null && state.encounter === null && !reading) {
     const hold = holdEnabled ? holdFor(state, data) : null;
     if (hold !== null && !resumed.has(hold.key)) {
       // 關鍵節點：停住時間，等玩家按「繼續」或關掉提示才放行，來不及反應不再是玩家的錯

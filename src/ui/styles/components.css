@@ -151,3 +151,6 @@ blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }
 .trial-steps li.done::after, .trial-steps li.current::after { border-color: var(--good); }
 .trial-steps li.current::before { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); animation: trial-step-in var(--dur-slow) var(--ease); }
 @keyframes trial-step-in { from { opacity: 0; transform: translateX(-50%) scale(1.55); } to { opacity: 1; transform: translateX(-50%) scale(1); } }
+
+/* 閱讀彈窗或抽屜時歲月暫停的提示 */
+#app[data-reading]::after { content: "閱讀中・歲月暫停"; position: fixed; top: var(--sp-2); left: 50%; z-index: var(--z-modal-top); transform: translateX(-50%); padding: var(--sp-1) var(--sp-3); border: 1px solid var(--accent-dim); border-radius: var(--r-md); background: var(--panel); color: var(--accent); font-size: var(--fs-sm); pointer-events: none; }

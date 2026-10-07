@@ -106,7 +106,16 @@
   .map-destination { min-width: 0; max-width: 100%; }
   .map-travel-status { overflow-wrap: anywhere; }
   .map-travel-go { width: 100%; min-height: var(--tap); }
+  /* 單一捲動層：標題列釘在上方，順序是地圖、資訊卡（前往鈕）、快速前往，其餘折疊 */
+  .map-card > .codex-head { position: sticky; top: 0; z-index: 4; padding: var(--sp-1) 0; background: var(--panel); }
+  .map-pane > * { order: 10; }
+  .map-pane > .map-zoomwrap { order: 0; }
+  .map-pane > .map-zoom { order: 1; }
+  .map-pane > .map-info { order: 2; }
+  .map-pane > .map-quick { order: 3; }
 }
+/* 彈窗開著時鎖住背景頁面，只讓彈窗卡片自己捲動 */
+body:has(.modal:not([hidden])) { overflow: hidden; }
 
 /* 常駐圖例：形狀與地圖上的標記相同 */
 .map-key { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); margin: var(--sp-2) 0; color: var(--muted); font-size: 0.9em; }

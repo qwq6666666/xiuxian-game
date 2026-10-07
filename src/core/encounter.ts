@@ -74,6 +74,8 @@ export interface ActionPreview {
   taken: number;
   /** 照期望傷害，還要幾回合才能打倒怪物；打不動時為 null */
   roundsToKill: number | null;
+  /** 這一回合命中且傷害浮動取最高時，對怪物造成的氣血比例；用來判斷最後一回合有沒有可能打倒 */
+  maxDealt: number;
 }
 
 /** 戰鬥預覽：不含亂數浮動的期望值，給介面顯示「這一招大約值多少」 */
@@ -88,7 +90,8 @@ export function actionPreview(state: GameState, choice: "steady" | "fierce" | "w
   const rule = trialRuleOf(state, data);
   const dealt = hit * a.dmg * (choice === "steady" ? (trait?.steadyDmg ?? 1) : 1) * (choice === "ward" ? (rule?.wardDmgMul ?? 1) : 1) * clamp(r, 0.6, 1.5);
   const taken = a.taken * (trait?.takenMul ?? 1) * clamp(1 / r, 0.5, 2) + (rule?.extraTaken ?? 0);
-  return { hit, dealt, taken, roundsToKill: dealt > 0 ? Math.ceil(e.monsterHp / dealt - 1e-9) : null };
+  const maxDealt = dealt > 0 ? (dealt / hit) * (1 + data.monsters.rules.variance) : 0;
+  return { hit, dealt, taken, roundsToKill: dealt > 0 ? Math.ceil(e.monsterHp / dealt - 1e-9) : null, maxDealt };
 }
 
 export function canHunt(state: GameState, choice: HuntChoice, data: GameData = gameData): boolean {
