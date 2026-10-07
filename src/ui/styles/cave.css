@@ -1,5 +1,6 @@
 /* 洞府第一人稱視角：四個朝向的上色、熱點與轉身鈕。顏色只取 tokens.css 的 --scene-*。 */
-.scene.cave { position: relative; aspect-ratio: 16 / 9; max-height: 46vh; margin: calc(var(--sp-3) * -1) calc(var(--sp-4) * -1) var(--sp-3); width: calc(100% + var(--sp-4) * 2); }
+/* 直式：寬高比 3:4（視圖 450×600）；寬度受視窗高度限制，免得整個畫面被一張圖佔滿 */
+.scene.cave { position: relative; aspect-ratio: 3 / 4; width: min(100%, calc(66vh * 0.75)); margin: 0 auto var(--sp-3); border-radius: var(--r-md); }
 .cave-views { position: absolute; inset: 0; }
 .cave-view { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-slow) var(--ease); pointer-events: none; }
 .cave-view.on { opacity: 1; }
@@ -48,7 +49,7 @@
 .cave-hot:focus-visible .cave-hit { stroke: var(--accent); }
 .cave-hot[aria-disabled="true"] { cursor: default; opacity: 0.55; }
 .cave-cap rect { fill: var(--scene-sky-top); opacity: 0.88; }
-.cave-cap text { fill: var(--scene-orb); font-size: 24px; pointer-events: none; }
+.cave-cap text { fill: var(--scene-orb); font-size: 16px; pointer-events: none; }
 
 /* 轉身鈕與目前朝向 */
 .cave-turn { position: absolute; top: 50%; transform: translateY(-50%); width: var(--tap); height: var(--tap); border: 1px solid var(--line); border-radius: 999px; background: var(--scene-sky-top); color: var(--scene-orb); font-size: 1.4em; line-height: 1; cursor: pointer; opacity: 0.8; }
@@ -62,9 +63,12 @@
 .cave-schedules[hidden] { display: none; }
 .cave-schedules button { min-height: var(--tap); padding: 0 var(--sp-3); }
 
-@media (max-width: 640px) {
-  .scene.cave { aspect-ratio: 4 / 3; max-height: 52vh; }
-  }
+/* 桌面：直式場景放左欄，狀態與進度排右欄 */
+@media (min-width: 900px) {
+  .status:has(> .cave:not([hidden])) { display: grid; grid-template-columns: minmax(300px, 36%) 1fr; column-gap: var(--sp-4); align-items: start; }
+  .status:has(> .cave:not([hidden])) > .cave { grid-column: 1; grid-row: 1 / span 8; width: 100%; max-height: 78vh; margin: 0; }
+  .status:has(> .cave:not([hidden])) > :not(.cave):not(.scene) { grid-column: 2; }
+}
 
 /* 香爐的煙絲輕輕搖 */
 .smoke-thread { animation: cv-sway 5s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }

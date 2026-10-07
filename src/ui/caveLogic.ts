@@ -42,22 +42,22 @@ export const QUICK_PILL = "juqi_dan";
 export function hotspotsFor(state: GameState, data: GameData, facing: Facing): Hotspot[] {
   switch (facing) {
     case "front":
-      return [{ id: "focus", action: "focus", label: "運功", hint: canFocus(state, data) ? "雙手結印，引氣一轉" : "氣機尚未平復", enabled: canFocus(state, data), rect: [32, 50, 36, 44] }];
+      return [{ id: "focus", action: "focus", label: "運功", hint: canFocus(state, data) ? "雙手結印，引氣一轉" : "氣機尚未平復", enabled: canFocus(state, data), rect: [14, 78, 72, 22] }];
     case "left":
-      return [{ id: "furnace", action: "brew", label: "丹爐", hint: state.alchemy !== null ? "爐火正旺，看煉製進度" : "爐中無火，去煉製頁開爐", enabled: true, rect: [24, 26, 44, 62] }];
+      return [{ id: "furnace", action: "brew", label: "丹爐", hint: state.alchemy !== null ? "爐火正旺，看煉製進度" : "爐中無火，去煉製頁開爐", enabled: true, rect: [24, 58, 52, 40] }];
     case "right": {
       const pill = data.items.find((i) => i.id === QUICK_PILL);
       const n = state.items[QUICK_PILL] ?? 0;
       return [
-        { id: "pill", action: "pill", label: pill?.name ?? "丹瓶", hint: n > 0 ? `服一顆，還剩 ${n}` : "瓶中已空", enabled: canUseItem(state, QUICK_PILL, data), rect: [9, 48, 24, 36] },
-        { id: "scrolls", action: "scrolls", label: "殘卷", hint: "翻看殘卷錄", enabled: true, rect: [37, 54, 26, 26] },
-        { id: "bag", action: "bag", label: "行囊", hint: "打開行囊", enabled: true, rect: [66, 44, 26, 40] },
+        { id: "pill", action: "pill", label: pill?.name ?? "丹瓶", hint: n > 0 ? `服一顆，還剩 ${n}` : "瓶中已空", enabled: canUseItem(state, QUICK_PILL, data), rect: [9, 60, 27, 16] },
+        { id: "scrolls", action: "scrolls", label: "殘卷", hint: "翻看殘卷錄", enabled: true, rect: [22, 78, 48, 12] },
+        { id: "bag", action: "bag", label: "行囊", hint: "打開行囊", enabled: true, rect: [64, 58, 22, 16] },
       ];
     }
     case "back":
       return [
-        { id: "mouth", action: "schedule", label: "洞口", hint: "走出去，換個營生", enabled: state.phase === "living", rect: [28, 20, 44, 72] },
-        { id: "mountain", action: "map", label: "遠山", hint: "看天下圖", enabled: true, rect: [74, 14, 20, 26] },
+        { id: "mouth", action: "schedule", label: "洞口", hint: "走出去，換個營生", enabled: state.phase === "living", rect: [6, 46, 88, 50] },
+        { id: "mountain", action: "map", label: "遠山", hint: "看天下圖", enabled: true, rect: [62, 38, 34, 14] },
       ];
   }
 }
