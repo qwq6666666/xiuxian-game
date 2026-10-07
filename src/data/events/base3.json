@@ -1,0 +1,769 @@
+[
+  {
+    "id": "youth_harvest_001",
+    "type": "choice",
+    "title": "秋收",
+    "text": "秋收時節，鄰家缺人手，托你幫忙搶收。你的功課還沒做完。",
+    "weight": 30,
+    "tone": "neutral",
+    "conditions": { "ageMin": 12, "ageMax": 24 },
+    "choices": [
+      {
+        "text": "去幫忙",
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "你割了三天稻，腰痠得像是練過一套功法。鄰家給了兩袋米和一籃雞蛋。",
+            "effects": { "spiritStones": 6 }
+          },
+          {
+            "weight": 40,
+            "text": "你割了三天稻，腰痠得直不起來，過幾日卻覺得筋骨比往常結實了些。鄰家給了兩袋米。",
+            "effects": { "spiritStones": 6, "attributes": { "bone": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "回去修行",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你關起門吐納三日，鄰家的稻子是別人幫著割完的。他們嘴上沒說什麼。",
+            "effects": { "cultivation": 0.05 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "marriage_001",
+    "type": "choice",
+    "title": "媒人上門",
+    "text": "媒人踏破了門檻，說{village}東頭有戶人家的姑娘，性子好，手也巧。",
+    "weight": 14,
+    "tone": "neutral",
+    "conditions": { "ageMin": 24, "ageMax": 50, "flagsNot": ["marriage_done"] },
+    "choices": [
+      {
+        "text": "見一面",
+        "outcomes": [
+          {
+            "weight": 60,
+            "text": "見面時茶涼了兩回，話沒說上幾句，卻也不覺得不自在。後來親事沒成，倒多了一個說話的人。",
+            "effects": { "attributes": { "fortune": 1 }, "flags": ["marriage_done"] }
+          },
+          {
+            "weight": 40,
+            "text": "對方問你一年能賺多少靈石，你答不出來，這門親事便沒了下文。",
+            "effects": { "flags": ["marriage_done"] }
+          }
+        ]
+      },
+      {
+        "text": "婉言拒絕",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你說修行為重，媒人嘆著氣走了，下次來得好像更勤。",
+            "effects": { "flags": ["marriage_done"] }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "debt_001",
+    "type": "choice",
+    "title": "親戚借貸",
+    "text": "遠房親戚登門，說{village}今年收成不好，想向你借些靈石周轉，字據都帶來了。",
+    "weight": 10,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "ageMin": 26, "ageMax": 80 },
+    "choices": [
+      {
+        "text": "借給他",
+        "requires": { "spiritStones": 15 },
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "他年底如數歸還，另添了一籃自家種的菜。你吃了半個月。",
+            "effects": { "spiritStones": 3 }
+          },
+          {
+            "weight": 50,
+            "text": "字據收進抽屜，很多年沒再拿出來看過。",
+            "effects": { "spiritStones": -15 }
+          }
+        ]
+      },
+      {
+        "text": "推說手頭緊",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你說修行人哪有積蓄。親戚信了一半，走時門關得有點重。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "flood_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "河水暴漲",
+    "text": "連日大雨，{village}一帶河水暴漲，田舍被淹了一半，鄰里在屋頂上喊人。",
+    "weight": 5,
+    "tone": "bad",
+    "conditions": { "ageMin": 20 },
+    "choices": [
+      {
+        "text": "下水救人",
+        "outcomes": [
+          {
+            "weight": 56,
+            "weightPerAttribute": {"bone": 4},
+            "text": "你在水裡來回十幾趟，救出好幾戶人家，自己也病了一場。事後村裡湊了些東西謝你。",
+            "effects": { "lifespan": -2, "spiritStones": 12, "attributes": { "fortune": 1 } }
+          },
+          {
+            "weight": 41,
+            "text": "水勢太急，你救出兩人便被沖到下游，躺了很久才爬起來。",
+            "effects": { "lifespan": -3 }
+          },
+          {
+            "weight": 3,
+            "text": "一個浪頭打來，你沒能再浮上來。",
+            "effects": { "death": true }
+          }
+        ]
+      },
+      {
+        "text": "在高處喊人來",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在高處喊了半夜，嗓子啞了，人倒是都被找來了。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "守在家中打坐",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "水退之後，你的屋子竟安然無恙。鄰里看你的目光有些複雜。",
+            "effects": { "cultivation": 0.03 }
+          }
+        ]
+      },
+      {
+        "text": "背著人涉水而出",
+        "requires": {"attributes": {"bone": 7}},
+        "outcomes": [
+          {
+            "weight": 70,
+            "text": "你踩著水底的石頭，一趟背出一戶人家，竟不覺得累。事後有人往你屋裡送了些吃用。",
+            "effects": {"spiritStones": 8, "attributes": {"bone": 1}}
+          },
+          {
+            "weight": 30,
+            "text": "你背出幾戶人家便力竭，在高處歇了半日。",
+            "effects": {"lifespan": -1}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "market_fire_001",
+    "type": "anecdote",
+    "title": "鋪子失火",
+    "text": "{market}的一排鋪子夜裡失了火，所幸人都跑了出來。第二天，燒焦的門板後面照常有人在賣東西。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "ageMin": 16 }
+  },
+  {
+    "id": "neighbor_001",
+    "type": "anecdote",
+    "title": "隔牆之爭",
+    "text": "鄰居家的雞又飛進了你的院子，你和鄰居隔著牆討論了一個時辰，最後的結論是各退一步。",
+    "weight": 8,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "ageMin": 18 }
+  },
+  {
+    "id": "last_wish_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "身後之物",
+    "text": "暮色裡你把一生的物件翻出來看了一遍，不知該留給誰，也不知該不該留。",
+    "weight": 25,
+    "tone": "neutral",
+    "conditions": { "ageMin": 90 },
+    "choices": [
+      {
+        "text": "分給{village}的人",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你把東西分給村裡的老少，換來好幾個頭磕得咚咚響。",
+            "effects": { "attributes": { "fortune": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "一把火燒了",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "火光映在牆上，一生的痕跡燒得乾乾淨淨。你忽然覺得輕了些。",
+            "effects": { "attributes": { "mind": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "原樣收回箱底",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你把它們原樣放回去。有些事，等不到答案也是一種答案。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "old_home_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "舊居",
+    "text": "你回到{village}的舊居，院牆塌了一角，院中的老樹卻比記憶裡更高。你在樹下坐了一會兒，樹沒有說話。",
+    "weight": 25,
+    "tone": "neutral",
+    "conditions": { "ageMin": 70 }
+  },
+  {
+    "id": "grave_001",
+    "type": "anecdote",
+    "title": "掃墓",
+    "text": "你替幾位故人的墳頭拔了草。墳前的字跡風化了不少，你猜再過幾年，大約也沒人認得出來了。",
+    "weight": 20,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": { "ageMin": 80 }
+  },
+  {
+    "id": "zhuji_lonely_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "座席空了",
+    "text": "同輩的修行者多半已經不在了。你偶爾還會對著空座位說一句話，自己聽了都覺得好笑。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji" }
+  },
+  {
+    "id": "zhuji_elder_001",
+    "type": "choice",
+    "title": "長老過門",
+    "text": "{guard}的一位長老路過你的居處，在門口站了站，似乎在等你先開口。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji" },
+    "choices": [
+      {
+        "text": "上前見禮",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "長老點了點頭，隨口指點了幾句，說的都是你早已知道的事，只是他說得更慢。",
+            "effects": { "cultivation": 0.04 }
+          },
+          {
+            "weight": 50,
+            "text": "長老只問你的道號，你報上，他說了聲「哦」，便走了。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "裝作未見",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你低頭掃地。長老站了一會兒，也走了。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_junior_001",
+    "type": "choice",
+    "title": "後輩求教",
+    "text": "一位年輕的散修登門求教，問了一長串問題，大半是你二十年前問過別人的。",
+    "weight": 7,
+    "tone": "good",
+    "conditions": { "realmMin": "zhuji" },
+    "choices": [
+      {
+        "text": "耐心解答",
+        "outcomes": [
+          {
+            "weight": 70,
+            "text": "你講了一個下午。他臨走道謝，說這番話比三年苦修有用。你不信，卻也受用。",
+            "effects": { "attributes": { "fortune": 1 } }
+          },
+          {
+            "weight": 30,
+            "text": "你講到一半才發覺自己也有幾處講不通，只好說容後再議。",
+            "effects": { "attributes": { "mind": 1 } }
+          }
+        ]
+      },
+      {
+        "text": "婉言送客",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你說正在閉關，他恭敬地行了一禮退下。門關上之後，屋裡又恢復了安靜。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_cave_001",
+    "type": "choice",
+    "highlight": 1.5,
+    "title": "舊洞重訪",
+    "text": "你循著記憶回到當年那處古洞，洞口的藤蔓已枯，石壁上多了幾道新刻的記號，顯然有人來過。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji", "flags": ["cave_001_done"] },
+    "choices": [
+      {
+        "text": "進洞再看",
+        "outcomes": [
+          {
+            "weight": 40,
+            "text": "洞中陳設依舊，角落裡多了一張舊蒲團，像是有人在此靜坐過。你坐了一會兒，神思清明。",
+            "effects": { "cultivation": 0.04 }
+          },
+          {
+            "weight": 60,
+            "text": "洞裡空蕩蕩的，連當年那隻玉瓶的底座都被人搬走了。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "不進去",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在洞口站了一會兒，轉身離去。有些地方，一次便夠。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "zhuji_border_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "邊界之爭",
+    "text": "{country}與鄰國為了邊界起了爭執，朝廷派人來請你出面鎮場。你在城樓上坐了三天，一句話沒說，兩邊便都散了。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji" }
+  },
+  {
+    "id": "zhuji_retreat_001",
+    "type": "anecdote",
+    "title": "出關",
+    "text": "你一次閉關十年，出關時山下的茶攤已換了三任掌櫃。新的那位問你要點什麼，你想了很久，說：茶。",
+    "weight": 6,
+    "tone": "neutral",
+    "conditions": { "realmMin": "zhuji", "ageMin": 130 }
+  },
+  {
+    "id": "temple_wall_001",
+    "type": "anecdote",
+    "highlight": 1.5,
+    "title": "荒廟題記",
+    "text": "{mountain}下的一座荒廟裡，斑駁的壁畫之間夾著幾行工整的題記。你一字一句抄了下來。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": { "ageMin": 14, "fragmentAvailable": 3 },
+    "effects": { "fragment": { "maxTier": 3, "chance": 0.35 } }
+  },
+  {
+    "id": "ferryman_scroll_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "船夫的舊紙",
+    "text": "{market}的老船夫在渡口邊補網，船艙裡堆著一捆泛黃的紙，他說是歷任客人落下的。",
+    "weight": 5,
+    "tone": "neutral",
+    "scheduleWeights": { "wander": 3 },
+    "conditions": { "ageMin": 16, "fragmentAvailable": 3 },
+    "choices": [
+      {
+        "text": "問他能不能看看",
+        "outcomes": [
+          {
+            "weight": 40,
+            "text": "他說隨便看，只要別弄濕。你翻了半晌，抽出一份尚能辨認的。",
+            "effects": { "fragment": { "maxTier": 3 } }
+          },
+          {
+            "weight": 60,
+            "text": "盡是些船票與貨單，連字都被水泡得糊了。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "幫他補網",
+        "outcomes": [
+          {
+            "weight": 45,
+            "text": "你陪他補了一下午網。他把紙推給你，說拿去罷，反正我也不認得。",
+            "effects": { "fragment": { "maxTier": 3 } }
+          },
+          {
+            "weight": 55,
+            "text": "網補好了，他請你喝了碗熱湯，紙卻沒再提。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "不打擾",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你向他點點頭，沿著岸邊走開了。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "old_chest_001",
+    "type": "choice",
+    "highlight": 2,
+    "title": "搬家的舊箱",
+    "text": "{village}一戶人家搬家，院裡堆著要丟的舊箱，主人說誰要誰拿。",
+    "weight": 5,
+    "tone": "neutral",
+    "conditions": { "fragmentAvailable": 3 },
+    "choices": [
+      {
+        "text": "翻一翻",
+        "outcomes": [
+          {
+            "weight": 30,
+            "text": "箱底壓著一份發黃的文書，邊角被蟲蛀去一塊。",
+            "effects": { "fragment": { "maxTier": 3 } }
+          },
+          {
+            "weight": 40,
+            "text": "夾層裡摸出幾枚舊錢，已不能通用，只好當作紀念。",
+            "effects": { "spiritStones": 4 }
+          },
+          {
+            "weight": 30,
+            "text": "盡是些舊衣和斷了柄的剪刀。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "幫忙搬家",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你幫著搬了半天，主人塞給你幾枚靈石道謝。",
+            "effects": { "spiritStones": 5 }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "gate_tea_001",
+    "type": "anecdote",
+    "title": "山門前的茶棚",
+    "text": "{guard}的山門關了，山腳的茶棚反倒生意興隆，等著進山的人坐滿了條凳。你坐下來聽了半個下午的閒話，沒聽到一句準話。",
+    "weight": 10,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "lianqi",
+      "world": [
+        "guard_closed"
+      ]
+    }
+  },
+  {
+    "id": "gate_market_001",
+    "type": "choice",
+    "title": "門內流出的丹藥",
+    "text": "{market}的巷尾，有人低聲說手上有一顆從{guard}門內流出來的築基丹，價錢比坊市便宜些。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "lianqi",
+      "ageMin": 20,
+      "world": [
+        "guard_closed"
+      ]
+    },
+    "choices": [
+      {
+        "text": "買下",
+        "requires": {
+          "spiritStones": 300
+        },
+        "outcomes": [
+          {
+            "weight": 55,
+            "text": "丹藥是真的，包藥的紙上還蓋著山門的印。",
+            "effects": {
+              "spiritStones": -300,
+              "items": {
+                "zhuji_dan": 1
+              }
+            }
+          },
+          {
+            "weight": 45,
+            "text": "回去一剝，裡頭是蜜丸，賣丹的人早已不見了。",
+            "effects": {
+              "spiritStones": -300
+            }
+          }
+        ]
+      },
+      {
+        "text": "問他丹是從哪裡流出來的",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "賣丹的人看了你一眼，轉身就走，走得比來時快。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "不理他",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你繞過巷口，沒有回頭。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "branch_sign_001",
+    "type": "anecdote",
+    "title": "新招牌",
+    "text": "{merchant}在{market}的分號換了新招牌，夥計說今年各地都在換，字是同一個師傅寫的。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": {
+      "ageMin": 14,
+      "world": [
+        "merchant_wide"
+      ]
+    }
+  },
+  {
+    "id": "ferry_broken_001",
+    "type": "choice",
+    "title": "斷渡",
+    "text": "渡口毀了，擺渡人蹲在岸邊修船，說至少要等月餘。往來的客商都堵在這裡。",
+    "weight": 8,
+    "tone": "neutral",
+    "conditions": {
+      "ageMin": 14,
+      "world": [
+        "ferries_broken"
+      ]
+    },
+    "choices": [
+      {
+        "text": "幫著搬貨",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你替客商搬了半日的貨，工錢是幾塊靈石。",
+            "effects": {
+              "spiritStones": 8
+            }
+          }
+        ]
+      },
+      {
+        "text": "就地打坐等船",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你在岸邊坐了數日，等船的事漸漸忘了。",
+            "effects": {
+              "cultivation": 0.03
+            }
+          }
+        ]
+      },
+      {
+        "text": "繞道而行",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你繞了遠路，山水倒是看了不少。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "wander_boatman_001",
+    "type": "choice",
+    "title": "渡口的老船夫",
+    "text": "渡口的石階上坐著一位老船夫，煙袋鍋子在手裡轉了好幾圈，看樣子是想找人說話。",
+    "weight": 14,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": {
+      "schedules": [
+        "wander"
+      ],
+      "fragmentAvailable": 3
+    },
+    "choices": [
+      {
+        "text": "請他喝一碗",
+        "requires": {
+          "spiritStones": 3
+        },
+        "outcomes": [
+          {
+            "weight": 45,
+            "text": "他喝了酒，話匣子開了。說到一半從懷裡摸出一張舊紙，說是客人落下的，沒人來取。",
+            "effects": {
+              "spiritStones": -3,
+              "fragment": {
+                "maxTier": 3
+              }
+            }
+          },
+          {
+            "weight": 55,
+            "text": "他喝完便睡了，鼾聲和江水聲是一個調子。",
+            "effects": {
+              "spiritStones": -3
+            }
+          }
+        ]
+      },
+      {
+        "text": "坐下來聽他說",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "他說的都是舊年的水位和船價，聽得你昏昏欲睡。",
+            "effects": {}
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "wander_crowd_001",
+    "type": "choice",
+    "title": "渡口人多",
+    "text": "渡口候船的人很多，有人在高聲議價，有人湊在一起低聲說話。",
+    "weight": 14,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": {
+      "schedules": [
+        "wander"
+      ]
+    },
+    "choices": [
+      {
+        "text": "湊近聽低聲的那一群",
+        "outcomes": [
+          {
+            "weight": 40,
+            "text": "他們說的是{wanderers}的規矩。你沒全聽懂，但記住了幾個詞。",
+            "effects": {
+              "attributes": {
+                "insight": 1
+              }
+            }
+          },
+          {
+            "weight": 60,
+            "text": "他們看見你走近，話就停了，轉頭議起船價。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "替人看行李",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你替一位客人看了一個時辰的行李，得了幾塊靈石。",
+            "effects": {
+              "spiritStones": 6
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "wander_stranger_001",
+    "type": "anecdote",
+    "title": "渡口邊的行腳人",
+    "text": "渡口邊一個行腳的散修問你要不要結伴走一段。你說不必，他點點頭，沒有勉強。",
+    "weight": 10,
+    "tone": "neutral",
+    "conditions": {
+      "schedules": [
+        "wander"
+      ]
+    }
+  },
+  {
+    "id": "jindan_visit_001",
+    "type": "anecdote",
+    "title": "路人叩拜",
+    "text": "山下的村民遠遠見你走過，齊齊跪下，口稱仙師。你想扶，又覺得扶起來他們更不安，便由著他們跪完了。",
+    "weight": 7,
+    "tone": "neutral",
+    "conditions": {
+      "realmMin": "jindan"
+    }
+  }
+]

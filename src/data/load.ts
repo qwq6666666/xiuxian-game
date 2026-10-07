@@ -1,6 +1,9 @@
 import configJson from "./config.json";
 import goalsJson from "./goals.json";
 import eventsJson from "./events.json";
+import base2EventsJson from "./events/base2.json";
+import base3EventsJson from "./events/base3.json";
+import base4EventsJson from "./events/base4.json";
 import yuanyingEventsJson from "./events/yuanying.json";
 import introEventsJson from "./events/intro.json";
 import openingEventsJson from "./events/opening.json";
@@ -89,6 +92,9 @@ export const gameData: GameData = validateGameData({
   // 新增事件檔：在 src/data/events/ 放 json，並在這裡加一行（只有整合者改這個檔）
   events: validateEventFiles([
     { file: "events.json", raw: eventsJson },
+    { file: "events/base2.json", raw: base2EventsJson },
+    { file: "events/base3.json", raw: base3EventsJson },
+    { file: "events/base4.json", raw: base4EventsJson },
     { file: "events/yuanying.json", raw: yuanyingEventsJson },
     { file: "events/intro.json", raw: introEventsJson },
     { file: "events/opening.json", raw: openingEventsJson },
