@@ -4,7 +4,8 @@ import { createInitialState, startLife } from "../../src/core/life";
 import { emptyMeta } from "../../src/core/state";
 import { tick } from "../../src/core/tick";
 import { gameData } from "../../src/data/load";
-import { mountUi, type UiHandlers } from "../../src/ui/render";
+import { mountUi } from "../../src/ui/render";
+import type { UiHandlers } from "../../src/ui/types";
 import { esc } from "../../src/ui/dom";
 import { living } from "../helpers";
 

@@ -10,7 +10,7 @@ import { attributeGuide } from "../derived";
 import { ATTR_LABEL, eraTransition, talentSummary } from "../format";
 import { esc } from "../dom";
 import { methodRows } from "./methodinfo";
-import type { UiHandlers } from "../render";
+import type { UiHandlers } from "../types";
 import { rollNumber } from "../tween";
 import { keepView } from "../keepview";
 

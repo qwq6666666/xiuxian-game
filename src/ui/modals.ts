@@ -23,7 +23,7 @@ import {
   formatVersus,
   reviewTitle,
 } from "./format";
-import type { UiHandlers } from "./render";
+import type { UiHandlers } from "./types";
 
 // ---- 彈窗的鍵盤與焦點：開啟時移入、Tab 圈在最上層彈窗內、關閉時還原 ----
 /** 綁好 Tab 圈選並監看初始彈窗；回傳 watchModal 供之後重建的彈窗使用 */

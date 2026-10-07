@@ -5,7 +5,7 @@ import { revealIn } from "./dom";
 import { keepView } from "./keepview";
 import { acquaintanceRows, bestiarySummary, collectionSummary } from "./format";
 import type { MapTarget } from "./map/mapinfo";
-import type { UiHandlers } from "./render";
+import type { UiHandlers } from "./types";
 import { buildWorldMap, mapStamp, resetMapView } from "./map/worldmap";
 
 export interface OverlayContext {

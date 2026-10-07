@@ -2,7 +2,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { stageNeed } from "../../src/core/formulas";
 import { gameData } from "../../src/data/load";
-import { mountUi, type UiHandlers } from "../../src/ui/render";
+import { mountUi } from "../../src/ui/render";
+import type { UiHandlers } from "../../src/ui/types";
 import { statPanel } from "../../src/ui/panels/statinfo";
 import { living } from "../helpers";
 

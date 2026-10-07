@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { gameData } from "../../src/data/load";
-import { mountUi, type UiHandlers } from "../../src/ui/render";
+import { mountUi } from "../../src/ui/render";
+import type { UiHandlers } from "../../src/ui/types";
 import { living } from "../helpers";
 
 const handlers = (): UiHandlers => new Proxy({} as UiHandlers, {

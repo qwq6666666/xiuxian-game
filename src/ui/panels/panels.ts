@@ -28,7 +28,7 @@ import { icon, itemIcon } from "../icons";
 import { sectPanel } from "./sectinfo";
 import { statPanel } from "./statinfo";
 import { huntVignetteHtml } from "../scene/vignette";
-import type { LifeEls, SideTab, UiHandlers } from "../render";
+import type { LifeEls, SideTab, UiHandlers } from "../types";
 
 /** 天劫光圈一輪的長度（毫秒），要與 styles/layout.css 的 trib-close 動畫一致 */
 const RING_MS = 1600;
