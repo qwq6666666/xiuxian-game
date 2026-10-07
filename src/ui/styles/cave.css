@@ -20,7 +20,10 @@
 
 /* 共用前景手部：獨立於會重建的熱點，服丹或切面板後仍能把動作播完。 */
 .fp-overlay { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.fp-hands { opacity: 0.86; }
+/* 手只在洞府裡面壁打坐的前視角常駐；轉去別的方向、或在洞外時淡出，操作熱點的那一下才淡入伸出 */
+.fp-hands { opacity: 0.86; transition: opacity var(--dur-fast) var(--ease); }
+.cave:not([data-facing="front"]) .fp-hands, .cave:not([data-setting="cave"]) .fp-hands { opacity: 0; }
+.cave.acting .fp-hands { opacity: 0.86; }
 .fp-hand { transform-box: fill-box; transform-origin: 50% 100%; }
 .fp-fold, .fp-fingers { fill: none; stroke: var(--scene-ink); stroke-width: 2; opacity: 0.38; }
 .fp-fingers { stroke: var(--scene-hair); opacity: 0.45; }
