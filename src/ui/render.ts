@@ -16,7 +16,7 @@ import { slotsFor } from "../core/sect";
 import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { gameNavHtml, mountGameMode } from "./gamemode";
-import { caveHtml, mountCave, toggleSchedulePicker, updateCave } from "./cave";
+import { CAVE_DEFS, caveHtml, firstPersonArt, mountCave, toggleSchedulePicker, updateCave } from "./cave";
 import { QUICK_PILL, type CaveAction } from "./caveLogic";
 import { createVeil } from "./veil";
 import { neighbourOf, onSwipe } from "./gesture";
@@ -216,6 +216,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
   }
 
   root.innerHTML = `
+    ${CAVE_DEFS}
     <header class="bar">
       <div class="bar-left">
         <span class="speeds" role="group" aria-label="流速"></span>
@@ -450,9 +451,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
         <aside class="side" data-active="play">
           <nav id="sideTabs" class="tabs" role="tablist" aria-label="分頁">${SIDE_TABS.map((t) => `<button type="button" role="tab" data-go="${t.id}" aria-selected="${t.id === "play"}">${t.label}</button>`).join("")}</nav>
           ${SIDE_TABS.map((t) => `<section class="s-locked" data-tab="${t.id}" data-locked-for="${t.id}" hidden><h2>尚未開放</h2><p class="desc"></p></section>`).join("")}
-          <section id="schedSection" class="s-sched" data-tab="play"><h2>日常安排</h2><div class="scene-art scene-art-wilderness" role="img" aria-label="雲霧山野間，一名旅人沿石徑前行"></div><div id="schedules" class="choices"></div></section>
+          <section id="schedSection" class="s-sched" data-tab="play"><h2>日常安排</h2>${firstPersonArt("wilderness")}<div id="schedules" class="choices"></div></section>
           <section id="btSection" class="s-bt" data-tab="play"><h2>突破</h2>
-            <div class="scene-art scene-art-breakthrough" role="img" aria-label="修士在石室中靜坐，雲氣緩緩匯聚"></div>
+            ${firstPersonArt("breakthrough")}
             <p id="btInfo" class="desc"></p>
             <label id="pillRow" hidden><input type="checkbox" id="pill" /> <span id="pillText"></span></label>
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
@@ -468,7 +469,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
           <details class="fold s-goals" id="goalsFold" data-tab="me" open><summary>目標</summary><ul id="goals" class="goals"></ul><p id="goalHint" class="desc"></p><button id="goalGo" type="button" hidden></button></details>
           <details class="fold s-role" data-tab="me" open><summary>角色</summary>${statsHtml(state)}<div id="statDetail" class="stat-detail"></div>${guideHtml(data)}${identityHtml(state, data)}</details>
           <details class="fold s-bag" data-tab="pack" open><summary>背包</summary><ul id="bag" class="items"></ul></details>
-          <details class="fold s-market" data-tab="pack" open><summary>坊市</summary><div class="scene-art scene-art-market" role="img" aria-label="暮色中的坊市，攤棚下陳列藥材與器物"></div><ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>世局</button></details>
+          <details class="fold s-market" data-tab="pack" open><summary>坊市</summary>${firstPersonArt("market")}<ul id="market" class="items"></ul><p id="marketNote" class="market-note" hidden></p><button id="marketLink" type="button" hidden>世局</button></details>
         </aside>
       </div>
       <div class="modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" hidden>
@@ -837,8 +838,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     const reasons = activeWorldEffects(state, data).map((x) => fillSlots(x.reason, slotsOf(state)));
     if (marketTerritory(state, data)?.contested) reasons.push(`坊市一帶國界正在易手，商路不穩，物價約漲 ${Math.round((data.map.territoryRules.marketMultiplier - 1) * 100)}%。`);
     const marketRel = marketRelation(state, data);
-    if (marketRel === "feud") reasons.push(`坊市所在的國與你的宗門有舊怨，物價約漲 ${Math.round((data.worldRelations.effects.feudPriceMult - 1) * 100)}%。`);
-    if (marketRel === "ally") reasons.push(`坊市所在的國與你的宗門互惠，物價約減 ${Math.round((1 - data.worldRelations.effects.allyPriceMult) * 100)}%。`);
+    if (marketRel === "feud") reasons.push(`坊市所在的國與我的宗門有舊怨，物價約漲 ${Math.round((data.worldRelations.effects.feudPriceMult - 1) * 100)}%。`);
+    if (marketRel === "ally") reasons.push(`坊市所在的國與我的宗門互惠，物價約減 ${Math.round((1 - data.worldRelations.effects.allyPriceMult) * 100)}%。`);
     e.marketNote.hidden = reasons.length === 0;
     e.marketNote.textContent = reasons.join("　");
     e.marketLink.hidden = reasons.length === 0;

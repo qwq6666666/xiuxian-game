@@ -74,7 +74,7 @@ export function createOverlays(ctx: OverlayContext): Overlays {
     head.append(title, close);
     const note = document.createElement("p");
     note.className = "desc";
-    note.textContent = "這些你都讀過，只是不記得了。";
+    note.textContent = "這些我都讀過，只是不記得了。";
     box.append(head, note);
     for (const [topicId, topicName] of Object.entries(data.fragments.topics)) {
       const h = document.createElement("h3");

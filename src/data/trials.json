@@ -3,10 +3,10 @@
     "lifespanBuffer": 12,
     "rest": { "months": 3, "heal": 0.5, "max": 1 },
     "text": {
-      "enter": "你備足乾糧，走進{trial}。",
-      "clear": "你走出{trial}時，衣上都是塵土，囊中多了些東西。",
-      "fail": "你退出了{trial}，這一回沒能走到底。",
-      "abandon": "你抽身退出了{trial}，往後這一世，不會再來。"
+      "enter": "我備足乾糧，走進{trial}。",
+      "clear": "我走出{trial}時，衣上都是塵土，囊中多了些東西。",
+      "fail": "我退出了{trial}，這一回沒能走到底。",
+      "abandon": "我抽身退出了{trial}，往後這一世，不會再來。"
     }
   },
   "trials": [

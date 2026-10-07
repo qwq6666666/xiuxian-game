@@ -170,7 +170,7 @@ const KIND_LABEL: Record<TravelPlace["kind"], string> = { village: "村", market
 function buildQuickGo(state: GameState, data: GameData, places: TravelPlace[], selected: MapTarget | null, onSelect: (target: MapTarget | null) => void): HTMLElement {
   const box = html("section", "map-quick");
   const here = places.find((p) => p.id === state.travel.locationId);
-  box.append(html("p", "map-quick-title", `快速前往${here ? `　（你在${here.name}）` : ""}`));
+  box.append(html("p", "map-quick-title", `快速前往${here ? `　（我在${here.name}）` : ""}`));
   const rows = places
     .filter((p) => p.id !== state.travel.locationId)
     .map((p) => ({ place: p, months: routeTo(state, p.id, data)?.months ?? Infinity }))
@@ -209,7 +209,7 @@ function buildMapKey(): HTMLElement {
     { text: "渡口", cls: "map-ferry", glyph: "diamond" },
     { text: "商行", cls: "map-merchant", glyph: "rect" },
     { text: "山", cls: "map-mountain", glyph: "tri" },
-    { text: "你", cls: "map-you-dot", glyph: "circle" },
+    { text: "我", cls: "map-you-dot", glyph: "circle" },
   ];
   for (const it of items) {
     const item = html("span", "map-key-item");
@@ -504,7 +504,7 @@ export function buildWorldMap(
   you.append(
     keepPhase(svg("circle", { cx: 0, cy: 0, r: 12, class: "map-you-ring" }), 2800),
     svg("circle", { cx: 0, cy: 0, r: 5.5, class: "map-you-dot" }),
-    Object.assign(svg("text", { x: 0, y: -16, class: "map-you-label", "text-anchor": "middle" }), { textContent: "你在此" }),
+    Object.assign(svg("text", { x: 0, y: -16, class: "map-you-label", "text-anchor": "middle" }), { textContent: "我在此" }),
   );
   moveTraveler(you, markerPoint);
   root.append(you);
@@ -585,8 +585,8 @@ export function buildWorldMap(
     if (selected.kind === "territory") {
       if (relTarget) for (const line of relationLines(snap, relTarget)) info.append(html("p", "map-effect-line", line));
       const mine = state.sect ? snap.relations[state.sect.id] : undefined;
-      if (mine?.feud === selected.polity) info.append(html("p", "map-effect-line", "你的宗門與此國有舊怨，來往要多受盤查，坊市物價也略貴。"));
-      if (mine?.ally === selected.polity) info.append(html("p", "map-effect-line", "你的宗門與此國互惠，坊市物價略便宜。"));
+      if (mine?.feud === selected.polity) info.append(html("p", "map-effect-line", "我的宗門與此國有舊怨，來往要多受盤查，坊市物價也略貴。"));
+      if (mine?.ally === selected.polity) info.append(html("p", "map-effect-line", "我的宗門與此國互惠，坊市物價略便宜。"));
       const cellId = Number(selected.id.slice(5));
       for (const line of territoryLines(world, map, terrain, cellId, data, viewYears)) info.append(html("p", "map-effect-line", line));
       info.append(html("p", "desc", `此處：${terrainLine(terrain, data, cellId)}`));

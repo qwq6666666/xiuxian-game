@@ -97,7 +97,7 @@ const VIEWS: Record<Facing, string> = {
       <ellipse cx="400" cy="446" rx="300" ry="10" fill="var(--scene-figure)" opacity=".25" filter="url(#blur4)"/></g>`
 };
 
-const DEFS = `<svg width="0" height="0" class="cave-defs" aria-hidden="true"><defs>
+export const CAVE_DEFS = `<svg width="0" height="0" class="cave-defs" aria-hidden="true"><defs>
   <filter id="grain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix type="matrix" values="0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1.4 -.35"/></filter>
   <filter id="rock" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".025 .06" numOctaves="3" seed="7"/><feDisplacementMap in="SourceGraphic" scale="14"/></filter>
   <filter id="ink" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="2" seed="2"/><feDisplacementMap in="SourceGraphic" scale="4"/></filter>
@@ -130,9 +130,24 @@ const VIEW_DIVS = SETTINGS.flatMap((setting) =>
   }),
 ).join("");
 
+export type ArtKind = "opening" | "wilderness" | "market" | "breakthrough" | "reincarnation";
+
+const ART: Record<ArtKind, { svg: () => string; label: string }> = {
+  opening: { svg: () => OUTDOOR.road.back, label: "晨霧中，我立在村口，前方的路通向遠山" },
+  wilderness: { svg: () => OUTDOOR.road.front, label: "我坐在山道旁的石上，雙手結印，路在眼前延伸" },
+  market: { svg: () => OUTDOOR.market.front, label: "暮色中的坊市，攤棚下陳列藥材與器物，燈籠在眼前搖晃" },
+  breakthrough: { svg: () => `<g transform="translate(${SHIFT.front} 150)">${VIEWS.front}</g>`, label: "我在石室中靜坐，雙手結印，雲氣緩緩匯聚" },
+  reincarnation: { svg: () => OUTDOOR.ferry.front, label: "我立在渡頭，月輪映著靜水，遠方通向晨光" },
+};
+
+/** 第一人稱的場景插圖（取代原本的第三人稱插畫）：橫向取景，需要 CAVE_DEFS 在頁面裡 */
+export function firstPersonArt(kind: ArtKind): string {
+  const { svg, label } = ART[kind];
+  return `<div class="scene-art scene-art-fp" role="img" aria-label="${label}"><svg viewBox="${LANDSCAPE_VB}" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">${svg()}</svg></div>`;
+}
+
 export function caveHtml(): string {
   return `<div id="cave" class="scene cave" data-facing="front" data-realm="mortal" data-sched="retreat" data-season="spring" data-age="adult" data-qi="0" data-no-swipe hidden>
-  ${DEFS}
   <div class="cave-views">${VIEW_DIVS}</div>
   <button type="button" class="cave-turn cave-turn-left" aria-label="向左轉身">‹</button>
   <button type="button" class="cave-turn cave-turn-right" aria-label="向右轉身">›</button>

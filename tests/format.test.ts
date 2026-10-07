@@ -28,22 +28,22 @@ describe("format", () => {
     expect(up).toContain("練氣三層");
     // 享年與終身境界改由一生回顧呈現，日誌只留一句收束
     const death = formatLogEntry({ month: 119 * 12, kind: "death", realmId: "lianqi", stage: 5 }, gameData);
-    expect(death).toBe("你的這一世，至此落幕。");
+    expect(death).toBe("我的這一世，至此落幕。");
   });
 
   it("突破成功的文字：築基用 GDD 範例，不帶吐槽", () => {
     const text = formatLogEntry({ month: 600, kind: "breakthroughSuccess", realmId: "zhuji", stage: 0 }, gameData);
-    expect(text).toContain("丹田之中靈氣如潮，百脈俱震。一炷香後，天地復歸寂靜。你已築基。");
+    expect(text).toContain("丹田之中靈氣如潮，百脈俱震。一炷香後，天地復歸寂靜。我已築基。");
   });
 
   it("事件日誌：見聞用事件文字，抉擇用所選結果的文字，並帶標題", () => {
     const anec = formatLogEntry({ month: 450, kind: "event", realmId: "lianqi", stage: 0, eventId: "mountain_001" }, gameData);
-    expect(anec).toBe("三十七歲秋，【山澗靜坐】你於山澗旁靜坐三日，忽有所悟。起身時方知，所悟者不過是腿麻了。");
+    expect(anec).toBe("三十七歲秋，【山澗靜坐】我於山澗旁靜坐三日，忽有所悟。起身時方知，所悟者不過是腿麻了。");
     const choice = formatLogEntry(
       { month: 450, kind: "event", realmId: "lianqi", stage: 0, eventId: "cave_001", choice: 1, outcome: 0 },
       gameData,
     );
-    expect(choice).toBe("三十七歲秋，【山中古洞】你在洞外的山石上刻下記號。");
+    expect(choice).toBe("三十七歲秋，【山中古洞】我在洞外的山石上刻下記號。");
     expect(() => formatLogEntry({ month: 1, kind: "event", realmId: "lianqi", stage: 0, eventId: "ghost" }, gameData)).toThrow("ghost");
   });
 

@@ -319,7 +319,7 @@ export function createPanels(ctx: PanelContext): Panels {
       const loss = Math.max(0, beforePct - pct);
       return `<div class="hunt-bar ${cls}${loss > 0 ? " hit" : ""}"><span>${esc(label)}</span><i><b style="width:${beforePct}%" data-next="${pct}"></b></i>${loss > 0 ? `<em class="hunt-damage" aria-hidden="true">−${loss}</em>` : ""}</div>`;
     };
-    e.huntBars.innerHTML = bar(`${m.name} ${Math.round(h.monsterHp * 100)}%`, h.monsterHp, previous?.monsterHp, "foe") + bar(`你 ${Math.round(h.myHp * 100)}%`, h.myHp, previous?.myHp, "me");
+    e.huntBars.innerHTML = bar(`${m.name} ${Math.round(h.monsterHp * 100)}%`, h.monsterHp, previous?.monsterHp, "foe") + bar(`我 ${Math.round(h.myHp * 100)}%`, h.myHp, previous?.myHp, "me");
     for (const fill of Array.from(e.huntBars.querySelectorAll<HTMLElement>(".hunt-bar.hit b"))) {
       requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = `${fill.dataset.next}%`)));
     }
@@ -347,7 +347,7 @@ export function createPanels(ctx: PanelContext): Panels {
       const r = data.trials.rules.rest;
       e.huntTitle.textContent = `${def.name}・第 ${state.trial.floor + 1} 層之前`;
       e.huntText.textContent = `前方是${m.name}。氣血只有眼下這些，帶進去多少，就剩多少。${def.rule.desc}`;
-      e.huntBars.innerHTML = bar(`你 ${Math.round(h.myHp * 100)}%`, h.myHp, previous?.myHp, "me");
+      e.huntBars.innerHTML = bar(`我 ${Math.round(h.myHp * 100)}%`, h.myHp, previous?.myHp, "me");
       e.huntInfo.textContent = `【${def.rule.name}】${def.rule.desc}　調息還剩 ${Math.max(0, r.max - state.trial.rests)} 次。`;
       const restRows: { name: string; note: string; disabled: boolean; run: () => void }[] = [
         { name: "繼續", note: `帶著 ${Math.round(h.myHp * 100)}% 氣血直接進去`, disabled: false, run: handlers.onTrialContinue },
@@ -365,7 +365,7 @@ export function createPanels(ctx: PanelContext): Panels {
       lastHuntHealth = { monsterId: h.monsterId, monsterHp: h.monsterHp, myHp: h.myHp };
       return;
     }
-    const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";
+    const power = ratio >= 1.2 ? "我的修為勝過牠" : ratio >= rules.autoMinRatio ? "與我勢均力敵" : "牠比我強，小心";
     if (state.trial) {
       const def = trialOf(state.trial.id, data);
       const floorChanged = lastTrialFloor === null || lastTrialFloor.id !== state.trial.id || lastTrialFloor.floor !== state.trial.floor;
@@ -468,10 +468,10 @@ export function createPanels(ctx: PanelContext): Panels {
     e.trialResultMark.textContent = cleared ? "通" : withdrew ? "返" : "止";
     e.trialResultTitle.textContent = cleared ? `${def.name}・通關` : withdrew ? `${def.name}・中途抽身` : `${def.name}・試煉止步`;
     e.trialResultText.textContent = cleared
-      ? "你一層一層走到了盡頭，這一趟沒有白走。"
+      ? "我一層一層走到了盡頭，這一趟沒有白走。"
       : withdrew
-        ? "你認得回頭的路，也還走得動。這一世不再入內。"
-        : "這一回沒能走到底。秘境仍在，只是此世不再等你。";
+        ? "我認得回頭的路，也還走得動。這一世不再入內。"
+        : "這一回沒能走到底。秘境仍在，只是此世不再等我。";
     e.trialResultRewards.replaceChildren();
     const rewards = cleared ? formatChanges(entry.changes, data, slotsOf(state)) : [];
     if (rewards.length > 0) {

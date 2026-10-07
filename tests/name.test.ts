@@ -69,9 +69,9 @@ describe("姓名", () => {
     expect(() => validateNames({ surnames: ["a"], given: [1] })).toThrow("given[0]");
   });
 
-  it("死亡日誌用姓名，沒給名字時用「你」", () => {
+  it("死亡日誌用姓名，沒給名字時用「我」", () => {
     const entry = { month: 1000, kind: "death" as const, realmId: "lianqi", stage: 5 };
     expect(formatLogEntry(entry, data, "風清揚")).toBe("風清揚的這一世，至此落幕。");
-    expect(formatLogEntry(entry, data)).toBe("你的這一世，至此落幕。");
+    expect(formatLogEntry(entry, data)).toBe("我的這一世，至此落幕。");
   });
 });

@@ -2,11 +2,8 @@
 .roll { max-width: 480px; margin: 32px auto; }
 .roll h1 { margin: 0; letter-spacing: 0.2em; }
 .scene-art { width: 100%; aspect-ratio: 16 / 9; margin: var(--sp-2) auto var(--sp-3); border: 1px solid var(--line); border-radius: var(--r-md); background-position: center; background-repeat: no-repeat; background-size: cover; }
-.scene-art-opening { background-image: url('../images/scene-opening.webp'); }
-.scene-art-wilderness { background-image: url('../images/scene-wilderness.webp'); }
-.scene-art-market { background-image: url('../images/scene-market.webp'); }
-.scene-art-breakthrough { background-image: url('../images/scene-breakthrough.webp'); }
-.scene-art-reincarnation { background-image: url('../images/scene-reincarnation.webp'); }
+.scene-art-fp { overflow: hidden; background: var(--sunken); }
+.scene-art-fp svg { display: block; width: 100%; height: 100%; }
 .review .scene-art, .map-card > .scene-art { max-width: 480px; }
 .sub { color: var(--muted); margin: var(--sp-1) 0 var(--sp-4); }
 .namebox { display: block; margin: var(--sp-2) 0; }

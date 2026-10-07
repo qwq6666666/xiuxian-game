@@ -126,10 +126,10 @@ describe("收尾句", () => {
   it("持有未用的聚氣丹時用範例那句", () => {
     const s = { ...base(), items: { juqi_dan: 1 } };
     const idx = pickClosing(s, "lifespan");
-    expect(gameData.text.review.lifespan[idx].text).toBe("臨終之際你望著窗外流雲，想起那顆始終沒捨得吃的聚氣丹。");
+    expect(gameData.text.review.lifespan[idx].text).toBe("臨終之際我望著窗外流雲，想起那顆始終沒捨得吃的聚氣丹。");
     const t = tick({ ...s, ageMonths: 1439 }, 1);
     expect(formatReviewSummary(t.review!, gameData)).toBe(
-      "享年一百二十歲，終身練氣四層。臨終之際你望著窗外流雲，想起那顆始終沒捨得吃的聚氣丹。",
+      "享年一百二十歲，終身練氣四層。臨終之際我望著窗外流雲，想起那顆始終沒捨得吃的聚氣丹。",
     );
   });
 

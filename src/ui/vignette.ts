@@ -122,7 +122,10 @@ export function huntVignetteHtml(monsterId: string, realmId: string): string {
   return frame(realmId === "mortal" || realmId === "lianqi" ? "forest" : "mountain", hash(monsterId), realmId, true);
 }
 
+/** 第一人稱：畫面下緣露出自己的兩隻袖子與雙手，所有配圖都是「我」看出去的景 */
+const HANDS = `<path class="vg-dark" d="M146 ${H} Q160 106 188 98 L199 108 Q176 114 170 ${H}Z"/><path class="vg-dark" d="M254 ${H} Q240 106 212 98 L201 108 Q224 114 230 ${H}Z"/><ellipse class="vg-hand" cx="193" cy="101" rx="8" ry="4"/><ellipse class="vg-hand" cx="207" cy="101" rx="8" ry="4"/>`;
+
 function frame(theme: Theme, seed: number, realmId: string, darken: boolean, tone?: EventDef["tone"]): string {
   const dim = darken ? `<rect x="0" y="0" width="${W}" height="${H}" class="vg-dark" opacity=".3"/>` : "";
-  return `<div class="vignette" data-realm="${realmId}" data-theme="${theme}"${tone ? ` data-tone="${tone}"` : ""} aria-hidden="true"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" focusable="false">${scene(theme, seed)}${toneProps(tone, seed)}${dim}</svg></div>`;
+  return `<div class="vignette" data-realm="${realmId}" data-theme="${theme}"${tone ? ` data-tone="${tone}"` : ""} aria-hidden="true"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax slice" focusable="false">${scene(theme, seed)}${toneProps(tone, seed)}${dim}${HANDS}</svg></div>`;
 }

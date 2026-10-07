@@ -76,9 +76,9 @@ export function joinInfo(state: GameState, sectId: string, data: GameData): Join
   if (!canJoin) {
     const j = data.sects.join;
     const idx = (id: string): number => data.realms.findIndex((r) => r.id === id);
-    if (state.sect !== null) reason = state.sect.id === sectId ? "你已是這個宗門的人。" : "這一世你已有所屬宗門，要先離宗。";
+    if (state.sect !== null) reason = state.sect.id === sectId ? "我已是這個宗門的人。" : "這一世我已有所屬宗門，要先離宗。";
     else if (sect.state === "closed" || sect.state === "fallen") reason = `宗門已${SECT_STATE_TEXT[sect.state]}，不收人。`;
-    else if (state.sectsTried.includes(sectId)) reason = "這一世你已叩過這扇山門，不會再開。";
+    else if (state.sectsTried.includes(sectId)) reason = "這一世我已叩過這扇山門，不會再開。";
     else if (idx(state.realmId) < idx(j.minRealm) || (idx(state.realmId) === idx(j.minRealm) && state.stage < j.minStage)) {
       reason = `修為需達${realmLabel(data, j.minRealm, j.minStage)}才能求入宗。`;
     } else if (here?.id !== sectId) reason = "要先走到這處山門外，才能求入宗。";

@@ -1,3 +1,4 @@
+import { firstPersonArt } from "./cave";
 import { lifeIndex } from "../core/era";
 import type { GoalProgress } from "../core/goals";
 import { goalStatuses } from "../core/goals";
@@ -101,7 +102,7 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
         return `<button type="button" data-chart="${i}"><strong>${esc(root)}・${esc(origin?.name ?? c.originId)}</strong><small>${esc(attrs)}　靈石 ${c.spiritStones}</small><small>${esc(origin?.desc ?? "")}</small></button>`;
       })
       .join("");
-    return `<section class="charts"><h2>備選命盤</h2><p class="desc">擇身讓你多得幾份功率相近的命盤，各有各的脾性。改選之後，原本的命盤會換到這裡。</p><div class="choices">${rows}</div></section>`;
+    return `<section class="charts"><h2>備選命盤</h2><p class="desc">擇身讓我多得幾份功率相近的命盤，各有各的脾性。改選之後，原本的命盤會換到這裡。</p><div class="choices">${rows}</div></section>`;
   }
 
   /** 夙願：指定這一世的一個目標；再按一次取消 */
@@ -143,7 +144,7 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
     stageEl.innerHTML = `
       <main class="card roll${fresh ? " roll-enter" : ""}">
         <h1>一念輪迴</h1>
-        <div class="scene-art scene-art-opening" role="img" aria-label="晨霧村舍外，一名旅人走向遠山"></div>
+        ${firstPersonArt("opening")}
         <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲。</p>
         ${eraTransition(lifeIndex(state), data) !== "" ? `<p class="desc">${esc(eraTransition(lifeIndex(state), data))}</p>` : ""}
         <label class="namebox">姓名 <input id="name" type="text" maxlength="${data.config.nameMaxLength}" /></label>

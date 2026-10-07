@@ -1,3 +1,4 @@
+import { firstPersonArt } from "./cave";
 import { canBuyTalent } from "../core/actions";
 import { lifeIndex } from "../core/era";
 import { CLEAR_FRAGMENT_ID } from "../core/fragments";
@@ -104,10 +105,7 @@ export function createReviewModal(
     const box = el("div");
     const review = state.review;
     box.append(el("h2", undefined, reviewTitle(review)));
-    const scene = el("div", "scene-art scene-art-reincarnation");
-    scene.setAttribute("role", "img");
-    scene.setAttribute("aria-label", "月輪映照群山與靜水，遠方小徑通向晨光");
-    box.append(scene);
+    box.insertAdjacentHTML("beforeend", firstPersonArt("reincarnation"));
     if (review === null) {
       // 輪迴功能加入前存下的死亡存檔沒有回顧，直接進入輪迴即可
       box.append(el("p", undefined, "此生已了，且入輪迴。"));
@@ -182,10 +180,7 @@ export function createReviewModal(
   function buildTalents(state: GameState): HTMLElement {
     const box = el("div");
     box.append(el("h2", undefined, "輪迴天賦"), el("p", "daoyun", `道韻餘額 ${state.meta.daoYun}`));
-    const scene = el("div", "scene-art scene-art-reincarnation");
-    scene.setAttribute("role", "img");
-    scene.setAttribute("aria-label", "月輪映照群山與靜水，遠方小徑通向晨光");
-    box.append(scene);
+    box.insertAdjacentHTML("beforeend", firstPersonArt("reincarnation"));
     const ul = el("ul", "items talents");
     const advice = recommendTalent(state.meta, data);
     // 只把推薦與買得起的前三項放在外面，其餘收進「其他天賦」，第一次看到不會一次攤出十種

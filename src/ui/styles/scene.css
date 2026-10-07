@@ -83,7 +83,7 @@
 .vignette { margin: 0 0 var(--sp-3); border-radius: var(--r-sm); overflow: hidden; background: linear-gradient(var(--scene-sky-top), var(--scene-sky-bottom)); height: 84px; }
 .vignette svg { display: block; width: 100%; height: 100%; }
 .vg-far { fill: var(--scene-far); } .vg-mid { fill: var(--scene-mid); } .vg-near { fill: var(--scene-near); }
-.vg-dark { fill: var(--scene-figure); } .vg-orb { fill: var(--scene-orb); } .vg-water { fill: var(--scene-water); opacity: 0.55; }
+.vg-dark { fill: var(--scene-figure); } .vg-hand { fill: var(--scene-ink); opacity: 0.85; } .vg-orb { fill: var(--scene-orb); } .vg-water { fill: var(--scene-water); opacity: 0.55; }
 .vg-warm { fill: var(--scene-warm); } .vg-stroke { fill: none; stroke: var(--scene-ink); stroke-width: 1.2; stroke-linecap: round; opacity: 0.8; }
 .vg-soft { fill: var(--scene-orb); opacity: 0.14; }
 .vg-ray { fill: none; stroke: var(--scene-warm); stroke-width: 1.4; stroke-linecap: round; opacity: 0.35; }
