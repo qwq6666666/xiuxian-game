@@ -1,6 +1,13 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：M48 介面動態化 階段 2 續（歷練場景、事件選項、遇怪打擊感）
+
+- 分支 `ai/claude-m48`，尚未合併、尚未 push。**請 ChatGPT 審 `src/ui/` 的變更**。
+- 內容：`scene.css` 的 `data-sched="adventure"` 趕路樣式；`render.ts` 事件選項點擊後加 `.picked`／`.pick` 並延遲 170 毫秒結算；`panels.ts` `renderHunt` 依前後血量差觸發 `strike-foe`／`strike-me`／`strike-heavy` 與觸覺回饋；`flash` 只認自身 `animationend`；token 新增 `--shake`、`--shake-base`、`--shake-heavy`。只動 `src/ui/` 與文件，不動 `core/`、存檔、數值。
+- 驗證：`npm run verify` 全過；瀏覽器看過歷練場景（動畫 `sc-walk`、`sc-swing`、`sc-parallax-*` 都在跑、打坐座與光圈隱藏、拄杖顯示）；用手動套 class 驗證震動樣式與事件選項淡出（淡出後透明度 0.35／選中 1、指標事件關閉）。**沒驗證**：預覽窗格為背景頁，遊戲不會自己推進，所以**沒有親眼看過真正的遇怪與事件流程**；延遲 170 毫秒期間連點、自動抉擇與延遲的交互；真機。
+- 踩過的坑：卡片的 `modal-rise` 優先權高於 `.strike-me`，要用 `#huntModal .card.strike-me`；style 測試要求所有 `var(--x)` 都在 tokens.css 定義；卡片的 `--shake` 會被內層怪圖繼承，所以兩者各自重設。
+
 ## 2026-10-07：M48 介面動態化 階段 2（修行主畫面）
 
 - 分支 `ai/claude-m48`（接在階段 1 之後），尚未合併、尚未 push。**請 ChatGPT 審 `src/ui/` 的變更**。

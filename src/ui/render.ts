@@ -18,6 +18,8 @@ import { burstScene, sceneHtml, updateScene } from "./scene";
 import { createVeil } from "./veil";
 import { neighbourOf, onSwipe } from "./gesture";
 import { resetRolls, rollNumber } from "./tween";
+
+const reducedMotion = (): boolean => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { haptic, hapticsEnabled, setHapticsEnabled } from "./haptics";
 import { canPeek } from "../core/omen";
 import { collapseRoutineRetreats, groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
@@ -841,6 +843,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       eventKey = pendingKey;
       e.eventModal.hidden = state.pendingEvent === null;
       e.eventChoices.innerHTML = "";
+      e.eventChoices.classList.remove("picked");
       if (state.pendingEvent !== null) {
         const ev = eventOf(state.pendingEvent, data);
         const slots = slotsOf(state);
@@ -873,7 +876,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           b.querySelector("strong")!.textContent = fillSlots(choice.text, slots);
           if (reason) b.querySelector("small")!.textContent = reason;
           else if (odds.length > 0) b.querySelector("small")!.textContent = `結果機率約 ${odds.map((p) => `${p}%`).join("／")}`;
-          b.addEventListener("click", () => handlers.onChoose(i));
+          b.addEventListener("click", () => {
+            // 選中的選項亮起、其餘淡出，停一小下再結算，讓「選了什麼」有個落點
+            if (e.eventChoices.classList.contains("picked") || reducedMotion()) return void handlers.onChoose(i);
+            e.eventChoices.classList.add("picked");
+            b.classList.add("pick");
+            window.setTimeout(() => handlers.onChoose(i), 170);
+          });
           // 靈犀：已窺看的顯示吉凶，還有次數且能窺看的多一個「窺看」鈕
           const seen = state.omen.find((o) => o.choice === i);
           if (seen) {

@@ -58,6 +58,19 @@
 .scene[data-qi="5"] .sc-qi { r: 1.9; }
 .scene:not([data-sched="retreat"]):not([data-sched="alchemy"]) .sc-qi { animation-duration: 6s; }
 
+/* 外出歷練：人物起身趕路（拄杖、身形起伏），遠山與近山以不同速度後移，不再打坐吐納 */
+.scene[data-sched="adventure"] .sc-seat, .scene[data-sched="adventure"] .sc-aura, .scene[data-sched="adventure"] .sc-qis { display: none; }
+.scene[data-sched="adventure"] .sc-staff { display: block; transform-box: fill-box; transform-origin: 50% 0%; animation: sc-swing 0.9s ease-in-out infinite; }
+.scene[data-sched="adventure"] .sc-body { animation: none; }
+.scene[data-sched="adventure"] .sc-lean { animation: sc-walk 0.9s ease-in-out infinite; }
+.scene[data-sched="adventure"] .sc-far { animation: sc-parallax-far 22s linear infinite alternate; }
+.scene[data-sched="adventure"] .sc-mid { animation: sc-parallax-mid 14s linear infinite alternate; }
+.scene[data-sched="adventure"] .sc-fallp { animation-duration: 4s; }
+
+@keyframes sc-walk { 0%, 100% { transform: translateY(0) rotate(0deg); } 25% { transform: translateY(-1.2px) rotate(2deg); } 75% { transform: translateY(-1.2px) rotate(-2deg); } }
+@keyframes sc-swing { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+@keyframes sc-parallax-far { from { transform: translateX(0); } to { transform: translateX(-26px); } }
+@keyframes sc-parallax-mid { from { transform: translateX(0); } to { transform: translateX(-52px); } }
 @keyframes sc-drift { from { transform: translateX(-30px); } to { transform: translateX(60px); } }
 @keyframes sc-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.03); } }
 @keyframes sc-rise { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: 0.9; } 100% { transform: translateY(-26px); opacity: 0; } }

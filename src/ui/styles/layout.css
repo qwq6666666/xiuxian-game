@@ -122,6 +122,25 @@
 .hunt-bar.me b { background: var(--good); }
 .hunt-bar.hit i::after { content: ""; position: absolute; inset: 0; background: var(--text); animation: hunt-impact var(--dur-fast) var(--ease) forwards; }
 .hunt-damage { position: absolute; right: var(--sp-1); top: 50%; color: var(--bad); font-style: normal; font-weight: bold; pointer-events: none; animation: hunt-damage var(--dur-slow) var(--ease) forwards; }
+/* 打擊感：怪受創 → 怪的圖左右震動並閃亮；自己受創 → 整張卡震動並閃紅框。傷害 30% 以上震幅加倍 */
+#huntArt, #huntModal .card { --shake: var(--shake-base); }
+#huntArt.strike-heavy, #huntModal .card.strike-heavy { --shake: var(--shake-heavy); }
+#huntArt.strike-foe { animation: strike-foe var(--dur-slow) var(--ease); }
+#huntModal .card.strike-me { animation: strike-me var(--dur-slow) var(--ease); }
+@keyframes strike-foe {
+  0% { transform: none; filter: none; }
+  12% { transform: translateX(calc(var(--shake) * -1)); filter: brightness(1.9); }
+  30% { transform: translateX(var(--shake)); filter: brightness(1.4); }
+  55% { transform: translateX(calc(var(--shake) * -0.4)); filter: none; }
+  100% { transform: none; filter: none; }
+}
+@keyframes strike-me {
+  0% { transform: none; border-color: var(--bad); }
+  15% { transform: translateX(var(--shake)); border-color: var(--bad); }
+  35% { transform: translateX(calc(var(--shake) * -1)); }
+  60% { transform: translateX(calc(var(--shake) * 0.4)); }
+  100% { transform: none; border-color: var(--line); }
+}
 @keyframes hunt-impact { from { opacity: 0.9; transform: scaleX(0.18); } to { opacity: 0; transform: scaleX(1); } }
 @keyframes hunt-damage { from { opacity: 1; transform: translateY(-25%); } to { opacity: 0; transform: translateY(-150%); } }
 

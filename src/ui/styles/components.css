@@ -27,6 +27,10 @@
 .event .choices > :nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
 .event .choices > :nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
 .event .choices > :nth-child(n + 5) { animation-delay: calc(var(--stagger) * 4); }
+/* 選定的選項亮起、其餘淡出，之後才結算 */
+.event .choices.picked button { pointer-events: none; transition: opacity var(--dur-base) var(--ease); opacity: 0.35; animation: none; }
+.event .choices.picked button.pick { opacity: 1; border-color: var(--accent); color: var(--accent); }
+.event .choices.picked .choice-row { animation: none; }
 .nation-choices { flex-direction: row; flex-wrap: wrap; }
 .nation-choices button { min-width: 4.5em; align-items: center; }
 .choices button.active strong::before { content: "✓ "; }

@@ -12,6 +12,7 @@ import {
   currentFailLoss,
   pillAvailable,
 } from "../core/breakthrough";
+import { haptic } from "./haptics";
 import { canHunt, fleeChance, actionHit, monsterOf, powerRatio, type HuntChoice, huntTalisman } from "../core/encounter";
 import type { GameState } from "../core/state";
 import { atBottleneck } from "../core/tick";
@@ -174,7 +175,13 @@ export function createPanels(ctx: PanelContext): Panels {
     el.classList.remove(cls);
     void el.offsetWidth;
     el.classList.add(cls);
-    el.addEventListener("animationend", () => el.classList.remove(cls), { once: true });
+    // 子元素的動畫結束也會冒泡上來，只認自己這個元素的
+    const done = (ev: AnimationEvent): void => {
+      if (ev.target !== el) return;
+      el.classList.remove(cls);
+      el.removeEventListener("animationend", done);
+    };
+    el.addEventListener("animationend", done);
   }
 
   /** 數值變動浮字：放在 anchor 內，aria-hidden，動畫結束自行移除 */
@@ -255,6 +262,23 @@ export function createPanels(ctx: PanelContext): Panels {
     e.huntBars.innerHTML = bar(m.name, h.monsterHp, previous?.monsterHp, "foe") + bar("你", h.myHp, previous?.myHp, "me");
     for (const fill of Array.from(e.huntBars.querySelectorAll<HTMLElement>(".hunt-bar.hit b"))) {
       requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = `${fill.dataset.next}%`)));
+    }
+    // 打擊感：怪受創時怪的圖震動並閃白，自己受創時整張卡震動並閃紅框；傷害大時震幅加倍
+    if (previous) {
+      const foeLoss = previous.monsterHp - h.monsterHp;
+      const myLoss = previous.myHp - h.myHp;
+      const heavy = (loss: number): string => (loss >= 0.3 ? "strike-heavy" : "");
+      if (foeLoss > 0) {
+        e.huntArt.classList.toggle("strike-heavy", heavy(foeLoss) !== "");
+        flash("#huntArt", "strike-foe");
+        haptic("good");
+      }
+      if (myLoss > 0) {
+        const card = e.huntModal.querySelector<HTMLElement>(".card");
+        card?.classList.toggle("strike-heavy", heavy(myLoss) !== "");
+        flash("#huntModal .card", "strike-me");
+        haptic("bad");
+      }
     }
     lastHuntHealth = { monsterId: h.monsterId, monsterHp: h.monsterHp, myHp: h.myHp };
     const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";

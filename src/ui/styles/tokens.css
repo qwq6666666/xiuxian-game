@@ -72,6 +72,9 @@
   --dur-press: 90ms; /* 按下去的回饋 */
   --press-scale: 0.97; /* 按下時縮小的比例 */
   --stagger: 45ms; /* 一組項目依序進場的間隔 */
+  --shake: 5px; /* 受擊震動的實際幅度；元素各自從 --shake-base 或 --shake-heavy 取值 */
+  --shake-base: 5px;
+  --shake-heavy: 11px;
 
   /* 層級 */
   --z-menu: 5;
