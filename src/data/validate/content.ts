@@ -7,6 +7,8 @@ import {
   type EndsLife,
   type BreakthroughRule,
   type GameConfig,
+  type AchievementCondition,
+  type AchievementDef,
   type GoalCondition,
   type GoalDef,
   type GoalTilt,
@@ -468,6 +470,43 @@ export function validateGoals(raw: unknown, file = "goals.json"): GoalDef[] {
   uniqueIds(goals, file);
   if (goals.length === 0) fail(file, "（根）", "不可為空");
   return goals;
+}
+
+export function validateAchievements(raw: unknown, file = "achievements.json"): AchievementDef[] {
+  const list_ = list(raw, file).map((r, i): AchievementDef => {
+    const o = obj(r, `${file} 第 ${i + 1} 筆`);
+    const id = str(o, "id", `${file} 第 ${i + 1} 筆`);
+    const w = `${file} 第 ${i + 1} 筆（${id}）`;
+    const co = obj(o.condition, `${w} 欄位 condition`);
+    const cw = `${w} 欄位 condition`;
+    const kind = str(co, "kind", cw);
+    const count = (): number => num(co, "count", cw, { gt: 0, integer: true });
+    let condition: AchievementCondition;
+    switch (kind) {
+      case "lives": case "clears": case "originsCleared": case "yuanying": case "huashen": case "fragments":
+      case "bestiarySeen": case "bestiaryWins": case "met": case "goalsDone": case "talentLevels":
+        condition = { kind, count: count() };
+        break;
+      case "reached":
+        condition = { kind, key: str(co, "key", cw) };
+        break;
+      case "sectRank":
+        condition = { kind, rank: num(co, "rank", cw, { gt: 0, integer: true }) };
+        break;
+      case "fastest": {
+        const ending = str(co, "ending", cw);
+        if (ending !== "cleared" && ending !== "yuanying" && ending !== "huashen") return fail(cw, "ending", `必須是 cleared、yuanying、huashen 之一，目前為 ${ending}`);
+        condition = { kind, ending, years: num(co, "years", cw, { gt: 0, integer: true }) };
+        break;
+      }
+      default:
+        return fail(cw, "kind", `不是已知的成就條件：${kind}`);
+    }
+    return { id, name: str(o, "name", w), desc: str(o, "desc", w), group: str(o, "group", w), condition };
+  });
+  uniqueIds(list_, file);
+  if (list_.length === 0) fail(file, "（根）", "不可為空");
+  return list_;
 }
 
 export function validateEras(raw: unknown, file = "eras.json"): string[] {

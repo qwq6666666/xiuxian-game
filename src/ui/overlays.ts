@@ -3,6 +3,7 @@ import { fillSlots, type SlotValues } from "../data/slots";
 import type { GameData } from "../data/types";
 import { revealIn } from "./dom";
 import { keepView } from "./keepview";
+import { achievementStatuses } from "../core/character/achievements";
 import { acquaintanceRows, bestiarySummary, collectionSummary } from "./format";
 import type { MapTarget } from "./map/mapinfo";
 import type { UiHandlers } from "./types";
@@ -283,6 +284,31 @@ export function createOverlays(ctx: OverlayContext): Overlays {
         desc.textContent = row.desc;
         art.append(desc);
       }
+      box.append(art);
+    }
+    const ach = achievementStatuses(state.meta, data);
+    const achHead = document.createElement("h3");
+    achHead.textContent = `成就　${ach.filter((a) => a.done).length}／${ach.length}`;
+    box.append(achHead);
+    let achGroup = "";
+    for (const a of ach) {
+      if (a.def.group !== achGroup) {
+        achGroup = a.def.group;
+        const gh = document.createElement("h4");
+        gh.textContent = achGroup;
+        box.append(gh);
+      }
+      const art = document.createElement("article");
+      art.className = a.done ? "fragment" : "fragment missing";
+      const name = document.createElement("strong");
+      name.textContent = a.done ? `✓ ${a.def.name}` : a.def.name;
+      const note = document.createElement("small");
+      note.className = "changes";
+      note.textContent = a.done ? "已達成" : a.progress ? `${a.progress.now}／${a.progress.target}` : "尚未達成";
+      const desc = document.createElement("p");
+      desc.className = "fragment-text";
+      desc.textContent = a.def.desc;
+      art.append(name, note, desc);
       box.append(art);
     }
     const goalHead = document.createElement("h3");

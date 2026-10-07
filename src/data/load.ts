@@ -1,4 +1,5 @@
 import configJson from "./config.json";
+import achievementsJson from "./achievements.json";
 import goalsJson from "./goals.json";
 import eventsJson from "./events.json";
 import base2EventsJson from "./events/base2.json";
@@ -41,6 +42,7 @@ import type { GameData } from "./types";
 import {
   validateConfig,
   validateAcquaintances,
+  validateAchievements,
   validateEras,
   validateEventFiles,
   validateFragments,
@@ -121,6 +123,7 @@ export const gameData: GameData = validateGameData({
   worldRelations: validateWorldRelations(worldRelationsJson),
   worldEffects: validateWorldEffects(worldEffectsJson),
   goals: validateGoals(goalsJson),
+  achievements: validateAchievements(achievementsJson),
   sects: validateSects(sectsJson),
   tribulation: validateTribulation(tribulationJson),
   eras: validateEras(erasJson),

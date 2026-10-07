@@ -929,6 +929,32 @@ export interface GoalDef {
   tilt?: GoalTilt;
 }
 
+/** 成就的達成條件（M65）：全由跨世收藏（meta）算出，不新增任何追蹤，也不影響任何數值 */
+export type AchievementCondition =
+  | { kind: "lives"; count: number }
+  | { kind: "reached"; key: string }
+  | { kind: "clears"; count: number }
+  | { kind: "originsCleared"; count: number }
+  | { kind: "yuanying"; count: number }
+  | { kind: "huashen"; count: number }
+  | { kind: "fragments"; count: number }
+  | { kind: "bestiarySeen"; count: number }
+  | { kind: "bestiaryWins"; count: number }
+  | { kind: "met"; count: number }
+  | { kind: "sectRank"; rank: number }
+  | { kind: "goalsDone"; count: number }
+  | { kind: "talentLevels"; count: number }
+  | { kind: "fastest"; ending: "cleared" | "yuanying" | "huashen"; years: number };
+
+export interface AchievementDef {
+  id: string;
+  name: string;
+  desc: string;
+  /** 分組標題，同組排在一起 */
+  group: string;
+  condition: AchievementCondition;
+}
+
 /** 夙願偏向的事件：直接點名、要求或設定某旗標、或與某位故人相關，符合任一項即算 */
 export interface GoalTilt {
   eventIds?: string[];
@@ -953,6 +979,7 @@ export interface GameData {
   text: TextData;
   names: NameData;
   fragments: FragmentData;
+  achievements: AchievementDef[];
   worldNames: WorldNames;
   map: MapData;
   mapart: MapArtData;

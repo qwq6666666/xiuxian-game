@@ -1949,3 +1949,13 @@ M6 事件擴充到 40 個之後重跑（種子 1–4）：
 - 日誌：只有年底真的有變化（給靈石、風險命中）才寫 `stance` 日誌，避免每年一則洗掉 100 筆的日誌上限。
 - 副作用：`monthlyGain` 同時被遇怪、秘境通關與運功獎勵引用，行止倍率會一併作用，視為「今年的修為」，在上限檢查內。
 - sim：新增 `stance:<id>` 策略（同 mixed，每年固定選指定行止）。300 局、16 世：mixed 首次金丹第 9 世、通關 89%；穩固根基第 8 世、92%；尋訪機緣第 10 世、81%；經營生計第 9 世、89%；冒險叩關第 8 世、93%。沒有任何行止壓倒性地划算，也都不低於第 7 世。穩固根基與冒險叩關略快（約 1 世），代價是事件或風險（sim 不計事件的內容價值）。
+
+## 64. 成就（M65，不動存檔，已完成）
+
+- **目的**：給跨世的長期目標，補第一世偏被動、之後只有「下一個境界」的空窗。只收藏，不給道韻、不動任何數值。
+- **資料**：`src/data/achievements.json`，每筆有 `id`、`name`、`desc`、`group` 與 `condition`。條件全由 `meta`（跨世收藏）算出，**不新增任何存檔欄位**，所以 `SAVE_VERSION` 不變。
+- **條件種類**：`lives`（世數）、`reached`（首次達成某階段，鍵同 `meta.reached`）、`clears`／`originsCleared`／`yuanying`／`huashen`（終局次數）、`fragments`、`bestiarySeen`／`bestiaryWins`、`met`（故人）、`sectRank`、`goalsDone`、`talentLevels`、`fastest`（某終局最快年齡不超過 N 歲）。新增種類要改 `types.ts`、`validate/content.ts` 與 `core/character/achievements.ts` 的 `measure`。
+- **計算**：`achievementStatuses(meta, data)` 回傳每項是否達成；計數型條件帶進度（`now／target`）。
+- **介面**：收藏視窗在「故人」與「目標收藏」之間多一區「成就 N／M」，依群組（輪迴、修為、見聞、歷練）列出；未達成的計數型顯示進度。
+- **驗證**：`tests/core/achievements.test.ts`（判定、進度上限、各項目標不超過遊戲內容總量、格式檢查）。
+- **之後可做**：達成當下的提示、一生回顧列出本世新成就（需要記下舊狀態，會動存檔，要先登記預約表）。

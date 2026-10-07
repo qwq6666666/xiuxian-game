@@ -1,0 +1,35 @@
+[
+  { "id": "first_life", "name": "初入輪迴", "desc": "走完第一世。", "group": "輪迴", "condition": { "kind": "lives", "count": 1 } },
+  { "id": "lives_10", "name": "十世過客", "desc": "走完十世。", "group": "輪迴", "condition": { "kind": "lives", "count": 10 } },
+  { "id": "lives_30", "name": "三十世浮沉", "desc": "走完三十世。", "group": "輪迴", "condition": { "kind": "lives", "count": 30 } },
+  { "id": "talents_10", "name": "輪迴有得", "desc": "輪迴天賦累計升到十級。", "group": "輪迴", "condition": { "kind": "talentLevels", "count": 10 } },
+  { "id": "talents_30", "name": "宿慧深種", "desc": "輪迴天賦累計升到三十級。", "group": "輪迴", "condition": { "kind": "talentLevels", "count": 30 } },
+
+  { "id": "lianqi_5", "name": "練氣五層", "desc": "第一次修到練氣五層。", "group": "修為", "condition": { "kind": "reached", "key": "lianqi:4" } },
+  { "id": "lianqi_9", "name": "練氣圓滿", "desc": "第一次把練氣九層修到頭。", "group": "修為", "condition": { "kind": "reached", "key": "lianqi:8" } },
+  { "id": "zhuji_1", "name": "築基有成", "desc": "第一次築基。", "group": "修為", "condition": { "kind": "reached", "key": "zhuji:0" } },
+  { "id": "zhuji_3", "name": "築基後期", "desc": "第一次修到築基後期。", "group": "修為", "condition": { "kind": "reached", "key": "zhuji:2" } },
+  { "id": "jindan_1", "name": "金丹一粒", "desc": "第一次凝出金丹。", "group": "修為", "condition": { "kind": "reached", "key": "jindan:0" } },
+  { "id": "jindan_3", "name": "丹成圓滿", "desc": "第一次修到金丹後期。", "group": "修為", "condition": { "kind": "reached", "key": "jindan:2" } },
+  { "id": "yuanying_1", "name": "元嬰出竅", "desc": "第一次結成元嬰。", "group": "修為", "condition": { "kind": "reached", "key": "yuanying:0" } },
+  { "id": "clears_5", "name": "五度登頂", "desc": "累計通關五次。", "group": "修為", "condition": { "kind": "clears", "count": 5 } },
+  { "id": "origins_all", "name": "四種出身", "desc": "四種出身各通關一次。", "group": "修為", "condition": { "kind": "originsCleared", "count": 4 } },
+  { "id": "yuanying_3", "name": "三度結嬰", "desc": "累計結嬰三次。", "group": "修為", "condition": { "kind": "yuanying", "count": 3 } },
+  { "id": "huashen_1", "name": "化神一念", "desc": "第一次化神大成。", "group": "修為", "condition": { "kind": "huashen", "count": 1 } },
+  { "id": "fast_clear", "name": "早登仙途", "desc": "一百歲以前通關。", "group": "修為", "condition": { "kind": "fastest", "ending": "cleared", "years": 100 } },
+
+  { "id": "frag_3", "name": "拾得殘卷", "desc": "集到三份殘卷。", "group": "見聞", "condition": { "kind": "fragments", "count": 3 } },
+  { "id": "frag_8", "name": "半部舊史", "desc": "集到八份殘卷。", "group": "見聞", "condition": { "kind": "fragments", "count": 8 } },
+  { "id": "frag_14", "name": "殘卷集成", "desc": "集滿十四份殘卷。", "group": "見聞", "condition": { "kind": "fragments", "count": 14 } },
+  { "id": "folk_1", "name": "故人相逢", "desc": "遇見一位故人。", "group": "見聞", "condition": { "kind": "met", "count": 1 } },
+  { "id": "folk_2", "name": "兩位故人", "desc": "兩位故人都遇見過。", "group": "見聞", "condition": { "kind": "met", "count": 2 } },
+  { "id": "sect_1", "name": "拜入山門", "desc": "入宗為外門弟子。", "group": "見聞", "condition": { "kind": "sectRank", "rank": 1 } },
+  { "id": "sect_3", "name": "執事有成", "desc": "在宗門裡升到執事。", "group": "見聞", "condition": { "kind": "sectRank", "rank": 3 } },
+  { "id": "goals_4", "name": "有志者", "desc": "達成過四種不同的目標。", "group": "見聞", "condition": { "kind": "goalsDone", "count": 4 } },
+  { "id": "goals_8", "name": "事事皆成", "desc": "八種目標都達成過。", "group": "見聞", "condition": { "kind": "goalsDone", "count": 8 } },
+
+  { "id": "beast_5", "name": "山野見聞", "desc": "遇過五種怪物。", "group": "歷練", "condition": { "kind": "bestiarySeen", "count": 5 } },
+  { "id": "beast_15", "name": "百怪圖錄", "desc": "遇過十五種怪物。", "group": "歷練", "condition": { "kind": "bestiarySeen", "count": 15 } },
+  { "id": "wins_20", "name": "初試鋒芒", "desc": "累計勝過二十場。", "group": "歷練", "condition": { "kind": "bestiaryWins", "count": 20 } },
+  { "id": "wins_100", "name": "久經歷練", "desc": "累計勝過一百場。", "group": "歷練", "condition": { "kind": "bestiaryWins", "count": 100 } }
+]
