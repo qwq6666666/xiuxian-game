@@ -63,11 +63,11 @@
 .cave-schedules[hidden] { display: none; }
 .cave-schedules button { min-height: var(--tap); padding: 0 var(--sp-3); }
 
-/* 桌面：直式場景放左欄，狀態與進度排右欄 */
+/* 桌面：直式場景固定在左欄，其餘內容（狀態、日誌、側欄）全排右欄；捲動時場景一直在視線內 */
 @media (min-width: 900px) {
-  .status:has(> .cave:not([hidden])) { display: grid; grid-template-columns: minmax(300px, 36%) 1fr; column-gap: var(--sp-4); align-items: start; }
-  .status:has(> .cave:not([hidden])) > .cave { grid-column: 1; grid-row: 1 / span 8; width: 100%; max-height: 78vh; margin: 0; }
-  .status:has(> .cave:not([hidden])) > :not(.cave):not(.scene) { grid-column: 2; }
+  #stage:has(> .cave:not([hidden])) { display: grid; grid-template-columns: minmax(320px, 36%) minmax(0, 1fr); column-gap: var(--sp-4); align-items: start; }
+  #stage:has(> .cave:not([hidden])) > .cave { grid-column: 1; grid-row: 1 / span 30; position: sticky; top: var(--sp-3); width: min(100%, calc(88vh * 0.75)); max-height: 88vh; margin: 0; }
+  #stage:has(> .cave:not([hidden])) > :not(.cave):not(.modal):not(#live) { grid-column: 2; }
 }
 
 /* 香爐的煙絲輕輕搖 */

@@ -427,8 +427,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     // 桌面：日誌在左、側欄在右；手機（≤640px）改單欄，日誌在前、分頁區塊在後。
     // 側欄分四頁（修行、煉製、行囊、角色），一次只顯示一頁；分頁列在手機固定在畫面底部。
     stageEl.innerHTML = `
+      ${caveHtml()}
       <section class="status" aria-label="狀態">
-        ${sceneHtml()}${caveHtml()}
+        ${sceneHtml()}
         <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="focusBtn" type="button" class="focus-btn" hidden></button><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
         <div id="yearPips" class="year-pips" aria-hidden="true">${"<i></i>".repeat(12)}</div>
