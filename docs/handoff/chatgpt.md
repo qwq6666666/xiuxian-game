@@ -27,6 +27,33 @@
 - 沒驗證：沒有靠實際戰鬥打出通關與敗退（兩種外觀以暫時預覽入口驗收，資料形狀直接使用正式 `LogEntry`）；沒有另跑一次開著自動抉擇的秘境，也沒有切換作業系統的 reduced-motion 或真機觸覺。自動抉擇沿用正式最新日誌路徑，reduced-motion 沿用 `base.css` 的全域關閉規則。
 - 下一步／Claude 注意：請審 `cb0b01b` 後合併到 M47；本段不需要新欄位，不動存檔、數值、事件或 sim。四座名稱仍維持「試煉一～四」，等使用者審 GDD 54.6 的 WORLD.md 命名提案。
 
+## 2026-10-07：煉製分類分頁推進後保留驗證
+
+- 分支與 commit：`ai/chatgpt`，`13bdef9`。
+- 結果：現有 `craftTab` 是 `createPanels` 閉包狀態，`alchemyKey` 變動而重建煉製面板時會用它恢復 `aria-selected` 與各 pane 的 `hidden`，所以遊戲推進後**不會跳回丹藥**；本項不需改正式 UI 程式。
+- 自動驗證：新增允許範圍內的 `tests/craft-tabs-ui.test.ts`；先選「符籙」，再推進一個月並改變靈草數量以保證 `alchemyKey` 改變、面板確實重建，重建後仍選中符籙。`npx tsc --noEmit`、`npm run test`（61 個測試檔、680 項測試）、`npm run build` 全過；`dist/index.html` 1216KB，`git diff --check` 通過。
+- 瀏覽器驗證：本機 Vite，先在桌面切到「符籙」並用 ×4／自動抉擇讓遊戲從 131 歲 10 個月推進到 132 歲 10 個月，符籙仍為 `aria-selected=true`；切到 375×812 後繼續推進到 133 歲 6 個月，仍維持符籙。375px 時 `innerWidth` 375、文件 `scrollWidth` 360。
+- 沒驗證：這份實際存檔材料不足，沒有在開爐進度每月變化時重畫；新增測試以材料數量改變強制走同一個 `alchemyKey` 重畫分支。本項沒有改數值、事件、間隔或存檔，未跑 sim。
+- 下一步／Claude 注意：若日後 `createPanels` 在每個 render 重建，或把 `craftTab` 搬進 `renderAlchemy` 區域變數，這個測試會抓到分頁重設的退步。
+
+## 2026-10-07：特殊原因收關不再併入例行閉關
+
+- 分支與 commit：`ai/chatgpt`，`a58c19b`。
+- 改了什麼與為什麼：`collapseRoutineRetreats` 現在只有 `stop === "elapsed"` 的一般閉關可收合；因瓶頸或壽元收關的見聞會保留完整原文，並中斷前後兩段收合，玩家不會再漏看「修為已至圓滿」或壽元將盡的提示。只改顯示層，`state.log` 不動。
+- 自動驗證：新增允許範圍內的 `tests/logcollapse-stop-ui.test.ts`，同時覆蓋 `bottleneck` 與 `lifespan`。`npx tsc --noEmit`、`npm run test`（60 個測試檔、679 項測試）、`npm run build` 全過；`dist/index.html` 1216KB，`git diff --check` 通過。
+- 瀏覽器驗證：本機 Vite、速度 ×1。桌面實看「九十七至九十八歲，閉關兩次」之後完整顯示九十六歲瓶頸收關句，再另起「九十四至九十五歲，閉關兩次」；375×812 同樣保留全文，`innerWidth` 375、文件 `scrollWidth` 360。臨時顯示資料已移除後才跑最終完整檢查。
+- 沒驗證：沒有實際等待一輪離線閉關剛好停在瓶頸或壽元；核心已產生的兩種 `stop` 資料形狀由新增測試直接覆蓋。本項未跑 sim。
+- 下一步／Claude 注意：`elapsed` 的偶得句仍依原規則獨立顯示；任何未來新增的特殊 `stop` 值也會安全地保留原文，不會自動併入摘要。
+
+## 2026-10-07：M46 疲勞與突破成功率明細介面
+
+- 分支與 commit：`ai/chatgpt`，`08b9ef9`。
+- 改了什麼與為什麼：角色頁「當前數值 → 明細」在 `fatigueMult` 小於 1 時新增「閉關疲勞」一行，顯示倍率，以及「連續閉關已 N 年，出門走走可回復」；未疲勞時不佔版面。突破區改用 `breakthroughRateParts`，只列非零的基礎、悟性、丹藥、天賦、心得，並把心得註明為「失敗累積的心得」；勾選突破丹藥時沿用既有 change handler 即時重算。
+- 自動驗證：新增允許範圍內的 `tests/m46-ui.test.ts`，涵蓋疲勞顯示門檻／倍率／年數與突破來源拆解／丹藥即時更新。`npx tsc --noEmit`、`npm run test`（59 個測試檔、678 項測試）、`npm run build` 全過；`dist/index.html` 1216KB，`git diff --check` 通過。
+- 瀏覽器驗證：本機 Vite、速度 ×1。桌面實看築基閉關 12 年的「閉關疲勞 ×0.95」與回復提示；突破明細實看未服丹為「基礎 30%＋悟性 4%＋心得 8%＝42%」，勾築基丹後即時加入「丹藥 20%」並變成 62%。375×812 再看兩區，`innerWidth` 375、文件 `scrollWidth` 360，無橫向溢出。驗收用的 query 預覽鉤子已移除後才跑最終完整檢查。
+- 沒驗證：未以正常遊玩等待築基閉關超過十年或連續突破失敗兩次；資料形狀與互動路徑由新增測試覆蓋。本項不改數值、事件、間隔或存檔，未跑 sim。
+- 下一步／Claude 注意：疲勞提示的 N 依約定取 `Math.floor(retreatStreak / 12)`，所以倍率剛開始下降時可能仍顯示整年數；成功率各項都取整數百分比，總數使用核心已封頂的 `total`。
+
 ## 2026-10-07：閉關日誌與壽終回顧文案審稿
 
 - 分支與 commit：`ai/chatgpt`，（本筆文案審稿提交）。

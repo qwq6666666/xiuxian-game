@@ -1,5 +1,6 @@
 // 「當前數值」面板的顯示資料：把影響修煉速度的每一項乘數攤開，只供顯示，全由核心函式與資料算出。
 import { currentBreakthroughRate, currentFailLoss } from "../core/breakthrough";
+import { fatigueMult } from "../core/fatigue";
 import { talentBonus } from "../core/formulas";
 import { artifactBonus } from "../core/forge";
 import { methodEffect, methodOf } from "../core/method";
@@ -36,6 +37,11 @@ export function statPanel(state: GameState, data: GameData): StatPanel {
     { label: `境界（${realm.name}）`, value: times(realm.cultivationMult) },
     { label: `安排（${sched.name}）`, value: times(sched.cultivationMult) },
   ];
+  const fatigue = fatigueMult(state, sched, data);
+  if (fatigue < 1) {
+    const years = Math.floor(state.retreatStreak / 12);
+    breakdown.push({ label: "閉關疲勞", value: `${times(fatigue)}　連續閉關已 ${years} 年，出門走走可回復` });
+  }
   const extras: [string, number][] = [
     ["出身", state.cultivationBonus],
     ["輪迴天賦", talentBonus(state.meta, data.talents, "cultivation")],
