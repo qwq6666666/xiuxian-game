@@ -55,6 +55,8 @@ export interface GameConfig {
   backgroundMinSeconds: number;
   /** 兩個影格相隔超過這麼多秒，視為畫面被凍結，改用離線規則補算（M40） */
   frameGapSeconds: number;
+  /** 剩餘壽元不到這麼多個月時，時間自動暫停一次，讓玩家來得及做最後的決定 */
+  holdLifespanMonths: number;
   /** 離線時壽元剩餘低於此比例就停止閉關 */
   offlineStopLifespanRatio: number;
   /** 突破心得（M46）：每次失敗累積一點，下次成功率增加這麼多（0–1） */

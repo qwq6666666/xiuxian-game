@@ -96,7 +96,8 @@ describe("長通知", () => {
   it("保留 status 語意、提供關閉鈕，文字可換行且不擠掉按鈕", () => {
     expect(renderText).toMatch(/<div id="notice" role="status" hidden>/);
     expect(renderText).toContain('id="noticeClose" type="button" aria-label="關閉提示"');
-    expect(renderText).toMatch(/#noticeClose[^\n]+noticeEl\.hidden = true/);
+    expect(renderText).toMatch(/finishNotice = [^]*?noticeEl\.hidden = true/);
+    expect(renderText).toMatch(/#noticeClose[^\n]+finishNotice/);
     expect(layoutText).toMatch(/#noticeText\s*\{[^}]*flex:\s*1 1 20em[^}]*overflow-wrap:\s*anywhere/);
     expect(layoutText).toMatch(/#notice button\s*\{[^}]*flex:\s*0 0 auto/);
   });

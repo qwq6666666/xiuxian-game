@@ -21,11 +21,26 @@ import { joinSect, leaveSect, promoteSect } from "./core/sect";
 import { beginTravel } from "./core/travel";
 import { gameData as data } from "./data/load";
 import { formatOffline } from "./ui/format";
+import { holdFor } from "./ui/hold";
 import { mountUi } from "./ui/render";
 
 const SAVE_KEY = "xiuxian-save";
 // 最後一次存檔的現實時間，離線進度由此計算（不放進存檔本體，core 不碰時間）
 const SEEN_KEY = "xiuxian-last-seen";
+// 「關鍵時刻暫停」是介面偏好，不進存檔；預設開
+const HOLD_KEY = "xiuxian-hold";
+
+function loadHoldPref(): boolean {
+  try {
+    return localStorage.getItem(HOLD_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+let holdEnabled = loadHoldPref();
+// 目前暫停中的節點，以及玩家已按過「繼續」的節點
+let holding: string | null = null;
+const resumed = new Set<string>();
 
 function newGame(): GameState {
   // 種子由外部（這裡）決定，core 不讀時間
@@ -98,6 +113,14 @@ function update(next: GameState, throttled = false): void {
 
 const ui = mountUi(document.getElementById("app")!, data, {
   onSpeed: (speed) => update({ ...state, speed }),
+  onHold(enabled) {
+    holdEnabled = enabled;
+    try {
+      localStorage.setItem(HOLD_KEY, enabled ? "on" : "off");
+    } catch {
+      // 忽略
+    }
+  },
   onReroll: () => update(reroll(state, data)),
   onRename: (name) => update(renameCharacter(state, name, data)),
   onStart: () => update(startLife(state, data)),
@@ -159,7 +182,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
     ui.notice("");
     update(newGame());
   },
-});
+}, holdEnabled);
 ui.notice(notice);
 ui.render(state);
 
@@ -184,7 +207,15 @@ function frame(now: number): void {
   if (dt > data.config.frameGapSeconds * 1000) {
     catchUp(dt);
   } else if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null && state.encounter === null) {
-    acc += msToMonths(dt, state.speed, data.config.msPerMonth);
+    const hold = holdEnabled ? holdFor(state, data) : null;
+    if (hold !== null && !resumed.has(hold.key)) {
+      // 關鍵節點：停住時間，等玩家按「繼續」或關掉提示才放行，來不及反應不再是玩家的錯
+      if (holding !== hold.key) {
+        holding = hold.key;
+        ui.notice(hold.message, { label: "繼續", run: () => { resumed.add(hold.key); holding = null; last = performance.now(); } });
+      }
+      acc = 0;
+    } else acc += msToMonths(dt, state.speed, data.config.msPerMonth);
     const months = Math.min(Math.floor(acc), data.config.maxCatchUpMonths);
     if (months > 0) {
       acc -= Math.floor(acc); // 超過補算上限的部分直接捨棄

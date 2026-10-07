@@ -29,6 +29,7 @@
   "offlineMinSeconds": 60,
   "backgroundMinSeconds": 5,
   "frameGapSeconds": 2,
+  "holdLifespanMonths": 12,
   "offlineStopLifespanRatio": 0.1,
   "breakthroughStudyBonus": 0.04,
   "breakthroughStudyCap": 0.2,

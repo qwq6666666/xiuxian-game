@@ -127,7 +127,7 @@ export function createReviewModal(
       for (const [k, v] of [
         ["出身", origin?.name ?? review.originId],
         ["靈根", root?.name ?? review.spiritRootId],
-        ["突破次數", `${review.breakthroughs} 次`],
+        ["成功突破", `${review.breakthroughs} 次`],
       ] as const) {
         const row = el("div");
         row.append(el("dt", undefined, k), el("dd", undefined, v));

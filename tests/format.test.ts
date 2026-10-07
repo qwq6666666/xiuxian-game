@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LOG_KINDS } from "../src/core/state";
 import { gameData } from "../src/data/load";
-import { choiceBlockReason, formatAgeZh, formatChanges, formatLogEntry, formatOffline, toChineseNumber } from "../src/ui/format";
+import { choiceBlockReason, choiceSureCost, formatAgeZh, formatChanges, formatLogEntry, formatOffline, toChineseNumber } from "../src/ui/format";
 
 describe("format", () => {
   it("中文數字", () => {
@@ -148,5 +148,17 @@ describe("離線回歸提示", () => {
     expect(formatOffline({ months: 24, gained: 10, stop: "bottleneck" })).toBe("閉關 2 年，修為增加 10，已至瓶頸。");
     expect(formatOffline({ months: 5, gained: 10, stop: "lifespan" })).toContain("壽元所剩不多");
     expect(formatOffline({ months: 0, gained: 0, stop: "elapsed" })).toBe("");
+  });
+});
+
+describe("choiceSureCost", () => {
+  const out = (stones: number, lifespan?: number) => ({ weight: 1, text: "x", effects: { spiritStones: stones, lifespan } });
+  it("所有結果都扣靈石時列出最小值", () => {
+    expect(choiceSureCost({ text: "a", outcomes: [out(-8)] })).toEqual(["必付 8 靈石"]);
+    expect(choiceSureCost({ text: "a", outcomes: [out(-8), out(-3)] })).toEqual(["必付 3 靈石"]);
+  });
+  it("有結果不扣就不顯示", () => {
+    expect(choiceSureCost({ text: "a", outcomes: [out(-8), out(0)] })).toEqual([]);
+    expect(choiceSureCost({ text: "a", outcomes: [out(5)] })).toEqual([]);
   });
 });

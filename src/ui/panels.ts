@@ -357,7 +357,7 @@ export function createPanels(ctx: PanelContext): Panels {
       e.huntTrial.replaceChildren();
       lastTrialFloor = null;
     }
-    e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。" : "勝了有修為與靈石，打不贏可以逃。"}`;
+    e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。三回合內沒打倒對手，整座秘境即止步。" : "勝了有修為與靈石，打不贏可以逃。"}`;
     const pct = (v: number): string => `${Math.round(v * 100)}%`;
     const rows: { choice: HuntChoice; name: string; note: string }[] = [
       { choice: "steady", name: rules.actions.steady.name, note: `命中約 ${pct(actionHit(state, "steady", data))}・傷己較輕` },
@@ -402,7 +402,7 @@ export function createPanels(ctx: PanelContext): Panels {
     e.trialBox.hidden = rows.length === 0 || state.phase !== "living";
     e.trialBox.replaceChildren();
     if (e.trialBox.hidden) return;
-    e.trialBox.append(el("h2", undefined, "秘境"), el("p", "desc", "每世每座只能入一次，進去就要耗上整段時間，過關才有一次性的收穫。"));
+    e.trialBox.append(el("h2", undefined, "秘境"), el("p", "desc", "每世每座只能入一次，進去就要耗上整段時間，過關才有一次性的收穫。每層三回合內沒打倒對手，整座秘境即止步。"));
     for (const { t, reason } of rows) {
       const row = el("div", "trial-row");
       const info = el("div");

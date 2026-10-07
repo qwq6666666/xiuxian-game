@@ -377,6 +377,20 @@ export function choiceOdds(choice: ChoiceDef, attributes: Record<AttributeKey, n
   return pct;
 }
 
+/** 不管結果如何都必付的代價（所有結果都扣的最小值），例如「必付 8 靈石」；沒有則回傳空陣列 */
+export function choiceSureCost(choice: ChoiceDef): string[] {
+  const sure = (pick: (e: ChoiceDef["outcomes"][number]["effects"]) => number | undefined): number => {
+    const losses = choice.outcomes.map((o) => -(pick(o.effects) ?? 0));
+    return Math.min(...losses);
+  };
+  const out: string[] = [];
+  const stones = sure((e) => e.spiritStones);
+  if (stones > 0) out.push(`${stones} 靈石`);
+  const years = sure((e) => e.lifespan);
+  if (years > 0) out.push(`${years} 年壽元`);
+  return out.length > 0 ? [`必付 ${out.join("、")}`] : [];
+}
+
 /** 離線回歸提示，例如「閉關 3 年 2 個月，修為增加 360。」；沒有閉關則回傳空字串 */
 export function formatOffline(summary: OfflineSummary): string {
   if (summary.months <= 0) return "";

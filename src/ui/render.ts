@@ -43,6 +43,7 @@ import { type ArtifactSlot, type GameData } from "../data/types";
 import {
   choiceBlockReason,
   choiceOdds,
+  choiceSureCost,
   eraBorn,
   eraTransition,
   formatChanges,
@@ -63,6 +64,7 @@ export interface UiHandlers {
   onSetWish(goalId: string | null): void;
   onSetNations(count: number): void;
   onSpeed(speed: number): void;
+  onHold(enabled: boolean): void;
   onReset(): void;
   onExport(): void;
   onImport(text: string): void;
@@ -94,7 +96,8 @@ export interface UiHandlers {
 
 export interface Ui {
   render(state: GameState): void;
-  notice(message: string): void;
+  /** action：提示列上多一個按鈕（例如「繼續」）；按它或關閉提示都會執行 */
+  notice(message: string, action?: { label: string; run(): void }): void;
 }
 
 /** 側欄的分頁；每個區塊以 data-tab 歸屬其中一頁 */
@@ -171,7 +174,7 @@ export interface LifeEls {
   marketLink: HTMLButtonElement;
 }
 
-export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers): Ui {
+export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers, holdPref = true): Ui {
   /** 目前的側欄分頁；重建畫面（轉世、匯入）後沿用 */
   let sideTab: SideTab = "play";
   /** 整頁沒有任何可見區塊（例如凡人的「煉製」）時，顯示開放條件並把分頁鈕標成未開放 */
@@ -209,6 +212,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       <div class="bar-left">
         <span class="speeds" role="group" aria-label="流速"></span>
         <label class="auto"><input type="checkbox" id="auto" /> 自動抉擇</label>
+        <label class="auto"><input type="checkbox" id="hold" checked /> 關鍵時刻暫停</label>
       </div>
       <div class="bar-right">
         <button id="codex-open" type="button"></button>
@@ -239,7 +243,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   const noticeEl = root.querySelector<HTMLElement>("#notice")!;
   const noticeText = root.querySelector<HTMLElement>("#noticeText")!;
   const noticeGo = root.querySelector<HTMLButtonElement>("#noticeGo")!;
-  root.querySelector<HTMLButtonElement>("#noticeClose")!.addEventListener("click", () => { noticeEl.hidden = true; });
+  let noticeAction: (() => void) | null = null;
+  const finishNotice = (): void => {
+    noticeEl.hidden = true;
+    const run = noticeAction;
+    noticeAction = null;
+    run?.();
+  };
+  root.querySelector<HTMLButtonElement>("#noticeClose")!.addEventListener("click", finishNotice);
   const speedBox = root.querySelector<HTMLElement>(".speeds")!;
   // 手機左右滑動切換側欄分頁；沒開放的分頁略過，到頭不循環
   onSwipe(stageEl, (dir) => {
@@ -259,6 +270,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   });
   const autoEl = root.querySelector<HTMLInputElement>("#auto")!;
   autoEl.addEventListener("change", () => handlers.onAutoChoice(autoEl.checked));
+  const holdEl = root.querySelector<HTMLInputElement>("#hold")!;
+  holdEl.checked = holdPref;
+  holdEl.addEventListener("change", () => handlers.onHold(holdEl.checked));
 
   // 「更多」選單：點選項、點選單外面或按 Escape 都會收起
   const menuEl = root.querySelector<HTMLDetailsElement>("#menu")!;
@@ -915,10 +929,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           b.type = "button";
           b.disabled = reason !== null;
           const odds = showOdds ? choiceOdds(choice, state.attributes) : [];
-          b.innerHTML = `<strong></strong>${reason || odds.length > 0 ? "<small></small>" : ""}`;
+          const sure = choiceSureCost(choice);
+          const note = reason || ([...sure, odds.length > 0 ? `結果機率約 ${odds.map((p) => `${p}%`).join("／")}` : ""].filter(Boolean).join("　") || null);
+          b.innerHTML = `<strong></strong>${note ? "<small></small>" : ""}`;
           b.querySelector("strong")!.textContent = fillSlots(choice.text, slots);
-          if (reason) b.querySelector("small")!.textContent = reason;
-          else if (odds.length > 0) b.querySelector("small")!.textContent = `結果機率約 ${odds.map((p) => `${p}%`).join("／")}`;
+          if (note) b.querySelector("small")!.textContent = note;
           b.addEventListener("click", () => {
             // 選中的選項亮起、其餘淡出，停一小下再結算，讓「選了什麼」有個落點
             // 已選定、正等結算時，再按任何選項（含鍵盤）一律忽略，不能改掉先前的選擇
@@ -1022,6 +1037,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         veil.play("rebirth", eraTransition(lifeIndex(state), data) || eraBorn(lifeIndex(state), data));
       }
       if (arrivedAt) {
+        noticeAction?.(); // 暫停提示被蓋掉就當作已看過，不讓時間卡死
+        noticeAction = null;
         noticeText.textContent = `已抵達${arrivedAt}。此處的風物，總算不只在圖上。`;
         noticeGo.hidden = true;
         noticeEl.hidden = false;
@@ -1038,10 +1055,17 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         }
       }
     },
-    notice(message) {
+    notice(message, action) {
+      const replaced = noticeAction;
       noticeText.textContent = message;
-      noticeGo.hidden = true;
+      noticeAction = action?.run ?? null;
+      noticeGo.hidden = action === undefined;
+      if (action) {
+        noticeGo.textContent = action.label;
+        noticeGo.onclick = finishNotice;
+      }
       noticeEl.hidden = message === "";
+      replaced?.();
     },
   };
   renderRef = (state) => ui.render(state);
