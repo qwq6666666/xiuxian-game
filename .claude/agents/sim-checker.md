@@ -14,19 +14,27 @@ tools: Bash, Read, Grep, Glob
 
 ## 要跑的檢查
 
+指令格式：`npm run sim -- <場數> <種子> <世數> <策略>`。AGENTS.md 寫的 `1|16` 是「世數分別用 1 和 16 各跑一次」，**不要**把 `|` 原樣貼進 shell（會被當成管線，輸出全是 NaN）。
+
 依序執行（`post` 約 30 秒，其他各自較短），每個都記下第 13 節對照結果：
 
-1. `npm run sim -- 300 1 1|16 simple`
-2. 同參數 `mixed`
-3. `npm run sim -- 300 1 1|16 ...` 改成 `40 post` 的形式（照 AGENTS.md 寫的 `... 40 post`）
-4. 回歸檢查：`herb`、`wander`、`alchemy`
-5. 疊加上限檢查：`forge`、`hunt`、`trial`、`method:<id>`（每個功法都跑）
+1. `npm run sim -- 300 1 1 simple`、`npm run sim -- 300 1 16 simple`
+2. 同上，策略改 `mixed`
+3. `npm run sim -- 300 1 40 post`
+4. 回歸檢查（世數 1）：`herb`、`wander`、`alchemy`，例如 `npm run sim -- 300 1 1 herb`
+5. 疊加上限檢查（世數 16）：`forge`、`hunt`、`trial`，以及 `method:<id>`，id 取自 `src/data/methods.json`（目前是 wuxiang、wenjin、jixing、youchen，以檔案為準）
 
 判讀規則：
 
-- 1–3 的第 13 節對照必須全部 ✓ 才算通過。
-- `herb`、`wander`、`alchemy`：第一世止步不得高於 `simple`。
+- 1–3 的第 13 節對照必須全部 ✓ 才算通過，但下面「已知的既有 ✗」只比對有沒有惡化。
+- `herb`、`wander`、`alchemy`：第一世止步（世數 1）不得高於 `simple` 世數 1 的結果。
 - `forge`、`hunt`、`trial`、`method:<id>`：首次金丹中位數不得低於第 7 世；第 13 節對照顯示 ✗ 是預期，不算失敗。
+
+## 已知的既有 ✗（2026-10-08 的基準，只看有沒有惡化）
+
+- `simple`（世數 16）：「f01 與 f02 都到手」曾為 ✗（中位數第 4 世，第 3 世前約 49%）；之後的調整中有時為 ✓。
+- `post`（世數 40）：「通關總遊玩時間」約 6.0–6.3 小時，上限 6 小時，顯示 ✗；數字變大才算惡化。
+- 基準有變時（例如大改節奏的里程碑），以 `git stash` 跑一次修改前的版本重新取得，並更新這一節。
 
 ## 特別盯的邊緣指標
 
@@ -37,5 +45,5 @@ tools: Bash, Read, Grep, Glob
 - 一張表：每個檢查 → 通過／失敗／預期 ✗，附關鍵數字。
 - 「貼邊」清單：列出離區間邊緣很近的指標與距離。
 - 若有失敗：指出是哪個指標、偏離多少，並推測最可能的原因（只推測，不動手改）。
-- 最後一行給結論：可以 push／不可以 push。
+- 最後一行給結論：sim 通過／sim 不通過。只管模擬，push 與否由主助手決定（還要看 `npm run verify` 與其他前提）。
 - 不要貼完整原始輸出，只引用必要的行。
