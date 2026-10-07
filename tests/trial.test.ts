@@ -7,6 +7,7 @@ import { realmOf } from "../src/core/progress";
 import { deserialize, serialize } from "../src/core/save";
 import type { GameState } from "../src/core/state";
 import { tick } from "../src/core/tick";
+import { monsterOf, traitOf } from "../src/core/encounter";
 import { advanceTrial, canEnterTrial, enterTrial, trialBlockReason, trialsFor } from "../src/core/trial";
 import { gameData } from "../src/data/load";
 import worldNames from "../src/data/worldNames.json";
@@ -25,7 +26,7 @@ const ready = (seed = 1, patch: Partial<GameState> = {}): GameState => living(se
 /** 一路穩打到秘境結束（不管勝負） */
 function fightThrough(state: GameState): GameState {
   let s = state;
-  for (let guard = 0; s.trial !== null && guard < 100; guard++) s = huntChoose(s, "steady", data);
+  for (let guard = 0; s.trial !== null && guard < 100; guard++) s = huntChoose(s, traitOf(monsterOf(s.encounter!.monsterId, data), data)?.steadyDmg !== undefined ? "fierce" : "steady", data);
   return s;
 }
 

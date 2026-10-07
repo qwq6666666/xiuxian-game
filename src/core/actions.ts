@@ -83,6 +83,7 @@ export function canUseItem(state: GameState, itemId: string, data: GameData = ga
       return (state.itemsUsed[itemId] ?? 0) < item.effect.maxPerLife;
     case "breakthrough":
     case "tribulationWard":
+    case "huntWard":
     case "failLossRelief":
     case "material":
     case "artifact":

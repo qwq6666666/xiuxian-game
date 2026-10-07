@@ -28,6 +28,13 @@
     "effect": { "kind": "tribulationWard", "bonus": 0.15 }
   },
   {
+    "id": "zhenyao_fu",
+    "name": "鎮妖符",
+    "desc": "遇上妖獸時祭出，必中，自身受傷最輕。只管打架，天劫用不上。",
+    "price": 40,
+    "effect": { "kind": "huntWard" }
+  },
+  {
     "id": "huxin_dan",
     "name": "護心丹",
     "desc": "帶著即可。突破失敗時自動服下，少損一成修為。",

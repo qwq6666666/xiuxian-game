@@ -2,6 +2,7 @@ import {
   HUNT_ACTIONS,
   type HuntAction,
   type HuntActionDef,
+  type HuntTraitDef,
   type HuntRules,
   type MonsterDef,
   type MonstersData,
@@ -28,6 +29,19 @@ export function validateMonsters(raw: unknown, realmIds: string[], itemIds: stri
     const ao = obj(a[key], w);
     actions[key] = { name: str(ao, "name", w), hit: num(ao, "hit", w, { gt: 0, max: 1 }), dmg: num(ao, "dmg", w, { gt: 0, max: 1 }), taken: num(ao, "taken", w, { min: 0, max: 1 }) };
   }
+  const traitsW = `${rw}.traits`;
+  const traitsRaw = obj(r.traits, traitsW);
+  const traits: Record<string, HuntTraitDef> = {};
+  for (const key of Object.keys(traitsRaw)) {
+    const w = `${traitsW}.${key}`;
+    const to = obj(traitsRaw[key], w);
+    const def: HuntTraitDef = { name: str(to, "name", w), desc: str(to, "desc", w) };
+    if (to.steadyDmg !== undefined) def.steadyDmg = num(to, "steadyDmg", w, { gt: 0, max: 1 });
+    if (to.takenMul !== undefined) def.takenMul = num(to, "takenMul", w, { min: 1, max: 2 });
+    if (to.fleePenalty !== undefined) def.fleePenalty = num(to, "fleePenalty", w, { gt: 0, max: 0.5 });
+    if (def.steadyDmg === undefined && def.takenMul === undefined && def.fleePenalty === undefined) fail(w, "steadyDmg", "steadyDmg、takenMul、fleePenalty 至少要寫一個");
+    traits[key] = def;
+  }
   const tw = `${rw}.text`;
   const t = obj(r.text, tw);
   const text = { lose: str(t, "lose", tw), fleeOk: str(t, "fleeOk", tw), fleeFail: str(t, "fleeFail", tw), draw: str(t, "draw", tw) };
@@ -53,6 +67,7 @@ export function validateMonsters(raw: unknown, realmIds: string[], itemIds: stri
     },
     autoMinRatio: num(r, "autoMinRatio", rw, { min: 0 }),
     actions,
+    traits,
     text,
   };
   if (rules.flee.min > rules.flee.max) fail(fw, "min", "不可大於 max");
@@ -75,10 +90,13 @@ export function validateMonsters(raw: unknown, realmIds: string[], itemIds: stri
       if (!itemIds.includes(itemId)) fail(dw, "itemId", `找不到物品 ${itemId}`);
       return { itemId, chance: num(dobj, "chance", dw, { gt: 0, max: 1 }) };
     });
+    const trait = m.trait === undefined ? undefined : str(m, "trait", w);
+    if (trait !== undefined && !(trait in traits)) fail(w, "trait", `找不到特性 ${trait}`);
     return {
       id,
       name: str(m, "name", w),
       realm,
+      ...(trait !== undefined ? { trait } : {}),
       power: num(m, "power", w, { gt: 0, max: 3 }),
       reward: num(m, "reward", w, { gt: 0, max: 10 }),
       stones,

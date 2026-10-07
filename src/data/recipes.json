@@ -10,6 +10,7 @@
     { "id": "juqi_dan", "output": "juqi_dan", "inputs": { "ling_cao": 4 }, "months": 2, "baseRate": 0.7, "realmMin": "lianqi" },
     { "id": "huxin_dan", "output": "huxin_dan", "inputs": { "ling_cao": 3, "ling_sha": 1 }, "months": 3, "baseRate": 0.6, "realmMin": "lianqi" },
     { "id": "bilei_fu", "output": "bilei_fu", "inputs": { "fu_zhi": 2, "ling_sha": 1 }, "months": 2, "baseRate": 0.6, "realmMin": "zhuji" },
+    { "id": "zhenyao_fu", "output": "zhenyao_fu", "inputs": { "fu_zhi": 1, "ling_sha": 1 }, "months": 1, "baseRate": 0.7, "realmMin": "lianqi" },
     { "id": "forge_juling_pan_yao", "kind": "forge", "label": "聚靈盤（妖丹煉）", "stones": 30, "output": "juling_pan", "inputs": { "yao_dan": 1, "fu_zhi": 1 }, "months": 0, "baseRate": 0.9, "realmMin": "lianqi" },
     { "id": "forge_ningqi_zhu_yao", "kind": "forge", "label": "凝氣珠（妖丹煉）", "stones": 100, "output": "ningqi_zhu", "inputs": { "yao_dan": 2, "fu_zhi": 2 }, "months": 0, "baseRate": 0.8, "realmMin": "zhuji" },
     { "id": "forge_yangyuan_ding_yao", "kind": "forge", "label": "養元鼎（妖丹煉）", "stones": 300, "output": "yangyuan_ding", "inputs": { "yao_dan": 3, "fu_zhi": 3 }, "months": 0, "baseRate": 0.65, "realmMin": "jindan" },

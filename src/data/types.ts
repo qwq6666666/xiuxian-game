@@ -168,6 +168,8 @@ export type ItemEffect =
   | { kind: "breakthrough" }
   /** 天劫中祭出：該道成功率增加 bonus（M28） */
   | { kind: "tribulationWard"; bonus: number }
+  /** 戰鬥用符籙：歷練遇怪時祭出（數值在 monsters.json 的 actions.ward），與天劫用的避雷符分開 */
+  | { kind: "huntWard" }
   /** 突破失敗時自動服用，該次的修為損失比例減少 value（M29） */
   | { kind: "failLossRelief"; value: number }
   /** 材料：不能服用、不在坊市賣，只用來煉製（M29） */
@@ -657,6 +659,20 @@ export interface MonsterDef {
   fleeOkText?: string;
   fleeFailText?: string;
   drawText?: string;
+  /** 特性 id（rules.traits 的鍵）；沒寫就是沒有特性 */
+  trait?: string;
+}
+
+/** 怪物特性：只改變打法，不直接加減戰力。三個欄位至少寫一個 */
+export interface HuntTraitDef {
+  name: string;
+  desc: string;
+  /** 穩打的傷害倍數（厚皮，< 1） */
+  steadyDmg?: number;
+  /** 每回合反擊傷害倍數（迅捷，> 1） */
+  takenMul?: number;
+  /** 逃跑成功率扣掉的值（狡詐） */
+  fleePenalty?: number;
 }
 
 export interface HuntActionDef {
@@ -693,6 +709,7 @@ export interface HuntRules {
   /** 自動抉擇時，戰力比低於這個值就逃，否則穩打 */
   autoMinRatio: number;
   actions: Record<HuntAction, HuntActionDef>;
+  traits: Record<string, HuntTraitDef>;
   text: { lose: string; fleeOk: string; fleeFail: string; draw: string };
 }
 

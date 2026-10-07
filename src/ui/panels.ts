@@ -15,7 +15,7 @@ import {
 import { haptic } from "./haptics";
 import { keepView } from "./keepview";
 import { trialBlockReason, trialOf, trialsFor } from "../core/trial";
-import { canHunt, fleeChance, actionHit, monsterOf, powerRatio, type HuntChoice, huntTalisman } from "../core/encounter";
+import { actionPreview, canHunt, fleeChance, monsterOf, powerRatio, traitOf, type HuntChoice, huntTalisman } from "../core/encounter";
 import type { GameState, LogEntry } from "../core/state";
 import { atBottleneck } from "../core/tick";
 import { ARTIFACT_SLOTS, type GameData } from "../data/types";
@@ -124,7 +124,7 @@ export function createPanels(ctx: PanelContext): Panels {
       return;
     }
     // 背包分「丹藥」「符籙」「材料」三段，每段第一項前放小標
-    const groupOf = (kind: string): number => (kind === "material" ? 3 : kind === "artifact" ? 2 : kind === "tribulationWard" ? 1 : 0);
+    const groupOf = (kind: string): number => (kind === "material" ? 3 : kind === "artifact" ? 2 : kind === "tribulationWard" || kind === "huntWard" ? 1 : 0);
     const GROUP_NAMES = ["丹藥", "符籙", "法寶", "材料"];
     let lastGroup = -1;
     for (const item of [...owned].sort((x, y) => groupOf(x.effect.kind) - groupOf(y.effect.kind))) {
@@ -319,7 +319,7 @@ export function createPanels(ctx: PanelContext): Panels {
       const loss = Math.max(0, beforePct - pct);
       return `<div class="hunt-bar ${cls}${loss > 0 ? " hit" : ""}"><span>${esc(label)}</span><i><b style="width:${beforePct}%" data-next="${pct}"></b></i>${loss > 0 ? `<em class="hunt-damage" aria-hidden="true">−${loss}</em>` : ""}</div>`;
     };
-    e.huntBars.innerHTML = bar(m.name, h.monsterHp, previous?.monsterHp, "foe") + bar("你", h.myHp, previous?.myHp, "me");
+    e.huntBars.innerHTML = bar(`${m.name} ${Math.round(h.monsterHp * 100)}%`, h.monsterHp, previous?.monsterHp, "foe") + bar(`你 ${Math.round(h.myHp * 100)}%`, h.myHp, previous?.myHp, "me");
     for (const fill of Array.from(e.huntBars.querySelectorAll<HTMLElement>(".hunt-bar.hit b"))) {
       requestAnimationFrame(() => requestAnimationFrame(() => (fill.style.width = `${fill.dataset.next}%`)));
     }
@@ -357,12 +357,20 @@ export function createPanels(ctx: PanelContext): Panels {
       e.huntTrial.replaceChildren();
       lastTrialFloor = null;
     }
-    e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。三回合內沒打倒對手，整座秘境即止步。" : "勝了有修為與靈石，打不贏可以逃。"}`;
+    const trait = traitOf(m, data);
+    e.huntInfo.textContent = `${trait ? `【${trait.name}】${trait.desc}　` : ""}${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。三回合內沒打倒對手，整座秘境即止步。" : "勝了有修為與靈石，打不贏可以逃。"}`;
     const pct = (v: number): string => `${Math.round(v * 100)}%`;
+    const left = rules.rounds - h.round;
+    /** 一招的預覽：命中、期望每回合傷敵與自傷、照期望還要幾回合，來得及與否一眼看清 */
+    const previewNote = (choice: "steady" | "fierce" | "ward", extra = ""): string => {
+      const p = actionPreview(state, choice, data)!;
+      const kill = p.roundsToKill === null ? "打不動" : p.roundsToKill <= left ? `約 ${p.roundsToKill} 回合可倒` : `約需 ${p.roundsToKill} 回合，來不及`;
+      return `命中 ${pct(p.hit)}・每回合傷敵約 ${pct(p.dealt)}、自傷約 ${pct(p.taken)}・${kill}${extra}`;
+    };
     const rows: { choice: HuntChoice; name: string; note: string }[] = [
-      { choice: "steady", name: rules.actions.steady.name, note: `命中約 ${pct(actionHit(state, "steady", data))}・傷己較輕` },
-      { choice: "fierce", name: rules.actions.fierce.name, note: `命中約 ${pct(actionHit(state, "fierce", data))}・傷勢更重` },
-      { choice: "ward", name: `祭出${talisman ? itemName(talisman) : "符籙"}`, note: have > 0 ? `必中・傷己最輕・持有 ${have}` : "沒有符籙，坊市可買" },
+      { choice: "steady", name: rules.actions.steady.name, note: previewNote("steady") },
+      { choice: "fierce", name: rules.actions.fierce.name, note: previewNote("fierce") },
+      { choice: "ward", name: `祭出${talisman ? itemName(talisman) : "符籙"}`, note: have > 0 ? previewNote("ward", `・持有 ${have}`) : "沒有符籙，坊市可買" },
       { choice: "flee", name: "逃", note: `成功約 ${pct(fleeChance(state, data))}・失敗損 ${Math.round(rules.flee.failLoss * 100)}% 修為` },
     ];
     for (const r of rows) {
@@ -505,7 +513,7 @@ export function createPanels(ctx: PanelContext): Panels {
     if (!box) return;
     const name = (id: string): string => data.items.find((i) => i.id === id)?.name ?? id;
     const chips: { text: string; tab: SideTab; icon?: string }[] = [];
-    for (const id of ["juqi_dan", "zhuji_dan", "huxin_dan", "bilei_fu"]) {
+    for (const id of ["juqi_dan", "zhuji_dan", "huxin_dan", "bilei_fu", "zhenyao_fu"]) {
       const n = state.items[id] ?? 0;
       if (n > 0) chips.push({ text: `${name(id)} ${n}`, tab: "pack", icon: itemIcon(data, id) });
     }

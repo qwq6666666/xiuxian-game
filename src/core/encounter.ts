@@ -1,7 +1,7 @@
 // 歷練遇怪（M34）：外出歷練時每月可能遇到怪物，時間暫停，玩家選擇戰或逃。
 // 亂數全由遇怪開始時抽定的種子衍生，不消耗 rngSeed；沒有外出歷練的世界，亂數序列與修為都不受影響。
 import { gameData } from "../data/load";
-import type { GameData, HuntAction, MonsterDef } from "../data/types";
+import type { GameData, HuntAction, MonsterDef, HuntTraitDef } from "../data/types";
 import { monthlyGain } from "./gain";
 import { addLog, atBottleneck, resolveStages } from "./progress";
 import { deriveSeed, nextRandom } from "./rng";
@@ -23,9 +23,9 @@ export function monsterOf(id: string, data: GameData = gameData): MonsterDef {
   return m;
 }
 
-/** 戰鬥用的符籙：資料裡第一個 tribulationWard 效果的物品（與天劫共用） */
+/** 戰鬥用的符籙：資料裡第一個 huntWard 效果的物品（與天劫的避雷符分開） */
 export function huntTalisman(data: GameData = gameData): string | null {
-  for (const item of data.items) if (item.effect.kind === "tribulationWard") return item.id;
+  for (const item of data.items) if (item.effect.kind === "huntWard") return item.id;
   return null;
 }
 
@@ -49,12 +49,43 @@ export function actionHit(state: GameState, action: HuntAction, data: GameData =
 }
 
 /** 逃跑成功率 */
+/** 怪物的特性定義；沒有特性回傳 undefined */
+export function traitOf(m: MonsterDef, data: GameData = gameData): HuntTraitDef | undefined {
+  return m.trait === undefined ? undefined : data.monsters.rules.traits[m.trait];
+}
+
 export function fleeChance(state: GameState, data: GameData = gameData): number {
   const e = state.encounter;
   if (!e) return 0;
   const f = data.monsters.rules.flee;
   const r = powerRatio(state, monsterOf(e.monsterId, data), data);
-  return clamp(f.base + f.perRatio * (r - 1) + f.perFortune * state.attributes.fortune, f.min, f.max);
+  const penalty = traitOf(monsterOf(e.monsterId, data), data)?.fleePenalty ?? 0;
+  return clamp(f.base + f.perRatio * (r - 1) + f.perFortune * state.attributes.fortune - penalty, f.min, f.max);
+}
+
+export interface ActionPreview {
+  /** 命中率（0–1） */
+  hit: number;
+  /** 期望每回合對怪物造成的氣血比例（已含命中率與特性，0–1） */
+  dealt: number;
+  /** 每回合怪物反擊的期望傷害（已含特性，0–1，玩家氣血為 1） */
+  taken: number;
+  /** 照期望傷害，還要幾回合才能打倒怪物；打不動時為 null */
+  roundsToKill: number | null;
+}
+
+/** 戰鬥預覽：不含亂數浮動的期望值，給介面顯示「這一招大約值多少」 */
+export function actionPreview(state: GameState, choice: "steady" | "fierce" | "ward", data: GameData = gameData): ActionPreview | null {
+  const e = state.encounter;
+  if (!e) return null;
+  const a = data.monsters.rules.actions[choice];
+  const m = monsterOf(e.monsterId, data);
+  const r = powerRatio(state, m, data);
+  const trait = traitOf(m, data);
+  const hit = actionHit(state, choice, data);
+  const dealt = hit * a.dmg * (choice === "steady" ? (trait?.steadyDmg ?? 1) : 1) * clamp(r, 0.6, 1.5);
+  const taken = a.taken * (trait?.takenMul ?? 1) * clamp(1 / r, 0.5, 2);
+  return { hit, dealt, taken, roundsToKill: dealt > 0 ? Math.ceil(e.monsterHp / dealt - 1e-9) : null };
 }
 
 export function canHunt(state: GameState, choice: HuntChoice, data: GameData = gameData): boolean {
@@ -155,9 +186,11 @@ export function huntChoose(state: GameState, choice: HuntChoice, data: GameData 
   const r = powerRatio(state, m, data);
   const swing = (v: number): number => 1 + rules.variance * (2 * v - 1);
   const hit = draw(e.seed, e.round * 3) < actionHit(state, choice, data);
-  const monsterHp = e.monsterHp - (hit ? a.dmg * clamp(r, 0.6, 1.5) * swing(draw(e.seed, e.round * 3 + 1)) : 0);
+  const trait = traitOf(m, data);
+  const dmg = a.dmg * (choice === "steady" ? (trait?.steadyDmg ?? 1) : 1);
+  const monsterHp = e.monsterHp - (hit ? dmg * clamp(r, 0.6, 1.5) * swing(draw(e.seed, e.round * 3 + 1)) : 0);
   if (monsterHp <= 1e-9) return win({ ...s, encounter: { ...e, monsterHp: 0 } }, data);
-  const myHp = e.myHp - a.taken * clamp(1 / r, 0.5, 2) * swing(draw(e.seed, e.round * 3 + 2));
+  const myHp = e.myHp - a.taken * (trait?.takenMul ?? 1) * clamp(1 / r, 0.5, 2) * swing(draw(e.seed, e.round * 3 + 2));
   if (myHp <= 1e-9) {
     const [lost, loss] = lose({ ...s, encounter: { ...e, monsterHp, myHp: 0 } }, rules.lossFrac);
     return finish(lost, "huntLose", data, { changes: loss > 0 ? { cultivation: -loss } : {} });
@@ -169,12 +202,15 @@ export function huntChoose(state: GameState, choice: HuntChoice, data: GameData 
   return { ...s, encounter: { ...e, round: e.round + 1, monsterHp, myHp } };
 }
 
-/** 預設打法：戰力夠就穩打，不夠就逃（自動抉擇與模擬用） */
+/** 預設打法：戰力夠就穩打（厚皮的怪改強攻），不夠就逃（自動抉擇與模擬用） */
 export function autoEncounter(state: GameState, data: GameData = gameData): GameState {
   let s = state;
   while (s.encounter !== null) {
-    const ok = powerRatio(s, monsterOf(s.encounter.monsterId, data), data) >= data.monsters.rules.autoMinRatio;
-    s = huntChoose(s, ok ? "steady" : "flee", data);
+    const m = monsterOf(s.encounter.monsterId, data);
+    const ok = powerRatio(s, m, data) >= data.monsters.rules.autoMinRatio;
+    // 厚皮的怪穩打傷不透：秘境裡一律強攻，一般歷練戰力有餘裕（≥1.1）才強攻
+    const attack = traitOf(m, data)?.steadyDmg !== undefined && (s.trial !== null || powerRatio(s, m, data) >= 1.1) ? "fierce" : "steady";
+    s = huntChoose(s, ok ? attack : "flee", data);
   }
   return s;
 }

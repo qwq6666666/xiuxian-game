@@ -87,7 +87,7 @@ describe("煉器", () => {
     const panel = alchemyPanel(stocked({ attributes: { bone: 5, insight: 10, fortune: 5, mind: 5 } }), data)!;
     expect(panel.forge.find((f) => f.id === "forge_juling_pan")!.ratePct).toBe(90);
     expect(panel.forge.find((f) => f.id === "forge_ningqi_zhu")!.reason).toContain("築基");
-    expect(panel.recipes.every((r) => ["juqi_dan", "huxin_dan", "bilei_fu", "huxin_dan_yao", "bilei_fu_yao"].includes(r.id))).toBe(true);
+    expect(panel.recipes.every((r) => ["juqi_dan", "huxin_dan", "bilei_fu", "zhenyao_fu", "huxin_dan_yao", "bilei_fu_yao"].includes(r.id))).toBe(true);
   });
 });
 

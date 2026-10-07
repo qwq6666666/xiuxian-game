@@ -84,7 +84,7 @@ export function alchemyPanel(state: GameState, data: GameData): AlchemyPanel | n
       ratePct: Math.round(recipeRate(state, r, data) * 100),
       canStart,
       reason,
-      category: output?.effect.kind === "tribulationWard" ? "talisman" : "pill",
+      category: output?.effect.kind === "tribulationWard" || output?.effect.kind === "huntWard" ? "talisman" : "pill",
       open,
       unlockRealm: realmName(data, r.realmMin),
     };

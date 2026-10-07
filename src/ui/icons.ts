@@ -62,6 +62,7 @@ export function itemIconName(item: ItemDef | undefined): string {
     case "failLossRelief":
       return "heartPill";
     case "tribulationWard":
+    case "huntWard":
       return "talisman";
     default:
       return "fallback";

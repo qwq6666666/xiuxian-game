@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoEncounter, canHunt, fleeChance, huntChoose, maybeEncounter, monsterOf, playerPower, powerRatio } from "../src/core/encounter";
+import { actionPreview, autoEncounter, canHunt, fleeChance, huntChoose, maybeEncounter, monsterOf, playerPower, powerRatio } from "../src/core/encounter";
 import { deserialize, serialize } from "../src/core/save";
 import type { EncounterState, GameState } from "../src/core/state";
 import { atBottleneck, tick } from "../src/core/tick";
@@ -87,7 +87,7 @@ describe("戰鬥", () => {
   });
 
   it("符籙要有符才能選，選了就消耗一張，而且必中", () => {
-    const talisman = gameData.items.find((i) => i.effect.kind === "tribulationWard")!.id;
+    const talisman = gameData.items.find((i) => i.effect.kind === "huntWard")!.id;
     const none = inFight("iron_back_bear");
     expect(canHunt(none, "ward")).toBe(false);
     expect(huntChoose(none, "ward")).toBe(none);
@@ -95,6 +95,11 @@ describe("戰鬥", () => {
     expect(canHunt(have, "ward")).toBe(true);
     const after = huntChoose(have, "ward");
     expect((after.items[talisman] ?? 0)).toBe(1);
+  });
+
+  it("天劫用的避雷符不能拿來打怪", () => {
+    const bilei = gameData.items.find((i) => i.effect.kind === "tribulationWard")!.id;
+    expect(canHunt(inFight("iron_back_bear", 777, { items: { [bilei]: 2 } }), "ward")).toBe(false);
   });
 
   it("勝利得修為與靈石，敗北損失修為，平手損失較少的修為", () => {
@@ -281,5 +286,34 @@ describe("圖鑑摘要（介面用）", () => {
         expect(t!.split(/[。！？]/).filter(Boolean).length, m.id).toBeLessThanOrEqual(3);
       }
     }
+  });
+  describe("怪物特性", () => {
+    it("每種特性至少有一隻怪帶著，且特性 id 都存在", () => {
+      const used = new Set(gameData.monsters.monsters.map((m) => m.trait).filter(Boolean));
+      for (const id of Object.keys(gameData.monsters.rules.traits)) expect(used.has(id)).toBe(true);
+    });
+    it("厚皮：穩打的期望傷害變低，強攻不變", () => {
+      const thick = inFight("iron_back_bear");
+      const plain = inFight("hungry_wolf");
+      const t = gameData.monsters.rules.traits.thick.steadyDmg!;
+      const base = (s: typeof thick, c: "steady" | "fierce") => actionPreview(s, c)!;
+      // 同一場戰鬥換掉怪的特性，只看特性帶來的差別
+      const withoutTrait = { ...gameData, monsters: { ...gameData.monsters, monsters: gameData.monsters.monsters.map((m) => (m.id === "iron_back_bear" ? { ...m, trait: undefined } : m)) } };
+      expect(actionPreview(thick, "steady")!.dealt).toBeCloseTo(actionPreview(thick, "steady", withoutTrait)!.dealt * t, 6);
+      expect(base(thick, "fierce").dealt).toBeCloseTo(actionPreview(thick, "fierce", withoutTrait)!.dealt, 6);
+      expect(plain.encounter).not.toBeNull();
+    });
+    it("迅捷：自傷放大；狡詐：逃跑成功率下降", () => {
+      const swift = inFight("bamboo_viper");
+      const cunning = inFight("red_tail_fox");
+      const strip = (id: string) => ({ ...gameData, monsters: { ...gameData.monsters, monsters: gameData.monsters.monsters.map((m) => (m.id === id ? { ...m, trait: undefined } : m)) } });
+      expect(actionPreview(swift, "steady")!.taken).toBeCloseTo(actionPreview(swift, "steady", strip("bamboo_viper"))!.taken * gameData.monsters.rules.traits.swift.takenMul!, 6);
+      expect(fleeChance(cunning, strip("red_tail_fox"))).toBeGreaterThan(fleeChance(cunning));
+    });
+    it("預覽的回合數：打得倒才算來得及", () => {
+      const p = actionPreview(inFight("hungry_wolf"), "fierce")!;
+      expect(p.dealt).toBeGreaterThan(0);
+      expect(p.roundsToKill).toBe(Math.ceil(1 / p.dealt - 1e-9));
+    });
   });
 });

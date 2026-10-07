@@ -12,6 +12,11 @@
     "drawLossFrac": 0.003,
     "flee": { "base": 0.55, "perRatio": 0.3, "perFortune": 0.02, "min": 0.15, "max": 0.9, "failLoss": 0.03 },
     "autoMinRatio": 0.85,
+    "traits": {
+      "thick": { "name": "厚皮", "desc": "皮糙肉厚，穩打傷不透，強攻與符籙照舊。", "steadyDmg": 0.7 },
+      "swift": { "name": "迅捷", "desc": "出手極快，每回合反擊更重，拖不起。", "takenMul": 1.15 },
+      "cunning": { "name": "狡詐", "desc": "認準了就不放，逃跑更難成功。", "fleePenalty": 0.2 }
+    },
     "actions": {
       "steady": { "name": "穩打", "hit": 0.8, "dmg": 0.4, "taken": 0.25 },
       "fierce": { "name": "強攻", "hit": 0.65, "dmg": 0.7, "taken": 0.45 },
@@ -43,6 +48,7 @@
     },
     {
       "id": "wild_boar",
+      "trait": "thick",
       "name": "野豬",
       "realm": "mortal",
       "power": 1.1,
@@ -59,6 +65,7 @@
     },
     {
       "id": "bamboo_viper",
+      "trait": "swift",
       "name": "青竹蛇",
       "realm": "mortal",
       "power": 0.9,
@@ -75,6 +82,7 @@
     },
     {
       "id": "one_eyed_lynx",
+      "trait": "swift",
       "name": "獨眼山貓",
       "realm": "mortal",
       "power": 1.0,
@@ -91,6 +99,7 @@
     },
     {
       "id": "mountain_imp",
+      "trait": "cunning",
       "name": "山魈",
       "realm": "lianqi",
       "power": 0.8,
@@ -107,6 +116,7 @@
     },
     {
       "id": "red_tail_fox",
+      "trait": "cunning",
       "name": "赤尾狐",
       "realm": "lianqi",
       "power": 1.0,
@@ -123,6 +133,7 @@
     },
     {
       "id": "iron_back_bear",
+      "trait": "thick",
       "name": "鐵背熊",
       "realm": "lianqi",
       "power": 1.35,
@@ -139,6 +150,7 @@
     },
     {
       "id": "mire_toad",
+      "trait": "thick",
       "name": "泥沼蟾",
       "realm": "lianqi",
       "power": 0.9,
@@ -171,6 +183,7 @@
     },
     {
       "id": "bone_spider",
+      "trait": "cunning",
       "name": "蝕骨蛛",
       "realm": "zhuji",
       "power": 0.8,
@@ -187,6 +200,7 @@
     },
     {
       "id": "ghost_owl",
+      "trait": "cunning",
       "name": "鬼面梟",
       "realm": "zhuji",
       "power": 1.0,
@@ -203,6 +217,7 @@
     },
     {
       "id": "split_stone_beast",
+      "trait": "thick",
       "name": "裂石獸",
       "realm": "zhuji",
       "power": 1.35,
@@ -219,6 +234,7 @@
     },
     {
       "id": "moon_shadow_wolf",
+      "trait": "swift",
       "name": "月影狼",
       "realm": "zhuji",
       "power": 0.9,
@@ -267,6 +283,7 @@
     },
     {
       "id": "fire_feather_bird",
+      "trait": "swift",
       "name": "焚羽禽",
       "realm": "jindan",
       "power": 1.35,
@@ -283,6 +300,7 @@
     },
     {
       "id": "stele_tortoise",
+      "trait": "thick",
       "name": "負碑龜",
       "realm": "jindan",
       "power": 1.1,
@@ -315,6 +333,7 @@
     },
     {
       "id": "ancient_ape",
+      "trait": "cunning",
       "name": "古猿",
       "realm": "yuanying",
       "power": 1.0,
@@ -331,6 +350,7 @@
     },
     {
       "id": "thunder_qilin",
+      "trait": "swift",
       "name": "雷紋獸",
       "realm": "yuanying",
       "power": 1.4,
@@ -347,6 +367,7 @@
     },
     {
       "id": "cloud_splitting_roc",
+      "trait": "swift",
       "name": "裂雲鵬",
       "realm": "yuanying",
       "power": 1.1,
@@ -363,6 +384,7 @@
     },
     {
       "id": "mountain_guard_beast",
+      "trait": "thick",
       "name": "鎮嶽猙",
       "realm": "yuanying",
       "power": 1.3,

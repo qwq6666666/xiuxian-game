@@ -250,6 +250,8 @@ export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
       effect = { kind };
     } else if (kind === "tribulationWard") {
       effect = { kind, bonus: num(e, "bonus", ew, { gt: 0, max: 0.5 }) };
+    } else if (kind === "huntWard") {
+      effect = { kind };
     } else if (kind === "failLossRelief") {
       effect = { kind, value: num(e, "value", ew, { gt: 0, max: 0.3 }) };
     } else if (kind === "material") {
@@ -265,7 +267,7 @@ export function validateItems(raw: unknown, file = "items.json"): ItemDef[] {
       if (Object.keys(bonus).length === 0) fail(ew, "bonus", "至少要有一項加成");
       effect = { kind, slot: slot as ArtifactSlot, tier: num(e, "tier", ew, { min: 1, max: 3, integer: true }), bonus };
     } else {
-      return fail(ew, "kind", `必須是 cultivationFraction、lifespan、breakthrough、tribulationWard、failLossRelief、material 或 artifact，目前為 ${JSON.stringify(kind)}`);
+      return fail(ew, "kind", `必須是 cultivationFraction、lifespan、breakthrough、tribulationWard、huntWard、failLossRelief、material 或 artifact，目前為 ${JSON.stringify(kind)}`);
     }
     return {
       id,
