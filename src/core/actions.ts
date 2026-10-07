@@ -6,6 +6,7 @@ import { itemFreight, itemPrice } from "./world/worldeffects";
 import type { GameState } from "./state";
 import { endLife } from "./character/review";
 import { addLog, atBottleneck, lifespanYears, realmOf, resolveStages, scheduleOpen } from "./tick";
+import { isFree } from "./pause";
 
 export function setSchedule(state: GameState, scheduleId: string, data: GameData = gameData): GameState {
   const sched = data.schedules.find((s) => s.id === scheduleId);
@@ -128,7 +129,7 @@ export function zuohuaDaoYun(state: GameState, data: GameData = gameData): numbe
 
 /** 目前的境界提供坐化，且正在修行、沒有等待中的抉擇 */
 export function canZuohua(state: GameState, data: GameData = gameData): boolean {
-  return state.phase === "living" && state.pendingEvent === null && state.tribulation === null && state.encounter === null && realmOf(state, data).zuohua !== undefined;
+  return isFree(state) && realmOf(state, data).zuohua !== undefined;
 }
 
 /** 閉關坐化：提前結束這一世，剩餘壽元折成道韻，其餘結算與死亡相同 */

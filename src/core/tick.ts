@@ -3,7 +3,8 @@ import type { GameData, ScheduleDef } from "../data/types";
 import { advanceEvents } from "./events";
 import { lifespanMonths } from "./formulas";
 import { monthlyGain } from "./gain";
-import { autoEncounter, maybeEncounter } from "./combat/encounter";
+import { maybeEncounter } from "./combat/encounter";
+import { isFree, settleEncounter } from "./pause";
 import { addLog, atBottleneck, realmOf, resolveStages, scheduleOf } from "./progress";
 import { endLife } from "./character/review";
 import { deriveSeed, nextInt, nextRandom } from "./rng";
@@ -101,7 +102,7 @@ function stepMonth(state: GameState, data: GameData): GameState {
   // 外出歷練時可能遇怪：時間暫停等玩家選擇，自動抉擇時照預設打法一次打完
   if (s.phase !== "living" || s.pendingEvent !== null) return s;
   s = maybeEncounter(s, month, data);
-  return s.encounter !== null && s.autoChoice ? autoEncounter(s, data) : s;
+  return settleEncounter(s, data);
 }
 
 /**
@@ -113,6 +114,6 @@ export function tick(state: GameState, months = 1, data: GameData = gameData): G
     throw new Error(`tick：months 必須是非負整數，目前為 ${months}`);
   }
   let s = state;
-  for (let i = 0; i < months && s.phase === "living" && s.pendingEvent === null && s.tribulation === null && s.encounter === null; i++) s = stepMonth(s, data);
+  for (let i = 0; i < months && isFree(s); i++) s = stepMonth(s, data);
   return s;
 }

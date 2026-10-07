@@ -6,6 +6,7 @@ import type { GameData } from "../../data/types";
 import { monthlyGain } from "../gain";
 import { atBottleneck, resolveStages, scheduleOf } from "../progress";
 import type { GameState } from "../state";
+import { isFree } from "../pause";
 
 /** 依經過的月份補上積蓄；每過一個月（含離線閉關）都要呼叫一次 */
 export function accrueFocus(state: GameState, data: GameData = gameData): GameState {
@@ -23,10 +24,7 @@ export function focusCharges(state: GameState, data: GameData = gameData): numbe
 /** 修行中、沒有等待抉擇或天劫、還沒卡在瓶頸，且至少存了一次 */
 export function canFocus(state: GameState, data: GameData = gameData): boolean {
   return (
-    state.phase === "living" &&
-    state.pendingEvent === null &&
-    state.tribulation === null &&
-    state.encounter === null &&
+    isFree(state) &&
     !atBottleneck(state, data) &&
     focusCharges(state, data) > 0
   );

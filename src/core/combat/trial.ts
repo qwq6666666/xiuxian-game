@@ -12,6 +12,7 @@ import { addLog, atBottleneck, realmOf, resolveStages } from "../progress";
 import { deriveSeed, nextRandom } from "../rng";
 import { stepSect } from "../character/sect";
 import type { Changes, EncounterState, GameState } from "../state";
+import { isFree } from "../pause";
 
 /** 秘境亂數的雜湊鹽值，與材料掉落（7M）、遇怪（8M）、世界生成用的編號錯開 */
 const TRIAL_SALT = 9_000_000;
@@ -33,7 +34,7 @@ export function trialsFor(state: GameState, data: GameData = gameData): TrialDef
 export function trialBlockReason(state: GameState, trialId: string, data: GameData = gameData): string | null {
   const def = data.trials.trials.find((t) => t.id === trialId);
   if (!def) return "沒有這座秘境。";
-  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null || state.trial !== null) return "現在走不開。";
+  if (!isFree(state) || state.trial !== null) return "現在走不開。";
   if (state.realmId !== def.realm) return "境界不符。";
   if (state.trialsDone.includes(trialId)) return "這一世已經入過。";
   const left = lifespanMonths(realmOf(state, data), state.lifespanBonus) - state.ageMonths;

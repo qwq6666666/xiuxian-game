@@ -6,6 +6,7 @@ import { fiefsFor } from "./fiefs";
 import { sectReach, territoriesAt, territoryAt } from "./territory";
 import type { GameState, TravelState } from "../state";
 import { polityLabel, worldAt, worldFor, type WorldPolity } from "./world";
+import { isFree } from "../pause";
 
 export type PlaceKind = "village" | "market" | "mountain" | "capital" | "ferry" | "sect" | "merchant";
 
@@ -168,7 +169,7 @@ export function routeTo(state: GameState, targetId: string, data: GameData = gam
 }
 
 export function beginTravel(state: GameState, targetId: string, data: GameData = gameData): GameState {
-  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null || state.travel.targetId !== null) return state;
+  if (!isFree(state) || state.travel.targetId !== null) return state;
   const route = routeTo(state, targetId, data);
   if (!route) return state;
   return { ...state, travel: { ...state.travel, targetId, totalMonths: route.months, remainingMonths: route.months } };

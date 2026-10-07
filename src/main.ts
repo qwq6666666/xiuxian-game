@@ -3,7 +3,7 @@ import { msToMonths } from "./core/formulas";
 import { buyItem, renameCharacter, buyTalent, setSchedule, useAll, useItem, zuohua } from "./core/actions";
 import { equip, forge, unequip } from "./core/craft/forge";
 import { focus } from "./core/character/focus";
-import { autoEncounter, huntChoose } from "./core/combat/encounter";
+import { huntChoose } from "./core/combat/encounter";
 import { enterTrial, trialContinue, trialRest, trialRetreat } from "./core/combat/trial";
 import { setMethod } from "./core/character/method";
 import { setStance } from "./core/character/stance";
@@ -24,6 +24,7 @@ import { gameData as data } from "./data/load";
 import { formatOffline } from "./ui/format";
 import { holdFor } from "./ui/hold";
 import { mountUi } from "./ui/render";
+import { isFree, isWaiting, settleEncounter } from "./core/pause";
 
 const SAVE_KEY = "xiuxian-save";
 // 最後一次存檔的現實時間，離線進度由此計算（不放進存檔本體，core 不碰時間）
@@ -81,9 +82,7 @@ function isCheckpoint(prev: GameState, next: GameState): boolean {
     next.phase !== prev.phase ||
     next.realmId !== prev.realmId ||
     next.stage !== prev.stage ||
-    next.pendingEvent !== null ||
-    next.tribulation !== null ||
-    next.encounter !== null
+    isWaiting(next)
   );
 }
 
@@ -113,7 +112,7 @@ function update(next: GameState, throttled = false): void {
 }
 
 function afterTrialStep(s: GameState): GameState {
-  return s.encounter !== null && s.autoChoice ? autoEncounter(s, data) : s;
+  return settleEncounter(s, data);
 }
 
 const ui = mountUi(document.getElementById("app")!, data, {
@@ -153,7 +152,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
   // 入秘境：開著自動抉擇時，一路用預設打法打到秘境結束
   onEnterTrial: (id) => {
     const entered = enterTrial(state, id, data);
-    update(entered.encounter !== null && entered.autoChoice ? autoEncounter(entered, data) : entered);
+    update(settleEncounter(entered, data));
   },
   onStance: (id) => update(setStance(state, id, data)),
   onFocus: () => update(focus(state, data)),
@@ -217,7 +216,7 @@ function frame(now: number): void {
   const reading = ui.reading();
   if (dt > data.config.frameGapSeconds * 1000) {
     catchUp(dt);
-  } else if (state.phase === "living" && state.pendingEvent === null && state.tribulation === null && state.encounter === null && !reading) {
+  } else if (isFree(state) && !reading) {
     const hold = holdEnabled ? holdFor(state, data) : null;
     if (hold !== null && !resumed.has(hold.key)) {
       // 關鍵節點：停住時間，等玩家按「繼續」或關掉提示才放行，來不及反應不再是玩家的錯

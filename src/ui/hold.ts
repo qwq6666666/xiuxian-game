@@ -3,6 +3,7 @@ import { lifespanMonths } from "../core/formulas";
 import { atBottleneck, realmOf } from "../core/progress";
 import type { GameState } from "../core/state";
 import type { GameData } from "../data/types";
+import { isWaiting } from "../core/pause";
 
 export interface Hold {
   /** 同一個節點只暫停一次：用這個鍵記下玩家已看過 */
@@ -16,7 +17,7 @@ export interface Hold {
  */
 export function holdFor(state: GameState, data: GameData): Hold | null {
   if (state.phase !== "living") return null;
-  if (state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null) return null;
+  if (isWaiting(state)) return null;
   const life = state.meta.lives;
   const left = lifespanMonths(realmOf(state, data), state.lifespanBonus) - state.ageMonths;
   if (left <= data.config.holdLifespanMonths) return { key: `end:${life}`, message: "壽元所剩不到一年，時間已停住。想做的事，趁現在。" };

@@ -8,6 +8,7 @@ import { advanceStreak } from "./character/fatigue";
 import { accrueFocus } from "./character/focus";
 import { stepStance } from "./character/stance";
 import { addCultivation, monthlyGain } from "./tick";
+import { isFree } from "./pause";
 
 export type { OfflineStop };
 
@@ -39,7 +40,7 @@ export function applyOffline(
     state,
     summary: { months: 0, gained: 0, stop },
   });
-  if (state.phase !== "living" || state.pendingEvent !== null || state.tribulation !== null || state.encounter !== null) return idle("elapsed");
+  if (!isFree(state)) return idle("elapsed");
   if (!(elapsedMs >= (opts.minSeconds ?? config.offlineMinSeconds) * 1000)) return idle("elapsed");
 
   const capped = Math.min(elapsedMs, config.offlineMaxHours * 3_600_000);
