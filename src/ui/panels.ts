@@ -13,6 +13,7 @@ import {
   pillAvailable,
 } from "../core/breakthrough";
 import { haptic } from "./haptics";
+import { keepView } from "./keepview";
 import { trialBlockReason, trialOf, trialsFor } from "../core/trial";
 import { canHunt, fleeChance, actionHit, monsterOf, powerRatio, type HuntChoice, huntTalisman } from "../core/encounter";
 import type { GameState, LogEntry } from "../core/state";
@@ -701,5 +702,29 @@ export function createPanels(ctx: PanelContext): Panels {
     lastBag = null;
   }
 
-  return { renderBreakthrough, renderBag, renderTribulation, renderHunt, renderSect, renderTrial, showTrialResult, renderResources, renderStatDetail, renderAlchemy, markMake, flash, floatDelta, reset };
+  /** 重畫面板前記下焦點與折疊區狀態、重畫後還原：不然鍵盤按完一顆按鈕，焦點就跟著舊節點消失 */
+  const kept =
+    (root: (e: LifeEls) => Element) =>
+    (render: (state: GameState, e: LifeEls) => void) =>
+    (state: GameState, e: LifeEls): void => {
+      const restore = keepView(root(e));
+      render(state, e);
+      restore();
+    };
+  return {
+    renderBreakthrough,
+    renderBag: kept((e) => e.bag)(renderBag),
+    renderTribulation: kept((e) => e.tribChoices)(renderTribulation),
+    renderHunt: kept((e) => e.huntChoices)(renderHunt),
+    renderSect: kept((e) => e.sectBox)(renderSect),
+    renderTrial: kept((e) => e.trialBox)(renderTrial),
+    showTrialResult,
+    renderResources,
+    renderStatDetail,
+    renderAlchemy: kept((e) => e.alchemyBox)(renderAlchemy),
+    markMake,
+    flash,
+    floatDelta,
+    reset,
+  };
 }

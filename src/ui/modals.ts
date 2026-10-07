@@ -8,6 +8,7 @@ import type { GameData } from "../data/types";
 import { fillSlots, type SlotValues } from "../data/slots";
 import { button, el, revealIn } from "./dom";
 import { rollNumber } from "./tween";
+import { keepView } from "./keepview";
 
 /** 一生回顧每一項浮現的間隔，需與 tokens.css 的 --reveal 一致 */
 const REVEAL_MS = 140;
@@ -91,6 +92,8 @@ export function createReviewModal(
 ): ReviewModal {
   let modalView: "review" | "talents" = "review";
   let modalKey = "";
+  /** 上一次畫出的是回顧還是天賦；買天賦只重畫同一頁，要保住捲動位置 */
+  let lastView: string | null = null;
 
   function showView(view: "review" | "talents"): void {
     modalView = view;
@@ -215,12 +218,17 @@ export function createReviewModal(
     if (!ended) {
       modalView = "review";
       modalKey = "";
+      lastView = null;
       return;
     }
     const key = `${state.phase}|${modalView}|${state.meta.daoYun}|${JSON.stringify(state.meta.talents)}`;
     if (key === modalKey) return;
     modalKey = key;
+    const card = e.modalBody.closest(".card");
+    const keep = lastView === modalView ? keepView(e.modalBody, [card]) : null;
+    lastView = modalView;
     e.modalBody.replaceChildren(modalView === "review" ? buildReview(state) : buildTalents(state));
+    keep?.();
   }
 
   return { render };

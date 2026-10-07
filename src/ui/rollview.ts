@@ -11,6 +11,7 @@ import { esc } from "./dom";
 import { methodRows } from "./methodinfo";
 import type { UiHandlers } from "./render";
 import { rollNumber } from "./tween";
+import { keepView } from "./keepview";
 
 export const statsHtml = (state: GameState): string =>
   `<dl class="stats">${ATTRIBUTE_KEYS.map(
@@ -129,6 +130,8 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
   function renderRoll(state: GameState): void {
     const key = `${state.worldSeed}|${state.name}|${JSON.stringify(state.attributes)}|${state.rerolls}|${state.methodId}|${state.meta.fragments.length}|${state.spiritRootId}|${state.originId}|${state.meta.lives}|${JSON.stringify(state.meta.talents)}|${JSON.stringify(state.altCharts)}|${state.wishId}|${state.goalIds.join(",")}|${state.nationCount}`;
     if (getBuilt() === "roll" && key === rollKey) return;
+    // 改選國數、心法等會整頁重畫：同一個畫面內保住頁面捲動、「屬性說明」的展開與按鈕焦點
+    const keep = getBuilt() === "roll" ? keepView(stageEl, [document.scrollingElement]) : null;
     setBuilt("roll");
     rollKey = key;
     currentName = state.name;
@@ -179,6 +182,7 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
     stageEl.querySelectorAll<HTMLButtonElement>("[data-method]").forEach((b) => b.addEventListener("click", () => handlers.onMethod(b.dataset.method!)));
     stageEl.querySelector("#reroll")!.addEventListener("click", () => handlers.onReroll());
     stageEl.querySelector("#start")!.addEventListener("click", () => handlers.onStart());
+    keep?.();
   }
 
   return { render: renderRoll };

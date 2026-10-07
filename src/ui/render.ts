@@ -18,6 +18,7 @@ import { burstScene, sceneHtml, updateScene } from "./scene";
 import { createVeil } from "./veil";
 import { neighbourOf, onSwipe } from "./gesture";
 import { resetRolls, rollNumber } from "./tween";
+import { keepView } from "./keepview";
 
 const reducedMotion = (): boolean => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { haptic, hapticsEnabled, setHapticsEnabled } from "./haptics";
@@ -389,6 +390,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   let prevCultivation: number | null = null;
   let prevStageKey = "";
   let eventKey = "";
+  /** 上一次畫出的抉擇事件；同一個事件內容更新（窺看、靈石變動）才保住捲動與折疊，換新事件就不保 */
+  let keptEvent: string | null = null;
 
   function buildLife(state: GameState): void {
     built = "life";
@@ -810,6 +813,10 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         else if (entry.kind === "alchemyFail" || entry.kind === "forgeFail" || entry.kind === "alchemyStop") panels.markMake("flash-down");
       }
       if (last) e.live.textContent = formatLogEntry(last, data, state.name, slotsOf(state));
+      // 日誌每次新增都整段重畫：先記下捲動與「回看前情」的展開狀態
+      const logTop = e.log.scrollTop;
+      const logHeight = e.log.scrollHeight;
+      const keepLog = keepView(e.log);
       e.log.innerHTML = "";
       let shown = 0;
       for (const group of groupByDecade([...state.log].reverse())) {
@@ -865,6 +872,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         e.log.appendChild(li);
       }
       }
+      keepLog();
+      // 新日誌插在最上面：玩家正往下讀舊的就補上新增的高度，畫面才不會被往下推；停在最上面就繼續跟著最新
+      e.log.scrollTop = logTop > 0 ? logTop + (e.log.scrollHeight - logHeight) : 0;
     }
 
     // 抉擇事件：時間暫停，等玩家選擇
@@ -872,6 +882,9 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     if (pendingKey !== eventKey) {
       eventKey = pendingKey;
       e.eventModal.hidden = state.pendingEvent === null;
+      const evCard = e.eventModal.querySelector<HTMLElement>(".card");
+      const keepEvent = evCard && state.pendingEvent !== null && state.pendingEvent === keptEvent ? keepView(evCard, [evCard]) : null;
+      keptEvent = state.pendingEvent;
       e.eventChoices.innerHTML = "";
       e.eventChoices.classList.remove("picked");
       if (state.pendingEvent !== null) {
@@ -945,6 +958,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
           e.eventChoices.prepend(hint);
         }
       }
+      keepEvent?.();
     }
 
     {
