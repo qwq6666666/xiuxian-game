@@ -78,6 +78,7 @@ export interface UiHandlers {
   onTravel(targetId: string): void;
   onWave(choice: WaveChoice, focused: boolean): void;
   onHunt(choice: HuntChoice): void;
+  onEnterTrial(trialId: string): void;
   onFocus(): void;
   onMethod(methodId: string): void;
   onForge(recipeId: string): void;
@@ -147,6 +148,7 @@ export interface LifeEls {
   schedules: { id: string; b: HTMLButtonElement; facts: HTMLElement; hint: HTMLElement }[];
   zuohuaBox: HTMLElement;
   sectBox: HTMLElement;
+  trialBox: HTMLElement;
   alchemyBox: HTMLElement;
   zuohuaInfo: HTMLElement;
   btSection: HTMLElement;
@@ -417,6 +419,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
           </section>
           <section id="sectBox" class="s-sect" data-tab="play" hidden></section>
+          <section id="trialBox" class="s-trial" data-tab="play" hidden></section>
           <section id="alchemyBox" class="s-alchemy" data-tab="make" hidden></section>
           <section id="zuohuaBox" class="s-zuohua" data-tab="play" hidden>
             <h2>閉關坐化</h2>
@@ -536,6 +539,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       schedules,
       zuohuaBox: q("#zuohuaBox"),
       sectBox: q("#sectBox"),
+      trialBox: q("#trialBox"),
       alchemyBox: q("#alchemyBox"),
       zuohuaInfo: q("#zuohuaInfo"),
       btSection: q("#btSection"),
@@ -721,6 +725,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     panels.renderStatDetail(state);
     panels.renderResources(state);
     panels.renderSect(state, e);
+    panels.renderTrial(state, e);
     panels.renderAlchemy(state, e);
     panels.renderTribulation(state, e);
     panels.renderHunt(state, e);

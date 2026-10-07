@@ -77,6 +77,8 @@ export function createInitialState(
       startFragments: meta.fragments.length,
       tribulation: null,
       encounter: null,
+      trial: null,
+      trialsDone: [],
       alchemy: null,
       sect: null,
       sectsTried: [],

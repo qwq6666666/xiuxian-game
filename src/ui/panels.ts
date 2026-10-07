@@ -13,6 +13,7 @@ import {
   pillAvailable,
 } from "../core/breakthrough";
 import { haptic } from "./haptics";
+import { trialBlockReason, trialOf, trialsFor } from "../core/trial";
 import { canHunt, fleeChance, actionHit, monsterOf, powerRatio, type HuntChoice, huntTalisman } from "../core/encounter";
 import type { GameState } from "../core/state";
 import { atBottleneck } from "../core/tick";
@@ -46,6 +47,7 @@ export interface Panels {
   renderTribulation(state: GameState, e: LifeEls): void;
   renderHunt(state: GameState, e: LifeEls): void;
   renderSect(state: GameState, e: LifeEls): void;
+  renderTrial(state: GameState, e: LifeEls): void;
   renderResources(state: GameState): void;
   renderStatDetail(state: GameState): void;
   renderAlchemy(state: GameState, e: LifeEls): void;
@@ -273,7 +275,7 @@ export function createPanels(ctx: PanelContext): Panels {
     const h = state.encounter;
     const talisman = huntTalisman(data);
     const have = talisman ? (state.items[talisman] ?? 0) : 0;
-    const key = h ? JSON.stringify([h, have, state.realmId, state.stage, state.attributes, state.meta.bestiary[h.monsterId]]) : "";
+    const key = h ? JSON.stringify([h, have, state.realmId, state.stage, state.attributes, state.meta.bestiary[h.monsterId], state.trial]) : "";
     if (key === huntKey) return;
     huntKey = key;
     e.huntModal.hidden = h === null;
@@ -318,7 +320,8 @@ export function createPanels(ctx: PanelContext): Panels {
     }
     lastHuntHealth = { monsterId: h.monsterId, monsterHp: h.monsterHp, myHp: h.myHp };
     const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";
-    e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・勝了有修為與靈石，打不贏可以逃。`;
+    const floorNote = state.trial ? `${trialOf(state.trial.id, data).name}・第 ${state.trial.floor + 1}／${trialOf(state.trial.id, data).floors.length} 層・` : "";
+    e.huntInfo.textContent = `${floorNote}${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。" : "勝了有修為與靈石，打不贏可以逃。"}`;
     const pct = (v: number): string => `${Math.round(v * 100)}%`;
     const rows: { choice: HuntChoice; name: string; note: string }[] = [
       { choice: "steady", name: rules.actions.steady.name, note: `命中約 ${pct(actionHit(state, "steady", data))}・傷己較輕` },
@@ -333,6 +336,29 @@ export function createPanels(ctx: PanelContext): Panels {
       b.disabled = !canHunt(state, r.choice, data);
       b.addEventListener("click", () => handlers.onHunt(r.choice));
       e.huntChoices.append(b);
+    }
+  }
+
+  /** 秘境面板（M47）：目前境界有秘境才顯示；內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
+  let trialKey = "";
+  function renderTrial(state: GameState, e: LifeEls): void {
+    const rows = trialsFor(state, data).map((t) => ({ t, reason: trialBlockReason(state, t.id, data) }));
+    const key = JSON.stringify([state.phase, rows.map((r) => [r.t.id, r.reason])]);
+    if (key === trialKey) return;
+    trialKey = key;
+    e.trialBox.hidden = rows.length === 0 || state.phase !== "living";
+    e.trialBox.replaceChildren();
+    if (e.trialBox.hidden) return;
+    e.trialBox.append(el("h2", undefined, "秘境"), el("p", "desc", "每世每座只能入一次，進去就要耗上整段時間，過關才有一次性的收穫。"));
+    for (const { t, reason } of rows) {
+      const row = el("div", "trial-row");
+      const info = el("div");
+      info.append(el("strong", undefined, t.name), el("small", undefined, t.desc), el("small", "changes", `${t.floors.length} 層・耗時 ${t.months} 個月`));
+      if (reason) info.append(el("small", "trial-reason", reason));
+      const go = button("入秘境", () => handlers.onEnterTrial(t.id), true);
+      go.disabled = reason !== null;
+      row.append(info, go);
+      e.trialBox.append(row);
     }
   }
 
@@ -577,10 +603,11 @@ export function createPanels(ctx: PanelContext): Panels {
 
   function reset(): void {
     sectKey = "";
+    trialKey = "";
     tribKey = "";
     bagKey = "";
     lastBag = null;
   }
 
-  return { renderBreakthrough, renderBag, renderTribulation, renderHunt, renderSect, renderResources, renderStatDetail, renderAlchemy, markMake, flash, floatDelta, reset };
+  return { renderBreakthrough, renderBag, renderTribulation, renderHunt, renderSect, renderTrial, renderResources, renderStatDetail, renderAlchemy, markMake, flash, floatDelta, reset };
 }

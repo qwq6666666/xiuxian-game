@@ -146,6 +146,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
       },
     };
   },
+  // v29 沒有秘境試煉：補上沒有進行中的秘境、本世沒入過
+  29: (d) => ({ ...d, version: 30, trial: null, trialsDone: [] }),
   26: (d) => ({ ...d, version: 27 }),
   25: (d) => ({ ...d, version: 26, altCharts: [], wishId: null, omenLeft: 0, omen: [] }),
   // v24 運功是冷卻制：冷卻已過的舊檔補一次存量，起點移到現在；還在冷卻的維持原計時
@@ -249,6 +251,11 @@ function parseLogEntry(e: unknown, p: string, data: GameData): LogEntry {
     if (!data.monsters.monsters.some((m) => m.id === entry.monsterId)) fail(`${p}.monsterId`, `找不到怪物 ${entry.monsterId}`);
   }
   if (kind.startsWith("hunt") && entry.monsterId === undefined) fail(`${p}.monsterId`, "遇怪日誌必須有 monsterId");
+  if (eo.trialId !== undefined) {
+    entry.trialId = str(eo, "trialId", `${p}.trialId`);
+    if (!data.trials.trials.some((t) => t.id === entry.trialId)) fail(`${p}.trialId`, `找不到秘境 ${entry.trialId}`);
+  }
+  if (kind.startsWith("trial") && entry.trialId === undefined) fail(`${p}.trialId`, "秘境日誌必須有 trialId");
   if (eo.rank !== undefined) entry.rank = num(eo, "rank", { integer: true, min: 0 }, `${p}.rank`);
   if (eo.eraIndex !== undefined) entry.eraIndex = num(eo, "eraIndex", { integer: true, min: 0 }, `${p}.eraIndex`);
   if (eo.originId !== undefined) {
@@ -568,6 +575,25 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
   } else if (o.encounter === undefined) {
     fail("encounter", "不可缺少（沒有遇怪時為 null）");
   }
+  // 秘境試煉（M47）：進行中時必有對應的遇怪，且目前那一層的怪物要與秘境的設定一致
+  const trialsDone = o.trialsDone;
+  if (!Array.isArray(trialsDone) || !trialsDone.every((id) => typeof id === "string" && data.trials.trials.some((t) => t.id === id))) fail("trialsDone", "必須是秘境 id 的陣列");
+  if (new Set(trialsDone as string[]).size !== trialsDone.length) fail("trialsDone", "不可重複");
+  let trial: GameState["trial"] = null;
+  if (o.trial !== null && o.trial !== undefined) {
+    const to = obj(o.trial, "trial");
+    const trialId = str(to, "id", "trial.id");
+    const def = data.trials.trials.find((t) => t.id === trialId);
+    if (!def) fail("trial.id", `找不到秘境 ${trialId}`);
+    const floor = num(to, "floor", { integer: true, min: 0 }, "trial.floor");
+    if (floor >= def.floors.length) fail("trial.floor", `必須小於層數 ${def.floors.length}，目前為 ${floor}`);
+    if (encounter === null) fail("trial", "進行中的秘境必須同時有遇怪（encounter）");
+    if (encounter.monsterId !== def.floors[floor]) fail("trial.floor", `第 ${floor + 1} 層應是 ${def.floors[floor]}，遇怪卻是 ${encounter.monsterId}`);
+    if (!(trialsDone as string[]).includes(trialId)) fail("trialsDone", `進行中的秘境 ${trialId} 必須已記入`);
+    trial = { id: trialId, floor, seed: num(to, "seed", { integer: true, min: 0 }, "trial.seed") };
+  } else if (o.trial === undefined) {
+    fail("trial", "不可缺少（沒有秘境時為 null）");
+  }
   let alchemy: GameState["alchemy"] = null;
   if (o.alchemy !== null && o.alchemy !== undefined) {
     const ao = obj(o.alchemy, "alchemy");
@@ -647,6 +673,8 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     equipment,
     sect: sectRaw === null ? null : { id: sectRaw.id as string, rank: sectRaw.rank as number, contribution: sectRaw.contribution as number, joinedAge: sectRaw.joinedAge as number },
     sectsTried: o.sectsTried as string[],
+    trial,
+    trialsDone: trialsDone as string[],
     sectPeak: num(o, "sectPeak", { integer: true, min: 0 }),
     flags: o.flags as string[],
     eventCounts: intRecord(o, "eventCounts"),

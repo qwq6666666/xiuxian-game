@@ -18,7 +18,7 @@
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-menu); padding: var(--sp-2) var(--sp-3); background: var(--panel); border-top: 1px solid var(--line); }
   #app { padding-bottom: calc(var(--tap) + var(--sp-5) + var(--sp-3)); }
   .chip { min-height: 32px; }
-  .s-sched { order: 1; } .s-bt { order: 2; } .s-zuohua { order: 3; } .s-sect { order: 3; } .s-alchemy { order: 3; }
+  .s-sched { order: 1; } .s-bt { order: 2; } .s-zuohua { order: 3; } .s-sect { order: 3; } .s-trial { order: 3; } .s-alchemy { order: 3; }
   .log { order: 4; } .s-role { order: 5; } .s-bag { order: 6; } .s-market { order: 7; }
   .log ul { max-height: 50vh; max-height: 50dvh; }
   .items li { flex-wrap: wrap; }

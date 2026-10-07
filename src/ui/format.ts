@@ -259,6 +259,17 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "你", sl
       template = line.replace("{monster}", monster.name);
       break;
     }
+    case "trialEnter":
+    case "trialClear":
+    case "trialFail": {
+      const def = data.trials.trials.find((x) => x.id === entry.trialId);
+      if (!def) throw new Error(`日誌：找不到秘境 ${entry.trialId}`);
+      const t = data.trials.rules.text;
+      // 失敗日誌的 outcome：0 敗退、1 中途抽身
+      const line = entry.kind === "trialEnter" ? t.enter : entry.kind === "trialClear" ? t.clear : entry.outcome === 1 ? t.abandon : t.fail;
+      template = line.replace("{trial}", def.name);
+      break;
+    }
     case "era":
       template = pickBy(data.text.era.opening, entry.eraIndex ?? 0);
       {

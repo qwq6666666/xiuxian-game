@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, Omen, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 29;
+export const SAVE_VERSION = 30;
 
 /** 沒有選擇過時的國家數（與 map.json 的 nations.default 相同，由載入檢查守住） */
 export const DEFAULT_NATIONS = 5;
@@ -136,6 +136,9 @@ export const LOG_KINDS = [
   "huntLose",
   "huntFlee",
   "huntDraw",
+  "trialEnter",
+  "trialClear",
+  "trialFail",
 ] as const;
 export type LogKind = (typeof LOG_KINDS)[number];
 
@@ -190,6 +193,8 @@ export interface LogEntry {
   wave?: number;
   /** 歷練遇怪的日誌：怪物 id */
   monsterId?: string;
+  /** 秘境試煉的日誌：秘境 id */
+  trialId?: string;
 }
 
 /** 天劫進行中的狀態 */
@@ -203,6 +208,13 @@ export interface TribulationState {
 }
 
 /** 進行中的遇怪（M34）：氣血以 0–1 計；seed 是遇怪開始時抽定的亂數種子，每回合再由它衍生 */
+/** 進行中的秘境試煉（M47）：floor 是目前這一層的索引（從 0 起算），seed 是進入時抽定的種子，各層遇怪的亂數由它衍生 */
+export interface TrialState {
+  id: string;
+  floor: number;
+  seed: number;
+}
+
 export interface EncounterState {
   monsterId: string;
   round: number;
@@ -314,6 +326,10 @@ export interface GameState {
   tribulation: TribulationState | null;
   /** 進行中的歷練遇怪（M34）；時間暫停，等玩家選擇戰或逃 */
   encounter: EncounterState | null;
+  /** 進行中的秘境試煉（M47）；進行中時 encounter 一定不是 null（每一層就是一場遇怪） */
+  trial: TrialState | null;
+  /** 本世已入過的秘境 id（通關、敗退、中途退出都算），每世每座只能入一次 */
+  trialsDone: string[];
   /** 進行中的煉丹（M29）；換了日常安排也保留，換回來就接著煉 */
   alchemy: AlchemyState | null;
   /** 目前所屬宗門（M25）；rank 是位階索引（0 外門），joinedAge 是入宗年齡（月） */

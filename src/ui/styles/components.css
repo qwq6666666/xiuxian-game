@@ -136,3 +136,8 @@ blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }
 .ico { width: 1em; height: 1em; vertical-align: -0.14em; margin-right: 0.3em; flex: none; }
 .chip .ico { margin-right: 0.25em; }
 .event-art:empty, #eventArt:empty { display: none; }
+
+/* 秘境（M47）：每座一列，說明在左、入秘境鈕在右；不能入時寫出原因 */
+.trial-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-2) 0; border-top: 1px dashed var(--line); }
+.trial-row > div { flex: 1; }
+.trial-reason { color: var(--warn); }

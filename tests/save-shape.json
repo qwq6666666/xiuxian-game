@@ -1,5 +1,5 @@
 {
-  "version": 29,
+  "version": 30,
   "shape": {
     "TravelState": [
       "locationId",
@@ -87,6 +87,7 @@
       "spiritRootId",
       "stage",
       "stop",
+      "trialId",
       "wave"
     ],
     "TribulationState": [
@@ -95,6 +96,11 @@
       "threshold",
       "wave",
       "waves"
+    ],
+    "TrialState": [
+      "floor",
+      "id",
+      "seed"
     ],
     "EncounterState": [
       "monsterHp",
@@ -181,6 +187,8 @@
       "stage",
       "startFragments",
       "travel",
+      "trial",
+      "trialsDone",
       "tribulation",
       "version",
       "wishId",

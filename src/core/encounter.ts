@@ -6,6 +6,7 @@ import { monthlyGain } from "./gain";
 import { addLog, atBottleneck, resolveStages } from "./progress";
 import { deriveSeed, nextRandom } from "./rng";
 import type { BestiaryEntry, Changes, GameState } from "./state";
+import { advanceTrial } from "./trial";
 
 /** 遇怪亂數的雜湊鹽值，與材料掉落、世界生成用的編號錯開 */
 const HUNT_SALT = 8_000_000;
@@ -84,7 +85,7 @@ function finish(state: GameState, kind: HuntLog, data: GameData, extra: { outcom
   const field = { huntWin: "win", huntLose: "lose", huntFlee: "flee", huntDraw: "draw" }[kind] as keyof BestiaryEntry;
   const seen = state.meta.bestiary[e.monsterId] ?? { win: 0, lose: 0, flee: 0, draw: 0 };
   const meta = { ...state.meta, bestiary: { ...state.meta.bestiary, [e.monsterId]: { ...seen, [field]: seen[field] + 1 } } };
-  return addLog(
+  const done = addLog(
     { ...state, meta, encounter: null },
     {
       month: state.ageMonths,
@@ -97,6 +98,8 @@ function finish(state: GameState, kind: HuntLog, data: GameData, extra: { outcom
     },
     data.config.logLimit,
   );
+  // 秘境試煉中：這一層結束，由秘境決定接下來進下一層、通關或結束（M47）
+  return done.trial ? advanceTrial(done, kind, extra.outcome, data) : done;
 }
 
 /** 損失目前修為的一部分 */
@@ -110,7 +113,8 @@ function win(state: GameState, data: GameData): GameState {
   const m = monsterOf(e.monsterId, data);
   const retreat = data.schedules.find((s) => s.id === "retreat");
   if (!retreat) throw new Error("遇怪：找不到閉關修煉（retreat）安排");
-  const gain = atBottleneck(state, data) ? 0 : monthlyGain(state, retreat, data) * m.reward;
+  // 秘境裡每層只給靈石與掉落；修為只在通關時一次給（見 trial.ts），免得秘境比閉關更划算
+  const gain = atBottleneck(state, data) || state.trial !== null ? 0 : monthlyGain(state, retreat, data) * m.reward;
   const stones = m.stones.min + Math.floor(draw(e.seed, 900) * (m.stones.max - m.stones.min + 1));
   const items = { ...state.items };
   const got: Record<string, number> = {};

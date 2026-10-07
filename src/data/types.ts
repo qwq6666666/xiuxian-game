@@ -699,6 +699,36 @@ export interface MonstersData {
   monsters: MonsterDef[];
 }
 
+/** 秘境試煉通關的一次性獎勵（M47）：修為以「閉關幾個月」計，靈石在範圍內抽，物品是固定數量 */
+export interface TrialReward {
+  cultivationMonths: number;
+  stones: { min: number; max: number };
+  items: Record<string, number>;
+}
+
+/** 一座秘境（M47）：每層一名怪物，進入時就扣固定月數；每世每座只能入一次 */
+export interface TrialDef {
+  id: string;
+  name: string;
+  desc: string;
+  /** 必須是目前境界才能入 */
+  realm: string;
+  months: number;
+  /** 每層的怪物 id，依序打；怪物須屬於同一境界 */
+  floors: string[];
+  reward: TrialReward;
+}
+
+export interface TrialsData {
+  rules: {
+    /** 進入後壽元至少還要剩「花費月數 + 這個值」，免得在秘境裡耗盡壽元 */
+    lifespanBuffer: number;
+    /** 日誌用句，{trial} 換成秘境名稱 */
+    text: { enter: string; clear: string; fail: string; abandon: string };
+  };
+  trials: TrialDef[];
+}
+
 /** 天劫的數值與文字（M28） */
 export interface TribulationData {
   /** 運功護體：成功率 + 心性 × perMind（上限 max），這一道失敗時額外損失 extraLoss 的修為 */
@@ -843,6 +873,7 @@ export interface GameData {
   items: ItemDef[];
   recipes: RecipesData;
   monsters: MonstersData;
+  trials: TrialsData;
   methods: MethodDef[];
   events: EventDef[];
   talents: TalentDef[];

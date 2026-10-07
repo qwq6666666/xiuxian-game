@@ -1,6 +1,14 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：M47 秘境試煉（核心、資料、sim、最小介面）
+
+- 分支 `ai/claude-m47`（從已合併 M48 的 master 開出），尚未合併、尚未 push。M48 已在本機 `master` fast-forward 合併（`028d669`），**也尚未 push**。
+- 內容：見 GDD 第 54 節。`trials.json`（4 座）、`core/trial.ts`、`encounter.ts` 的兩處接線、存檔 v30（`trial`、`trialsDone`、日誌 `trialId` 與三種日誌類型）、`validateTrials`、`scripts/simulate.ts` 的 `trial` 策略、`tests/trial.test.ts`（15 個）、介面：`panels.ts` `renderTrial`、遇怪視窗層數、`main.ts` `onEnterTrial`、日誌文字。
+- 驗證：`npm run verify`（見下方結果）；sim：`trial` 300×16 全 ✓（首次金丹中位數第 10 世、通關 5.3 小時）；`simple`／`mixed`／`hunt`／`herb`／`wander`／`alchemy`（300×16）與 `post`（40×40）和 master 逐字相同。瀏覽器：匯入練氣存檔，面板出現、入秘境扣 6 個月、三層依序顯示「第 1／3 層」到「第 3／3 層」、通關日誌帶修為／靈石／靈砂／妖丹、面板顯示「這一世已經入過」。**沒驗證**：375px 與真機；築基以上三座的實際打法；通關率偏低（最壞情況 6%）是否合適要靠實際遊玩；敗退與抽身的畫面；自動抉擇開著時入秘境。
+- **需要 ChatGPT**：秘境區塊與遇怪視窗的樓層呈現太陽春（只有文字），請做樓層進度、逐層演出與通關結算，沿用 M48 的動態基礎；需要新欄位請在你的交接檔寫需求。
+- **需要使用者**：WORLD.md 的名稱提案在 GDD 54.6，通過前資料維持代號「試煉一～四」。
+
 ## 2026-10-07：M48 介面動態化 階段 4（天下圖）
 
 - 分支 `ai/claude-m48`，尚未合併、尚未 push。**請 ChatGPT 審 `src/ui/` 的變更**（`worldmap.ts` 原本是 ChatGPT 的區域，這次由我動）。

@@ -6,8 +6,9 @@ import {
   type MonsterDef,
   type MonstersData,
   type TribulationData,
+  type TrialsData,
 } from "../types";
-import { fail, obj, list, num, str, uniqueIds } from "./common";
+import { fail, intRecord, obj, list, num, str, strList, uniqueIds } from "./common";
 
 /** 歷練遇怪的規則與怪物（monsters.json） */
 export function validateMonsters(raw: unknown, realmIds: string[], itemIds: string[], file = "monsters.json"): MonstersData {
@@ -107,4 +108,49 @@ export function validateTribulation(raw: unknown, file = "tribulation.json"): Tr
     focusBonus: num(o, "focusBonus", file, { min: 0, max: 0.1 }),
     images,
   };
+}
+
+/** 秘境試煉（trials.json，M47）：層數、花費月數、獎勵；怪物與物品必須存在，怪物須屬於秘境的境界 */
+export function validateTrials(raw: unknown, monsters: MonsterDef[], realmIds: string[], itemIds: string[], file = "trials.json"): TrialsData {
+  const o = obj(raw, file);
+  const rw = `${file} 欄位 rules`;
+  const r = obj(o.rules, rw);
+  const tw = `${rw}.text`;
+  const t = obj(r.text, tw);
+  const text = { enter: str(t, "enter", tw), clear: str(t, "clear", tw), fail: str(t, "fail", tw), abandon: str(t, "abandon", tw) };
+  for (const [k, v] of Object.entries(text)) if (!v.includes("{trial}")) fail(tw, k, "必須含 {trial}");
+  const trials = list(o.trials, `${file} 欄位 trials`).map((raw2, i) => {
+    const where = `${file} 第 ${i + 1} 筆`;
+    const m = obj(raw2, where);
+    const id = str(m, "id", where);
+    const w = `${file} 第 ${i + 1} 筆（${id}）`;
+    const realm = str(m, "realm", w);
+    if (!realmIds.includes(realm)) fail(w, "realm", `找不到境界 ${realm}`);
+    const floors = strList(m, "floors", w);
+    if (floors.length < 3 || floors.length > 5) fail(w, "floors", `層數必須是 3 到 5，目前為 ${floors.length}`);
+    for (const f of floors) {
+      const mon = monsters.find((x) => x.id === f);
+      if (!mon) fail(w, "floors", `找不到怪物 ${f}`);
+      if (mon.realm !== realm) fail(w, "floors", `怪物 ${f} 屬於 ${mon.realm}，與秘境的境界 ${realm} 不同`);
+    }
+    const rewardW = `${w}.reward`;
+    const ro = obj(m.reward, rewardW);
+    const sw = `${rewardW}.stones`;
+    const so = obj(ro.stones, sw);
+    const stones = { min: num(so, "min", sw, { min: 0, integer: true }), max: num(so, "max", sw, { min: 0, integer: true }) };
+    if (stones.min > stones.max) fail(sw, "min", "不可大於 max");
+    const items = intRecord(ro, "items", rewardW, 1);
+    for (const itemId of Object.keys(items)) if (!itemIds.includes(itemId)) fail(rewardW, "items", `找不到物品 ${itemId}`);
+    return {
+      id,
+      name: str(m, "name", w),
+      desc: str(m, "desc", w),
+      realm,
+      months: num(m, "months", w, { min: 1, max: 24, integer: true }),
+      floors,
+      reward: { cultivationMonths: num(ro, "cultivationMonths", rewardW, { min: 0, max: 6 }), stones, items },
+    };
+  });
+  uniqueIds(trials, file);
+  return { rules: { lifespanBuffer: num(r, "lifespanBuffer", rw, { min: 0, max: 60, integer: true }), text }, trials };
 }

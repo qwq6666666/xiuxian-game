@@ -18,6 +18,7 @@ import methodsJson from "./methods.json";
 import originsJson from "./origins.json";
 import recipesJson from "./recipes.json";
 import monstersJson from "./monsters.json";
+import trialsJson from "./trials.json";
 import realmsJson from "./realms.json";
 import schedulesJson from "./schedules.json";
 import sectsJson from "./sects.json";
@@ -50,6 +51,7 @@ import {
   validateSchedules,
   validateSects,
   validateTribulation,
+  validateTrials,
   validateSpiritRoots,
   validateTalents,
   validateMap,
@@ -63,6 +65,11 @@ import {
 
 const realmsData = validateRealms(realmsJson);
 const itemsData = validateItems(itemsJson);
+const monstersData = validateMonsters(
+  monstersJson,
+  realmsData.map((r) => r.id),
+  itemsData.map((i) => i.id),
+);
 
 export const gameData: GameData = validateGameData({
   config: validateConfig(configJson),
@@ -70,8 +77,10 @@ export const gameData: GameData = validateGameData({
   schedules: validateSchedules(schedulesJson),
   items: itemsData,
   recipes: validateRecipes(recipesJson),
-  monsters: validateMonsters(
-    monstersJson,
+  monsters: monstersData,
+  trials: validateTrials(
+    trialsJson,
+    monstersData.monsters,
     realmsData.map((r) => r.id),
     itemsData.map((i) => i.id),
   ),

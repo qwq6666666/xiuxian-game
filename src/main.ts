@@ -3,7 +3,8 @@ import { msToMonths } from "./core/formulas";
 import { buyItem, renameCharacter, buyTalent, setSchedule, useAll, useItem, zuohua } from "./core/actions";
 import { equip, forge, unequip } from "./core/forge";
 import { focus } from "./core/focus";
-import { huntChoose } from "./core/encounter";
+import { autoEncounter, huntChoose } from "./core/encounter";
+import { enterTrial } from "./core/trial";
 import { setMethod } from "./core/method";
 import { cancelBrew, startBrew } from "./core/alchemy";
 import { attemptBreakthrough, faceWave } from "./core/breakthrough";
@@ -117,6 +118,11 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onBuyItem: (id) => update(buyItem(state, id, data)),
   onWave: (choice, focused) => update(faceWave(state, choice, data, focused)),
   onHunt: (choice) => update(huntChoose(state, choice, data)),
+  // 入秘境：開著自動抉擇時，一路用預設打法打到秘境結束
+  onEnterTrial: (id) => {
+    const entered = enterTrial(state, id, data);
+    update(entered.encounter !== null && entered.autoChoice ? autoEncounter(entered, data) : entered);
+  },
   onFocus: () => update(focus(state, data)),
   onMethod: (id) => update(setMethod(state, id, data)),
   onForge: (id) => update(forge(state, id, data)),
