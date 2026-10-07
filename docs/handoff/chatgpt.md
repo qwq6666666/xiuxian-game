@@ -2,6 +2,14 @@
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
 
+## 2026-10-07：M62 第一人稱場景動態化（階段 1）
+
+- 分支與 commit：`ai/chatgpt-m62`，`dd191fe`（介面與測試）；文件完成紀錄另見其後一筆 commit。原 `origin/ai/chatgpt` 已和 `master` 分歧，因此本次使用獨立里程碑分支，避免改寫他人的歷史。
+- 改了什麼與為什麼：四向轉身由無方向淡化改為相反方向的滑動淡入／淡出；新增 `firstPersonHands.ts`，讓洞府、戶外、開場插圖與事件／遇怪短幅共用第一人稱衣袖與手部。運功、丹爐、丹瓶、行囊、殘卷、洞口六個熱點各有手勢與接觸光圈，動作先立即套用遊戲狀態，再播放約 280 毫秒的演出，不鎖操作。×4 時 CSS 時長縮為 70–75 毫秒；色彩只沿用既有場景 token。
+- 自動驗證：`npm run verify` 全過（72 個測試檔、804 項測試；TypeScript、正式建置與大小檢查成功）；`dist/index.html` 612KB／上限 1500KB；`git diff --check` 通過。`tests/style.test.ts` 新增方向動畫、六種共用手勢、立即執行與全域 reduced-motion 守門。沒有改數值、事件、間隔或存檔，未跑 sim。
+- 瀏覽器驗證：本機 Vite。1280×800、375×812 都實看共用雙手、左右轉身與物件操作；手機量得 `innerWidth` 375、文件 `scrollWidth` 375，無水平溢位。×1 確認轉身舊景帶 `turn-leave-right`、新景帶 `turn-enter-right`，約 300 毫秒後清除；×4 讀得操作 70 毫秒、轉身 75 毫秒。以鍵盤 `ArrowRight` 從石案轉到洞口，既有焦點與 aria 標籤保留。
+- 沒驗證／Claude 注意：自動化環境沒有觸控事件注入，因此沒有用真實手指再滑一次；`tests/gesture.test.ts` 全過，`onSwipe` 綁定路徑未改。沒有實際切換作業系統的「減少動態效果」，由新增測試確認 `base.css` 全域規則會停用 animation 與 transition。視差是 M62 可選項，本階段未加入；現有 SVG 濾鏡與全幅縮放已足夠，先保留手機效能餘裕。請 Claude 審查後合併，不需新資料欄位。
+
 ## 2026-10-07：線上實玩與手機經典介面橫向溢出修補
 
 - 分支與 commit：`ai/chatgpt-playtest-ui`，`64e3de7`。

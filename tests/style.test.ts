@@ -146,3 +146,31 @@ describe("遊戲介面的擲骰頁", () => {
     expect(css).toMatch(/:has\(#stage > \.roll\) \.game-nav/);
   });
 });
+
+describe("M62 第一人稱場景動態", () => {
+  const caveText = readFileSync(join(UI, "styles", "cave.css"), "utf8");
+  const baseText = readFileSync(join(UI, "styles", "base.css"), "utf8");
+
+  it("左右轉身使用相反方向的位移進退場", () => {
+    for (const name of ["cave-leave-right", "cave-enter-right", "cave-leave-left", "cave-enter-left"]) {
+      expect(caveText).toContain(`@keyframes ${name}`);
+    }
+    expect(caveText).toMatch(/\.cave-view\.turn-leave-right\s*\{[^}]*animation:[^;]*var\(--dur-turn\)/);
+    expect(caveText).toMatch(/\.cave-view\.turn-enter-left\s*\{[^}]*animation:[^;]*var\(--dur-turn\)/);
+  });
+
+  it("六個場景動作共用手部層，動畫時間隨流速縮短且不延遲操作", () => {
+    expect(renderText).toContain('import { sceneHands } from "./firstPersonHands"');
+    expect(renderText).toContain('class="fp-overlay"');
+    for (const action of ["focus", "brew", "pill", "bag", "scrolls", "schedule"]) {
+      expect(renderText).toContain(`\"${action}\"`);
+      expect(caveText).toContain(`data-action="${action}"`);
+    }
+    expect(renderText).toContain('run(action)');
+    expect(renderText).toContain('ACTION_MS / Math.max(1, state.speed)');
+  });
+
+  it("減少動態效果時沿用全域規則關閉場景動畫與位移", () => {
+    expect(baseText).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*animation:\s*none !important[\s\S]*transition:\s*none !important/);
+  });
+});
