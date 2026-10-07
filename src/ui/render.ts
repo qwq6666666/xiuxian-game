@@ -21,6 +21,7 @@ import { createVeil } from "./scene/veil";
 import { neighbourOf, onSwipe } from "./gesture";
 import { resetRolls, rollNumber } from "./tween";
 import { keepView } from "./keepview";
+import { createAchievementWatch } from "./achievementWatch";
 
 const reducedMotion = (): boolean => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { haptic, hapticsEnabled, setHapticsEnabled } from "./haptics";
@@ -802,6 +803,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));
       if (state.phase === "rolling") rollView.render(state);
       else renderLife(state);
+      watchAchievements(state.meta);
       // 秘境可能逐層手動打，也可能由自動抉擇在一次更新裡跑到底；兩種路徑都從新增日誌找最終結算。
       if (before && els) {
         const result = state.log[state.log.length - 1];
@@ -856,6 +858,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       return reading;
     },
   };
+  const watchAchievements = createAchievementWatch(data, (message) => {
+    if (!noticeEl.hidden) return false;
+    ui.notice(message);
+    return true;
+  });
   renderRef = (state) => ui.render(state);
   return ui;
 }
