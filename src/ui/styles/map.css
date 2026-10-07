@@ -63,6 +63,8 @@
 
 /* 一張資訊卡：點選什麼就顯示什麼 */
 .map-info { padding: var(--sp-2) var(--sp-3); border-left: 2px solid var(--accent); background: var(--panel); min-height: 6.4em; }
+/* 資訊卡釘在視窗底：點了地圖不必往下捲就看得到說明與「前往」鈕 */
+.map-info { position: sticky; bottom: 0; z-index: 3; max-height: 34vh; overflow-y: auto; border-top: 1px solid var(--line); }
 .map-info p { margin: var(--sp-1) 0 0; }
 .map-info-title { margin: 0; }
 .map-info-title small { color: var(--muted); }
@@ -105,3 +107,9 @@
   .map-travel-status { overflow-wrap: anywhere; }
   .map-travel-go { width: 100%; min-height: var(--tap); }
 }
+
+/* 常駐圖例：形狀與地圖上的標記相同 */
+.map-key { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); margin: var(--sp-2) 0; color: var(--muted); font-size: 0.9em; }
+.map-key-item { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.map-key-icon { width: 1.2em; height: 1.2em; }
+.map-key-sect { fill: var(--map-sect-paper); stroke: var(--map-marker-outline); stroke-width: 1.5; }

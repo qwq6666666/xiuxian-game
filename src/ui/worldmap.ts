@@ -159,7 +159,34 @@ export function mapStamp(state: GameState, data: GameData): string {
   return `${state.worldSeed}:${worldAt(world, mapAgeYears(state.ageMonths)).changeCount}`;
 }
 
+/** 標記的點選範圍至少這麼大（地圖座標單位）；縮小到手機寬度時仍有約 25 像素直徑 */
+const MIN_HIT_RADIUS = 20;
+
 const coverCache = new WeakMap<Terrain, Map<string, number[]>>();
+
+/** 常駐的標記圖例：用地圖上同樣的形狀與樣式，一行說完 */
+function buildMapKey(): HTMLElement {
+  const key = html("div", "map-key");
+  key.setAttribute("aria-label", "標記說明");
+  const items: { text: string; glyph: string; cls: string; attrs?: Record<string, string> }[] = [
+    { text: "宗門", cls: "map-sect-dot map-key-sect", glyph: "circle" },
+    { text: "渡口", cls: "map-ferry", glyph: "diamond" },
+    { text: "商行", cls: "map-merchant", glyph: "rect" },
+    { text: "山", cls: "map-mountain", glyph: "tri" },
+    { text: "你", cls: "map-you-dot", glyph: "circle" },
+  ];
+  for (const it of items) {
+    const item = html("span", "map-key-item");
+    const icon = svg("svg", { viewBox: "-8 -8 16 16", class: "map-key-icon", "aria-hidden": "true" });
+    if (it.glyph === "circle") icon.append(svg("circle", { cx: 0, cy: 0, r: 5, class: it.cls }));
+    else if (it.glyph === "diamond") icon.append(svg("rect", { x: -3.5, y: -3.5, width: 7, height: 7, transform: "rotate(45)", class: it.cls }));
+    else if (it.glyph === "rect") icon.append(svg("rect", { x: -4, y: -4, width: 8, height: 8, class: it.cls }));
+    else icon.append(svg("path", { d: "M-6,4 L0,-6 L6,4 Z", class: it.cls }));
+    item.append(icon, html("span", undefined, it.text));
+    key.append(item);
+  }
+  return key;
+}
 
 /** 組出天下圖的內容（標題列、地圖、圖層鈕、資訊卡與折疊區） */
 export function buildWorldMap(
@@ -250,7 +277,7 @@ export function buildWorldMap(
   // 標記共用：點選、鍵盤操作、放大點擊範圍（手機上好點）
   const interactive = (el: SVGElement, target: MapTarget, hit?: [number, number, number]): SVGElement => {
     const action = hit ? svg("g") : el;
-    if (hit) action.append(svg("circle", { cx: hit[0], cy: hit[1], r: hit[2], fill: "transparent" }), el);
+    if (hit) action.append(svg("circle", { cx: hit[0], cy: hit[1], r: Math.max(hit[2], MIN_HIT_RADIUS), fill: "transparent" }), el);
     action.classList.add("map-hit");
     if (sameTarget(selected, target)) action.classList.add("selected", ...(selChanged ? ["pick"] : []));
     action.setAttribute("role", "button");
@@ -480,6 +507,9 @@ export function buildWorldMap(
     }
     mapPane.append(bar);
   }
+
+  // ---- 常駐圖例：標記的形狀各代表什麼，不必展開「更多」才知道 ----
+  mapPane.append(buildMapKey());
 
   // ---- 圖層鈕 ----
   const toggle = (key: keyof MapLayers, text: string): HTMLLabelElement => {
