@@ -15,6 +15,7 @@ import { goalStatuses } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
+import { gameNavHtml, mountGameMode } from "./gamemode";
 import { caveHtml, mountCave, toggleSchedulePicker, updateCave } from "./cave";
 import { QUICK_PILL, type CaveAction } from "./caveLogic";
 import { createVeil } from "./veil";
@@ -231,6 +232,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
             <button id="mobile-codex-open" class="menu-mobile-only" type="button"></button>
             <button id="mobile-map-open" class="menu-mobile-only" type="button"></button>
             <button id="mobile-collection-open" class="menu-mobile-only" type="button">收藏</button>
+            <button id="ui-toggle" type="button" aria-pressed="false">介面：經典</button>
             <button id="odds-toggle" type="button" aria-pressed="false">機率提示：關</button>
             <button id="haptics-toggle" type="button" aria-pressed="true">觸覺回饋：開</button>
             <button id="export" type="button">匯出存檔</button>
@@ -242,11 +244,15 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     </header>
     <div id="notice" role="status" hidden><span id="noticeText"></span><button id="noticeGo" type="button" hidden></button><button id="noticeClose" type="button" aria-label="關閉提示">關閉</button></div>
     <div id="stage"></div>
+    <p id="logTicker" class="log-ticker" role="button" tabindex="0" aria-label="開啟日誌"></p>
+    ${gameNavHtml()}
     <div class="modal codex" id="codex" role="dialog" aria-modal="true" aria-label="殘卷錄" hidden><div class="card review" id="codex-card"></div></div>
     <div class="modal codex" id="map" role="dialog" aria-modal="true" aria-label="天下圖" hidden><div class="card review map-card" id="map-card"></div></div>
     <div class="modal codex" id="collection" role="dialog" aria-modal="true" aria-label="收藏" hidden><div class="card review" id="collection-card"></div></div>
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
+  // 遊戲介面：場景全螢幕、功能由底部導航列開抽屜；經典介面維持原樣
+  const game = mountGameMode(root, stageEl, { showSideTab: (tab) => showSideTab(tab), openMap: () => overlays.openMap() }, window.matchMedia("(max-width: 640px)").matches);
   const noticeEl = root.querySelector<HTMLElement>("#notice")!;
   const noticeText = root.querySelector<HTMLElement>("#noticeText")!;
   const noticeGo = root.querySelector<HTMLButtonElement>("#noticeGo")!;
@@ -261,7 +267,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
   const speedBox = root.querySelector<HTMLElement>(".speeds")!;
   // 手機左右滑動切換側欄分頁；沒開放的分頁略過，到頭不循環
   onSwipe(stageEl, (dir) => {
-    if (!window.matchMedia("(max-width: 640px)").matches) return;
+    if (game.isGame() || !window.matchMedia("(max-width: 640px)").matches) return;
     const open = SIDE_TABS.map((t) => t.id).filter((id) => !stageEl.querySelector(`#sideTabs button[data-go="${id}"][data-locked]`) || id === sideTab);
     const next = neighbourOf(open, sideTab, dir);
     if (next) showSideTab(next);
@@ -370,6 +376,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
 
   function jumpTo(target: "market" | "schedules" | "breakthrough" | "goals" | "bag"): void {
     if (!els) return;
+    if (game.isGame()) game.openSheet(target === "schedules" || target === "breakthrough" ? "play" : target === "goals" ? "me" : "pack");
     const node = stageEl.querySelector<HTMLElement>({
       market: ".s-market", schedules: "#schedSection", breakthrough: "#btSection", goals: "#goalsFold", bag: ".s-bag",
     }[target]);
@@ -618,6 +625,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     // 洞府第一人稱視角：熱點只是面板操作的另一個入口，共用同一組 handler
     const caveEl = q("#cave");
     const showTab = (tab: SideTab): void => {
+      if (game.isGame()) return game.openSheet(tab);
       showSideTab(tab);
       stageEl.querySelector<HTMLElement>(".side")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     };
@@ -643,6 +651,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       else if (target === "schedules" || target === "market" || target === "breakthrough") jumpTo(target);
     });
     els.todoGo.addEventListener("click", () => {
+      game.openSheet("play");
       els!.btSection.scrollIntoView({ block: "nearest" });
       els!.btButton.focus();
     });
@@ -1047,6 +1056,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
         ? placesAt(state, data).find((place) => place.id === state.travel.locationId)?.name : null;
       const before = lastState;
       lastState = state;
+      const newest = state.log[state.log.length - 1];
+      game.setTicker(newest ? formatLogEntry(newest, data, state.name, slotsOf(state)) : "");
       overlays.update(state);
       autoEl.checked = state.autoChoice;
       for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));

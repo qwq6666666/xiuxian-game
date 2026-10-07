@@ -1,0 +1,50 @@
+/* 遊戲介面（#app[data-ui="game"]）：場景佔滿畫面、狀態變成頂部抬頭顯示、功能由底部導航列滑出抽屜。
+   經典介面完全不受影響：這裡的規則都以 data-ui="game" 為前提。 */
+.game-nav, .log-ticker { display: none; }
+
+#app[data-ui="game"] { position: fixed; inset: 0; display: flex; flex-direction: column; width: min(100%, 560px); margin: 0 auto; padding: 0; overflow: hidden; background: var(--bg); border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+#app[data-ui="game"] .bar { flex: none; margin: 0; padding: var(--sp-1) var(--sp-3); background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: nowrap; justify-content: space-between; }
+#app[data-ui="game"] .bar-left, #app[data-ui="game"] .bar-right { flex-wrap: wrap; min-width: 0; gap: 0 var(--sp-2); }
+#app[data-ui="game"] .menu summary { white-space: nowrap; }
+#app[data-ui="game"] .speeds button { padding: 0 var(--sp-2); }
+#app[data-ui="game"] .menu-list .auto { display: flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }
+#app[data-ui="game"] #codex-open, #app[data-ui="game"] #map-open, #app[data-ui="game"] #collection-open { display: none; }
+#app[data-ui="game"] .menu-mobile-only { display: block; }
+#app[data-ui="game"] #notice { flex: none; margin: 0; padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); background: var(--panel); border-bottom: 1px solid var(--line); }
+
+/* 舞台：場景鋪滿，狀態與抽屜疊在上面 */
+#app[data-ui="game"] #stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; display: block; }
+#app[data-ui="game"] #stage > .cave { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; aspect-ratio: auto; margin: 0; border-radius: 0; }
+#app[data-ui="game"] .cave svg { height: 100%; }
+#app[data-ui="game"] .cave-view svg { width: 100%; height: 100%; }
+#app[data-ui="game"] .cave-name { top: auto; bottom: var(--sp-2); }
+
+/* 頂部抬頭顯示：名字、境界、壽元、修為條；待辦出現時顯示在底下 */
+#app[data-ui="game"] .status { position: absolute; top: 0; left: 0; right: 0; z-index: 4; padding: var(--sp-2) var(--sp-3); border: 0; border-radius: 0; background: var(--panel); background: color-mix(in srgb, var(--panel) 86%, transparent); }
+#app[data-ui="game"] .status #scene { margin: calc(var(--sp-2) * -1) calc(var(--sp-3) * -1) var(--sp-2); }
+#app[data-ui="game"] .status .pace, #app[data-ui="game"] .status #resbar { display: none; }
+#app[data-ui="game"] .status .line { gap: 0 var(--sp-3); font-size: var(--fs-sm); }
+#app[data-ui="game"] .status .year-pips { display: none; }
+#app[data-ui="game"] .status .progress { height: 18px; font-size: 0.75em; }
+#app[data-ui="game"] .status .todo { display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-1); padding: var(--sp-1) var(--sp-2); font-size: var(--fs-sm); }
+#app[data-ui="game"] .status .todo[hidden] { display: none; }
+#app[data-ui="game"] .status .todo button { min-height: 32px; padding: 0 var(--sp-2); margin-left: auto; white-space: nowrap; }
+#app[data-ui="game"] .status .focus-btn { min-height: 28px; padding: 0 var(--sp-2); }
+
+/* 抽屜：日誌與側欄由下往上滑出 */
+#app[data-ui="game"] .cols { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; display: block; max-height: 66%; margin: 0; padding: var(--sp-3); overflow-y: auto; background: var(--panel); border-top: 1px solid var(--line); border-radius: var(--r-md) var(--r-md) 0 0; transform: translateY(105%); transition: transform var(--dur-base) var(--ease); }
+#app[data-ui="game"] #stage[data-sheet] .cols { transform: none; }
+#app[data-ui="game"] .cols .log, #app[data-ui="game"] .cols .side { border: 0; padding: 0; background: none; }
+#app[data-ui="game"] .cols .side { display: block; }
+#app[data-ui="game"] .cols #sideTabs { display: none; }
+#app[data-ui="game"] .cols .log { display: none; }
+#app[data-ui="game"] #stage[data-sheet="log"] .cols .log { display: block; }
+#app[data-ui="game"] #stage[data-sheet="log"] .cols .side { display: none; }
+#app[data-ui="game"] .cols .log ul { max-height: none; }
+@media (prefers-reduced-motion: reduce) { #app[data-ui="game"] .cols { transition: none; } }
+
+/* 底部：一行最新日誌與導航列 */
+#app[data-ui="game"] .log-ticker { display: block; flex: none; margin: 0; padding: var(--sp-1) var(--sp-3); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background: var(--panel); border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-sm); cursor: pointer; }
+#app[data-ui="game"] .game-nav { display: flex; flex: none; gap: var(--sp-1); padding: var(--sp-2) var(--sp-3); background: var(--panel); border-top: 1px solid var(--line); }
+#app[data-ui="game"] .game-nav button { flex: 1 1 0; min-height: var(--tap); padding: var(--sp-1) 0; white-space: nowrap; }
+#app[data-ui="game"] .game-nav button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: bold; }
