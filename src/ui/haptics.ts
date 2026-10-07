@@ -1,4 +1,6 @@
 // 觸覺回饋：手機短震動。偏好存在瀏覽器（不進存檔）；不支援或被關閉時什麼都不做。
+// 音效（sound.ts）掛在同一組呼叫點上，所以點按與好壞結果的回饋只需要寫一次。
+import { playSound } from "./sound";
 
 export type HapticKind = "tap" | "good" | "bad";
 
@@ -33,6 +35,7 @@ function reducedMotion(): boolean {
 }
 
 export function haptic(kind: HapticKind = "tap"): void {
+  playSound(kind);
   if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
   if (!hapticsEnabled() || reducedMotion()) return;
   // 使用者還沒操作過頁面時瀏覽器會擋下震動並報錯（例如開局自動推進後的遇怪）

@@ -25,6 +25,7 @@ import { createAchievementWatch } from "./achievementWatch";
 
 const reducedMotion = (): boolean => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { haptic, hapticsEnabled, setHapticsEnabled } from "./haptics";
+import { setSoundEnabled, soundEnabled } from "./sound";
 import { canPeek } from "../core/character/omen";
 import { collapseRoutineRetreats, groupByDecade, logMarks, MARK_LABEL } from "./panels/logGroups";
 import { lockedNote } from "./panels/tabinfo";
@@ -116,6 +117,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
             <button id="ui-toggle" type="button" aria-pressed="false">介面：經典</button>
             <button id="odds-toggle" type="button" aria-pressed="false">機率提示：關</button>
             <button id="haptics-toggle" type="button" aria-pressed="true">觸覺回饋：開</button>
+            <button id="sound-toggle" type="button" aria-pressed="false">音效：關</button>
             <button id="export" type="button">匯出存檔</button>
             <button id="import" type="button">匯入存檔</button>
             <button id="reset" type="button" class="danger">重新開始</button>
@@ -208,10 +210,22 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     paintHapticsBtn();
     haptic("tap");
   });
+  const soundBtn = root.querySelector<HTMLButtonElement>("#sound-toggle")!;
+  const paintSoundBtn = (): void => {
+    const on = soundEnabled();
+    soundBtn.textContent = `音效：${on ? "開" : "關"}`;
+    soundBtn.setAttribute("aria-pressed", String(on));
+  };
+  paintSoundBtn();
+  soundBtn.addEventListener("click", () => {
+    setSoundEnabled(!soundEnabled());
+    paintSoundBtn();
+    haptic("good");
+  });
   // 所有可按的按鈕都帶一下輕震（手機）；不支援的裝置與已關閉時什麼都不做
   root.addEventListener("click", (ev) => {
     const b = (ev.target as Element | null)?.closest("button");
-    if (b && !b.disabled && b !== hapticsBtn) haptic("tap");
+    if (b && !b.disabled && b !== hapticsBtn && b !== soundBtn) haptic("tap");
   });
   document.addEventListener("click", (ev) => {
     if (menuEl.open && !menuEl.contains(ev.target as Node)) menuEl.open = false;
@@ -861,6 +875,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
   const watchAchievements = createAchievementWatch(data, (message) => {
     if (!noticeEl.hidden) return false;
     ui.notice(message);
+    haptic("good");
     return true;
   });
   renderRef = (state) => ui.render(state);
