@@ -787,10 +787,10 @@ export interface StanceDef {
   cultivationMult: number;
   /** 事件計時倍率 */
   eventRateMult: number;
-  /** 滿一年時的結算：固定給靈石、或有機率損失目前修為的一部分 */
-  yearEnd?: { stones?: number; risk?: { chance: number; lossFrac: number } };
-  /** 日誌用句：結算時寫入；有 risk 的另有 hitText（沒中時用 endText） */
-  endText: string;
+  /** 滿一年時的結算：固定給靈石、或有機率損失幾個月份的修為（以當時每月增量計，與境界無關） */
+  yearEnd?: { stones?: number; risk?: { chance: number; lossMonths: number } };
+  /** 日誌用句：年底有結算結果才寫日誌（給靈石用 endText、風險命中用 hitText），沒有變化就不寫，免得日誌被洗掉 */
+  endText?: string;
   hitText?: string;
 }
 

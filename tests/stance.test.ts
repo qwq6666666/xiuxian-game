@@ -23,6 +23,9 @@ describe("年度行止資料", () => {
     const r = raw();
     delete r.stances[3].hitText;
     expect(() => validateStances(r)).toThrow("hitText");
+    const r2 = raw();
+    delete r2.stances[2].endText;
+    expect(() => validateStances(r2)).toThrow("endText");
     r.stances[0].cultivationMult = 0;
     expect(() => validateStances(r)).toThrow("cultivationMult");
     expect(() => validateStances({ ...raw(), stances: [raw().stances[0], raw().stances[0]] })).toThrow("重複");
@@ -67,8 +70,11 @@ describe("滿年結算", () => {
     expect(stepStance({ ...s, ageMonths: s.ageMonths + years * 12 - 1 }, s.ageMonths + years * 12 - 1, data).stance).not.toBeNull();
     const done = stepStance({ ...s, ageMonths: s.ageMonths + years * 12 }, s.ageMonths + years * 12, data);
     expect(done.stance).toBeNull();
-    expect(done.log.at(-1)).toMatchObject({ kind: "stance", choice: 0 });
-    expect(formatLogEntry(done.log.at(-1)!, data, "我")).toContain(def("steady").endText);
+    expect(done.log.some((e) => e.kind === "stance")).toBe(false); // 沒有變化就不寫日誌
+    const t = setStance(base(), "toil", data);
+    const tDone = stepStance({ ...t, ageMonths: t.ageMonths + years * 12 }, t.ageMonths + years * 12, data);
+    expect(tDone.log.at(-1)).toMatchObject({ kind: "stance", choice: 2 });
+    expect(formatLogEntry(tDone.log.at(-1)!, data, "我")).toContain(def("toil").endText!);
   });
 
   it("經營生計：年底固定給靈石", () => {
@@ -89,12 +95,16 @@ describe("滿年結算", () => {
       const b = stepStance({ ...s, ageMonths: end }, end, data);
       expect(a).toEqual(b);
       expect(a.rngSeed).toBe(s.rngSeed);
-      const hit = a.log.at(-1)!.outcome === 1;
+      const hit = a.log.at(-1)?.kind === "stance" && a.log.at(-1)!.outcome === 1;
       outcomes.add(hit ? 1 : 0);
       if (hit) {
-        expect(a.cultivation).toBeCloseTo(100 * (1 - def("push").yearEnd!.risk!.lossFrac));
+        const month = monthlyGain({ ...s, stance: null }, scheduleOf(s, data), data);
+        expect(a.cultivation).toBeCloseTo(100 - Math.min(100, month * def("push").yearEnd!.risk!.lossMonths));
         expect(formatLogEntry(a.log.at(-1)!, data, "我")).toContain(def("push").hitText!);
-      } else expect(a.cultivation).toBe(100);
+      } else {
+        expect(a.cultivation).toBe(100);
+        expect(a.log.some((e) => e.kind === "stance")).toBe(false);
+      }
     }
     expect(outcomes.size).toBe(2);
   });

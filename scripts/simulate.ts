@@ -13,6 +13,7 @@
 // 採藥丹修策略（herb，第 5 個參數）：永遠採藥、有錢就買聚氣丹並服用，檢查丹藥沒有蓋過閉關這條路（第 8.1 節）。
 // 煉丹策略（alchemy，第 5 個參數）：同 herb（永遠採藥、有錢就買丹），另外材料攢夠就開爐煉聚氣丹與護心丹，量測煉丹有沒有讓這條最划算的路線快過閉關（GDD 第 32 節）。
 // 心法策略（method:穩進訣 id，第 5 個參數，如 method:wenjin）：同 mixed，但每世用指定的心法（無視殘卷解鎖），量測心法有沒有讓首次金丹過快或過慢（GDD 第 35 節）。
+// 行止策略（stance:<id>，第 5 個參數，如 stance:push）：同 mixed，但每年固定選指定的行止（GDD 第 63 節），量測有沒有哪個行止壓倒性地划算。
 // 法寶策略（forge，第 5 個參數）：同 mixed，最壞情況：每一世一開局就裝備二階的凝氣珠與鎮魂佩（三階要金丹期才能煉，不可能先於首次金丹），並用修煉加成最大的疾行訣，量測疊加後首次金丹有沒有過快（GDD 第 33 節）。
 // 運功策略（focus，第 5 個參數）：同 mixed，最壞情況：每個月都運功（點擊加速）一次，量測有人一直點時首次金丹有沒有過快（GDD 第 37 節）。
 // 走訪渡口策略（wander，第 5 個參數）：練氣之後永遠走訪渡口，檢查它不會快過閉關，並看殘卷收集的節奏。
@@ -20,6 +21,7 @@
 // 各策略的每月操作與統計拆在 scripts/strategies/（context：參數與共用亂數；common：mixed 與天賦購買；combat：打怪與秘境；economy：採藥、煉丹、入宗、天劫、走訪；talents：擲骰與靈犀）。
 // 例：npm run sim -- 300 1 40 post
 import { focus } from "../src/core/focus";
+import { setStance } from "../src/core/stance";
 import { buyTalent, canBuyTalent, canZuohua, zuohua } from "../src/core/actions";
 import { canBreakthrough } from "../src/core/breakthrough";
 import { chooseEvent } from "../src/core/events";
@@ -30,7 +32,7 @@ import { atBottleneck, tick } from "../src/core/tick";
 import { gameData } from "../src/data/load";
 import { realmLabel } from "../src/ui/format";
 
-import { runs, baseSeed, lives, forcedMethod, strategy } from "./strategies/context";
+import { runs, baseSeed, lives, forcedMethod, forcedStance, strategy } from "./strategies/context";
 import { TALENT_TARGETS, buyTalentsBalanced, buyTalentsPost, mixedActions, randomChoice, rotateActions } from "./strategies/common";
 import { huntActions, huntStats, pushStats, settleEncounter, trialActions, trialStats } from "./strategies/combat";
 import { TALENT_STRATEGIES, isTalentStrategy, omenPick, rollChoices } from "./strategies/talents";
@@ -55,6 +57,7 @@ function playLife(start: GameState): GameState {
   while (state.phase === "living") {
     state = tick(state, 1, gameData);
     state = settleEncounter(state);
+    if (forcedStance !== null && state.phase === "living") state = setStance(state, forcedStance, gameData);
     if (strategy === "hunt" && state.phase === "living") state = huntActions(state);
     else if (strategy === "trial" && state.phase === "living") state = trialActions(state);
     else if (strategy === "rotate" && state.phase === "living") state = rotateActions(state);
@@ -418,6 +421,10 @@ function campaigns(): void {
     console.log(`  各世最高位階：未入宗 ${pct(sectStats.peaks[0])}、外門 ${pct(sectStats.peaks[1])}、內門 ${pct(sectStats.peaks[2])}、執事 ${pct(sectStats.peaks[3])}、長老 ${pct(sectStats.peaks[4])}`);
     console.log(`  ${ok(cMed >= 7)} 入宗路線首次金丹：中位數第 ${cMed} 世（不得低於第 7 世）`);
     console.log(`  ${ok(hours >= 3.5)} 入宗路線通關總遊玩時間：平均 ${hours.toFixed(1)} 小時（不得少於 3.5 小時）`);
+  }
+  if (forcedStance !== null) {
+    console.log(`對照第 63 節（每年固定選行止 ${forcedStance}）：`);
+    console.log(`  ${ok(cMed >= 7)} 首次金丹：中位數第 ${cMed} 世（不得低於第 7 世；與 mixed 相比不得快超過 1 世）`);
   }
   if (forcedMethod !== null) {
     console.log(`對照第 35.4 節（心法 ${forcedMethod}）：`);

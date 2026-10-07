@@ -261,7 +261,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "我", sl
       break;
     case "stance": {
       const def = data.stances.stances[entry.choice ?? 0];
-      template = entry.outcome === 1 && def?.hitText ? def.hitText : (def?.endText ?? "");
+      template = (entry.outcome === 1 ? def?.hitText : def?.endText) ?? "";
       break;
     }
     case "alchemyStop":

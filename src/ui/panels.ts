@@ -438,7 +438,7 @@ export function createPanels(ctx: PanelContext): Panels {
       const b = document.createElement("button");
       b.type = "button";
       const pct = (m: number): string => `${m >= 1 ? "+" : ""}${Math.round((m - 1) * 100)}%`;
-      const notes = [`修為 ${pct(s.cultivationMult)}`, `事件 ${pct(s.eventRateMult)}`, ...(s.yearEnd?.stones ? [`年底 +${s.yearEnd.stones} 靈石`] : []), ...(s.yearEnd?.risk ? [`年底 ${Math.round(s.yearEnd.risk.chance * 100)}% 損修為 ${Math.round(s.yearEnd.risk.lossFrac * 100)}%`] : [])];
+      const notes = [`修為 ${pct(s.cultivationMult)}`, `事件 ${pct(s.eventRateMult)}`, ...(s.yearEnd?.stones ? [`年底 +${s.yearEnd.stones} 靈石`] : []), ...(s.yearEnd?.risk ? [`年底 ${Math.round(s.yearEnd.risk.chance * 100)}% 損 ${s.yearEnd.risk.lossMonths} 個月修為`] : [])];
       b.innerHTML = `<strong>${esc(s.name)}</strong><small>${esc(s.desc)}　${esc(notes.join("・"))}</small>`;
       b.disabled = !canSetStance(state, s.id, data);
       b.addEventListener("click", () => handlers.onStance(s.id));

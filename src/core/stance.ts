@@ -1,7 +1,8 @@
 // 年度行止（M64）：每年選一次的取捨。沒選就是順其自然，倍率全是 1，不結算、不寫日誌。
 import { gameData } from "../data/load";
 import type { GameData, StanceDef } from "../data/types";
-import { addLog } from "./progress";
+import { monthlyGain } from "./gain";
+import { addLog, scheduleOf } from "./progress";
 import { deriveSeed, nextRandom } from "./rng";
 import type { Changes, GameState } from "./state";
 
@@ -48,13 +49,16 @@ export function stepStance(state: GameState, month: number, data: GameData = gam
     changes.spiritStones = end.stones;
   }
   if (end?.risk && nextRandom(deriveSeed(state.rngSeed, STANCE_SALT + month))[0] < end.risk.chance) {
-    const loss = s.cultivation * end.risk.lossFrac;
+    // 損失按當時每月增量算幾個月，不超過現有修為；行止已清掉，所以是不含行止倍率的增量
+    const loss = Math.min(s.cultivation, monthlyGain(s, scheduleOf(s, data), data) * end.risk.lossMonths);
     hit = true;
     if (loss > 0) {
       s = { ...s, cultivation: s.cultivation - loss };
       changes.cultivation = -loss;
     }
   }
+  // 沒有變化（沒給靈石、風險沒中）就不寫日誌
+  if (Object.keys(changes).length === 0) return s;
   const index = data.stances.stances.indexOf(def);
   return addLog(
     s,

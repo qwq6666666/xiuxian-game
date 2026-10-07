@@ -15,16 +15,19 @@ export function validateStances(raw: unknown, file = "stances.json"): StancesDat
       desc: str(e, "desc", where),
       cultivationMult: num(e, "cultivationMult", where, { gt: 0 }),
       eventRateMult: num(e, "eventRateMult", where, { gt: 0 }),
-      endText: str(e, "endText", where),
     };
+    if (e.endText !== undefined) def.endText = str(e, "endText", where);
     if (e.yearEnd !== undefined) {
       const yw = `${where} 欄位 yearEnd`;
       const y = obj(e.yearEnd, yw);
       def.yearEnd = {};
-      if (y.stones !== undefined) def.yearEnd.stones = num(y, "stones", yw, { min: 1, integer: true });
+      if (y.stones !== undefined) {
+        def.yearEnd.stones = num(y, "stones", yw, { min: 1, integer: true });
+        if (e.endText === undefined) fail(where, "endText", "有 stones 的行止必須寫 endText");
+      }
       if (y.risk !== undefined) {
         const rk = obj(y.risk, `${yw}.risk`);
-        def.yearEnd.risk = { chance: num(rk, "chance", `${yw}.risk`, { gt: 0, max: 1 }), lossFrac: num(rk, "lossFrac", `${yw}.risk`, { gt: 0, max: 1 }) };
+        def.yearEnd.risk = { chance: num(rk, "chance", `${yw}.risk`, { gt: 0, max: 1 }), lossMonths: num(rk, "lossMonths", `${yw}.risk`, { gt: 0 }) };
         if (e.hitText === undefined) fail(where, "hitText", "有 risk 的行止必須寫 hitText");
       }
     }
