@@ -134,6 +134,13 @@ export interface LifeEls {
   huntBars: HTMLElement;
   huntInfo: HTMLElement;
   huntChoices: HTMLElement;
+  huntTrial: HTMLElement;
+  trialResultModal: HTMLElement;
+  trialResultMark: HTMLElement;
+  trialResultTitle: HTMLElement;
+  trialResultText: HTMLElement;
+  trialResultRewards: HTMLElement;
+  trialResultClose: HTMLButtonElement;
   eventTitle: HTMLElement;
   eventText: HTMLElement;
   eventHistory: HTMLElement;
@@ -454,10 +461,20 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
         <div class="card event">
           <div id="huntArt"></div>
           <h2 id="huntTitle"></h2>
+          <div id="huntTrial" class="hunt-trial" hidden></div>
           <p id="huntText"></p>
           <div id="huntBars" class="hunt-bars"></div>
           <p id="huntInfo" class="desc"></p>
           <div id="huntChoices" class="choices"></div>
+        </div>
+      </div>
+      <div class="modal" id="trialResultModal" role="dialog" aria-modal="true" aria-labelledby="trialResultTitle" hidden>
+        <div class="card event trial-result-card">
+          <div id="trialResultMark" class="trial-result-mark" aria-hidden="true"></div>
+          <h2 id="trialResultTitle"></h2>
+          <p id="trialResultText"></p>
+          <div id="trialResultRewards" class="trial-result-rewards"></div>
+          <div class="actions"><button id="trialResultClose" type="button" class="primary">收起</button></div>
         </div>
       </div>
       <div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="一生回顧" hidden>
@@ -467,6 +484,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     watchModal(q("#eventModal"));
     watchModal(q("#tribModal"));
     watchModal(q("#huntModal"));
+    watchModal(q("#trialResultModal"));
     watchModal(q("#modal"));
 
     const schedBox = q("#schedules");
@@ -525,6 +543,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       huntBars: q("#huntBars"),
       huntInfo: q("#huntInfo"),
       huntChoices: q("#huntChoices"),
+      huntTrial: q("#huntTrial"),
+      trialResultModal: q("#trialResultModal"),
+      trialResultMark: q("#trialResultMark"),
+      trialResultTitle: q("#trialResultTitle"),
+      trialResultText: q("#trialResultText"),
+      trialResultRewards: q("#trialResultRewards"),
+      trialResultClose: q("#trialResultClose"),
       eventTitle: q("#eventTitle"),
       eventText: q("#eventText"),
       eventHistory: q("#eventHistory"),
@@ -967,6 +992,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
       for (const { s, b } of speedButtons) b.setAttribute("aria-pressed", String(s === state.speed));
       if (state.phase === "rolling") rollView.render(state);
       else renderLife(state);
+      // 秘境可能逐層手動打，也可能由自動抉擇在一次更新裡跑到底；兩種路徑都從新增日誌找最終結算。
+      if (before && els) {
+        const result = state.log[state.log.length - 1];
+        const previous = before.log[before.log.length - 1];
+        const resultKey = result ? `${result.month}:${result.kind}:${result.trialId ?? ""}:${result.outcome ?? ""}` : "";
+        const previousKey = previous ? `${previous.month}:${previous.kind}:${previous.trialId ?? ""}:${previous.outcome ?? ""}` : "";
+        if (resultKey !== previousKey && (result?.kind === "trialClear" || result?.kind === "trialFail")) panels.showTrialResult(state, result, els);
+      }
       // 死亡與轉世的全螢幕過場；只在狀態剛切換的那一次播，載入與匯入存檔不播
       const ended = state.phase === "dead" || state.phase === "cleared";
       if (before?.phase === "living" && ended) {

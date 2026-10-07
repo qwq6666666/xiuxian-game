@@ -25,4 +25,7 @@
   .modal { padding: var(--sp-2); }
   .card { padding: 14px var(--sp-4); }
   .review-actions button { flex: 1 1 0; }
+  .trial-row { align-items: stretch; flex-direction: column; }
+  .trial-row > button { align-self: stretch; }
+  .trial-result-rewards ul { flex-direction: column; gap: var(--sp-1); text-align: center; }
 }

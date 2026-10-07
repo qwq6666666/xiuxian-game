@@ -127,6 +127,23 @@
 #huntArt.strike-heavy, #huntModal .card.strike-heavy { --shake: var(--shake-heavy); }
 #huntArt.strike-foe { animation: strike-foe var(--dur-slow) var(--ease); }
 #huntModal .card.strike-me { animation: strike-me var(--dur-slow) var(--ease); }
+#huntModal .card.trial-floor-in { animation: trial-floor-in var(--dur-slow) var(--ease); }
+@keyframes trial-floor-in {
+  0% { opacity: 0.7; transform: translateY(8px); border-color: var(--accent); }
+  100% { opacity: 1; transform: none; border-color: var(--line); }
+}
+.hunt-trial { margin: 0 0 var(--sp-3); padding: var(--sp-2) var(--sp-3); background: var(--sunken); border: 1px solid var(--line); border-radius: var(--r-sm); }
+.hunt-trial .trial-progress { margin: 0; }
+.trial-result-card { width: min(420px, 100%); text-align: center; }
+.trial-result-mark { display: grid; place-items: center; width: 54px; height: 54px; margin: 0 auto var(--sp-3); border: 1px solid var(--warn); border-radius: 50%; color: var(--warn); font-size: var(--fs-xl); animation: trial-seal-in var(--dur-slow) var(--ease); }
+#trialResultModal[data-result="clear"] .trial-result-mark { border-color: var(--accent); color: var(--accent); }
+#trialResultModal[data-result="withdraw"] .trial-result-mark { border-color: var(--muted); color: var(--muted); }
+.trial-result-card h2 { color: var(--text); font-size: var(--fs-lg); }
+.trial-result-rewards { margin: var(--sp-4) 0 0; padding: var(--sp-3); border-block: 1px dashed var(--line); text-align: left; }
+.trial-result-label { color: var(--accent); text-align: center; }
+.trial-result-rewards ul { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-1) var(--sp-4); margin: var(--sp-2) 0 0; padding: 0; list-style: none; }
+.trial-result-card .actions { justify-content: center; }
+@keyframes trial-seal-in { from { opacity: 0; transform: scale(1.7) rotate(-8deg); } to { opacity: 1; transform: none; } }
 @keyframes strike-foe {
   0% { transform: none; filter: none; }
   12% { transform: translateX(calc(var(--shake) * -1)); filter: brightness(1.9); }
