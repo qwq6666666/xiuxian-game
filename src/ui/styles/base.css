@@ -28,6 +28,10 @@ button {
   transition: border-color var(--dur-fast), background-color var(--dur-fast), color var(--dur-fast);
 }
 button:hover:not(:disabled) { border-color: var(--muted); }
+/* 按下去立刻有回饋；手機不出現點擊高亮與雙擊放大延遲 */
+button, summary, .scene { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button { transition: border-color var(--dur-fast), background-color var(--dur-fast), color var(--dur-fast), transform var(--dur-press) var(--ease); }
+button:active:not(:disabled) { transform: scale(var(--press-scale)); }
 button:disabled { color: var(--muted); border-style: dashed; background: transparent; cursor: default; }
 button.primary { border-color: var(--accent); color: var(--accent); }
 button.danger { color: var(--bad); }

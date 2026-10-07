@@ -16,6 +16,8 @@ import { slotsFor } from "../core/sect";
 import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
 import { createVeil } from "./veil";
+import { neighbourOf, onSwipe } from "./gesture";
+import { haptic, hapticsEnabled, setHapticsEnabled } from "./haptics";
 import { canPeek } from "../core/omen";
 import { collapseRoutineRetreats, groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
 import { lockedNote } from "./tabinfo";
@@ -206,6 +208,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
             <button id="mobile-map-open" class="menu-mobile-only" type="button"></button>
             <button id="mobile-collection-open" class="menu-mobile-only" type="button">收藏</button>
             <button id="odds-toggle" type="button" aria-pressed="false">機率提示：關</button>
+            <button id="haptics-toggle" type="button" aria-pressed="true">觸覺回饋：開</button>
             <button id="export" type="button">匯出存檔</button>
             <button id="import" type="button">匯入存檔</button>
             <button id="reset" type="button" class="danger">重新開始</button>
@@ -225,6 +228,13 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
   const noticeGo = root.querySelector<HTMLButtonElement>("#noticeGo")!;
   root.querySelector<HTMLButtonElement>("#noticeClose")!.addEventListener("click", () => { noticeEl.hidden = true; });
   const speedBox = root.querySelector<HTMLElement>(".speeds")!;
+  // 手機左右滑動切換側欄分頁；沒開放的分頁略過，到頭不循環
+  onSwipe(stageEl, (dir) => {
+    if (!window.matchMedia("(max-width: 640px)").matches) return;
+    const open = SIDE_TABS.map((t) => t.id).filter((id) => !stageEl.querySelector(`#sideTabs button[data-go="${id}"][data-locked]`) || id === sideTab);
+    const next = neighbourOf(open, sideTab, dir);
+    if (next) showSideTab(next);
+  });
 
   const speedButtons = data.config.speeds.map((s) => {
     const b = document.createElement("button");
@@ -264,6 +274,23 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers)
     paintOddsBtn();
     menuEl.open = false;
     if (lastState && renderRef) renderRef(lastState);
+  });
+  const hapticsBtn = root.querySelector<HTMLButtonElement>("#haptics-toggle")!;
+  const paintHapticsBtn = (): void => {
+    const on = hapticsEnabled();
+    hapticsBtn.textContent = `觸覺回饋：${on ? "開" : "關"}`;
+    hapticsBtn.setAttribute("aria-pressed", String(on));
+  };
+  paintHapticsBtn();
+  hapticsBtn.addEventListener("click", () => {
+    setHapticsEnabled(!hapticsEnabled());
+    paintHapticsBtn();
+    haptic("tap");
+  });
+  // 所有可按的按鈕都帶一下輕震（手機）；不支援的裝置與已關閉時什麼都不做
+  root.addEventListener("click", (ev) => {
+    const b = (ev.target as Element | null)?.closest("button");
+    if (b && !b.disabled && b !== hapticsBtn) haptic("tap");
   });
   document.addEventListener("click", (ev) => {
     if (menuEl.open && !menuEl.contains(ev.target as Node)) menuEl.open = false;

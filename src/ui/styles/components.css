@@ -21,6 +21,12 @@
 .choices { display: flex; flex-direction: column; gap: 6px; }
 .choices button { text-align: left; display: flex; flex-direction: column; flex-shrink: 0; }
 .choices button.active { border-color: var(--accent); color: var(--accent); }
+/* 事件選項依序進場（只限事件視窗，日常安排每月重繪，不能每次都重播） */
+.event .choices button, .event .choice-row { animation: fold-in var(--dur-base) var(--ease) backwards; }
+.event .choices > :nth-child(2) { animation-delay: var(--stagger); }
+.event .choices > :nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
+.event .choices > :nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
+.event .choices > :nth-child(n + 5) { animation-delay: calc(var(--stagger) * 4); }
 .nation-choices { flex-direction: row; flex-wrap: wrap; }
 .nation-choices button { min-width: 4.5em; align-items: center; }
 .choices button.active strong::before { content: "✓ "; }

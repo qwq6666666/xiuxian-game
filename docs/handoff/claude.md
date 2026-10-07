@@ -1,6 +1,14 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：M48 介面動態化 階段 1（共用基礎）
+
+- 分支 `ai/claude-m48`，尚未合併、尚未 push。使用者要求開始階段 1，而 ChatGPT 不在本工作階段，所以由我實作；**請 ChatGPT 審 `src/ui/` 的變更**（依分工，Claude 動 UI 時請它看一眼）。
+- 內容：動畫 token（`--dur-press`、`--press-scale`、`--stagger`）；按鈕 `:active` 縮放；事件選項依序進場（限 `.event`）；`gesture.ts`（滑動判斷，純函式 `swipeOf`、`neighbourOf` 與 `onSwipe`）；手機左右滑動切換側欄分頁；`haptics.ts` 與「更多」選單的觸覺回饋開關。只動 `src/ui/`、`tests/gesture.test.ts`、`docs/TODO.md`，不動 `core/`、存檔與數值，所以沒跑 sim。
+- 驗證：`npm run verify` 全過（建置 898 KB）；瀏覽器 375px 寬度以合成的觸控事件測滑動：往左滑修行→煉製→行囊、往右滑回煉製、滑鼠事件不觸發。沒驗證：**真機觸控**（合成事件不等於手指）、`navigator.vibrate`（桌面沒有震動，只確認開關與不報錯）、按壓縮放的實際手感、iOS（不支援 vibrate）。
+- 已更正 TODO 盤點兩處：修為條本來就平滑；手機本來就有底部分頁列。
+- 下一步：階段 2 逐畫面套用（數字滾動、月內節拍、場景隨安排反應、長按說明）；先請使用者在手機上試滑動手感。
+
 ## 2026-10-07：ChatGPT 審 M51–M53 的 4 項建議與 2 項潤飾，全部處理
 
 - 分支 `ai/claude-review-fixes`，已合併 master。(1) 國名與地標重疊：`worldmap.ts` 國名改在該國領土內找不壓標記、不與其他國名重疊的位置，國名範圍當成小標籤的障礙（`LabelItem` 加 `charW`／`charH`）；(2) 領土色 6 → 12 色（`map.json` palette），9 國與分裂新國不重複；(3) 兩則事件敘述不再重複數值（查驗費、小布包）；(4) `盟國客棧` 改名 `故交客棧`；(5) 互惠金線加深（`--map-ally` #7a5200）並加淺色襯線（`.map-rel-under`）。

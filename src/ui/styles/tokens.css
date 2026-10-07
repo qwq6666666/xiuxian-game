@@ -69,6 +69,9 @@
   --dur-slow: 700ms;
   --ease: ease-out;
   --dur-tick: 1000ms; /* 進度條過渡長度，由 render.ts 依速度覆寫 */
+  --dur-press: 90ms; /* 按下去的回饋 */
+  --press-scale: 0.97; /* 按下時縮小的比例 */
+  --stagger: 45ms; /* 一組項目依序進場的間隔 */
 
   /* 層級 */
   --z-menu: 5;
