@@ -170,6 +170,12 @@ describe("M62 第一人稱場景動態", () => {
     expect(renderText).toContain('ACTION_MS / Math.max(1, state.speed)');
   });
 
+  it("手只在洞府前視角常駐，其餘面向與洞外淡出，操作時才淡入", () => {
+    expect(caveText).toMatch(/\.cave:not\(\[data-facing="front"\]\) \.fp-hands/);
+    expect(caveText).toMatch(/\.cave:not\(\[data-setting="cave"\]\) \.fp-hands\s*\{[^}]*opacity:\s*0/);
+    expect(caveText).toMatch(/\.cave\.acting \.fp-hands\s*\{[^}]*opacity:\s*0\.86/);
+  });
+
   it("減少動態效果時沿用全域規則關閉場景動畫與位移", () => {
     expect(baseText).toMatch(/@media \(prefers-reduced-motion: reduce\)[\s\S]*animation:\s*none !important[\s\S]*transition:\s*none !important/);
   });
