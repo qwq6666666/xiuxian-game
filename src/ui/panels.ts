@@ -434,7 +434,7 @@ export function createPanels(ctx: PanelContext): Panels {
     e.trialResultMark.textContent = cleared ? "通" : withdrew ? "返" : "止";
     e.trialResultTitle.textContent = cleared ? `${def.name}・通關` : withdrew ? `${def.name}・中途抽身` : `${def.name}・試煉止步`;
     e.trialResultText.textContent = cleared
-      ? "你一步步走到盡頭。衣上都是塵土，至少囊中沒有也一樣空。"
+      ? "你一層一層走到了盡頭，這一趟沒有白走。"
       : withdrew
         ? "你認得回頭的路，也還走得動。這一世不再入內。"
         : "這一回沒能走到底。秘境仍在，只是此世不再等你。";
