@@ -7,6 +7,7 @@
 
 | 項目 | 佔用者 | 狀態 |
 |---|---|---|
+| 重構（檔案分資料夾、暫停判斷集中、render 拆分） | Claude（本機，分支 ai/claude-restructure） | 進行中；不動存檔、數值與內容，`SAVE_VERSION` 維持 33 |
 | 存檔版本 v34 | （未佔用） | M64 已佔用 v33（年度行止 `stance`）；M61 已佔用 v32（事件冷卻 eventLastMonth，Claude 本機，分支 ai/claude-m61）；v31（M58 秘境 trial.rests、encounter.rest）；v30（M47 秘境 trial、trialsDone）；v29 是 M51 國家數 nationCount |
 | M50 向量地圖、山川氣候與宗門國家關係（GDD 第 50 節） | Claude（本機） | 已完成並合併 master（維諾格網地形、格子歸屬、向量地圖、S1 宗門國家關係）；不動存檔；之後候選 M51（地域與國家脫鉤）、M52（S2）、M53（S3） |
 | M51 領與國家脫鉤、國家數可調（GDD 第 51 節）、M52 S2、M53 S3 | Claude（本機） | 已完成，分支 ai/claude-m51（存檔 v29）；使用者已授權自主執行至 M53 |
@@ -201,5 +202,5 @@
 - [x] 元嬰累計遊玩時間（M54，GDD 第 23.15 節）：神光起始價 250 → 200，目標上限 12 → 13 小時；`post` 100 場 × 3 個種子約 12.4 小時。
 - [ ] 手機天下圖：彈窗與內部側欄雙層捲軸、首屏先看到插畫與行跡面板而不是地圖（`src/ui/`，由 ChatGPT 或本機處理，雲端無瀏覽器預覽）。
 - [ ] 第一世偏被動：約 34% 玩家第一世看到築基突破，×1 的前 20 多分鐘主要在等待；引路事件已緩解教學，尚未解決主動性（需另案設計）。
-- [ ] 拆分 `src/ui/render.ts`（約 1,160 行、集中在 `mountUi`）；`validate.ts` 已拆成 `validate/`，`events.json` 已於 2026-10-08 依原順序拆成四份（`events/base2–4.json`），新事件寫進新檔。新增更多系統前先做。
+- [ ] 繼續拆分 `src/ui/render.ts`（已從約 1,160 行降到約 860 行：型別進 `types.ts`、骨架與節點查詢進 `lifeshell.ts`）；剩下 `mountUi` 的選單、`buildLife` 接線與 `renderLife` 還在同一個閉包。事件檔自動載入因 `tsx`（sim）不支援 `import.meta.glob` 而不做，`load.ts` 仍手動登記。
 - [x] `dist/index.html` 容量：合併場景圖後曾到 1463 KB，本機把天下圖改成 900px WebP 後降到約 1136 KB（上限 1500 KB），尚有約 360 KB 空間；加圖前仍要先壓縮。

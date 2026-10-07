@@ -1,6 +1,13 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式：分支與 commit、改了什麼與為什麼、怎麼驗證的、沒驗證的、下一步。規則見 `CLAUDE.md`。
+## 2026-10-08：重構（分支 `ai/claude-restructure`，不動存檔）
+
+- **做了什麼**：移除 ChatGPT 分工並把規則併成 `CLAUDE.md`；新增 5 個子代理（core-dev、ui-dev、content-writer、verify-runner、doc-keeper）；docs 整理（`docs/archive/`、GDD 草案標記與跳號說明）；`src/core`、`src/ui`、`tests` 分資料夾（腳本搬檔並改寫 import）；新增 `core/pause.ts` 集中「時間是否暫停」的判斷（原本散在 10 多處）；`render.ts` 抽出 `types.ts`、`lifeshell.ts`。
+- **驗證**：每階段 `npm run verify` 全過（826 測試、建置檔 619 KB）；`simple` 300 場 16 世輸出與重構前逐字相同；瀏覽器開局確認修行畫面節點齊全、無新錯誤。
+- **沒驗證**：`mixed`、`post` 的 sim 比對（見下方追加）；375px 與桌面寬度逐項實測；`.github/workflows` 的實際執行。
+- **下一步**：繼續拆 `mountUi`；事件檔仍手動登記（`tsx` 不支援 `import.meta.glob`）。
+
 ## 2026-10-08：M63 坊市運費、M64 年度行止（存檔 v33，分支 `ai/claude-m63`、`ai/claude-m64`）
 
 - **M63**：不在坊市或商行購買要加運費（到最近坊市的路程月數 × 3%，上限 20%，至少 +1），算在 `itemPrice`；遠購日誌用 `buyRemote`（重用 `outcome` 1，不動存檔）；坊市價格旁標「含運費」。GDD 第 62 節。
