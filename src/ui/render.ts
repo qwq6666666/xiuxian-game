@@ -8,7 +8,7 @@ import {
 } from "../core/breakthrough";
 import { eventOf } from "../core/events";
 import { placesAt } from "../core/travel";
-import { activeWorldEffects, itemPrice } from "../core/worldeffects";
+import { activeWorldEffects, freightRate, itemFreight, itemPrice } from "../core/worldeffects";
 import { marketRelation, marketTerritory } from "../core/travel";
 import { fillSlots, type SlotValues } from "../data/slots";
 import { goalStatuses } from "../core/goals";
@@ -90,6 +90,7 @@ export interface UiHandlers {
   onTrialRest(): void;
   onTrialRetreat(): void;
   onEnterTrial(trialId: string): void;
+  onStance(stanceId: string): void;
   onFocus(): void;
   onMethod(methodId: string): void;
   onForge(recipeId: string): void;
@@ -170,6 +171,7 @@ export interface LifeEls {
   schedules: { id: string; b: HTMLButtonElement; facts: HTMLElement; hint: HTMLElement }[];
   zuohuaBox: HTMLElement;
   sectBox: HTMLElement;
+  stanceBox: HTMLElement;
   trialBox: HTMLElement;
   alchemyBox: HTMLElement;
   zuohuaInfo: HTMLElement;
@@ -477,6 +479,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
             <label id="pillRow" hidden><input type="checkbox" id="pill" /> <span id="pillText"></span></label>
             <div class="actions"><button id="breakthrough" type="button" class="primary">突破</button></div>
           </section>
+          <section id="stanceBox" class="s-stance" data-tab="play" hidden></section>
           <section id="sectBox" class="s-sect" data-tab="play" hidden></section>
           <section id="trialBox" class="s-trial" data-tab="play" hidden></section>
           <section id="alchemyBox" class="s-alchemy" data-tab="make" hidden></section>
@@ -617,6 +620,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       schedules,
       zuohuaBox: q("#zuohuaBox"),
       sectBox: q("#sectBox"),
+      stanceBox: q("#stanceBox"),
       trialBox: q("#trialBox"),
       alchemyBox: q("#alchemyBox"),
       zuohuaInfo: q("#zuohuaInfo"),
@@ -835,6 +839,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     panels.renderStatDetail(state);
     panels.renderResources(state);
     panels.renderSect(state, e);
+    panels.renderStance(state, e);
     panels.renderTrial(state, e);
     panels.renderAlchemy(state, e);
     panels.renderTribulation(state, e);
@@ -848,9 +853,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     for (const m of e.market) {
       const item = data.items.find((i) => i.id === m.id)!;
       const price = itemPrice(state, m.id, data);
-      m.price.textContent = `${price} 靈石${price > item.price ? "　↑ 較平日貴" : price < item.price ? "　↓ 較平日便宜" : ""}`;
-      m.price.classList.toggle("price-up", price > item.price);
-      m.price.classList.toggle("price-down", price < item.price);
+      const freight = itemFreight(state, m.id, data);
+      const goods = price - freight; // 不含運費，才好和平日價比
+      m.price.textContent = `${price} 靈石${goods > item.price ? "　↑ 較平日貴" : goods < item.price ? "　↓ 較平日便宜" : ""}${freight > 0 ? `　（含運費 ${freight}）` : ""}`;
+      m.price.classList.toggle("price-up", goods > item.price);
+      m.price.classList.toggle("price-down", goods < item.price);
       m.owned.textContent = `持有 ${state.items[m.id] ?? 0}`;
       m.b.disabled = !canBuyItem(state, m.id, data);
       const used = state.itemsUsed[m.id] ?? 0;
@@ -867,6 +874,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     const marketRel = marketRelation(state, data);
     if (marketRel === "feud") reasons.push(`坊市所在的國與我的宗門有舊怨，物價約漲 ${Math.round((data.worldRelations.effects.feudPriceMult - 1) * 100)}%。`);
     if (marketRel === "ally") reasons.push(`坊市所在的國與我的宗門互惠，物價約減 ${Math.round((1 - data.worldRelations.effects.allyPriceMult) * 100)}%。`);
+    const freight = freightRate(state, data);
+    if (freight > 0) reasons.push(`人不在坊市，貨由行腳商送來，運費約 ${Math.round(freight * 100)}%；親自到坊市或商行買，就不用付。`);
     e.marketNote.hidden = reasons.length === 0;
     e.marketNote.textContent = reasons.join("　");
     e.marketLink.hidden = reasons.length === 0;

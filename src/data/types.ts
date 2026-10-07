@@ -41,6 +41,10 @@ export interface GameConfig {
   eventIntervalMax: number;
   /** 能重複出現（maxPerLife 大於 1）的事件，兩次之間至少隔幾年；事件可用 cooldownYears 覆寫，0 代表不冷卻 */
   eventCooldownYears: number;
+  /** 不在坊市時買東西的運費：到最近坊市或商行的路程每個月加這個比例（M63） */
+  freightPerMonth: number;
+  /** 運費比例的上限 */
+  freightMax: number;
   /** 好事件的權重 ×(1 + 氣運 × 此值) */
   fortuneGoodWeight: number;
   /** 首次達成某階段時，該階段道韻的倍率（2 = 加倍） */
@@ -464,6 +468,8 @@ export interface TextData {
     breakthroughSuccess: Record<string, string>;
     breakthroughFail: string[];
     buy: string[];
+    /** 不在坊市、由行腳商送來的購買 */
+    buyRemote: string[];
     find: string[];
     adventureDeath: string;
     /** 閉關坐化的日誌 */
@@ -772,6 +778,27 @@ export interface TrialsData {
   trials: TrialDef[];
 }
 
+/** 年度行止（M64）：每年選一次的取捨，沒選就是順其自然（倍率全是 1，沒有任何結算） */
+export interface StanceDef {
+  id: string;
+  name: string;
+  desc: string;
+  /** 修為增量倍率 */
+  cultivationMult: number;
+  /** 事件計時倍率 */
+  eventRateMult: number;
+  /** 滿一年時的結算：固定給靈石、或有機率損失幾個月份的修為（以當時每月增量計，與境界無關） */
+  yearEnd?: { stones?: number; risk?: { chance: number; lossMonths: number } };
+  /** 日誌用句：年底有結算結果才寫日誌（給靈石用 endText、風險命中用 hitText），沒有變化就不寫，免得日誌被洗掉 */
+  endText?: string;
+  hitText?: string;
+}
+
+export interface StancesData {
+  rules: { intervalYears: number };
+  stances: StanceDef[];
+}
+
 /** 天劫的數值與文字（M28） */
 export interface TribulationData {
   /** 運功護體：成功率 + 心性 × perMind（上限 max），這一道失敗時額外損失 extraLoss 的修為 */
@@ -917,6 +944,7 @@ export interface GameData {
   recipes: RecipesData;
   monsters: MonstersData;
   trials: TrialsData;
+  stances: StancesData;
   methods: MethodDef[];
   events: EventDef[];
   talents: TalentDef[];

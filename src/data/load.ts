@@ -22,6 +22,7 @@ import methodsJson from "./methods.json";
 import originsJson from "./origins.json";
 import recipesJson from "./recipes.json";
 import monstersJson from "./monsters.json";
+import stancesJson from "./stances.json";
 import trialsJson from "./trials.json";
 import realmsJson from "./realms.json";
 import schedulesJson from "./schedules.json";
@@ -55,6 +56,7 @@ import {
   validateSchedules,
   validateSects,
   validateTribulation,
+  validateStances,
   validateTrials,
   validateSpiritRoots,
   validateTalents,
@@ -88,6 +90,7 @@ export const gameData: GameData = validateGameData({
     realmsData.map((r) => r.id),
     itemsData.map((i) => i.id),
   ),
+  stances: validateStances(stancesJson),
   methods: validateMethods(methodsJson),
   // 新增事件檔：在 src/data/events/ 放 json，並在這裡加一行（只有整合者改這個檔）
   events: validateEventFiles([

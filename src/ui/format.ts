@@ -236,7 +236,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "我", sl
       } else template = pick(log.breakthroughFail);
       break;
     case "buy":
-      template = pick(log.buy);
+      template = pick(entry.outcome === 1 ? log.buyRemote : log.buy);
       break;
     case "find":
       template = pick(log.find);
@@ -259,6 +259,11 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "我", sl
     case "alchemyFail":
       template = log.alchemy.fail;
       break;
+    case "stance": {
+      const def = data.stances.stances[entry.choice ?? 0];
+      template = (entry.outcome === 1 ? def?.hitText : def?.endText) ?? "";
+      break;
+    }
     case "alchemyStop":
       template = log.alchemy.stop;
       break;

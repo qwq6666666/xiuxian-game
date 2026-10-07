@@ -1,6 +1,14 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-08：M63 坊市運費、M64 年度行止（存檔 v33，分支 `ai/claude-m63`、`ai/claude-m64`）
+
+- **M63**：不在坊市或商行購買要加運費（到最近坊市的路程月數 × 3%，上限 20%，至少 +1），算在 `itemPrice`；遠購日誌用 `buyRemote`（重用 `outcome` 1，不動存檔）；坊市價格旁標「含運費」。GDD 第 62 節。
+- **M64**：每年可選的「今年行止」四項（`data/stances.json`），不選就是順其自然；`state.stance`（v33）；倍率進 `monthlyGain` 與事件計時；年底結算只在有變化時寫日誌；介面在修行區加一張卡片（`panels.ts` 的 `renderStance`，**請 ChatGPT 看一眼**，M62 也在動 UI）。風險一開始用修為比例，實測拖垮後期進度，改成「損失幾個月修為」。GDD 第 63 節。sim 新增 `stance:<id>` 策略。
+- **驗證**：每個里程碑 `npm run verify` 全過；完整 `npm run sim`（含 `stance:*`）見交給 sim-checker 的結果（寫入 GDD 第 62、63 節）；M64 在瀏覽器確認卡片文字與運費標示。
+- **沒驗證**：行止卡片在手機寬度與遊戲介面抽屜的版面；點擊選行止後的按鈕狀態（只靠單元測試）。
+- **下一步**：合併進 `master`；之後可考慮把行止納入「關鍵時刻暫停」的選擇，或把年度回顧放進日誌（目前刻意不寫，避免洗掉日誌）。
+
 ## 2026-10-08：M61 事件冷卻（存檔 v32，分支 `ai/claude-m61`）
 
 - **改了什麼**：事件新增選填 `cooldownYears`，`config.eventCooldownYears`（6）為預設，只對 `maxPerLife` 大於 1 的 34 個事件有意義；狀態新增 `eventLastMonth`（每世重置），`SAVE_VERSION` 31 升 32，遷移函式與 `tests/save-shape.json` 已更新；`eventAvailable` 判冷卻，`advanceEvents` 寫月份。GDD 第 61 節。

@@ -60,6 +60,22 @@ export function localTerritory(state: GameState, data: GameData = gameData) {
   return territoryAt(territoriesAt(worldFor(state.worldSeed, data, state.nationCount), Math.floor(state.ageMonths / 12), data), place.point);
 }
 
+/**
+ * 到最近的坊市或商行要走幾個月；人就在坊市或商行則為 0。只算地域路程，不含邊境動盪與盤查（M63 運費用）。
+ * 旅途中以出發點計。
+ */
+export function marketDistanceMonths(state: GameState, data: GameData = gameData): number {
+  const places = placesAt(state, data);
+  const here = places.find((p) => p.id === state.travel.locationId);
+  if (!here || here.kind === "market" || here.kind === "merchant") return 0;
+  let best = Infinity;
+  for (const p of places) {
+    if (p.kind !== "market" && p.kind !== "merchant") continue;
+    best = Math.min(best, travelMonths(regionRoute(here.region, p.region, data).length - 1));
+  }
+  return best;
+}
+
 export function marketTerritory(state: GameState, data: GameData = gameData) {
   const world = worldFor(state.worldSeed, data, state.nationCount);
   const region = data.map.regions.find((r) => r.id === world.birth.region)!;

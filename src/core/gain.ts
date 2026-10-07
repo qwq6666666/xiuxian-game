@@ -7,6 +7,7 @@ import { artifactBonus } from "./forge";
 import { methodEffect } from "./method";
 import { realmOf } from "./progress";
 import { sectBonus } from "./sect";
+import { stanceMult } from "./stance";
 import type { GameState } from "./state";
 
 /** 依日常安排計算一個月的修為增量 */
@@ -19,7 +20,7 @@ export function monthlyGain(state: GameState, sched: ScheduleDef, data: GameData
     rootMult: root.mult,
     bone: state.attributes.bone,
     realmMult: realm.cultivationMult,
-    scheduleMult: sched.cultivationMult * fatigueMult(state, sched, data),
+    scheduleMult: sched.cultivationMult * fatigueMult(state, sched, data) * stanceMult(state, "cultivationMult", data),
     originBonus: state.cultivationBonus,
     reincarnationBonus: talentBonus(state.meta, data.talents, "cultivation"),
     sectBonus: sectBonus(state, data),

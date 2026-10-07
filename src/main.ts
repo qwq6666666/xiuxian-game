@@ -6,6 +6,7 @@ import { focus } from "./core/focus";
 import { autoEncounter, huntChoose } from "./core/encounter";
 import { enterTrial, trialContinue, trialRest, trialRetreat } from "./core/trial";
 import { setMethod } from "./core/method";
+import { setStance } from "./core/stance";
 import { cancelBrew, startBrew } from "./core/alchemy";
 import { attemptBreakthrough, faceWave } from "./core/breakthrough";
 import { chooseEvent, setAutoChoice } from "./core/events";
@@ -154,6 +155,7 @@ const ui = mountUi(document.getElementById("app")!, data, {
     const entered = enterTrial(state, id, data);
     update(entered.encounter !== null && entered.autoChoice ? autoEncounter(entered, data) : entered);
   },
+  onStance: (id) => update(setStance(state, id, data)),
   onFocus: () => update(focus(state, data)),
   onMethod: (id) => update(setMethod(state, id, data)),
   onForge: (id) => update(forge(state, id, data)),

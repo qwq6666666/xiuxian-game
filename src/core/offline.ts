@@ -6,6 +6,7 @@ import { addLog, atBottleneck, realmOf } from "./progress";
 import type { GameState, OfflineStop } from "./state";
 import { advanceStreak } from "./fatigue";
 import { accrueFocus } from "./focus";
+import { stepStance } from "./stance";
 import { addCultivation, monthlyGain } from "./tick";
 
 export type { OfflineStop };
@@ -63,6 +64,7 @@ export function applyOffline(
     }
     gained += monthlyGain(s, sched, data);
     s = advanceStreak(addCultivation(accrueFocus({ ...s, ageMonths: s.ageMonths + 1 }, data), sched, s.ageMonths + 1, data), sched, true, data);
+    s = stepStance(s, s.ageMonths, data);
     months++;
   }
   if (months > 0) {

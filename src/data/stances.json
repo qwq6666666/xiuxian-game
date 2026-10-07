@@ -1,0 +1,46 @@
+{
+  "rules": {
+    "intervalYears": 1
+  },
+  "stances": [
+    {
+      "id": "steady",
+      "name": "穩固根基",
+      "desc": "今年少見外人，專心把根基打牢。",
+      "cultivationMult": 1.08,
+      "eventRateMult": 0.7
+    },
+    {
+      "id": "seek",
+      "name": "尋訪機緣",
+      "desc": "今年多走多看，修為慢些，遇事多些。",
+      "cultivationMult": 0.92,
+      "eventRateMult": 1.6
+    },
+    {
+      "id": "toil",
+      "name": "經營生計",
+      "desc": "今年分心於營生，修為稍緩，年底多得一點靈石。",
+      "cultivationMult": 0.9,
+      "eventRateMult": 0.8,
+      "yearEnd": {
+        "stones": 4
+      },
+      "endText": "這一年帳本記得勤，年底盤點，囊中多了幾塊靈石。"
+    },
+    {
+      "id": "push",
+      "name": "冒險叩關",
+      "desc": "今年強行催動靈氣，修為較快，年底有可能傷到根基。",
+      "cultivationMult": 1.2,
+      "eventRateMult": 1,
+      "yearEnd": {
+        "risk": {
+          "chance": 0.3,
+          "lossMonths": 6
+        }
+      },
+      "hitText": "這一年我強催靈氣，年底經脈一陣刺痛，修為折損了一截。"
+    }
+  ]
+}

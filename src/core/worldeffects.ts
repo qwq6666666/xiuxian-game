@@ -3,7 +3,7 @@
 import { gameData } from "../data/load";
 import type { GameData, WorldEffectDef, WorldWhen } from "../data/types";
 import type { GameState } from "./state";
-import { marketRelation, marketTerritory } from "./travel";
+import { marketDistanceMonths, marketRelation, marketTerritory } from "./travel";
 import { worldAt, worldFor, type WorldSnapshot } from "./world";
 
 /** 世局是否符合效果的全部條件 */
@@ -48,8 +48,29 @@ export function worldFlagsOf(state: GameState, data: GameData = gameData): strin
   return activeWorldEffects(state, data).map((e) => e.id);
 }
 
-/** 物品此刻的價格：基本價乘上所有生效效果的倍率，四捨五入，至少 1 */
+/** 不在坊市時的運費比例（M63）：到最近坊市或商行的路程月數乘上每月費率，有上限；在坊市為 0 */
+export function freightRate(state: GameState, data: GameData = gameData): number {
+  return Math.min(data.config.freightMax, marketDistanceMonths(state, data) * data.config.freightPerMonth);
+}
+
+/** 物品此刻的價格：基本價乘上所有生效效果的倍率，四捨五入，至少 1；不在坊市另加運費 */
 export function itemPrice(state: GameState, itemId: string, data: GameData = gameData): number {
+  const item = data.items.find((i) => i.id === itemId);
+  if (!item || item.price === 0) return 0;
+  const base = priceBeforeFreight(state, itemId, data);
+  return base + itemFreight(state, itemId, data);
+}
+
+/** 這件物品此刻的運費（靈石）；在坊市或運費為 0 時是 0，否則至少 1 */
+export function itemFreight(state: GameState, itemId: string, data: GameData = gameData): number {
+  const rate = freightRate(state, data);
+  if (rate <= 0) return 0;
+  const base = priceBeforeFreight(state, itemId, data);
+  return base > 0 ? Math.max(1, Math.round(base * rate)) : 0;
+}
+
+/** 不含運費的價格：基本價乘上所有生效效果的倍率 */
+export function priceBeforeFreight(state: GameState, itemId: string, data: GameData = gameData): number {
   const item = data.items.find((i) => i.id === itemId);
   if (!item || item.price === 0) return 0;
   let mult = 1;
