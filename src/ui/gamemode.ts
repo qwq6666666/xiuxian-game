@@ -39,6 +39,8 @@ export interface GameModeHooks {
   /** 開啟側欄某一頁（沿用原本的分頁切換） */
   showSideTab(tab: "play" | "make" | "pack" | "me"): void;
   openMap(): void;
+  /** 切換介面後重畫（第一人稱場景是否顯示依介面而定） */
+  refresh(): void;
 }
 
 export interface GameMode {
@@ -98,6 +100,7 @@ export function mountGameMode(root: HTMLElement, stage: HTMLElement, hooks: Game
     writeUiPref(mode);
     root.querySelector<HTMLDetailsElement>("#menu")!.open = false;
     sync();
+    hooks.refresh();
   });
   // 點場景（抽屜以外的地方）收起抽屜
   stage.addEventListener("click", (ev) => {

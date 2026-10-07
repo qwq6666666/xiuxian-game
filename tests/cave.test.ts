@@ -52,3 +52,36 @@ describe("洞府四視角", () => {
     expect(idle.hint).not.toBe(brewing.hint);
   });
 });
+
+describe("洞府以外的第一人稱場景", () => {
+  const settings = {
+    road: living(1, { schedule: "adventure" }),
+    market: living(1, { travel: { locationId: "market", targetId: null, totalMonths: 0, remainingMonths: 0, trail: ["market"] } }),
+    ferry: living(1, { schedule: "wander" }),
+  };
+  it("山道、坊市、渡口各朝向都有熱點，位置在視圖內，id 在同一朝向內不重複", () => {
+    for (const [name, s] of Object.entries(settings)) {
+      for (const f of FACINGS) {
+        const spots = hotspotsFor(s, gameData, f);
+        expect(spots.length, `${name}/${f}`).toBeGreaterThan(0);
+        expect(new Set(spots.map((h) => h.id)).size).toBe(spots.length);
+        for (const h of spots) {
+          const [x, y, w, hgt] = h.rect;
+          expect(x, `${name}/${f}/${h.id}`).toBeGreaterThanOrEqual(0);
+          expect(y).toBeGreaterThanOrEqual(0);
+          expect(x + w).toBeLessThanOrEqual(100);
+          expect(y + hgt).toBeLessThanOrEqual(100);
+        }
+      }
+    }
+  });
+  it("坊市的攤位通往行囊頁；山道與渡口的前方可以運功", () => {
+    expect(hotspotsFor(settings.market, gameData, "front")[0].action).toBe("market");
+    expect(hotspotsFor(settings.road, gameData, "front")[0].action).toBe("focus");
+    expect(hotspotsFor(settings.ferry, gameData, "front")[0].action).toBe("focus");
+  });
+  it("遊戲介面時任何背景都顯示第一人稱場景，經典介面只有靜室", () => {
+    expect(caveActive(settings.road)).toBe(false);
+    expect(caveActive(settings.road, true)).toBe(true);
+  });
+});

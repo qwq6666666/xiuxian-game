@@ -252,7 +252,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
   // 遊戲介面：場景全螢幕、功能由底部導航列開抽屜；經典介面維持原樣
-  const game = mountGameMode(root, stageEl, { showSideTab: (tab) => showSideTab(tab), openMap: () => overlays.openMap() }, window.matchMedia("(max-width: 640px)").matches);
+  const game = mountGameMode(root, stageEl, { showSideTab: (tab) => showSideTab(tab), openMap: () => overlays.openMap(), refresh: () => { if (lastState && renderRef) renderRef(lastState); } }, window.matchMedia("(max-width: 640px)").matches);
   const noticeEl = root.querySelector<HTMLElement>("#notice")!;
   const noticeText = root.querySelector<HTMLElement>("#noticeText")!;
   const noticeGo = root.querySelector<HTMLButtonElement>("#noticeGo")!;
@@ -634,13 +634,14 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
         case "focus": return doFocus();
         case "brew": return showTab("make");
         case "bag": return showTab("pack");
+        case "market": return showTab("pack");
         case "pill": return handlers.onUseItem(QUICK_PILL);
         case "scrolls": return overlays.openCodex();
         case "map": return overlays.openMap();
         case "schedule": return toggleSchedulePicker(caveEl);
       }
     };
-    mountCave(caveEl, runCave, () => { if (lastState) updateCave(caveEl, stageEl.querySelector<HTMLElement>("#scene"), lastState, data, handlers.onSchedule); });
+    mountCave(caveEl, runCave, () => { if (lastState) updateCave(caveEl, stageEl.querySelector<HTMLElement>("#scene"), lastState, data, handlers.onSchedule, game.isGame()); });
     stageEl.querySelectorAll<HTMLButtonElement>("#sideTabs button").forEach((b) => b.addEventListener("click", () => showSideTab(b.dataset.go as SideTab)));
     showSideTab(sideTab);
     els.marketLink.addEventListener("click", overlays.openMap);
@@ -794,7 +795,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       hint.hidden = hint.textContent === "";
     }
     updateScene(stageEl.querySelector<HTMLElement>("#scene"), state, data);
-    updateCave(stageEl.querySelector<HTMLElement>("#cave"), stageEl.querySelector<HTMLElement>("#scene"), state, data, handlers.onSchedule);
+    updateCave(stageEl.querySelector<HTMLElement>("#cave"), stageEl.querySelector<HTMLElement>("#scene"), state, data, handlers.onSchedule, game.isGame());
     const fb = stageEl.querySelector<HTMLButtonElement>("#focusBtn");
     if (fb) {
       const ok = canFocus(state, data);

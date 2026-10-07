@@ -3,9 +3,10 @@
 // 這裡只做畫面與事件綁定；操作本身都交給呼叫端傳進來的函式，與面板共用同一組 handler。
 import type { GameState } from "../core/state";
 import type { GameData } from "../data/types";
-import { FACINGS, FACING_NAME, caveActive, hotspotsFor, turn, type CaveAction, type Facing, type Hotspot } from "./caveLogic";
+import { FACINGS, caveActive, facingName, hotspotsFor, turn, type CaveAction, type Facing, type Hotspot } from "./caveLogic";
 import { onSwipe } from "./gesture";
-import { ageBand, qiLevel } from "./sceneLogic";
+import { OUTDOOR } from "./outdoor";
+import { ageBand, qiLevel, sceneSetting, type SceneSetting } from "./sceneLogic";
 
 const QI = [[-22, 0], [-14, 0.9], [-6, 1.8], [4, 0.4], [12, 1.3], [20, 2.2], [-18, 2.6], [8, 3]];
 const qis = (): string => QI.map(([x, d]) => `<circle class="sc-qi" cx="${x}" cy="0" r="1.4" style="--d:${d}s"/>`).join("");
@@ -117,10 +118,22 @@ const DEFS = `<svg width="0" height="0" class="cave-defs" aria-hidden="true"><de
 /** 橫向畫好的構圖搬進直式視圖：水平位移讓主要物件落在中間（垂直一律下移 150，上方留給天花板的暗影） */
 const SHIFT: Record<Facing, number> = { front: -175, left: -190, right: -175, back: -175 };
 
+const SETTINGS: SceneSetting[] = ["cave", "road", "market", "ferry"];
+const PORTRAIT_VB = "0 0 450 600";
+/** 橫向：取視圖中間 800×450（直式視圖 450 寬的中心，左右延伸的牆、天空、地面是背景），底部對齊 */
+const LANDSCAPE_VB = "-175 150 800 450";
+
+const VIEW_DIVS = SETTINGS.flatMap((setting) =>
+  FACINGS.map((f) => {
+    const art = setting === "cave" ? `<g transform="translate(${SHIFT[f]} 150)">${VIEWS[f]}</g>` : OUTDOOR[setting][f];
+    return `<div class="cave-view" data-view="${setting}-${f}"><svg viewBox="${PORTRAIT_VB}" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">${art}</svg></div>`;
+  }),
+).join("");
+
 export function caveHtml(): string {
   return `<div id="cave" class="scene cave" data-facing="front" data-realm="mortal" data-sched="retreat" data-season="spring" data-age="adult" data-qi="0" data-no-swipe hidden>
   ${DEFS}
-  <div class="cave-views">${FACINGS.map((f) => `<div class="cave-view" data-view="${f}"><svg viewBox="0 0 450 600" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true"><g transform="translate(${SHIFT[f]} 150)">${VIEWS[f]}</g></svg></div>`).join("")}</div>
+  <div class="cave-views">${VIEW_DIVS}</div>
   <button type="button" class="cave-turn cave-turn-left" aria-label="向左轉身">‹</button>
   <button type="button" class="cave-turn cave-turn-right" aria-label="向右轉身">›</button>
   <div class="cave-name" aria-live="polite"></div>
@@ -164,14 +177,30 @@ export function mountCave(cave: HTMLElement, run: (action: CaveAction) => void, 
     ev.preventDefault();
     fire(ev.target);
   });
+  // 響應式：場景框比較寬就用橫向取景，否則用直式取景；熱點與圖在同一座標系，兩種取景都對得上
+  const fit = (): void => {
+    const r = cave.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return;
+    const vb = r.width / r.height > 1.05 ? LANDSCAPE_VB : PORTRAIT_VB;
+    cave.querySelectorAll<SVGSVGElement>(".cave-view svg").forEach((svg) => {
+      if (svg.getAttribute("viewBox") !== vb) svg.setAttribute("viewBox", vb);
+    });
+  };
+  const ro = new ResizeObserver(fit);
+  ro.observe(cave);
+  fit();
   // 觸控：往左滑向右轉、往右滑向左轉（像是把視線拖過去）
-  return onSwipe(cave, (dir) => go(dir === "left" ? "right" : "left"));
+  const off = onSwipe(cave, (dir) => go(dir === "left" ? "right" : "left"));
+  return () => {
+    off();
+    ro.disconnect();
+  };
 }
 
 /** 依狀態更新：顯示與否、色調、朝向、熱點；沒變就不重建。靜室背景時原本的薄帶場景讓位 */
-export function updateCave(cave: HTMLElement | null, scene: HTMLElement | null, state: GameState, data: GameData, chooseSchedule: (id: string) => void): void {
+export function updateCave(cave: HTMLElement | null, scene: HTMLElement | null, state: GameState, data: GameData, chooseSchedule: (id: string) => void, always = false): void {
   if (!cave) return;
-  const active = caveActive(state);
+  const active = caveActive(state, always);
   cave.hidden = !active;
   if (scene) scene.hidden = active;
   if (!active) return;
@@ -184,16 +213,19 @@ export function updateCave(cave: HTMLElement | null, scene: HTMLElement | null, 
   set("sched", state.schedule);
   set("season", SEASONS[Math.floor((state.ageMonths % 12) / 3)]);
   set("brew", state.alchemy !== null ? "on" : "off");
+  const setting = sceneSetting(state);
   set("facing", facing);
-  cave.querySelectorAll<HTMLElement>(".cave-view").forEach((v) => v.classList.toggle("on", v.dataset.view === facing));
+  set("setting", setting);
+  const viewId = `${setting}-${facing}`;
+  cave.querySelectorAll<HTMLElement>(".cave-view").forEach((v) => v.classList.toggle("on", v.dataset.view === viewId));
   const spots = hotspotsFor(state, data, facing);
-  const key = JSON.stringify([facing, spots]);
+  const key = JSON.stringify([viewId, spots]);
   if (key !== builtKey) {
     builtKey = key;
     cave.querySelectorAll(".cave-hots").forEach((g) => g.remove());
-    const active = cave.querySelector<SVGSVGElement>(`.cave-view[data-view="${facing}"] svg`);
+    const active = cave.querySelector<SVGSVGElement>(`.cave-view[data-view="${viewId}"] svg`);
     if (active) active.append(buildHotspots(spots));
-    cave.querySelector(".cave-name")!.textContent = `${FACING_NAME[facing]}・左右轉身`;
+    cave.querySelector(".cave-name")!.textContent = `${facingName(setting, facing)}・左右轉身`;
   }
   const picker = cave.querySelector<HTMLElement>(".cave-schedules")!;
   if (picker.childElementCount === 0) {

@@ -48,3 +48,10 @@
 #app[data-ui="game"] .game-nav { display: flex; flex: none; gap: var(--sp-1); padding: var(--sp-2) var(--sp-3); background: var(--panel); border-top: 1px solid var(--line); }
 #app[data-ui="game"] .game-nav button { flex: 1 1 0; min-height: var(--tap); padding: var(--sp-1) 0; white-space: nowrap; }
 #app[data-ui="game"] .game-nav button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: bold; }
+
+/* 寬螢幕（桌面橫向）：遊戲介面放大成全螢幕，場景改用橫向取景；抽屜與抬頭內容置中，不拉得過寬 */
+@media (min-width: 900px) and (min-aspect-ratio: 5/4) {
+  #app[data-ui="game"] { width: 100%; max-width: none; border-left: 0; border-right: 0; }
+  #app[data-ui="game"] .status { padding-left: max(var(--sp-3), calc((100% - 760px) / 2)); padding-right: max(var(--sp-3), calc((100% - 760px) / 2)); }
+  #app[data-ui="game"] .cols { max-width: 760px; margin: 0 auto; max-height: 70%; }
+}
