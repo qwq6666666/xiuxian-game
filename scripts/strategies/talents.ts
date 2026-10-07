@@ -1,7 +1,7 @@
 import { canChoose, eventOf } from "../../src/core/events";
-import { chartPower, currentChart, pickChart } from "../../src/core/chart";
-import { canPeek, peekOmen } from "../../src/core/omen";
-import { setWish, wishChoices } from "../../src/core/wish";
+import { chartPower, currentChart, pickChart } from "../../src/core/character/chart";
+import { canPeek, peekOmen } from "../../src/core/character/omen";
+import { setWish, wishChoices } from "../../src/core/character/wish";
 import { nextRandom } from "../../src/core/rng";
 import type { GameState } from "../../src/core/state";
 import { gameData } from "../../src/data/load";

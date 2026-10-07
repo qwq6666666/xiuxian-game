@@ -1,14 +1,15 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { SAVE_VERSION } from "../src/core/state";
+import { tsFiles } from "./fsutil";
 
 // 守住 AGENTS.md 的架構規則：這些原本只靠文字約定，任何助手寫錯都不會有測試失敗。
 
 const root = join(__dirname, "..");
 const read = (path: string): string => readFileSync(join(root, path), "utf-8").replace(/\r\n/g, "\n");
 const stripComments = (src: string): string => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
-const coreFiles = (): string[] => readdirSync(join(root, "src/core")).filter((f) => f.endsWith(".ts"));
+const coreFiles = (): string[] => tsFiles(join(root, "src/core"));
 
 describe("core/ 的純度", () => {
   it("不使用 Math.random 與 Date.now（亂數走種子，時間由外部傳入）", () => {

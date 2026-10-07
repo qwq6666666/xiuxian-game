@@ -1,4 +1,4 @@
-import { canBreakthrough } from "../core/breakthrough";
+import { canBreakthrough } from "../core/character/breakthrough";
 import { lifespanMonths } from "../core/formulas";
 import { atBottleneck, realmOf } from "../core/progress";
 import type { GameState } from "../core/state";

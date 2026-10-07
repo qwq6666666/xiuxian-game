@@ -25,13 +25,23 @@ npm run verify   # 測試、建置、建置檔大小檢查
 ## 目錄
 
 ```
-src/core/   遊戲邏輯，純函式
-src/data/   JSON 資料（境界、事件、物品、天賦、設定）
-src/ui/     畫面與事件綁定
-src/main.ts 計時，串接 core 與 ui
-scripts/    sim 模擬腳本與策略
-tests/      測試
-docs/       GDD、WORLD、TODO、handoff、archive
+src/core/        遊戲邏輯，純函式
+  根目錄         主迴圈：state、save、events、tick、life、actions、offline、formulas、rng
+  character/     角色與修行：突破、年號、回顧、目標、疲勞、運功、行止、心法、宗門、殘卷
+  craft/         煉丹、煉器
+  combat/        遇怪、秘境
+  world/         世界生成：地形、格網、領土、關係、旅行
+  util/          雜訊、堆
+src/data/        JSON 資料（境界、事件、物品、天賦、設定）；事件在 events/
+src/ui/          畫面與事件綁定
+  scene/         洞府、戶外、手部、過場
+  map/           天下圖與地圖繪製
+  panels/        側欄面板與資訊卡
+  styles/        CSS，色碼只在 tokens.css
+src/main.ts      計時，串接 core 與 ui
+scripts/         sim 模擬腳本與策略
+tests/           測試；core/、ui/ 為分區，根目錄是架構、風格、視角等全域檢查
+docs/            GDD、WORLD、TODO、handoff、prototypes、archive
 ```
 
 ## 架構規則

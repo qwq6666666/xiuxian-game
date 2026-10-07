@@ -1,17 +1,18 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { tsFiles } from "./fsutil";
 
 const UI = join(__dirname, "..", "src", "ui");
 const tokensText = readFileSync(join(UI, "styles", "tokens.css"), "utf8");
 const responsiveText = readFileSync(join(UI, "styles", "responsive.css"), "utf8");
 // render.ts 拆檔後，畫面程式分散在 ui/ 下多個檔案，一併當作畫面原始碼檢查
-const renderText = readdirSync(UI)
-  .filter((f) => f.endsWith(".ts") && f !== "worldmap.ts")
+const renderText = tsFiles(UI)
+  .filter((f) => f !== "map/worldmap.ts" && !f.startsWith("map/mapart/"))
   .map((f) => readFileSync(join(UI, f), "utf8"))
   .join("\n");
 const mapText = readFileSync(join(UI, "styles", "map.css"), "utf8");
-const worldMapText = readFileSync(join(UI, "worldmap.ts"), "utf8");
+const worldMapText = readFileSync(join(UI, "map", "worldmap.ts"), "utf8");
 
 /** 讀出 tokens.css 裡 --name: #rrggbb 的色票 */
 function colorTokens(): Record<string, string> {
@@ -59,9 +60,8 @@ describe("樣式 token", () => {
     const files = [
       ...readdirSync(join(UI, "styles")).filter((f) => f !== "tokens.css").map((f) => join(UI, "styles", f)),
       join(UI, "style.css"),
-      ...readdirSync(UI).filter((f) => f.endsWith(".ts")).map((f) => join(UI, f)),
-      // 地圖繪製的子資料夾也要掃；只有 color.ts 負責把資料裡的色值格式化成 rgba()，其餘不得出現
-      ...readdirSync(join(UI, "mapart")).filter((f) => f.endsWith(".ts") && f !== "color.ts").map((f) => join(UI, "mapart", f)),
+      // 含子資料夾；只有 map/mapart/color.ts 負責把資料裡的色值格式化成 rgba()，其餘不得出現
+      ...tsFiles(UI).filter((f) => f !== "map/mapart/color.ts").map((f) => join(UI, f)),
     ];
     for (const f of files) {
       const hits = readFileSync(f, "utf8").match(/#[0-9a-fA-F]{3,8}\b|rgba?\(/g) ?? [];

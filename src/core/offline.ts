@@ -4,9 +4,9 @@ import type { GameData } from "../data/types";
 import { lifespanMonths } from "./formulas";
 import { addLog, atBottleneck, realmOf } from "./progress";
 import type { GameState, OfflineStop } from "./state";
-import { advanceStreak } from "./fatigue";
-import { accrueFocus } from "./focus";
-import { stepStance } from "./stance";
+import { advanceStreak } from "./character/fatigue";
+import { accrueFocus } from "./character/focus";
+import { stepStance } from "./character/stance";
 import { addCultivation, monthlyGain } from "./tick";
 
 export type { OfflineStop };

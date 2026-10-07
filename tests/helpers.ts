@@ -1,4 +1,4 @@
-import { attemptBreakthrough as attemptRaw, autoTribulation } from "../src/core/breakthrough";
+import { attemptBreakthrough as attemptRaw, autoTribulation } from "../src/core/character/breakthrough";
 import { stageNeed } from "../src/core/formulas";
 import { gameData } from "../src/data/load";
 import { createInitialState, startLife } from "../src/core/life";

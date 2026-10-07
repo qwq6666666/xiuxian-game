@@ -5,42 +5,42 @@ import {
   type WaveChoice,
   missingTalent,
   pillAvailable,
-} from "../core/breakthrough";
+} from "../core/character/breakthrough";
 import { eventOf } from "../core/events";
-import { placesAt } from "../core/travel";
-import { activeWorldEffects, freightRate, itemFreight, itemPrice } from "../core/worldeffects";
-import { marketRelation, marketTerritory } from "../core/travel";
+import { placesAt } from "../core/world/travel";
+import { activeWorldEffects, freightRate, itemFreight, itemPrice } from "../core/world/worldeffects";
+import { marketRelation, marketTerritory } from "../core/world/travel";
 import { fillSlots, type SlotValues } from "../data/slots";
-import { goalStatuses } from "../core/goals";
-import { slotsFor } from "../core/sect";
-import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
-import { burstScene, sceneHtml, updateScene } from "./scene";
+import { goalStatuses } from "../core/character/goals";
+import { slotsFor } from "../core/character/sect";
+import { canFocus, focusCharges, focusGain, focusWait } from "../core/character/focus";
+import { burstScene, sceneHtml, updateScene } from "./scene/scene";
 import { gameNavHtml, mountGameMode } from "./gamemode";
-import { CAVE_DEFS, caveHtml, firstPersonArt, mountCave, toggleSchedulePicker, updateCave } from "./cave";
-import { QUICK_PILL, type CaveAction } from "./caveLogic";
-import { createVeil } from "./veil";
+import { CAVE_DEFS, caveHtml, firstPersonArt, mountCave, toggleSchedulePicker, updateCave } from "./scene/cave";
+import { QUICK_PILL, type CaveAction } from "./scene/caveLogic";
+import { createVeil } from "./scene/veil";
 import { neighbourOf, onSwipe } from "./gesture";
 import { resetRolls, rollNumber } from "./tween";
 import { keepView } from "./keepview";
 
 const reducedMotion = (): boolean => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { haptic, hapticsEnabled, setHapticsEnabled } from "./haptics";
-import { canPeek } from "../core/omen";
-import { collapseRoutineRetreats, groupByDecade, logMarks, MARK_LABEL } from "./logGroups";
-import { lockedNote } from "./tabinfo";
+import { canPeek } from "../core/character/omen";
+import { collapseRoutineRetreats, groupByDecade, logMarks, MARK_LABEL } from "./panels/logGroups";
+import { lockedNote } from "./panels/tabinfo";
 import { esc } from "./dom";
-import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./rollview";
-import { createPanels } from "./panels";
+import { statsHtml, goalLine, guideHtml, identityHtml, createRoll } from "./panels/rollview";
+import { createPanels } from "./panels/panels";
 import { installModalFocus, createReviewModal } from "./modals";
 import { createOverlays } from "./overlays";
 import { itemIcon, scheduleIcon } from "./icons";
-import { vignetteHtml } from "./vignette";
-import { type HuntChoice } from "../core/encounter";
+import { vignetteHtml } from "./scene/vignette";
+import { type HuntChoice } from "../core/combat/encounter";
 import { formatDuration, formatForecast, formatGain, lifeForecast, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
-import { eraName, lifeIndex } from "../core/era";
+import { eraName, lifeIndex } from "../core/character/era";
 import { pillPower, splitAge, stageNeed } from "../core/formulas";
 import type { GameState } from "../core/state";
-import { CLEARED_FLAG, YUANYING_FLAG } from "../core/review";
+import { CLEARED_FLAG, YUANYING_FLAG } from "../core/character/review";
 import { atBottleneck, lifespanYears, realmOf, scheduleOpen } from "../core/tick";
 import { type ArtifactSlot, type GameData } from "../data/types";
 import {

@@ -2,9 +2,9 @@
 import { gameData } from "../data/load";
 import type { GameData } from "../data/types";
 import { pillPower, stageNeed, talentCost } from "./formulas";
-import { itemFreight, itemPrice } from "./worldeffects";
+import { itemFreight, itemPrice } from "./world/worldeffects";
 import type { GameState } from "./state";
-import { endLife } from "./review";
+import { endLife } from "./character/review";
 import { addLog, atBottleneck, lifespanYears, realmOf, resolveStages, scheduleOpen } from "./tick";
 
 export function setSchedule(state: GameState, scheduleId: string, data: GameData = gameData): GameState {

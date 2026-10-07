@@ -3,17 +3,17 @@ import type { GameData, ScheduleDef } from "../data/types";
 import { advanceEvents } from "./events";
 import { lifespanMonths } from "./formulas";
 import { monthlyGain } from "./gain";
-import { autoEncounter, maybeEncounter } from "./encounter";
+import { autoEncounter, maybeEncounter } from "./combat/encounter";
 import { addLog, atBottleneck, realmOf, resolveStages, scheduleOf } from "./progress";
-import { endLife } from "./review";
+import { endLife } from "./character/review";
 import { deriveSeed, nextInt, nextRandom } from "./rng";
 import type { GameState } from "./state";
-import { advanceTravel } from "./travel";
-import { stepSect } from "./sect";
-import { stepStance } from "./stance";
-import { stepAlchemy } from "./alchemy";
-import { accrueFocus } from "./focus";
-import { advanceStreak } from "./fatigue";
+import { advanceTravel } from "./world/travel";
+import { stepSect } from "./character/sect";
+import { stepStance } from "./character/stance";
+import { stepAlchemy } from "./craft/alchemy";
+import { accrueFocus } from "./character/focus";
+import { advanceStreak } from "./character/fatigue";
 
 /** 材料掉落亂數的雜湊鹽值，與世界生成用的編號錯開 */
 const DROP_SALT = 7_000_000;

@@ -1,10 +1,10 @@
 import { checkNum, checkStr, isPlainObject, type Obj } from "../data/check";
 import { gameData } from "../data/load";
 import { ARTIFACT_SLOTS, ATTRIBUTE_KEYS, OMENS, REVIEW_CAUSES, type GameData, type Omen, type ReviewCause } from "../data/types";
-import { pickGoals } from "./goals";
+import { pickGoals } from "./character/goals";
 import { createInitialState } from "./life";
 import { deriveSeed, nextInt } from "./rng";
-import { placesAt } from "./travel";
+import { placesAt } from "./world/travel";
 import {
   emptyMeta,
   LOG_KINDS,

@@ -20,10 +20,10 @@
 // 秘境策略（trial，第 5 個參數）：同 mixed，最壞情況：每一世一到能入的境界就把該境界的秘境入一次，戰鬥用預設打法（GDD 第 54 節）。量測秘境有沒有讓首次金丹過快，並統計通關與敗退。
 // 各策略的每月操作與統計拆在 scripts/strategies/（context：參數與共用亂數；common：mixed 與天賦購買；combat：打怪與秘境；economy：採藥、煉丹、入宗、天劫、走訪；talents：擲骰與靈犀）。
 // 例：npm run sim -- 300 1 40 post
-import { focus } from "../src/core/focus";
-import { setStance } from "../src/core/stance";
+import { focus } from "../src/core/character/focus";
+import { setStance } from "../src/core/character/stance";
 import { buyTalent, canBuyTalent, canZuohua, zuohua } from "../src/core/actions";
-import { canBreakthrough } from "../src/core/breakthrough";
+import { canBreakthrough } from "../src/core/character/breakthrough";
 import { chooseEvent } from "../src/core/events";
 import { createInitialState, newLife, startLife } from "../src/core/life";
 import { nextRandom } from "../src/core/rng";

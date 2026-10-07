@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { tsFiles } from "./fsutil";
 
 /** 遊戲敘述一律用第一人稱「我」；只有引號「」裡別人對主角說的話可以用「你」（目前沒有這種句子，之後有再放行） */
 function jsonFiles(dir: string): string[] {
@@ -24,7 +25,7 @@ describe("敘述視角", () => {
   it("介面程式碼的玩家可見文字也不稱主角為「你」", () => {
     const bad: string[] = [];
     for (const dir of ["src/ui", "src/core"]) {
-      for (const f of readdirSync(dir).filter((x) => x.endsWith(".ts"))) {
+      for (const f of tsFiles(dir)) {
         const lines = readFileSync(join(dir, f), "utf8").split("\n");
         lines.forEach((line, i) => {
           if (line.includes("你") && !/^\s*(\/\/|\*|\/\*)/.test(line)) bad.push(`${dir}/${f}:${i + 1}`);

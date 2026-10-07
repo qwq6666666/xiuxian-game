@@ -1,16 +1,16 @@
 // 事件系統：計時、依條件抽取、抉擇結算。
 import { gameData } from "../data/load";
-import { worldFlagsOf } from "./worldeffects";
-import { localRelation, localSectInfluence, localTerritory } from "./travel";
+import { worldFlagsOf } from "./world/worldeffects";
+import { localRelation, localSectInfluence, localTerritory } from "./world/travel";
 import { ATTRIBUTE_KEYS, type AttributeKey, type ChoiceDef, type Effects, type EventDef, type GameData } from "../data/types";
-import { availableFragments, drawFragment, grantFragment } from "./fragments";
+import { availableFragments, drawFragment, grantFragment } from "./character/fragments";
 import { eventWeight, outcomeWeight, stageNeed } from "./formulas";
 import { addLog, atBottleneck, eventOf, realmOf, resolveStages, scheduleOf } from "./progress";
-import { methodEffect } from "./method";
-import { forceBreakthrough, forceBreakthroughFail } from "./breakthrough";
-import { endLife } from "./review";
-import { stanceMult } from "./stance";
-import { wishWeightMult } from "./wish";
+import { methodEffect } from "./character/method";
+import { forceBreakthrough, forceBreakthroughFail } from "./character/breakthrough";
+import { endLife } from "./character/review";
+import { stanceMult } from "./character/stance";
+import { wishWeightMult } from "./character/wish";
 import { lifespanMonths } from "./formulas";
 import { nextInt, nextRandom, pickWeighted } from "./rng";
 import type { Attributes, Changes, GameState } from "./state";

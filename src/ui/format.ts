@@ -1,7 +1,7 @@
-import type { VersusLine } from "../core/goals";
-import { eraName } from "../core/era";
+import type { VersusLine } from "../core/character/goals";
+import { eraName } from "../core/character/era";
 import { outcomeWeight } from "../core/formulas";
-import { composeRetreat } from "../core/retreattext";
+import { composeRetreat } from "../core/character/retreattext";
 import type { OfflineSummary } from "../core/offline";
 import type { BestiaryEntry, Changes, LifeReview, LogEntry, Meta } from "../core/state";
 import { DEFAULT_SLOTS, fillSlots, type SlotValues } from "../data/slots";

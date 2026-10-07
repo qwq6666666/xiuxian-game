@@ -1,12 +1,12 @@
 // 主畫面的衍生顯示：只讀狀態，不改任何數值、不碰時間。
 import { lifespanMonths, stageNeed } from "../core/formulas";
-import { breakthroughRuleOf } from "../core/breakthrough";
+import { breakthroughRuleOf } from "../core/character/breakthrough";
 import { atBottleneck, realmOf, scheduleOf } from "../core/progress";
 import type { GameState } from "../core/state";
 import { monthlyGain } from "../core/tick";
 import type { GameData, ScheduleDef } from "../data/types";
 import { fillSlots, type SlotValues } from "../data/slots";
-import { itemPrice, snapshotOf, whenApplies } from "../core/worldeffects";
+import { itemPrice, snapshotOf, whenApplies } from "../core/world/worldeffects";
 import { ATTRIBUTE_KEYS, type AttributeKey } from "../data/types";
 import { talentCost } from "../core/formulas";
 import type { Meta } from "../core/state";

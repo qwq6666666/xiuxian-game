@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { generateWorld, worldSlots } from "../src/core/world";
+import { generateWorld, worldSlots } from "../src/core/world/world";
 import { gameData as data } from "../src/data/load";
 import { DEFAULT_SLOTS, fillSlots, REFERENCE_NAMES, slotProblems, SLOT_NAMES } from "../src/data/slots";
 import { validateGameData } from "../src/data/validate";

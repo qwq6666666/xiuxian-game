@@ -1,8 +1,8 @@
-import { firstPersonArt } from "./cave";
+import { firstPersonArt } from "./scene/cave";
 import { canBuyTalent } from "../core/actions";
-import { lifeIndex } from "../core/era";
-import { CLEAR_FRAGMENT_ID } from "../core/fragments";
-import { compareLives } from "../core/goals";
+import { lifeIndex } from "../core/character/era";
+import { CLEAR_FRAGMENT_ID } from "../core/character/fragments";
+import { compareLives } from "../core/character/goals";
 import { talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import type { GameData } from "../data/types";

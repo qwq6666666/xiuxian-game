@@ -1,9 +1,9 @@
-import { canStartBrew, startBrew } from "../../src/core/alchemy";
+import { canStartBrew, startBrew } from "../../src/core/craft/alchemy";
 import { ALCHEMY_SCHEDULE } from "../../src/data/types";
-import { beginTravel, placesAt, routeTo } from "../../src/core/travel";
-import { canJoinSect, canPromoteSect, joinSect, nextRank, promoteSect } from "../../src/core/sect";
+import { beginTravel, placesAt, routeTo } from "../../src/core/world/travel";
+import { canJoinSect, canPromoteSect, joinSect, nextRank, promoteSect } from "../../src/core/character/sect";
 import { buyItem, canBuyItem, canUseItem, setSchedule, useItem } from "../../src/core/actions";
-import { attemptBreakthrough, autoTribulation, canChooseWave, faceWave } from "../../src/core/breakthrough";
+import { attemptBreakthrough, autoTribulation, canChooseWave, faceWave } from "../../src/core/character/breakthrough";
 import type { GameState } from "../../src/core/state";
 import { gameData } from "../../src/data/load";
 import { strategy } from "./context";

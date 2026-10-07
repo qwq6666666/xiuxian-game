@@ -1706,7 +1706,7 @@ M6 事件擴充到 40 個之後重跑（種子 1–4）：
 - 陸地與小島離外框至少 28 個顯示單位（原型驗證過）；渡口、宗門、都城、出生點等標記必須在陸地內且離外框同樣距離（測試守住）。
 - 目前 `map.json` 的 `viewBox` 與各座標仍是邏輯座標，不改寫檔案內容。
 
-### 50.5 維諾格網與地形（`core/noise.ts`、`core/shape.ts`、`core/cells.ts`、`core/terrain.ts`，純函式）
+### 50.5 維諾格網與地形（`core/util/noise.ts`、`core/shape.ts`、`core/cells.ts`、`core/terrain.ts`，純函式）
 
 - `cellsFor(worldSeed, count)`：抖動方格撒點，每格只和附近 24 格比較切出維諾多邊形，約 3,500 格（地形格數可在 1,500–6,000 間調整，預設 3,500）；每格有鄰格表。
 - `terrainFor(worldSeed, data)`（以 `worldSeed` 為鍵，記憶最近 4 個）：

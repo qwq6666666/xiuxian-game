@@ -2,12 +2,12 @@
 import { gameData } from "../data/load";
 import type { GameData, ScheduleDef } from "../data/types";
 import { cultivationPerMonth, talentBonus } from "./formulas";
-import { fatigueMult } from "./fatigue";
-import { artifactBonus } from "./forge";
-import { methodEffect } from "./method";
+import { fatigueMult } from "./character/fatigue";
+import { artifactBonus } from "./craft/forge";
+import { methodEffect } from "./character/method";
 import { realmOf } from "./progress";
-import { sectBonus } from "./sect";
-import { stanceMult } from "./stance";
+import { sectBonus } from "./character/sect";
+import { stanceMult } from "./character/stance";
 import type { GameState } from "./state";
 
 /** 依日常安排計算一個月的修為增量 */

@@ -4,9 +4,9 @@ import type { GameData } from "../data/types";
 import { revealIn } from "./dom";
 import { keepView } from "./keepview";
 import { acquaintanceRows, bestiarySummary, collectionSummary } from "./format";
-import type { MapTarget } from "./mapinfo";
+import type { MapTarget } from "./map/mapinfo";
 import type { UiHandlers } from "./render";
-import { buildWorldMap, mapStamp, resetMapView } from "./worldmap";
+import { buildWorldMap, mapStamp, resetMapView } from "./map/worldmap";
 
 export interface OverlayContext {
   root: HTMLElement;

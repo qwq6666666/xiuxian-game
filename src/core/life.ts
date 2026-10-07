@@ -1,12 +1,12 @@
 // 開局擲骰與每一世的開始、重擲、轉世。
 import { gameData } from "../data/load";
 import { ATTRIBUTE_KEYS, type GameData } from "../data/types";
-import { lifeIndex } from "./era";
+import { lifeIndex } from "./character/era";
 import { talentBonus } from "./formulas";
 import { nextInt } from "./rng";
-import { artifactsToKeep } from "./forge";
-import { chartChoiceLevel, drawAlternates, drawChart } from "./chart";
-import { clamp } from "./noise";
+import { artifactsToKeep } from "./craft/forge";
+import { chartChoiceLevel, drawAlternates, drawChart } from "./character/chart";
+import { clamp } from "./util/noise";
 import { emptyMeta, SAVE_VERSION, type Attributes, type GameState, type LogEntry, type Meta } from "./state";
 
 /** 重新擲出屬性、靈根、出身，並套用出身效果；有擇身天賦時再多抽備選命盤。夙願跟著目標走，重擲後要重選。 */

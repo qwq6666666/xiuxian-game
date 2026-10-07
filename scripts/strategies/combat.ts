@@ -1,5 +1,5 @@
-import { autoEncounter } from "../../src/core/encounter";
-import { canEnterTrial, enterTrial, trialsFor } from "../../src/core/trial";
+import { autoEncounter } from "../../src/core/combat/encounter";
+import { canEnterTrial, enterTrial, trialsFor } from "../../src/core/combat/trial";
 import { setSchedule } from "../../src/core/actions";
 import type { GameState } from "../../src/core/state";
 import { gameData } from "../../src/data/load";
