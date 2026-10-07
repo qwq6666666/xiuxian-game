@@ -45,6 +45,8 @@ export function resetMapView(): void {
   worldMapCache = null;
 }
 
+/** 窄手機（小於 480px）：小標籤太密，只留選取點與旅行目的地，地域名另由國名層顯示 */
+const isNarrow = (): boolean => typeof window !== "undefined" && window.matchMedia?.("(max-width: 479px)").matches === true;
 const isPhone = (): boolean => typeof window !== "undefined" && window.matchMedia?.("(max-width: 760px)").matches === true;
 const SEASONS = ["春", "夏", "秋", "冬"];
 
@@ -492,7 +494,9 @@ export function buildWorldMap(
   village.append(svg("circle", { cx: vx, cy: vy, r: 3.2, class: "map-village-dot" }));
   root.append(interactive(village, { kind: "village" }, [vx, vy, 10]));
   addLabel("village", [vx, vy], 0, 16, world.birth.village, 6, "middle", { kind: "village" });
-  for (const item of placeLabels([...nationRects, ...labels]).shown.filter((l) => !l.key.startsWith("nation:"))) {
+  const narrow = isNarrow();
+  const keepNarrow = (l: LabelItem): boolean => l.priority === 0 || l.key === state.travel.targetId;
+  for (const item of placeLabels([...nationRects, ...labels]).shown.filter((l) => !l.key.startsWith("nation:") && (!narrow || keepNarrow(l)))) {
     const text = svg("text", { x: item.x, y: item.y, class: "map-small", "text-anchor": item.anchor });
     text.textContent = item.text;
     root.append(text);
@@ -552,7 +556,8 @@ export function buildWorldMap(
   if (state.phase === "living" && state.travel.targetId === null) mapPane.append(buildQuickGo(state, data, places, selected, handlers.onSelect));
 
   // ---- 常駐圖例：標記的形狀各代表什麼，不必展開「更多」才知道 ----
-  mapPane.append(buildMapKey());
+  const mapKey = buildMapKey();
+  mapPane.append(mapKey);
 
   // ---- 圖層鈕 ----
   const toggle = (key: keyof MapLayers, text: string): HTMLLabelElement => {
@@ -691,6 +696,8 @@ export function buildWorldMap(
   more.append(legend);
   more.append(html("p", "desc map-symbols", "色塊為國家領土，實線是國界、紅色箭頭由進攻方指向被攻處；細線是省界。● 目前位置　◇ 渡口　■ 商行　⋯ 路線"));
   more.append(html("p", "desc map-symbols", "宗門圓點：實心＝興盛、空心＝尋常、虛線外框＝衰微、灰色＝閉山、✕＝覆滅；大宗較大，守梯大宗多一圈；外圍色暈是靈脈範圍。"));
+  // 手機：圖層與圖例收進折疊區，首屏只剩地圖、資訊卡與快速前往
+  if (isPhone()) more.querySelector("summary")!.after(chips, mapKey);
   mapPane.append(more);
 
   // ---- 折疊區：本世疆界時間軸與大事記 ----
