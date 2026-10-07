@@ -188,6 +188,17 @@ export function createReviewModal(
     box.append(scene);
     const ul = el("ul", "items talents");
     const advice = recommendTalent(state.meta, data);
+    // 只把推薦與買得起的前三項放在外面，其餘收進「其他天賦」，第一次看到不會一次攤出十種
+    const featured = new Set(
+      data.talents
+        .filter((t) => (state.meta.talents[t.id] ?? 0) < t.maxLevel)
+        .map((t) => ({ id: t.id, rank: advice?.talentId === t.id ? 0 : canBuyTalent(state, t.id, data) ? 1 : 2 }))
+        .filter((x) => x.rank < 2)
+        .sort((a, b) => a.rank - b.rank)
+        .slice(0, 3)
+        .map((x) => x.id),
+    );
+    const rest = el("ul", "items talents");
     for (const talent of data.talents) {
       const level = state.meta.talents[talent.id] ?? 0;
       const maxed = level >= talent.maxLevel;
@@ -203,9 +214,14 @@ export function createReviewModal(
       const buy = button(maxed ? "已滿" : `提升（${talentCost(talent, level)} 道韻）`, () => handlers.onBuyTalent(talent.id));
       buy.disabled = !canBuyTalent(state, talent.id, data);
       li.append(buy);
-      ul.append(li);
+      (featured.has(talent.id) || featured.size === 0 ? ul : rest).append(li);
     }
     box.append(ul);
+    if (rest.children.length > 0 && featured.size > 0) {
+      const more = el("details", "talents-more");
+      more.append(el("summary", undefined, `其他天賦（${rest.children.length}）`), rest);
+      box.append(more);
+    }
     const actions = el("div", "actions review-actions");
     actions.append(button("返回", () => showView("review")), button("轉世", () => handlers.onNewLife(), true));
     box.append(actions);

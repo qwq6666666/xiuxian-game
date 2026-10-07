@@ -178,7 +178,7 @@ export function talentPreview(talent: TalentDef, level: number, daoYun: number, 
   if (talent.maxLevel - level > 1) {
     let total = 0;
     for (let l = level; l < talent.maxLevel; l++) total += talentCost(talent, l);
-    lines.push(fillText(t.total, { k: total }));
+    if (total <= data.config.talentTotalShowMax) lines.push(fillText(t.total, { k: total }));
   }
   return lines;
 }

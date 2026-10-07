@@ -57,6 +57,8 @@ export interface GameConfig {
   frameGapSeconds: number;
   /** 剩餘壽元不到這麼多個月時，時間自動暫停一次，讓玩家來得及做最後的決定 */
   holdLifespanMonths: number;
+  /** 天賦升到滿級的總價超過這個值就不顯示（太遠的數字只造成壓迫，沒有決策價值） */
+  talentTotalShowMax: number;
   /** 離線時壽元剩餘低於此比例就停止閉關 */
   offlineStopLifespanRatio: number;
   /** 突破心得（M46）：每次失敗累積一點，下次成功率增加這麼多（0–1） */

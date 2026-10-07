@@ -145,10 +145,13 @@ describe("天賦頁的推薦與預覽", () => {
 
   it("預覽：升級後效果、道韻缺口、滿級總價；已滿級沒有預覽", () => {
     const s = talent("suhui");
-    const lines = talentPreview(s, 0, 0, gameData);
+    const roomy = { ...gameData, config: { ...gameData.config, talentTotalShowMax: 1e9 } };
+    const lines = talentPreview(s, 0, 0, roomy);
     expect(lines[0]).toContain("1 級");
     expect(lines.some((l) => l.includes("尚差 2"))).toBe(true);
     expect(lines.some((l) => l.startsWith("升到滿級"))).toBe(true);
+    const far = { ...gameData, config: { ...gameData.config, talentTotalShowMax: 1 } };
+    expect(talentPreview(s, 0, 0, far).some((l) => l.startsWith("升到滿級"))).toBe(false);
     expect(talentPreview(s, 0, 999, gameData).some((l) => l.includes("尚差"))).toBe(false);
     expect(talentPreview(s, s.maxLevel, 0, gameData)).toEqual([]);
     for (const l of lines) expect(l).not.toMatch(/[{}]/);

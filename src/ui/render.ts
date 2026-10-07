@@ -516,8 +516,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     });
 
     const marketBox = q("#market");
-    // 材料不在坊市賣
-    const market = data.items.filter((item) => item.effect.kind !== "material").map((item) => {
+    // 材料與只能煉製的法寶（價錢 0）不在坊市賣
+    const market = data.items.filter((item) => item.effect.kind !== "material" && item.price > 0).map((item) => {
       const li = document.createElement("li");
       li.innerHTML = `<div><strong>${itemIcon(data, item.id)}${esc(item.name)}</strong> <span class="price"></span><small>${esc(item.desc)}</small></div>`;
       const owned = document.createElement("span");

@@ -30,6 +30,7 @@
   "backgroundMinSeconds": 5,
   "frameGapSeconds": 2,
   "holdLifespanMonths": 12,
+  "talentTotalShowMax": 1000,
   "offlineStopLifespanRatio": 0.1,
   "breakthroughStudyBonus": 0.04,
   "breakthroughStudyCap": 0.2,

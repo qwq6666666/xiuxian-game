@@ -71,6 +71,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     backgroundMinSeconds: num(o, "backgroundMinSeconds", file, { min: 0 }),
     frameGapSeconds: num(o, "frameGapSeconds", file, { gt: 0 }),
     holdLifespanMonths: num(o, "holdLifespanMonths", file, { gt: 0 }),
+    talentTotalShowMax: num(o, "talentTotalShowMax", file, { gt: 0 }),
     offlineStopLifespanRatio: num(o, "offlineStopLifespanRatio", file, { min: 0, max: 1 }),
     breakthroughStudyBonus: num(o, "breakthroughStudyBonus", file, { min: 0, max: 1 }),
     breakthroughStudyCap: num(o, "breakthroughStudyCap", file, { min: 0, max: 1 }),
