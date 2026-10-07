@@ -1,7 +1,7 @@
 {
   "rules": {
     "schedule": "adventure",
-    "chance": 0.15,
+    "chance": 0.08,
     "rounds": 3,
     "realmPower": { "mortal": 6, "lianqi": 10, "zhuji": 18, "jindan": 32, "yuanying": 55, "huashen": 90 },
     "stagePower": 0.06,
