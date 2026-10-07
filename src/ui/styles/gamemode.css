@@ -22,7 +22,7 @@
 /* 頂部抬頭顯示：名字、境界、壽元、修為條；待辦出現時顯示在底下 */
 #app[data-ui="game"] .status { position: absolute; top: 0; left: 0; right: 0; z-index: 4; padding: var(--sp-2) var(--sp-3); border: 0; border-radius: 0; background: var(--panel); background: color-mix(in srgb, var(--panel) 86%, transparent); }
 #app[data-ui="game"] .status #scene { margin: calc(var(--sp-2) * -1) calc(var(--sp-3) * -1) var(--sp-2); }
-#app[data-ui="game"] .status .pace, #app[data-ui="game"] .status #resbar { display: none; }
+#app[data-ui="game"] .status .pace, #app[data-ui="game"] .status .pace-fix, #app[data-ui="game"] .status #resbar { display: none; }
 #app[data-ui="game"] .status .line { gap: 0 var(--sp-3); font-size: var(--fs-sm); }
 #app[data-ui="game"] .status .year-pips { display: none; }
 #app[data-ui="game"] .status .progress { height: 18px; font-size: 0.75em; }
