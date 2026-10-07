@@ -40,6 +40,18 @@
 .map-route.active { stroke-width: 3.2; stroke-opacity: 0.4; stroke-dasharray: 6 5; }
 .map-route-progress { fill: none; stroke: var(--accent); stroke-width: 3.2; stroke-linecap: round; pointer-events: none; transition: stroke-dasharray var(--dur-slow) var(--ease); }
 .map-visited { fill: none; stroke: var(--good); stroke-width: 2.4; stroke-opacity: 0.9; pointer-events: none; }
+/* 流動的虛線：路線朝目的地、推進箭頭朝被攻處、世仇線緩緩流動。--flow 是一個虛線週期長（等於 dasharray 兩數之和），
+   循環一圈剛好接回起點，不會跳；各元素的相位由 worldmap.ts 的 keepPhase 接回現在，季度重建也不中斷。 */
+.map-route, .map-route.active, .map-arrow, .map-rel-feud { animation: map-flow 1600ms linear infinite; }
+.map-route { --flow: 7px; }
+.map-route.active { --flow: 11px; animation-duration: 900ms; }
+.map-arrow { stroke-dasharray: 6 4; --flow: 10px; animation-duration: 800ms; }
+.map-rel-feud { --flow: 9px; animation-duration: 2400ms; }
+@keyframes map-flow { to { stroke-dashoffset: calc(var(--flow) * -1); } }
+/* 剛選取的標記：由大收回，資訊卡由上淡入；季度重建不會重播 */
+.map-hit.pick { animation: map-pick var(--dur-slow) var(--ease); transform-box: fill-box; transform-origin: center; }
+@keyframes map-pick { 0% { transform: scale(1.7); opacity: 0.4; } 100% { transform: none; opacity: 1; } }
+.map-info.map-info-in { animation: fold-in var(--dur-base) var(--ease); }
 @keyframes map-pulse { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.35; transform: scale(1.35); } }
 
 /* 圖層鈕：預設只有五個，其餘收進「更多」 */

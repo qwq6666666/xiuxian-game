@@ -93,6 +93,18 @@ function along(points: Point[], progress: number): Point {
   return points.at(-1)!;
 }
 
+/**
+ * 地圖每個季度會重建一次節點，CSS 動畫會從頭開始；用負的延遲接回「現在這一刻」的相位，
+ * 流動的虛線與脈動才不會每三秒跳一下。
+ */
+function keepPhase<T extends SVGElement>(el: T, periodMs: number): T {
+  el.style.animationDelay = `-${Math.round(performance.now() % periodMs)}ms`;
+  return el;
+}
+
+/** 上一次建圖時選取的目標；只有選取變了才播選取與資訊卡的動畫，季度重建不重播 */
+let prevSelectedKey = "";
+
 function travelProgress(state: GameState): number {
   if (state.travel.totalMonths <= 0) return 1;
   return Math.max(0, Math.min(1, (state.travel.totalMonths - state.travel.remainingMonths) / state.travel.totalMonths));
@@ -164,6 +176,9 @@ export function buildWorldMap(
     return cached;
   }
 
+  const selectedKey = JSON.stringify(selected);
+  const selChanged = selectedKey !== prevSelectedKey;
+  prevSelectedKey = selectedKey;
   const prefs = readMapPrefs(data);
   const world = worldFor(state.worldSeed, data, state.nationCount);
   const nowQuarter = ageQuarters(state.ageMonths);
@@ -237,7 +252,7 @@ export function buildWorldMap(
     const action = hit ? svg("g") : el;
     if (hit) action.append(svg("circle", { cx: hit[0], cy: hit[1], r: hit[2], fill: "transparent" }), el);
     action.classList.add("map-hit");
-    if (sameTarget(selected, target)) action.classList.add("selected");
+    if (sameTarget(selected, target)) action.classList.add("selected", ...(selChanged ? ["pick"] : []));
     action.setAttribute("role", "button");
     action.setAttribute("tabindex", "0");
     action.setAttribute("aria-label", describeTarget(target, world, snap, data).title);
@@ -312,10 +327,10 @@ export function buildWorldMap(
       const cx = (x1 + to.x) / 2 - ((to.y - y1) / len) * bend;
       const cy = (y1 + to.y) / 2 + ((to.x - x1) / len) * bend;
       const curve = `M${x1},${y1} Q${cx},${cy} ${to.x},${to.y}`;
-      relLayer.append(svg("path", { d: curve, class: "map-rel-under" }), svg("path", { d: curve, class: `map-rel map-rel-${e.kind}` }), svg("circle", { cx: to.x, cy: to.y, r: 3, class: "map-rel-end" }));
+      relLayer.append(svg("path", { d: curve, class: "map-rel-under" }), keepPhase(svg("path", { d: curve, class: `map-rel map-rel-${e.kind}` }), 2400), svg("circle", { cx: to.x, cy: to.y, r: 3, class: "map-rel-end" }));
     }
   }
-  for (const spot of highlightSpots) root.append(svg("circle", { cx: tv(spot)[0], cy: tv(spot)[1], r: 16, class: "map-highlight" }));
+  for (const spot of highlightSpots) root.append(keepPhase(svg("circle", { cx: tv(spot)[0], cy: tv(spot)[1], r: 16, class: "map-highlight" }), 2800));
   // 推進箭頭：由進攻方最近的領指向被攻處；進度越高越不透明
   for (const fight of map.fights) {
     if (!fight.source) continue;
@@ -329,7 +344,7 @@ export function buildWorldMap(
     const ex = x1 + ux * len * (0.55 + 0.3 * fight.progress);
     const ey = y1 + uy * len * (0.55 + 0.3 * fight.progress);
     const headPath = `M${ex - ux * 6 - uy * 3.5},${ey - uy * 6 + ux * 3.5} L${ex},${ey} L${ex - ux * 6 + uy * 3.5},${ey - uy * 6 - ux * 3.5}`;
-    root.append(svg("path", { d: `M${sx},${sy} L${ex},${ey} ${headPath}`, class: "map-arrow", "stroke-opacity": (0.4 + 0.5 * fight.progress).toFixed(2) }));
+    root.append(keepPhase(svg("path", { d: `M${sx},${sy} L${ex},${ey} ${headPath}`, class: "map-arrow", "stroke-opacity": (0.4 + 0.5 * fight.progress).toFixed(2) }), 800));
   }
 
   // 已走路線與正在走的路線
@@ -343,7 +358,7 @@ export function buildWorldMap(
   let routeProgress: SVGPolylineElement | null = null;
   if (shownRoute) {
     const pts = shownRoute.points.map(tv);
-    root.append(svg("polyline", { points: pts.map((p) => p.join(",")).join(" "), class: activeRoute ? "map-route active" : "map-route" }));
+    root.append(keepPhase(svg("polyline", { points: pts.map((p) => p.join(",")).join(" "), class: activeRoute ? "map-route active" : "map-route" }), activeRoute ? 900 : 1600));
     if (activeRoute) {
       routeProgress = svg("polyline", { points: pts.map((p) => p.join(",")).join(" "), class: "map-route-progress", pathLength: 100 });
       routeProgress.style.strokeDasharray = `${travelProgress(state) * 100} 100`;
@@ -423,7 +438,7 @@ export function buildWorldMap(
   const current = tv(places.find((place) => place.id === state.travel.locationId)?.point ?? birthRegion.birth!.village);
   const markerPoint = activeRoute ? along(activeRoute.points.map(tv), travelProgress(state)) : current;
   const you = svg("g", { class: "map-you" });
-  you.append(svg("circle", { cx: 0, cy: 0, r: 8, class: "map-you-ring" }), svg("circle", { cx: 0, cy: 0, r: 4, class: "map-you-dot" }));
+  you.append(keepPhase(svg("circle", { cx: 0, cy: 0, r: 8, class: "map-you-ring" }), 2800), svg("circle", { cx: 0, cy: 0, r: 4, class: "map-you-dot" }));
   moveTraveler(you, markerPoint);
   root.append(you);
 
@@ -484,7 +499,7 @@ export function buildWorldMap(
   mapPane.append(chips);
 
   // ---- 資訊卡 ----
-  const info = html("section", "map-info");
+  const info = html("section", selChanged ? "map-info map-info-in" : "map-info");
   info.setAttribute("aria-live", "polite");
   const territoryOf = (place: TravelPlace | undefined) => (place ? territoryAt(decision, place.point) : undefined);
   if (selected) {

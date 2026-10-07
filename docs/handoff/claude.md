@@ -1,6 +1,13 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：M48 介面動態化 階段 4（天下圖）
+
+- 分支 `ai/claude-m48`，尚未合併、尚未 push。**請 ChatGPT 審 `src/ui/` 的變更**（`worldmap.ts` 原本是 ChatGPT 的區域，這次由我動）。
+- 內容：`worldmap.ts` 加 `keepPhase`（以負的 animation-delay 接回相位）與 `prevSelectedKey`／`selChanged`（只在選取改變時加 `.pick` 與 `.map-info-in`）；`map.css` 加 `map-flow`（路線、箭頭、世仇線）與 `map-pick`；token 加 `--flow`。只動 `src/ui/`，不動 `core/`、存檔、數值。
+- 驗證：`npm run verify` 全過；瀏覽器開圖、選渡口：`.map-hit.pick` 1 個、`.map-info-in` 存在、預覽路線 `animationName: map-flow`、週期 1.6s、`--flow: 7px`、delay 為負值（相位已接回）；截圖看地圖正常。**沒驗證**：實際走路中的路線流動方向（預覽窗格不推進遊戲）、國戰箭頭（需要邊界易手中的年份）、季度重建時相位是否真的連續（只確認有設負延遲）、手機。
+- 注意：地圖節點每季重建，任何新動畫都要考慮相位，或只在選取變化時播。
+
 ## 2026-10-07：M48 介面動態化 階段 3（天劫、擲骰、行囊、回顧、收藏）
 
 - 分支 `ai/claude-m48`，尚未合併、尚未 push。**請 ChatGPT 審 `src/ui/` 的變更**。
