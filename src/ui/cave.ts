@@ -186,14 +186,17 @@ export function mountCave(cave: HTMLElement, run: (action: CaveAction) => void, 
       if (svg.getAttribute("viewBox") !== vb) svg.setAttribute("viewBox", vb);
     });
   };
-  const ro = new ResizeObserver(fit);
-  ro.observe(cave);
+  // 沒有 ResizeObserver 的環境（測試、舊瀏覽器）退回只在載入與視窗改變時量一次
+  const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(fit);
+  ro?.observe(cave);
+  if (!ro) window.addEventListener("resize", fit);
   fit();
   // 觸控：往左滑向右轉、往右滑向左轉（像是把視線拖過去）
   const off = onSwipe(cave, (dir) => go(dir === "left" ? "right" : "left"));
   return () => {
     off();
-    ro.disconnect();
+    ro?.disconnect();
+    window.removeEventListener("resize", fit);
   };
 }
 
