@@ -7,15 +7,18 @@ export interface LabelItem {
   anchor: "start" | "middle";
   /** 數字越小越優先；被選取的標籤用 0 */
   priority: number;
+  /** 單字寬高，預設是小標籤的大小；國名用比較大的字 */
+  charW?: number;
+  charH?: number;
 }
 
 const CHAR_W = 10.5;
 const CHAR_H = 11;
 
 function labelRect(l: LabelItem): [number, number, number, number] {
-  const w = [...l.text].length * CHAR_W;
+  const w = [...l.text].length * (l.charW ?? CHAR_W);
   const x0 = l.anchor === "middle" ? l.x - w / 2 : l.x;
-  return [x0, l.y - CHAR_H, x0 + w, l.y + 2];
+  return [x0, l.y - (l.charH ?? CHAR_H), x0 + w, l.y + 2];
 }
 
 export function placeLabels(items: LabelItem[]): { shown: LabelItem[]; hidden: LabelItem[] } {

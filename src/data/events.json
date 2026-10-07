@@ -3013,7 +3013,7 @@
     "tone": "neutral",
     "conditions": { "realmMin": "lianqi", "territoryRelation": "feud" },
     "choices": [
-      { "text": "老實開箱", "outcomes": [{ "weight": 100, "text": "兵丁翻了一遍，只抽走兩枚靈石當查驗費，還說這是規矩。你沒問是誰訂的。", "effects": { "spiritStones": -2 } }] },
+      { "text": "老實開箱", "outcomes": [{ "weight": 100, "text": "兵丁翻了一遍，只收了一筆查驗費，還說這是規矩。你沒問是誰訂的。", "effects": { "spiritStones": -2 } }] },
       { "text": "收起信物，只說是遊方的", "outcomes": [
         { "weight": 60, "text": "兵丁瞥了你一眼便揮手放行，連行囊都沒翻。信物在衣襟裡硌了一路。", "effects": {} },
         { "weight": 40, "text": "兵丁冷笑，說遊方的不會把宗門信物縫在衣襟裡。你被扣了半日，才得放行。", "effects": { "spiritStones": -5 } }
@@ -3023,14 +3023,14 @@
   {
     "id": "relation_ally_guest_001",
     "type": "choice",
-    "title": "盟國客棧",
+    "title": "故交客棧",
     "text": "此地與貴宗素有往來，客棧掌櫃一看見宗門信物，便把最好的一間房空了出來。他說房錢照舊，不過今日不收。",
     "weight": 8,
     "tone": "good",
     "conditions": { "realmMin": "lianqi", "territoryRelation": "ally" },
     "choices": [
       { "text": "住下歇腳", "outcomes": [{ "weight": 100, "text": "你睡了個安穩覺，醒來時掌櫃已備好早飯。他說下回再來，房錢照舊便宜。", "effects": { "cultivation": 0.02 } }] },
-      { "text": "打聽兩家的交情", "outcomes": [{ "weight": 100, "text": "掌櫃講了一個時辰，只講明白一件事：兩家如今是互相欠人情。臨走他塞給你幾枚靈石，說算利息。", "effects": { "spiritStones": 4 } }] }
+      { "text": "打聽兩家的交情", "outcomes": [{ "weight": 100, "text": "掌櫃講了一個時辰，只講明白一件事：兩家如今是互相欠人情。臨走他塞給你一個小布包，說算利息。", "effects": { "spiritStones": 4 } }] }
     ]
   }
 ]

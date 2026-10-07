@@ -257,11 +257,42 @@ export function buildWorldMap(
   // 國名（依各國現有領土的位置）；被選取的地域加高亮圈
   const nationLayer = svg("g", { class: "map-nations" });
   root.append(nationLayer);
+  // 國名：在該國的領土內找一處不壓住任何標記、也不與其他國名重疊的位置；
+  // 國名的範圍也當成小標籤的障礙（優先度 0），所以宗門與地名會讓開
+  const markerPoints: Point[] = [
+    tv([data.map.stairs.x, data.map.stairs.y]),
+    ...snap.sects.map((s) => tv(regionById(s.region).sites![s.site])),
+    ...snap.ferries.map((f) => tv(regionById(f.region).ferries![f.index])),
+    ...placesView.filter((p) => p.kind === "capital" || p.kind === "merchant" || p.kind === "village" || p.kind === "mountain").map((p) => tv(p.point)),
+  ];
+  const nationRects: LabelItem[] = [];
+  const touches = (x: number, y: number, w: number, h: number, pad: number): boolean =>
+    markerPoints.some((m) => m[0] > x - w / 2 - pad && m[0] < x + w / 2 + pad && m[1] > y - h - pad && m[1] < y + 2 + pad) ||
+    nationRects.some((n) => {
+      const nw = [...n.text].length * (n.charW ?? 10.5);
+      return x - w / 2 < n.x + nw / 2 && x + w / 2 > n.x - nw / 2 && y - h < n.y + 2 && y + 2 > n.y - (n.charH ?? 11);
+    });
   for (const a of polityAnchors(terrain, map)) {
     const polity = polityById(map.polityIds[a.index]);
     if (!polity) continue;
-    const text = svg("text", { x: a.x, y: a.y, class: "map-nation", "text-anchor": "middle", "font-size": Math.max(10, Math.min(26, 7 + Math.sqrt(a.cells) * 0.55)) });
-    text.textContent = polityLabel(polity);
+    const label = polityLabel(polity);
+    const size = Math.max(10, Math.min(26, 7 + Math.sqrt(a.cells) * 0.55));
+    const boxW = [...label].length * size * 1.15;
+    // 候選位置：該國的格，離中心近的先
+    const own = terrain.grid.cells
+      .filter((c) => map.owner[c.id] === a.index)
+      .map((c) => ({ x: c.x, y: c.y, d: Math.hypot(c.x - a.x, c.y - a.y) }))
+      .sort((p, q) => p.d - q.d);
+    let pos = { x: a.x, y: a.y };
+    for (let k = 0; k < own.length; k += 3) {
+      if (!touches(own[k].x, own[k].y, boxW, size, 8)) {
+        pos = own[k];
+        break;
+      }
+    }
+    nationRects.push({ key: `nation:${polity.id}`, x: pos.x, y: pos.y, text: label, anchor: "middle", priority: 0, charW: size * 1.15, charH: size });
+    const text = svg("text", { x: pos.x, y: pos.y, class: "map-nation", "text-anchor": "middle", "font-size": size });
+    text.textContent = label;
     nationLayer.append(text);
   }
   // 關係線：只有選取宗門或國家時才畫；互惠實線、世仇虛線
@@ -280,7 +311,8 @@ export function buildWorldMap(
       const bend = Math.min(30, len * 0.18) * (e.kind === "ally" ? 1 : -1);
       const cx = (x1 + to.x) / 2 - ((to.y - y1) / len) * bend;
       const cy = (y1 + to.y) / 2 + ((to.x - x1) / len) * bend;
-      relLayer.append(svg("path", { d: `M${x1},${y1} Q${cx},${cy} ${to.x},${to.y}`, class: `map-rel map-rel-${e.kind}` }), svg("circle", { cx: to.x, cy: to.y, r: 3, class: "map-rel-end" }));
+      const curve = `M${x1},${y1} Q${cx},${cy} ${to.x},${to.y}`;
+      relLayer.append(svg("path", { d: curve, class: "map-rel-under" }), svg("path", { d: curve, class: `map-rel map-rel-${e.kind}` }), svg("circle", { cx: to.x, cy: to.y, r: 3, class: "map-rel-end" }));
     }
   }
   for (const spot of highlightSpots) root.append(svg("circle", { cx: tv(spot)[0], cy: tv(spot)[1], r: 16, class: "map-highlight" }));
@@ -382,7 +414,7 @@ export function buildWorldMap(
   village.append(svg("circle", { cx: vx, cy: vy, r: 3.2, class: "map-village-dot" }));
   root.append(interactive(village, { kind: "village" }, [vx, vy, 10]));
   addLabel("village", [vx, vy], 0, 16, world.birth.village, 6, "middle", { kind: "village" });
-  for (const item of placeLabels(labels).shown) {
+  for (const item of placeLabels([...nationRects, ...labels]).shown.filter((l) => !l.key.startsWith("nation:"))) {
     const text = svg("text", { x: item.x, y: item.y, class: "map-small", "text-anchor": item.anchor });
     text.textContent = item.text;
     root.append(text);

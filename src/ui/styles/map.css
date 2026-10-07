@@ -11,6 +11,7 @@
 .map-hit.selected { stroke: var(--accent); stroke-width: 2; }
 .map-nation { fill: var(--map-ink); fill-opacity: 0.88; stroke: var(--map-paper-halo); stroke-opacity: 0.65; stroke-width: 2.4px; paint-order: stroke; font-weight: 700; font-family: "Noto Serif TC", "Songti TC", "PMingLiU", serif; letter-spacing: 0.14em; pointer-events: none; }
 .map-highlight { fill: none; stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3; pointer-events: none; animation: map-pulse calc(var(--dur-slow) * 4) var(--ease) infinite; transform-box: fill-box; transform-origin: center; }
+.map-rel-under { fill: none; stroke: var(--map-paper-halo); stroke-width: 4.6; stroke-opacity: 0.8; stroke-linecap: round; pointer-events: none; }
 .map-rel { fill: none; stroke-width: 2; stroke-linecap: round; pointer-events: none; }
 .map-rel-ally { stroke: var(--map-ally); }
 .map-rel-feud { stroke: var(--map-feud); stroke-dasharray: 5 4; }
