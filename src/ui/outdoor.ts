@@ -4,18 +4,6 @@ import type { Facing } from "./caveLogic";
 
 export type OutdoorSetting = "road" | "market" | "ferry";
 
-const QI = [[-22, 0], [-14, 0.9], [-6, 1.8], [4, 0.4], [12, 1.3], [20, 2.2], [-18, 2.6], [8, 3]];
-const qis = (): string => QI.map(([x, d]) => `<circle class="sc-qi" cx="${x}" cy="0" r="1.4" style="--d:${d}s"/>`).join("");
-
-/** 第一人稱的雙手結印（與洞府相同，放在視圖座標的下方中央），運功熱點用 */
-const HANDS = `<g transform="translate(-175 150)">
-  <ellipse cx="400" cy="372" rx="120" ry="60" fill="url(#seal)" style="mix-blend-mode:screen"/>
-  <path class="cv-sleeve" d="M236 450 Q276 380 350 346 L398 372 Q334 402 322 450Z" fill="var(--scene-figure)" filter="url(#ink)"/>
-  <path class="cv-sleeve" d="M564 450 Q524 380 450 346 L402 372 Q466 402 478 450Z" fill="var(--scene-figure)" filter="url(#ink)"/>
-  <ellipse class="cv-hand" cx="386" cy="360" rx="23" ry="12"/><ellipse class="cv-hand" cx="414" cy="360" rx="23" ry="12"/>
-  <circle class="sc-aura" cx="400" cy="350" r="54"/><circle class="sc-aura sc-aura-outer" cx="400" cy="350" r="80"/>
-  <g transform="translate(400 330) scale(3.4)">${qis()}</g></g>`;
-
 const W = { x: -300, w: 1400 };
 const sky = (horizon: number): string => `<rect x="${W.x}" y="-300" width="${W.w}" height="${horizon + 300}" fill="url(#skyGradDay)"/><circle class="sc-halo" cx="330" cy="130" r="46"/><circle class="sc-orb" cx="330" cy="130" r="22"/>`;
 const ground = (y: number): string => `<rect x="${W.x}" y="${y}" width="${W.w}" height="${700 - y}" fill="url(#floorGrad)"/><rect x="${W.x}" y="${y}" width="${W.w}" height="${700 - y}" filter="url(#grain)" opacity=".2" style="mix-blend-mode:overlay"/>`;
@@ -31,7 +19,7 @@ const road = (): Record<Facing, string> => ({
     <path d="M168 600 L210 336 H240 L282 600Z" fill="var(--scene-ink)" opacity=".32"/><path d="M225 600 V336" stroke="var(--scene-figure)" stroke-width="3" stroke-dasharray="14 22" opacity=".25"/>
     ${pine(60, 420, 150)}${pine(392, 410, 170)}${pine(-40, 380, 120)}${pine(470, 370, 110)}
     <ellipse cx="225" cy="560" rx="230" ry="46" fill="var(--scene-figure)" opacity=".92"/><path d="M40 566 Q225 540 410 566" stroke="var(--scene-ink)" stroke-width="2.5" fill="none" opacity=".35"/>
-    ${HANDS}</g>`,
+    </g>`,
   right: `<g>${sky(280)}${hills(280)}${ground(312)}${pine(380, 400, 190)}${pine(430, 380, 130)}
     <path d="M-80 600 L-40 420 Q225 380 490 420 L530 600Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="3"/><path d="M-40 440 Q225 404 490 440" stroke="var(--scene-ink)" stroke-width="2" fill="none" opacity=".4"/>
     ${shadow(225, 596, 260)}${bottle(78, 332, 1.5)}${bag(250, 270, 1.4)}
@@ -81,7 +69,7 @@ const ferry = (): Record<Facing, string> => ({
     <rect x="-300" y="330" width="1400" height="170" fill="url(#skyGrad)" opacity=".85"/><rect x="-300" y="330" width="1400" height="170" fill="var(--scene-orb)" opacity=".1"/><path d="M-300 360 H1100 M-300 396 H1100 M-300 440 H1100" stroke="var(--scene-orb)" stroke-width="2" opacity=".18" stroke-dasharray="40 30"/>
     <g transform="translate(250 360)"><path d="M0 40 L24 66 H110 L134 40Z" fill="var(--scene-figure)" stroke="var(--scene-ink)" stroke-width="2.5"/><path d="M66 40 V-20" stroke="var(--scene-ink)" stroke-width="4"/><path d="M66 -18 L108 24 H66Z" fill="var(--scene-ink)" opacity=".55"/></g>
     <path d="M-60 500 H520 V600 H-60Z" fill="var(--scene-figure)"/><path d="M-60 520 H520 M-60 548 H520 M-60 576 H520" stroke="var(--scene-ink)" stroke-width="2" opacity=".3"/><path d="M40 500 V470 M110 500 V470 M340 500 V470 M410 500 V470" stroke="var(--scene-figure)" stroke-width="8"/>
-    ${HANDS}</g>`,
+    </g>`,
   right: `<g>${sky(280)}${hills(280)}${ground(330)}
     <path d="M-40 230 L225 160 L490 230Z" fill="var(--scene-figure)"/><path d="M-40 230 L225 160 L490 230" fill="none" stroke="var(--scene-ink)" stroke-width="3"/><path d="M30 230 V420 M420 230 V420" stroke="var(--scene-figure)" stroke-width="12"/>${lantern(225, 270)}
     <path d="M-40 420 H490 V600 H-40Z" fill="var(--scene-figure)"/><path d="M-40 420 H490" stroke="var(--scene-ink)" stroke-width="4" opacity=".6"/><path d="M-40 480 Q225 470 490 480 M-40 540 Q225 532 490 540" stroke="var(--scene-ink)" stroke-width="2" fill="none" opacity=".22"/>

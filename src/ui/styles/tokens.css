@@ -70,6 +70,8 @@
   --ease: ease-out;
   --dur-tick: 1000ms; /* 進度條過渡長度，由 render.ts 依速度覆寫 */
   --dur-press: 90ms; /* 按下去的回饋 */
+  --dur-turn: 300ms; /* 第一人稱轉身；render 依流速縮短 */
+  --dur-action: 280ms; /* 第一人稱手部操作；render 依流速縮短 */
   --press-scale: 0.97; /* 按下時縮小的比例 */
   --stagger: 45ms; /* 一組項目依序進場的間隔 */
   --flow: 7px; /* 流動虛線一個週期的長度，各元素在 map.css 依自己的 dasharray 覆寫 */

@@ -4,6 +4,7 @@
 import type { GameState } from "../core/state";
 import type { GameData } from "../data/types";
 import { FACINGS, caveActive, facingName, hotspotsFor, turn, type CaveAction, type Facing, type Hotspot } from "./caveLogic";
+import { sceneHands } from "./firstPersonHands";
 import { onSwipe } from "./gesture";
 import { OUTDOOR } from "./outdoor";
 import { ageBand, qiLevel, sceneSetting, type SceneSetting } from "./sceneLogic";
@@ -36,15 +37,7 @@ const VIEWS: Record<Facing, string> = {
       ${plank(300)}
       <ellipse cx="400" cy="440" rx="330" ry="40" fill="var(--scene-figure)" opacity=".28" filter="url(#blur12)"/></g>
     <g><ellipse cx="400" cy="424" rx="262" ry="48" fill="var(--scene-figure)" opacity=".92"/><ellipse cx="400" cy="418" rx="250" ry="42" fill="none" stroke="var(--scene-ink)" stroke-width="2" opacity=".35"/><ellipse cx="400" cy="418" rx="206" ry="34" fill="none" stroke="var(--scene-ink)" stroke-width="2" opacity=".28"/><ellipse cx="400" cy="418" rx="160" ry="26" fill="none" stroke="var(--scene-ink)" stroke-width="2" opacity=".22"/><ellipse cx="400" cy="418" rx="110" ry="18" fill="none" stroke="var(--scene-ink)" stroke-width="2" opacity=".16"/></g>
-    <g>
-      <ellipse cx="400" cy="372" rx="120" ry="60" fill="url(#seal)" style="mix-blend-mode:screen"/>
-      <path class="cv-sleeve" d="M236 450 Q276 380 350 346 L398 372 Q334 402 322 450Z" fill="var(--scene-figure)" filter="url(#ink)"/><path d="M270 430 Q304 392 350 366 M296 440 Q324 410 360 386" stroke="var(--scene-ink)" stroke-width="2" fill="none" opacity=".35"/>
-      <path class="cv-sleeve" d="M564 450 Q524 380 450 346 L402 372 Q466 402 478 450Z" fill="var(--scene-figure)" filter="url(#ink)"/><path d="M530 430 Q496 392 450 366 M504 440 Q476 410 440 386" stroke="var(--scene-ink)" stroke-width="2" fill="none" opacity=".35"/>
-      <rect x="338" y="350" width="26" height="9" rx="4.5" fill="var(--scene-hair)" opacity=".4" transform="rotate(14 351 355)"/>
-      <ellipse class="cv-hand" cx="386" cy="360" rx="23" ry="12"/><ellipse class="cv-hand" cx="414" cy="360" rx="23" ry="12"/>
-      <path d="M378 354 Q400 342 422 354" stroke="var(--scene-hair)" stroke-width="2" fill="none" opacity=".45"/>
-      <circle class="sc-aura" cx="400" cy="350" r="54"/><circle class="sc-aura sc-aura-outer" cx="400" cy="350" r="80"/>
-      <g transform="translate(400 330) scale(3.4)">${qis()}</g></g>`,
+    <g transform="translate(400 330) scale(3.4)">${qis()}</g>`,
 
   left: `<g>${wall(`<polygon points="-200,480 320,200 560,200 1000,480" fill="url(#fireLight)" style="mix-blend-mode:screen" opacity=".0" class="fire-wall"/>`)}
       <g transform="translate(150 -60)"><rect class="cv-shelf" x="50" y="134" width="250" height="12" fill="var(--scene-figure)"/><rect class="cv-shelf" x="50" y="214" width="250" height="12" fill="var(--scene-figure)"/>
@@ -143,12 +136,16 @@ const ART: Record<ArtKind, { svg: () => string; label: string }> = {
 /** 第一人稱的場景插圖（取代原本的第三人稱插畫）：橫向取景，需要 CAVE_DEFS 在頁面裡 */
 export function firstPersonArt(kind: ArtKind): string {
   const { svg, label } = ART[kind];
-  return `<div class="scene-art scene-art-fp" role="img" aria-label="${label}"><svg viewBox="${LANDSCAPE_VB}" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">${svg()}</svg></div>`;
+  return `<div class="scene-art scene-art-fp" role="img" aria-label="${label}"><svg viewBox="${LANDSCAPE_VB}" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">${svg()}${sceneHands()}</svg></div>`;
 }
 
 export function caveHtml(): string {
   return `<div id="cave" class="scene cave" data-facing="front" data-realm="mortal" data-sched="retreat" data-season="spring" data-age="adult" data-qi="0" data-no-swipe hidden>
   <div class="cave-views">${VIEW_DIVS}</div>
+  <svg class="fp-overlay" viewBox="${PORTRAIT_VB}" preserveAspectRatio="xMidYMax slice" focusable="false" aria-hidden="true">
+    <circle class="fp-touch" cx="225" cy="510" r="18"/>
+    ${sceneHands()}
+  </svg>
   <button type="button" class="cave-turn cave-turn-left" aria-label="向左轉身">‹</button>
   <button type="button" class="cave-turn cave-turn-right" aria-label="向右轉身">›</button>
   <div class="cave-name" aria-live="polite"></div>
@@ -157,16 +154,32 @@ export function caveHtml(): string {
 }
 
 const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
+const TURN_MS = 300;
+const ACTION_MS = 280;
+const ANIMATED_ACTIONS = new Set<CaveAction>(["focus", "brew", "pill", "bag", "scrolls", "schedule"]);
 let facing: Facing = "front";
 let builtKey = "";
 
 /** 接上轉身（箭頭、鍵盤、滑動）與熱點點擊；回傳取消函式。只在建立畫面時呼叫一次 */
 export function mountCave(cave: HTMLElement, run: (action: CaveAction) => void, refresh: () => void): () => void {
+  let turnTimer = 0;
+  let actionTimer = 0;
+  const clearTurn = (): void => {
+    window.clearTimeout(turnTimer);
+    cave.querySelectorAll(".turn-enter-left, .turn-enter-right, .turn-leave-left, .turn-leave-right").forEach((el) => {
+      el.classList.remove("turn-enter-left", "turn-enter-right", "turn-leave-left", "turn-leave-right");
+    });
+  };
   const go = (dir: "left" | "right"): void => {
+    const old = cave.querySelector<HTMLElement>(".cave-view.on");
+    clearTurn();
+    old?.classList.add(`turn-leave-${dir}`);
     facing = turn(facing, dir);
     builtKey = "";
     cave.querySelector<HTMLElement>(".cave-schedules")!.hidden = true;
     refresh();
+    cave.querySelector<HTMLElement>(".cave-view.on")?.classList.add(`turn-enter-${dir}`);
+    turnTimer = window.setTimeout(clearTurn, TURN_MS + 40);
   };
   cave.querySelector(".cave-turn-left")!.addEventListener("click", () => go("left"));
   cave.querySelector(".cave-turn-right")!.addEventListener("click", () => go("right"));
@@ -183,7 +196,20 @@ export function mountCave(cave: HTMLElement, run: (action: CaveAction) => void, 
   const fire = (target: EventTarget | null): void => {
     const b = (target as Element | null)?.closest<SVGElement>(".cave-hot[data-action]");
     if (!b || b.getAttribute("aria-disabled") === "true") return;
-    run(b.dataset.action as CaveAction);
+    const action = b.dataset.action as CaveAction;
+    if (ANIMATED_ACTIONS.has(action)) {
+      window.clearTimeout(actionTimer);
+      cave.classList.remove("acting");
+      const touch = cave.querySelector<SVGCircleElement>(".fp-touch");
+      touch?.setAttribute("cx", b.dataset.cx ?? "225");
+      touch?.setAttribute("cy", b.dataset.cy ?? "510");
+      cave.dataset.action = action;
+      // 同一個動作連點也要重新開始；只重排場景元素，不等待動畫才執行操作。
+      void cave.offsetWidth;
+      cave.classList.add("acting");
+      actionTimer = window.setTimeout(() => cave.classList.remove("acting"), ACTION_MS + 40);
+    }
+    run(action);
   };
   cave.addEventListener("click", (ev) => fire(ev.target));
   cave.addEventListener("keydown", (ev) => {
@@ -197,7 +223,7 @@ export function mountCave(cave: HTMLElement, run: (action: CaveAction) => void, 
     const r = cave.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
     const vb = r.width / r.height > 1.05 ? LANDSCAPE_VB : PORTRAIT_VB;
-    cave.querySelectorAll<SVGSVGElement>(".cave-view svg").forEach((svg) => {
+    cave.querySelectorAll<SVGSVGElement>(".cave-view svg, .fp-overlay").forEach((svg) => {
       if (svg.getAttribute("viewBox") !== vb) svg.setAttribute("viewBox", vb);
     });
   };
@@ -209,6 +235,8 @@ export function mountCave(cave: HTMLElement, run: (action: CaveAction) => void, 
   // 觸控：往左滑向右轉、往右滑向左轉（像是把視線拖過去）
   const off = onSwipe(cave, (dir) => go(dir === "left" ? "right" : "left"));
   return () => {
+    window.clearTimeout(turnTimer);
+    window.clearTimeout(actionTimer);
     off();
     ro?.disconnect();
     window.removeEventListener("resize", fit);
@@ -231,6 +259,8 @@ export function updateCave(cave: HTMLElement | null, scene: HTMLElement | null, 
   set("sched", state.schedule);
   set("season", SEASONS[Math.floor((state.ageMonths % 12) / 3)]);
   set("brew", state.alchemy !== null ? "on" : "off");
+  cave.style.setProperty("--dur-turn", `${Math.round(TURN_MS / Math.max(1, state.speed))}ms`);
+  cave.style.setProperty("--dur-action", `${Math.round(ACTION_MS / Math.max(1, state.speed))}ms`);
   const setting = sceneSetting(state);
   set("facing", facing);
   set("setting", setting);
@@ -282,7 +312,7 @@ function buildHotspots(spots: Hotspot[]): SVGGElement {
     const y = py * 6;
     const w = pw * 4.5;
     const hgt = ph * 6;
-    const g = svgEl("g", { class: "cave-hot", role: "button", tabindex: "0", "data-action": h.action, "aria-label": `${h.label}：${h.hint}` });
+    const g = svgEl("g", { class: "cave-hot", role: "button", tabindex: "0", "data-action": h.action, "data-cx": String(x + w / 2), "data-cy": String(y + hgt / 2), "aria-label": `${h.label}：${h.hint}` });
     if (!h.enabled) g.setAttribute("aria-disabled", "true");
     g.append(svgEl("rect", { class: "cave-hit", x: String(x), y: String(y), width: String(w), height: String(hgt), rx: "10" }));
     const cap = svgEl("g", { class: "cave-cap", transform: `translate(${x + w / 2} ${y + hgt - 14})` });

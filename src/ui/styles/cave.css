@@ -2,9 +2,54 @@
 /* 直式：寬高比 3:4（視圖 450×600）；寬度受視窗高度限制，免得整個畫面被一張圖佔滿 */
 .scene.cave { position: relative; aspect-ratio: 3 / 4; width: min(100%, calc(66vh * 0.75)); margin: 0 auto var(--sp-3); border-radius: var(--r-md); }
 .cave-views { position: absolute; inset: 0; }
-.cave-view { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-slow) var(--ease); pointer-events: none; }
+.cave-view { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
 .cave-view.on { opacity: 1; }
 .cave-view svg { display: block; width: 100%; height: 100%; }
+
+/* 轉身有方向：向右看時舊景往左退、新景由右進；向左則相反。場景立即切換，動畫不鎖操作。 */
+.cave-view.turn-leave-left, .cave-view.turn-leave-right { z-index: 1; }
+.cave-view.turn-enter-left, .cave-view.turn-enter-right { z-index: 2; }
+.cave-view.turn-leave-right { animation: cave-leave-right var(--dur-turn) var(--ease) both; }
+.cave-view.turn-enter-right { animation: cave-enter-right var(--dur-turn) var(--ease) both; }
+.cave-view.turn-leave-left { animation: cave-leave-left var(--dur-turn) var(--ease) both; }
+.cave-view.turn-enter-left { animation: cave-enter-left var(--dur-turn) var(--ease) both; }
+@keyframes cave-leave-right { from { opacity: 1; transform: translate3d(0, 0, 0); } to { opacity: 0; transform: translate3d(-9%, 0, 0); } }
+@keyframes cave-enter-right { from { opacity: 0; transform: translate3d(9%, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+@keyframes cave-leave-left { from { opacity: 1; transform: translate3d(0, 0, 0); } to { opacity: 0; transform: translate3d(9%, 0, 0); } }
+@keyframes cave-enter-left { from { opacity: 0; transform: translate3d(-9%, 0, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+
+/* 共用前景手部：獨立於會重建的熱點，服丹或切面板後仍能把動作播完。 */
+.fp-overlay { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.fp-hands { opacity: 0.86; }
+.fp-hand { transform-box: fill-box; transform-origin: 50% 100%; }
+.fp-fold, .fp-fingers { fill: none; stroke: var(--scene-ink); stroke-width: 2; opacity: 0.38; }
+.fp-fingers { stroke: var(--scene-hair); opacity: 0.45; }
+.fp-focus-mark { opacity: 0; transform-box: fill-box; transform-origin: center; }
+.fp-touch { fill: var(--scene-qi); stroke: var(--scene-qi); stroke-width: 3; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.cave.acting .fp-touch { animation: fp-touch var(--dur-action) var(--ease); }
+.cave.acting[data-action="focus"] .fp-focus-mark { animation: fp-focus-mark var(--dur-action) var(--ease); }
+.cave.acting[data-action="focus"] .fp-focus-mark .sc-aura { display: block; opacity: 1; }
+.cave.acting[data-action="focus"] .fp-hand-left { animation: fp-focus-left var(--dur-action) var(--ease); }
+.cave.acting[data-action="focus"] .fp-hand-right { animation: fp-focus-right var(--dur-action) var(--ease); }
+.cave.acting[data-action="brew"] .fp-hand-left { animation: fp-work-left var(--dur-action) var(--ease); }
+.cave.acting[data-action="brew"] .fp-hand-right { animation: fp-work-right var(--dur-action) var(--ease); }
+.cave.acting[data-action="pill"] .fp-hand-right { animation: fp-lift-center var(--dur-action) var(--ease); }
+.cave.acting[data-action="bag"] .fp-hand-right { animation: fp-reach-right var(--dur-action) var(--ease); }
+.cave.acting[data-action="scrolls"] .fp-hand-left { animation: fp-open-left var(--dur-action) var(--ease); }
+.cave.acting[data-action="scrolls"] .fp-hand-right { animation: fp-open-right var(--dur-action) var(--ease); }
+.cave.acting[data-action="schedule"] .fp-hand-left,
+.cave.acting[data-action="schedule"] .fp-hand-right { animation: fp-push var(--dur-action) var(--ease); }
+@keyframes fp-touch { 0% { opacity: 0.75; transform: scale(0.35); } 100% { opacity: 0; transform: scale(2.2); } }
+@keyframes fp-focus-mark { 0% { opacity: 0; transform: scale(0.72); } 45% { opacity: 0.72; } 100% { opacity: 0; transform: scale(1.25); } }
+@keyframes fp-focus-left { 50% { transform: translate3d(18px, -18px, 0) rotate(5deg); } }
+@keyframes fp-focus-right { 50% { transform: translate3d(-18px, -18px, 0) rotate(-5deg); } }
+@keyframes fp-work-left { 45% { transform: translate3d(42px, -36px, 0) rotate(7deg); } }
+@keyframes fp-work-right { 45% { transform: translate3d(-42px, -52px, 0) rotate(-10deg); } }
+@keyframes fp-lift-center { 45% { transform: translate3d(-70px, -105px, 0) rotate(-13deg); } }
+@keyframes fp-reach-right { 45% { transform: translate3d(45px, -42px, 0) rotate(8deg); } }
+@keyframes fp-open-left { 45% { transform: translate3d(-20px, -58px, 0) rotate(-8deg); } }
+@keyframes fp-open-right { 45% { transform: translate3d(20px, -58px, 0) rotate(8deg); } }
+@keyframes fp-push { 45% { transform: translate3d(0, -72px, 0) scale(0.92); } }
 
 /* 石壁、地面與器物：全部取場景色票，境界與季節換色時一起變 */
 /* 牆與地面的漸層、質感由圖裡的 fill 屬性與 DEFS 提供，這裡不再覆蓋 */
@@ -52,11 +97,11 @@
 .cave-cap text { fill: var(--scene-orb); font-size: 16px; pointer-events: none; }
 
 /* 轉身鈕與目前朝向 */
-.cave-turn { position: absolute; top: 50%; transform: translateY(-50%); width: var(--tap); height: var(--tap); border: 1px solid var(--line); border-radius: 999px; background: var(--scene-sky-top); color: var(--scene-orb); font-size: 1.4em; line-height: 1; cursor: pointer; opacity: 0.8; }
+.cave-turn { position: absolute; top: 50%; z-index: 5; transform: translateY(-50%); width: var(--tap); height: var(--tap); border: 1px solid var(--line); border-radius: 999px; background: var(--scene-sky-top); color: var(--scene-orb); font-size: 1.4em; line-height: 1; cursor: pointer; opacity: 0.8; }
 .cave-turn:hover, .cave-turn:focus-visible { opacity: 1; border-color: var(--scene-qi); }
 .cave-turn-left { left: var(--sp-2); }
 .cave-turn-right { right: var(--sp-2); }
-.cave-name { position: absolute; left: 50%; top: var(--sp-2); transform: translateX(-50%); padding: 0 var(--sp-3); border-radius: 999px; background: var(--scene-sky-top); color: var(--scene-orb); font-size: 0.85em; opacity: 0.85; pointer-events: none; white-space: nowrap; }
+.cave-name { position: absolute; left: 50%; top: var(--sp-2); z-index: 5; transform: translateX(-50%); padding: 0 var(--sp-3); border-radius: 999px; background: var(--scene-sky-top); color: var(--scene-orb); font-size: 0.85em; opacity: 0.85; pointer-events: none; white-space: nowrap; }
 
 /* 洞口的換營生小選單 */
 .cave-schedules { position: absolute; left: 50%; bottom: var(--sp-3); transform: translateX(-50%); display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: center; padding: var(--sp-2); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); max-width: 92%; z-index: 2; }
