@@ -10,6 +10,7 @@ import { ATTR_LABEL, eraTransition, talentSummary } from "./format";
 import { esc } from "./dom";
 import { methodRows } from "./methodinfo";
 import type { UiHandlers } from "./render";
+import { rollNumber } from "./tween";
 
 export const statsHtml = (state: GameState): string =>
   `<dl class="stats">${ATTRIBUTE_KEYS.map(
@@ -69,6 +70,7 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
   const { stageEl, data, handlers, getBuilt, setBuilt } = ctx;
   let rollKey = "";
   let currentName = "";
+  let lastChartKey = "";
 
   /** 擲骰畫面的心法選擇：未解鎖的列出條件，已選的標示 */
   function methodHtml(state: GameState): string {
@@ -131,8 +133,12 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
     rollKey = key;
     currentName = state.name;
     const perks = talentSummary(state.meta.talents, data);
+    // 換了命盤（開局、重擲、擇身、新的一世）才播入場與擲骰；改選心法、國數等只重畫，不重播
+    const chartKey = `${state.worldSeed}|${state.rerolls}|${state.meta.lives}|${JSON.stringify(state.attributes)}`;
+    const fresh = chartKey !== lastChartKey;
+    lastChartKey = chartKey;
     stageEl.innerHTML = `
-      <main class="card roll">
+      <main class="card roll${fresh ? " roll-enter" : ""}">
         <h1>一念輪迴</h1>
         <div class="scene-art scene-art-opening" role="img" aria-label="晨霧村舍外，一名旅人走向遠山"></div>
         <p class="sub">第 ${state.meta.lives + 1} 世。命盤已擲。</p>
@@ -153,6 +159,13 @@ export function createRoll(ctx: RollContext): { render(state: GameState): void }
           <button id="start" type="button" class="primary">開始修行</button>
         </div>
       </main>`;
+    // 四個屬性依序從 0 滾到點數，像骰子停下來；一個接一個停，間隔拉開
+    if (fresh) {
+      stageEl.querySelectorAll<HTMLElement>(".stats dd").forEach((dd, i) => {
+        const value = Number(dd.textContent);
+        rollNumber(`roll-attr-${i}`, value, 420 + i * 160, (v) => { dd.textContent = String(v); }, 0);
+      });
+    }
     const nameInput = stageEl.querySelector<HTMLInputElement>("#name")!;
     nameInput.value = state.name;
     // 改完（按 Enter 或離開欄位）才送出；不合格時由狀態還原欄位內容

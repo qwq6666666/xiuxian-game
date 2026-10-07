@@ -22,10 +22,11 @@ function reducedMotion(): boolean {
  * 把 key 對應的數字從目前顯示的值滾到 to，每一格呼叫 paint(整數)。
  * 頁面在背景、要求減少動態、或時間太短時直接跳到終點。
  */
-export function rollNumber(key: string, to: number, ms: number, paint: (value: number) => void): void {
+export function rollNumber(key: string, to: number, ms: number, paint: (value: number) => void, startAt?: number): void {
   const prev = rolls.get(key);
   if (prev) cancelAnimationFrame(prev.raf);
-  const from = prev ? prev.shown : to;
+  // 指定 startAt 時一律從該值開始（例如擲骰從 0 滾到點數）；否則從目前顯示的值接手
+  const from = startAt ?? (prev ? prev.shown : to);
   if (from === to || ms < 50 || document.hidden || reducedMotion()) {
     rolls.set(key, { raf: 0, shown: to });
     paint(to);
@@ -34,6 +35,7 @@ export function rollNumber(key: string, to: number, ms: number, paint: (value: n
   const start = performance.now();
   const state: Roll = { raf: 0, shown: from };
   rolls.set(key, state);
+  paint(Math.floor(from)); // 先畫起點，免得等到下一個影格前閃現終值
   const step = (now: number): void => {
     const v = tweenValue(from, to, now - start, ms);
     state.shown = v;

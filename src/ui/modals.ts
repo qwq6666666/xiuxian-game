@@ -6,7 +6,11 @@ import { talentCost } from "../core/formulas";
 import type { GameState } from "../core/state";
 import type { GameData } from "../data/types";
 import { fillSlots, type SlotValues } from "../data/slots";
-import { button, el } from "./dom";
+import { button, el, revealIn } from "./dom";
+import { rollNumber } from "./tween";
+
+/** 一生回顧每一項浮現的間隔，需與 tokens.css 的 --reveal 一致 */
+const REVEAL_MS = 140;
 import { recommendTalent, talentPreview } from "./derived";
 import {
   describeTalent,
@@ -158,12 +162,18 @@ export function createReviewModal(
       box.append(ul);
       const gained = review.daoYunBase + review.daoYunBonus;
       const bonus = review.daoYunBonus > 0 ? `（其中首次達成 +${review.daoYunBonus}）` : "";
-      box.append(el("p", "daoyun", `獲得道韻 +${gained}${bonus}　道韻餘額 ${state.meta.daoYun}`));
+      const daoyun = el("p", "daoyun", `獲得道韻 +${gained}${bonus}　道韻餘額 ${state.meta.daoYun}`);
+      box.append(daoyun);
+      // 道韻數字在這一行浮現的同時從 0 滾上去
+      const delay = Math.min(box.children.length - 1, 10) * REVEAL_MS;
+      window.setTimeout(() => {
+        rollNumber("review-daoyun", gained, 800, (v) => { daoyun.textContent = `獲得道韻 +${v}${bonus}　道韻餘額 ${state.meta.daoYun}`; }, 0);
+      }, delay);
     }
     const actions = el("div", "actions review-actions");
     actions.append(button("前往輪迴", () => showView("talents"), true));
     box.append(actions);
-    return box;
+    return revealIn(box);
   }
 
   function buildTalents(state: GameState): HTMLElement {

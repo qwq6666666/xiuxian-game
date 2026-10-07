@@ -1,6 +1,13 @@
 # Claude 交接紀錄
 
 > 新的一筆寫在最上面。格式見 `AGENTS.md`「兩位助手的職責」。
+## 2026-10-07：M48 介面動態化 階段 3（天劫、擲骰、行囊、回顧、收藏）
+
+- 分支 `ai/claude-m48`，尚未合併、尚未 push。**請 ChatGPT 審 `src/ui/` 的變更**。
+- 內容：`panels.ts`（天劫每道重啟光圈動畫並觸發 `trib-strike`／`trib-pass`、凝神結果 `ring-hit`／`ring-miss`；行囊 `bag-gain`／`bag-spend`）、`rollview.ts`（`roll-enter` 與屬性滾動）、`modals.ts`（回顧 `revealIn` 與道韻滾動）、`overlays.ts`（收藏 `revealIn`）、`dom.ts`（`revealIn`）、`tween.ts`（`startAt`、先畫起點）、`haptics.ts`（尚未操作過頁面不震動）；token 新增 `--i`、`--reveal`；`.ring-target` 改用 `.trib-ring .ring-target` 提高優先權以取代 `!important`（動畫無法覆蓋 `!important`）。只動 `src/ui/`，不動 `core/`、存檔與數值，沒跑 sim。
+- 驗證：`npm run verify` 全過（741 測試、建置 906 KB）。瀏覽器：靶圈動畫在 20%／65%／90% 時間點的透明度與線型符合預期；各 class 的 `animationName` 都套上；擲骰重擲時 `roll-enter` 出現、改國數時不重播，屬性數字從 0 逐格滾到點數；收藏的 `--i` 與延遲為 0／0.14／0.28／0.42 秒；行囊 14 項正常。**沒驗證**：真正走完一場天劫（預覽窗格是背景頁，遊戲不自己推進）；一生回顧的道韻滾動沒親眼看到（需要死亡或通關）；行囊亮框沒親眼看到（需要實際服用）；真機。
+- 注意：預覽窗格隱藏時 `requestAnimationFrame` 會完全暫停，滾動動畫的測試要在窗格可見時做（截圖可喚醒）；主控台舊的 `lastBag is not defined` 是改檔過程的舊載入，已不會出現。
+
 ## 2026-10-07：M48 介面動態化 階段 2 續（歷練場景、事件選項、遇怪打擊感）
 
 - 分支 `ai/claude-m48`，尚未合併、尚未 push。**請 ChatGPT 審 `src/ui/` 的變更**。

@@ -60,6 +60,8 @@ export interface Panels {
 export function createPanels(ctx: PanelContext): Panels {
   const { stageEl, data, handlers, slotsOf, itemName, getSideTab, showSideTab } = ctx;
   let bagKey = "";
+  /** 上一次畫行囊時的數量；換世或重建畫面時清掉，第一次畫不閃 */
+  let lastBag: Record<string, number> | null = null;
 
   function renderBreakthrough(state: GameState, e: LifeEls): void {
     const rule = breakthroughRuleOf(state, data);
@@ -89,6 +91,8 @@ export function createPanels(ctx: PanelContext): Panels {
     const key = owned.map((i) => `${i.id}:${state.items[i.id]}:${canUseItem(state, i.id, data)}`).join("|") + `#${state.equipment.weapon}|${state.equipment.ward}`;
     if (key === bagKey) return;
     bagKey = key;
+    const prevBag = lastBag;
+    lastBag = { ...state.items };
     e.bag.innerHTML = "";
     // 身上裝備：兩個欄位，可卸下
     const SLOT_LABEL = { weapon: "法器", ward: "護身" } as const;
@@ -128,6 +132,12 @@ export function createPanels(ctx: PanelContext): Panels {
       }
       const li = document.createElement("li");
       li.innerHTML = `<div><strong>${itemIcon(data, item.id)}${esc(item.name)}</strong> ×${state.items[item.id]}</div>`;
+      // 數量變動：增加亮一下、新入手的也亮；減少（服用、消耗）閃一下警示色
+      if (prevBag) {
+        const was = prevBag[item.id] ?? 0;
+        if (state.items[item.id] > was) li.classList.add("bag-gain");
+        else if (state.items[item.id] < was) li.classList.add("bag-spend");
+      }
       if (item.effect.kind === "cultivationFraction" || item.effect.kind === "lifespan") {
         const b = document.createElement("button");
         b.type = "button";
@@ -199,6 +209,8 @@ export function createPanels(ctx: PanelContext): Panels {
 
   /** 天劫面板：進行中時顯示，逐道選擇；時間暫停。內容沒變就不重畫 */
   let tribKey = "";
+  /** 上一次顯示的劫波序號；用來分辨「新的一道」與同一道內容更新 */
+  let lastWave: number | null = null;
   function renderTribulation(state: GameState, e: LifeEls): void {
     const t = state.tribulation;
     const have = wardItem(data) ? (state.items[wardItem(data)!.id] ?? 0) : 0;
@@ -207,8 +219,27 @@ export function createPanels(ctx: PanelContext): Panels {
     tribKey = key;
     e.tribModal.hidden = t === null;
     e.tribChoices.replaceChildren();
-    if (!t) return;
+    if (!t) {
+      lastWave = null;
+      return;
+    }
     ringStart = performance.now();
+    // 每一道都讓光圈動畫從頭開始，畫面上的收攏才對得上判定的時間窗（先前第 2 道起兩者會錯位）
+    for (const span of Array.from(stageEl.querySelectorAll<HTMLElement>("#tribRing span"))) {
+      span.style.animation = "none";
+      void span.offsetWidth;
+      span.style.animation = "";
+    }
+    if (lastWave === null || t.wave !== lastWave) {
+      // 新的一道劫雷落下；從上一道過關而來時，另閃一下過關的邊框
+      if (lastWave !== null && t.wave > lastWave) {
+        flash("#tribModal .card", "trib-pass");
+        haptic("good");
+      } else {
+        flash("#tribModal .card", "trib-strike");
+      }
+      lastWave = t.wave;
+    }
     const image = waveImage(state, data);
     e.tribTitle.textContent = `${image.name}劫・第 ${t.wave + 1} 道，共 ${t.waves} 道`;
     e.tribText.textContent = image.arrive;
@@ -225,7 +256,12 @@ export function createPanels(ctx: PanelContext): Panels {
       b.type = "button";
       b.innerHTML = `<strong>${esc(r.name)}</strong><small>${esc(r.note)}</small>`;
       b.disabled = !canChooseWave(state, r.choice, data);
-      b.addEventListener("click", () => handlers.onWave(r.choice, ringHit()));
+      b.addEventListener("click", () => {
+        const hit = ringHit();
+        // 凝神成功：靶圈亮一下；沒抓到時機：光圈晃一下
+        flash("#tribRing", hit ? "ring-hit" : "ring-miss");
+        handlers.onWave(r.choice, hit);
+      });
       e.tribChoices.append(b);
     }
   }
@@ -543,6 +579,7 @@ export function createPanels(ctx: PanelContext): Panels {
     sectKey = "";
     tribKey = "";
     bagKey = "";
+    lastBag = null;
   }
 
   return { renderBreakthrough, renderBag, renderTribulation, renderHunt, renderSect, renderResources, renderStatDetail, renderAlchemy, markMake, flash, floatDelta, reset };

@@ -147,6 +147,31 @@
 /* 天劫光圈：外圈收攏到靶圈時（約一輪的一半到八成）選擇，算凝神 */
 .trib-ring { position: relative; width: 84px; height: 84px; margin: var(--sp-2) auto; }
 .trib-ring span { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--accent); }
-.ring-target { inset: 22px !important; border-style: dashed !important; opacity: 0.8; }
+.trib-ring .ring-target { inset: 22px; border-style: dashed; opacity: 0.8; }
 .ring-close { animation: trib-close 1600ms ease-in-out infinite; }
+/* 靶圈在判定視窗（一輪的 50%–82%）內變實線並加亮，讓「現在按」看得出來；與 .ring-close 同長度、同時重啟 */
+.ring-target { animation: trib-window 1600ms linear infinite; }
+@keyframes trib-window {
+  0%, 49.9% { opacity: 0.45; border-style: dashed; }
+  50%, 82% { opacity: 1; border-style: solid; }
+  82.1%, 100% { opacity: 0.45; border-style: dashed; }
+}
+/* 劫雷落下與過關：整張卡亮一下並微震；過關時邊框閃重點色 */
+#tribModal .card.trib-strike { animation: trib-strike calc(var(--dur-slow) * 1.2) var(--ease); }
+#tribModal .card.trib-pass { animation: trib-pass calc(var(--dur-slow) * 1.2) var(--ease); }
+@keyframes trib-strike {
+  0% { filter: brightness(2.2); transform: translateX(var(--shake-base)); }
+  15% { filter: brightness(1.3); transform: translateX(calc(var(--shake-base) * -1)); }
+  30% { filter: brightness(1.8); transform: translateX(calc(var(--shake-base) * 0.5)); }
+  100% { filter: none; transform: none; }
+}
+@keyframes trib-pass {
+  0% { filter: brightness(1.7); border-color: var(--accent); }
+  100% { filter: none; border-color: var(--line); }
+}
+/* 凝神結果：抓到時機靶圈脹開一下；沒抓到整個光圈晃一下 */
+#tribRing.ring-hit .ring-target { animation: ring-hit var(--dur-slow) var(--ease); }
+#tribRing.ring-miss { animation: ring-miss var(--dur-slow) var(--ease); }
+@keyframes ring-hit { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes ring-miss { 0%, 100% { transform: none; } 20% { transform: translateX(calc(var(--shake-base) * -1)); } 60% { transform: translateX(var(--shake-base)); } }
 @keyframes trib-close { 0% { transform: scale(1.1); opacity: 0.2; } 65% { transform: scale(0.52); opacity: 1; } 100% { transform: scale(0.35); opacity: 0.3; } }

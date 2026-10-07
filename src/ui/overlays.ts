@@ -1,6 +1,7 @@
 import type { GameState } from "../core/state";
 import { fillSlots, type SlotValues } from "../data/slots";
 import type { GameData } from "../data/types";
+import { revealIn } from "./dom";
 import { acquaintanceRows, bestiarySummary, collectionSummary } from "./format";
 import type { MapTarget } from "./mapinfo";
 import type { UiHandlers } from "./render";
@@ -291,6 +292,7 @@ export function createOverlays(ctx: OverlayContext): Overlays {
       box.append(done);
     }
     collectionCard.replaceChildren(box);
+    revealIn(collectionCard, 8);
   }
   function openCollection(): void {
     const state = getState();

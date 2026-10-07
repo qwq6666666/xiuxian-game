@@ -27,6 +27,17 @@
 .event .choices > :nth-child(3) { animation-delay: calc(var(--stagger) * 2); }
 .event .choices > :nth-child(4) { animation-delay: calc(var(--stagger) * 3); }
 .event .choices > :nth-child(n + 5) { animation-delay: calc(var(--stagger) * 4); }
+/* 逐項浮現：一生回顧、收藏。--i 由 revealIn 設定（最多 10），間隔取 --reveal */
+.reveal > * { animation: fold-in var(--dur-slow) var(--ease) backwards; animation-delay: calc(var(--reveal) * var(--i, 0)); }
+/* 擲骰畫面換了命盤時，各區塊由上而下進場；四個屬性的數字另由 tween 滾動 */
+.roll-enter > * { animation: fold-in var(--dur-base) var(--ease) backwards; }
+.roll-enter > :nth-child(n + 3) { animation-delay: var(--stagger); }
+.roll-enter > :nth-child(n + 5) { animation-delay: calc(var(--stagger) * 2); }
+.roll-enter > :nth-child(n + 7) { animation-delay: calc(var(--stagger) * 3); }
+.roll-enter > :nth-child(n + 9) { animation-delay: calc(var(--stagger) * 4); }
+/* 行囊數量變動：增加亮重點色框、消耗閃警示色框 */
+.items li.bag-gain { animation: flash-bg-up var(--dur-slow) var(--ease); }
+.items li.bag-spend { animation: flash-bg-down var(--dur-slow) var(--ease); }
 /* 選定的選項亮起、其餘淡出，之後才結算 */
 .event .choices.picked button { pointer-events: none; transition: opacity var(--dur-base) var(--ease); opacity: 0.35; animation: none; }
 .event .choices.picked button.pick { opacity: 1; border-color: var(--accent); color: var(--accent); }

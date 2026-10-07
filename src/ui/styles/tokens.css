@@ -72,6 +72,8 @@
   --dur-press: 90ms; /* 按下去的回饋 */
   --press-scale: 0.97; /* 按下時縮小的比例 */
   --stagger: 45ms; /* 一組項目依序進場的間隔 */
+  --i: 0; /* 逐項浮現的序號預設值，實際由 revealIn 對各子元素設定 */
+  --reveal: 140ms; /* 一生回顧、收藏逐項浮現的間隔（modals.ts 的 REVEAL_MS 與之一致） */
   --shake: 5px; /* 受擊震動的實際幅度；元素各自從 --shake-base 或 --shake-heavy 取值 */
   --shake-base: 5px;
   --shake-heavy: 11px;

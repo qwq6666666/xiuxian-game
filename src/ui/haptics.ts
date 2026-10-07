@@ -35,5 +35,7 @@ function reducedMotion(): boolean {
 export function haptic(kind: HapticKind = "tap"): void {
   if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
   if (!hapticsEnabled() || reducedMotion()) return;
+  // 使用者還沒操作過頁面時瀏覽器會擋下震動並報錯（例如開局自動推進後的遇怪）
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
   navigator.vibrate(HAPTIC_PATTERNS[kind]);
 }
