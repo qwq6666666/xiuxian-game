@@ -131,7 +131,16 @@ export function createOverlays(ctx: OverlayContext): Overlays {
     mobileMapBtn.textContent = label;
   }
 
+  /** 天下圖的折疊區（更多、時間軸、旅行、世局影響）；重建時沿用玩家展開或收起的狀態，不然按裡面的鈕就會被收回去 */
+  const FOLDS = [".map-more", ".map-timeline", ".map-travel", ".map-effects"];
+  /** 重新開啟天下圖時要回到預設，不沿用上次的展開狀態 */
+  let resetFolds = true;
+
   function buildMap(state: GameState): void {
+    // 每次都整張重建：捲動位置與折疊區的展開狀態都要在這裡記下、重建後還原，否則按鈕一按就跳回上方
+    const scrollTop = mapCard.scrollTop;
+    const folds = resetFolds ? null : FOLDS.map((sel) => [sel, mapCard.querySelector<HTMLDetailsElement>(sel)?.open] as const);
+    resetFolds = false;
     const focusedOnDestination = document.activeElement?.classList.contains("map-destination") ?? false;
     const focusedSlider = document.activeElement?.classList.contains("map-tl-slider") ?? false;
     const focusedMapLabel = document.activeElement?.classList.contains("map-hit")
@@ -158,6 +167,12 @@ export function createOverlays(ctx: OverlayContext): Overlays {
     // 此生已盡時坊市不能再看，不要把人帶回回顧畫面
     if (state.phase === "living") content.append(marketLink);
     mapCard.replaceChildren(content);
+    // 先還原折疊區（高度才會對），再還原捲動位置
+    for (const [sel, open] of folds ?? []) {
+      const fold = mapCard.querySelector<HTMLDetailsElement>(sel);
+      if (fold && open !== undefined) fold.open = open;
+    }
+    mapCard.scrollTop = scrollTop;
     if (focusedSlider) mapCard.querySelector<HTMLInputElement>(".map-tl-slider")?.focus({ preventScroll: true });
     if (focusedOnDestination) mapCard.querySelector<HTMLSelectElement>(".map-destination")?.focus({ preventScroll: true });
     if (focusedMapLabel) {
@@ -174,6 +189,7 @@ export function createOverlays(ctx: OverlayContext): Overlays {
     closeCollection();
     mapSelected = null;
     resetMapView();
+    resetFolds = true;
     buildMap(state);
     mapEl.hidden = false;
     writeMapSeen(mapStamp(state, data));
