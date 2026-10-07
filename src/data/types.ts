@@ -39,6 +39,8 @@ export interface GameConfig {
   /** 事件觸發的基礎間隔（月），再除以日常安排的事件頻率倍率 */
   eventIntervalMin: number;
   eventIntervalMax: number;
+  /** 能重複出現（maxPerLife 大於 1）的事件，兩次之間至少隔幾年；事件可用 cooldownYears 覆寫，0 代表不冷卻 */
+  eventCooldownYears: number;
   /** 好事件的權重 ×(1 + 氣運 × 此值) */
   fortuneGoodWeight: number;
   /** 首次達成某階段時，該階段道韻的倍率（2 = 加倍） */
@@ -360,6 +362,8 @@ export interface EventDef {
   tone: "good" | "bad" | "neutral";
   /** 每世最多出現幾次 */
   maxPerLife: number;
+  /** 兩次出現之間至少隔幾年；沒寫就用 config.eventCooldownYears，0 代表不冷卻。只對能重複出現的事件有意義 */
+  cooldownYears?: number;
   /** 一生回顧挑選關鍵事件的分數（預設：抉擇 1、見聞 0.5） */
   highlight?: number;
   conditions: EventConditions;

@@ -21,6 +21,7 @@
   "priceRefItemId": "zhuji_dan",
   "eventIntervalMin": 16,
   "eventIntervalMax": 48,
+  "eventCooldownYears": 6,
   "fortuneGoodWeight": 0.05,
   "daoYunFirstTimeMult": 2,
   "nameMaxLength": 6,

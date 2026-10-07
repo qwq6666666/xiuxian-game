@@ -148,6 +148,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   },
   // v29 沒有秘境試煉：補上沒有進行中的秘境、本世沒入過
   29: (d) => ({ ...d, version: 30, trial: null, trialsDone: [] }),
+  // v32（M61）：事件冷卻，補上空的「上次出現月份」（舊檔視為沒有冷卻中的事件）
+  31: (d) => ({ ...d, version: 32, eventLastMonth: {} }),
   // v31（M58）：進行中的秘境加上層間調息次數
   30: (d) => ({ ...d, version: 31, trial: d.trial ? { ...(d.trial as object), rests: 0 } : d.trial }),
   26: (d) => ({ ...d, version: 27 }),
@@ -683,6 +685,7 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     sectPeak: num(o, "sectPeak", { integer: true, min: 0 }),
     flags: o.flags as string[],
     eventCounts: intRecord(o, "eventCounts"),
+    eventLastMonth: intRecord(o, "eventLastMonth"),
     eventClock: num(o, "eventClock", { min: 0 }),
     eventThreshold: num(o, "eventThreshold", { min: 0 }),
     pendingEvent: pendingEvent as string | null,

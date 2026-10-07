@@ -62,6 +62,7 @@ export function validateConfig(raw: unknown, file = "config.json"): GameConfig {
     priceRefItemId: str(o, "priceRefItemId", file),
     eventIntervalMin: eventMin,
     eventIntervalMax: num(o, "eventIntervalMax", file, { min: eventMin, integer: true }),
+    eventCooldownYears: num(o, "eventCooldownYears", file, { min: 0 }),
     fortuneGoodWeight: num(o, "fortuneGoodWeight", file, { min: 0 }),
     daoYunFirstTimeMult: num(o, "daoYunFirstTimeMult", file, { min: 1 }),
     nameMaxLength: num(o, "nameMaxLength", file, { gt: 0, integer: true }),

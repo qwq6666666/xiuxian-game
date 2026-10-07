@@ -1,5 +1,5 @@
 {
-  "version": 31,
+  "version": 32,
   "shape": {
     "TravelState": [
       "locationId",
@@ -153,6 +153,7 @@
       "equipment",
       "eventClock",
       "eventCounts",
+      "eventLastMonth",
       "eventThreshold",
       "flags",
       "focusMonth",

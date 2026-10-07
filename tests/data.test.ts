@@ -93,6 +93,8 @@ describe("資料檢查：錯誤訊息指出哪一筆的哪個欄位", () => {
     expect(bad({ ...choice, tone: "great" })).toThrow("tone");
     expect(bad({ ...choice, weight: 0 })).toThrow("weight");
     expect(bad({ ...choice, maxPerLife: 0 })).toThrow("maxPerLife");
+    expect(bad({ ...choice, cooldownYears: -1 })).toThrow("cooldownYears");
+    expect(bad({ ...choice, cooldownYears: "x" })).toThrow("cooldownYears");
     expect(bad({ ...choice, conditions: { realmMin: 5 } })).toThrow("realmMin");
     expect(bad({ ...choice, conditions: { flagz: ["a"] } })).toThrow("flagz");
     expect(bad({ ...anec, choices: choice.choices })).toThrow("見聞不能有選項");

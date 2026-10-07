@@ -6,6 +6,15 @@ import { SAVE_VERSION } from "../src/core/state";
 import { tick } from "../src/core/tick";
 
 describe("save", () => {
+  it("v31 的舊檔補上空的事件冷卻紀錄（M61）", () => {
+    const s = tick({ ...startLife(createInitialState(99)), autoChoice: true }, 120);
+    const old = JSON.parse(serialize(s)) as Record<string, unknown>;
+    old.version = 31;
+    delete old.eventLastMonth;
+    expect(deserialize(JSON.stringify(old)).eventLastMonth).toEqual({});
+    expect(Object.keys(s.eventLastMonth).length).toBeGreaterThan(0);
+  });
+
   it("序列化後再讀取結果相同（含日誌）", () => {
     // 開啟自動抉擇，tick 才不會停在等待抉擇
     const s = tick({ ...startLife(createInitialState(99)), autoChoice: true }, 600);

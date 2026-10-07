@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, Omen, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 31;
+export const SAVE_VERSION = 32;
 
 /** 沒有選擇過時的國家數（與 map.json 的 nations.default 相同，由載入檢查守住） */
 export const DEFAULT_NATIONS = 5;
@@ -346,6 +346,8 @@ export interface GameState {
   flags: string[];
   /** 本世各事件已出現的次數 */
   eventCounts: Record<string, number>;
+  /** 本世各事件上次出現的月份（M61：冷卻用，只記出現過的） */
+  eventLastMonth: Record<string, number>;
   /** 事件計時：每月累加日常安排的頻率倍率，達到門檻就觸發 */
   eventClock: number;
   eventThreshold: number;
