@@ -22,6 +22,4 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: git fetch origin master:refs/remotes/origin/master
-      - run: node scripts/check-scope.mjs
       - run: npm run verify

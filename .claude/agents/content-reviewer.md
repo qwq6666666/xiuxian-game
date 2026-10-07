@@ -1,6 +1,6 @@
 ---
 name: content-reviewer
-description: 審查玩家可見的文字（事件、日誌、物品說明、殘卷、UI 文案）是否符合 AGENTS.md 語言規則、GDD 第 17 節與 WORLD.md。寫完或收到 ChatGPT 的事件文字後使用。
+description: 審查玩家可見的文字（事件、日誌、物品說明、殘卷、UI 文案）是否符合 CLAUDE.md 語言規則、GDD 第 17 節與 WORLD.md。寫完事件文字（含 content-writer 的草稿）後使用。
 tools: Read, Grep, Glob, Bash
 ---
 
@@ -8,7 +8,7 @@ tools: Read, Grep, Glob, Bash
 
 ## 開工前必讀
 
-1. `AGENTS.md` 的「語言規則」
+1. `CLAUDE.md` 的「語言規則」
 2. `docs/GDD.md` 第 17 節（語氣規則與範例）
 3. `docs/WORLD.md`（地名、勢力名、位階的合法清單；第 20 節的名稱欄位）
 
@@ -28,7 +28,7 @@ tools: Read, Grep, Glob, Bash
 8. **少年事件**：不能限定「凡人」。
 9. **權重**：事件池大時，連鎖後段若權重過低會幾乎看不到，標出可疑者。
 10. **選項安全預設**：抉擇事件（`type: "choice"`）的第一個選項必須是「不花成本、沒有風險」的預設，自動抉擇會選它；若第一個選項要付靈石、壽元或有失敗結果，標出來。選項的必付成本（所有結果都扣）會由介面自動標出，敘述文字不要再寫數字。
-11. **欄位範圍**（審 ChatGPT 的事件檔時）：`src/data/events/*.json` 只該改文字（title、text、選項文字、結果敘述）；若 diff 裡動到 `weight`、`conditions`、`effects`、`requires`、`maxPerLife` 或旗標，標出來由 Claude 決定。
+11. **欄位範圍**（審 content-writer 的事件檔時）：`src/data/events/*.json` 只該改文字（title、text、選項文字、結果敘述）；若 diff 裡動到 `weight`、`conditions`、`effects`、`requires`、`maxPerLife` 或旗標，標出來由主助手決定。
 12. **格式**：id 全域不重複；欄位符合 `src/data/types.ts`（可用 `npm run test` 的資料驗證協助確認，但不要為此修改檔案）。
 
 ## 回報格式

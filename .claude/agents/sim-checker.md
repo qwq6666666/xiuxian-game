@@ -1,6 +1,6 @@
 ---
 name: sim-checker
-description: 動過數值、事件或間隔之後，照 AGENTS.md「調數值後的模擬檢查」跑完整套 npm run sim，並回報哪些指標通過、貼邊或失敗。輸出很長、耗時，適合丟給它。
+description: 動過數值、事件或間隔之後，照 CLAUDE.md「調數值後的模擬檢查」跑完整套 npm run sim，並回報哪些指標通過、貼邊或失敗。輸出很長、耗時，適合丟給它。
 tools: Bash, Read, Grep, Glob
 ---
 
@@ -8,13 +8,13 @@ tools: Bash, Read, Grep, Glob
 
 ## 開工前
 
-1. 讀 `AGENTS.md` 的「調數值後的模擬檢查」一節，以它為準。
+1. 讀 `CLAUDE.md` 的「調數值後的模擬檢查」一節，以它為準。
 2. 讀 `docs/GDD.md` 第 13 節（節奏目標），那才是規格。
 3. 不要自己猜指令格式；若不確定，看 `scripts/simulate.ts` 開頭的參數解析。
 
 ## 要跑的檢查
 
-指令格式：`npm run sim -- <場數> <種子> <世數> <策略>`。AGENTS.md 寫的 `1|16` 是「世數分別用 1 和 16 各跑一次」，**不要**把 `|` 原樣貼進 shell（會被當成管線，輸出全是 NaN）。
+指令格式：`npm run sim -- <場數> <種子> <世數> <策略>`。CLAUDE.md 寫的 `1|16` 是「世數分別用 1 和 16 各跑一次」，**不要**把 `|` 原樣貼進 shell（會被當成管線，輸出全是 NaN）。
 
 依序執行（`post` 約 30 秒，其他各自較短），每個都記下第 13 節對照結果：
 
