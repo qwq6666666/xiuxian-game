@@ -9,6 +9,7 @@ import type { GameState } from "../src/core/state";
 import { tick } from "../src/core/tick";
 import { advanceTrial, canEnterTrial, enterTrial, trialBlockReason, trialsFor } from "../src/core/trial";
 import { gameData } from "../src/data/load";
+import worldNames from "../src/data/worldNames.json";
 import { validateTrials } from "../src/data/validate";
 import { living } from "./helpers";
 
@@ -37,6 +38,19 @@ describe("秘境資料", () => {
       for (const f of t.floors) expect(data.monsters.monsters.find((m) => m.id === f)?.realm, `${t.id}/${f}`).toBe(t.realm);
       for (const id of Object.keys(t.reward.items)) expect(itemIds).toContain(id);
     }
+  });
+
+  it("秘境名稱（WORLD.md 16.1）：互不重複、不與名庫撞名、字尾不與國名、宗門、坊市、山、村的字尾重複", () => {
+    const names = data.trials.trials.map((x) => x.name);
+    expect(new Set(names).size).toBe(names.length);
+    const pools = Object.values(worldNames).filter((v): v is string[] => Array.isArray(v));
+    const used = new Set(pools.flat());
+    const endings = new Set(pools.flat().map((n) => n.at(-1)!));
+    for (const n of names) {
+      expect(used.has(n), n).toBe(false);
+      expect(endings.has(n.at(-1)!), `${n} 的字尾 ${n.at(-1)}`).toBe(false);
+    }
+    expect(new Set(names.map((n) => n.at(-1))).size).toBe(names.length);
   });
 
   it("獎勵修為低於同樣月數的閉關，所以秘境永遠不是最佳的修為來源", () => {

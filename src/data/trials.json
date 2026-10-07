@@ -2,7 +2,7 @@
   "rules": {
     "lifespanBuffer": 12,
     "text": {
-      "enter": "你遞了名帖，踏進{trial}。",
+      "enter": "你備足乾糧，走進{trial}。",
       "clear": "你走出{trial}時，衣上都是塵土，囊中多了些東西。",
       "fail": "你退出了{trial}，這一回沒能走到底。",
       "abandon": "你抽身退出了{trial}，往後這一世，不會再來。"
@@ -11,39 +11,98 @@
   "trials": [
     {
       "id": "trial_lianqi",
-      "name": "試煉一",
-      "desc": "練氣期的人也走得進去的淺層秘境。",
+      "name": "斷崖洞",
+      "desc": "山壁上一處荒廢的洞府，淺處練氣期的人也走得進去。",
       "realm": "lianqi",
       "months": 6,
-      "floors": ["mountain_imp", "red_tail_fox", "iron_back_bear"],
-      "reward": { "cultivationMonths": 1.5, "stones": { "min": 6, "max": 10 }, "items": { "ling_sha": 2, "yao_dan": 1 } }
+      "floors": [
+        "mountain_imp",
+        "red_tail_fox",
+        "iron_back_bear"
+      ],
+      "reward": {
+        "cultivationMonths": 1.5,
+        "stones": {
+          "min": 6,
+          "max": 10
+        },
+        "items": {
+          "ling_sha": 2,
+          "yao_dan": 1
+        }
+      }
     },
     {
       "id": "trial_zhuji",
-      "name": "試煉二",
-      "desc": "築基期才擋得住的二層秘境，深處有妖物盤踞。",
+      "name": "裂石窟",
+      "desc": "山腹裡被妖物占去的石窟，沒有築基的底子進不了深處。",
       "realm": "zhuji",
       "months": 8,
-      "floors": ["bone_spider", "moon_shadow_wolf", "split_stone_beast"],
-      "reward": { "cultivationMonths": 1.5, "stones": { "min": 14, "max": 22 }, "items": { "ling_sha": 3, "yao_dan": 1 } }
+      "floors": [
+        "bone_spider",
+        "moon_shadow_wolf",
+        "split_stone_beast"
+      ],
+      "reward": {
+        "cultivationMonths": 1.5,
+        "stones": {
+          "min": 14,
+          "max": 22
+        },
+        "items": {
+          "ling_sha": 3,
+          "yao_dan": 1
+        }
+      }
     },
     {
       "id": "trial_jindan",
-      "name": "試煉三",
-      "desc": "金丹期的修士也要小心的四層秘境。",
+      "name": "沉碑壑",
+      "desc": "一道沉著斷碑的深壑，金丹期的修士也得步步留心。",
       "realm": "jindan",
       "months": 10,
-      "floors": ["stele_tortoise", "deep_dragon", "mist_mane_lion", "fire_feather_bird"],
-      "reward": { "cultivationMonths": 1.5, "stones": { "min": 30, "max": 46 }, "items": { "ling_sha": 4, "yao_dan": 2 } }
+      "floors": [
+        "stele_tortoise",
+        "deep_dragon",
+        "mist_mane_lion",
+        "fire_feather_bird"
+      ],
+      "reward": {
+        "cultivationMonths": 1.5,
+        "stones": {
+          "min": 30,
+          "max": 46
+        },
+        "items": {
+          "ling_sha": 4,
+          "yao_dan": 2
+        }
+      }
     },
     {
       "id": "trial_yuanying",
-      "name": "試煉四",
-      "desc": "元嬰期的修士才敢踏進的最深一層。",
+      "name": "雲裂淵",
+      "desc": "雲層像被劈開一道口子，底下是只有元嬰期的人才敢看的深淵。",
       "realm": "yuanying",
       "months": 12,
-      "floors": ["ancient_ape", "cloud_splitting_roc", "mountain_guard_beast", "thunder_qilin", "mountain_guard_beast"],
-      "reward": { "cultivationMonths": 1.5, "stones": { "min": 60, "max": 90 }, "items": { "ling_sha": 5, "yao_dan": 3 } }
+      "floors": [
+        "ancient_ape",
+        "cloud_splitting_roc",
+        "mountain_guard_beast",
+        "thunder_qilin",
+        "mountain_guard_beast"
+      ],
+      "reward": {
+        "cultivationMonths": 1.5,
+        "stones": {
+          "min": 60,
+          "max": 90
+        },
+        "items": {
+          "ling_sha": 5,
+          "yao_dan": 3
+        }
+      }
     }
   ]
 }
