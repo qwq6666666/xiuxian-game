@@ -1,0 +1,65 @@
+/* 洞府第一人稱視角：四個朝向的上色、熱點與轉身鈕。顏色只取 tokens.css 的 --scene-*。 */
+.scene.cave { position: relative; aspect-ratio: 16 / 9; max-height: 46vh; margin: calc(var(--sp-3) * -1) calc(var(--sp-4) * -1) var(--sp-3); width: calc(100% + var(--sp-4) * 2); }
+.cave-views { position: absolute; inset: 0; }
+.cave-view { position: absolute; inset: 0; opacity: 0; transition: opacity var(--dur-slow) var(--ease); pointer-events: none; }
+.cave-view.on { opacity: 1; }
+.cave-view svg { display: block; width: 100%; height: 100%; }
+
+/* 石壁、地面與器物：全部取場景色票，境界與季節換色時一起變 */
+.cv-wall { fill: var(--scene-mid); }
+.cv-floor { fill: var(--scene-near); }
+.cv-sky { fill: var(--scene-sky-bottom); }
+.cv-frame { fill: none; stroke: var(--scene-figure); stroke-width: 14; }
+.cv-seat { fill: var(--scene-figure); opacity: 0.85; }
+.cv-sleeve { fill: var(--scene-figure); }
+.cv-hand { fill: var(--scene-ink); opacity: 0.85; }
+.cave[data-age="elder"] .cv-hand { fill: var(--scene-hair); }
+.cave[data-age="elder"] .cv-sleeve { stroke: var(--scene-hair); stroke-width: 2; }
+.cave[data-age="young"] .cv-hand { opacity: 1; }
+.cv-shelf, .cv-table { fill: var(--scene-figure); }
+.cv-herb { fill: none; stroke: var(--scene-ink); stroke-width: 3; stroke-linecap: round; opacity: 0.7; }
+.cv-furnace { fill: var(--scene-figure); stroke: var(--scene-figure); stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
+.cv-mouth { fill: var(--scene-near); }
+.cv-fire, .cv-fireglow { display: none; }
+.cave[data-brew="on"] .cv-fire { display: block; fill: var(--scene-warm); animation: sc-flicker 1.6s ease-in-out infinite; }
+.cave[data-brew="on"] .cv-fireglow { display: block; fill: var(--scene-warm); opacity: 0.18; }
+.cave .sc-smoke { display: none; }
+.cave[data-brew="on"] .sc-smoke { display: block; }
+.cv-bottle, .cv-bag { fill: var(--scene-figure); stroke: var(--scene-ink); stroke-width: 2; opacity: 0.95; }
+.cv-bagtie { fill: none; stroke: var(--scene-ink); stroke-width: 3; }
+.cv-scroll { fill: var(--scene-ink); opacity: 0.8; }
+.cv-scrollend { fill: var(--scene-figure); stroke: var(--scene-ink); stroke-width: 1.5; }
+.cv-hang { stroke: var(--scene-ink); stroke-width: 2; fill: none; }
+.cv-tree { fill: none; stroke: var(--scene-figure); stroke-width: 6; stroke-linecap: round; opacity: 0.85; }
+.cv-sign { fill: var(--scene-figure); stroke: var(--scene-ink); stroke-width: 2; }
+.cv-signpost { stroke: var(--scene-figure); stroke-width: 8; }
+.cave .sc-aura { opacity: 0; }
+.cave .sc-qi { opacity: 0; }
+.cave.pulse .sc-aura { animation: sc-pulse 0.6s ease-out; }
+
+/* 熱點：畫在圖裡的透明矩形加小標籤；平常只有標籤，滑過或聚焦才顯示輪廓 */
+.cave-view { pointer-events: none; }
+.cave-view.on { pointer-events: auto; }
+.cave-hot { cursor: pointer; outline: none; }
+.cave-hit { fill: transparent; stroke: transparent; stroke-width: 3; stroke-dasharray: 10 8; }
+.cave-hot:hover .cave-hit, .cave-hot:focus-visible .cave-hit { stroke: var(--scene-qi); fill: var(--scene-qi); fill-opacity: 0.1; }
+.cave-hot:focus-visible .cave-hit { stroke: var(--accent); }
+.cave-hot[aria-disabled="true"] { cursor: default; opacity: 0.55; }
+.cave-cap rect { fill: var(--scene-sky-top); opacity: 0.88; }
+.cave-cap text { fill: var(--scene-orb); font-size: 24px; pointer-events: none; }
+
+/* 轉身鈕與目前朝向 */
+.cave-turn { position: absolute; top: 50%; transform: translateY(-50%); width: var(--tap); height: var(--tap); border: 1px solid var(--line); border-radius: 999px; background: var(--scene-sky-top); color: var(--scene-orb); font-size: 1.4em; line-height: 1; cursor: pointer; opacity: 0.8; }
+.cave-turn:hover, .cave-turn:focus-visible { opacity: 1; border-color: var(--scene-qi); }
+.cave-turn-left { left: var(--sp-2); }
+.cave-turn-right { right: var(--sp-2); }
+.cave-name { position: absolute; left: 50%; top: var(--sp-2); transform: translateX(-50%); padding: 0 var(--sp-3); border-radius: 999px; background: var(--scene-sky-top); color: var(--scene-orb); font-size: 0.85em; opacity: 0.85; pointer-events: none; white-space: nowrap; }
+
+/* 洞口的換營生小選單 */
+.cave-schedules { position: absolute; left: 50%; bottom: var(--sp-3); transform: translateX(-50%); display: flex; flex-wrap: wrap; gap: var(--sp-2); justify-content: center; padding: var(--sp-2); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); max-width: 92%; z-index: 2; }
+.cave-schedules[hidden] { display: none; }
+.cave-schedules button { min-height: var(--tap); padding: 0 var(--sp-3); }
+
+@media (max-width: 640px) {
+  .scene.cave { aspect-ratio: 4 / 3; max-height: 52vh; }
+  }

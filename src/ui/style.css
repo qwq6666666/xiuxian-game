@@ -5,5 +5,6 @@
 @import "./styles/components.css";
 @import "./styles/map.css";
 @import "./styles/scene.css";
+@import "./styles/cave.css";
 @import "./styles/transition.css";
 @import "./styles/responsive.css";

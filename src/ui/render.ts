@@ -15,6 +15,8 @@ import { goalStatuses } from "../core/goals";
 import { slotsFor } from "../core/sect";
 import { canFocus, focusCharges, focusGain, focusWait } from "../core/focus";
 import { burstScene, sceneHtml, updateScene } from "./scene";
+import { caveHtml, mountCave, toggleSchedulePicker, updateCave } from "./cave";
+import { QUICK_PILL, type CaveAction } from "./caveLogic";
 import { createVeil } from "./veil";
 import { neighbourOf, onSwipe } from "./gesture";
 import { resetRolls, rollNumber } from "./tween";
@@ -426,7 +428,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     // 側欄分四頁（修行、煉製、行囊、角色），一次只顯示一頁；分頁列在手機固定在畫面底部。
     stageEl.innerHTML = `
       <section class="status" aria-label="狀態">
-        ${sceneHtml()}
+        ${sceneHtml()}${caveHtml()}
         <div class="line"><strong id="name"></strong><strong id="realm"></strong><span id="age"></span><span id="stones"></span><span id="sched"></span><button id="focusBtn" type="button" class="focus-btn" hidden></button><button id="travelOpen" type="button" hidden></button><span id="life" class="muted"></span></div>
         <div class="progress" id="progress" role="progressbar" aria-label="修為"><div id="fill"></div><span id="barText"></span></div>
         <div id="yearPips" class="year-pips" aria-hidden="true">${"<i></i>".repeat(12)}</div>
@@ -604,12 +606,32 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     const doFocus = (): void => {
       if (!lastState || !canFocus(lastState, data)) return;
       panels.floatDelta(els!.progress, Math.max(1, Math.round(focusGain(lastState, data))), "bar");
-      stageEl.querySelector<HTMLElement>("#scene")?.classList.add("pulse");
-      window.setTimeout(() => stageEl.querySelector<HTMLElement>("#scene")?.classList.remove("pulse"), 600);
+      for (const id of ["#scene", "#cave"]) {
+        stageEl.querySelector<HTMLElement>(id)?.classList.add("pulse");
+        window.setTimeout(() => stageEl.querySelector<HTMLElement>(id)?.classList.remove("pulse"), 600);
+      }
       handlers.onFocus();
     };
     q("#focusBtn").addEventListener("click", doFocus);
     q("#scene").addEventListener("click", doFocus);
+    // 洞府第一人稱視角：熱點只是面板操作的另一個入口，共用同一組 handler
+    const caveEl = q("#cave");
+    const showTab = (tab: SideTab): void => {
+      showSideTab(tab);
+      stageEl.querySelector<HTMLElement>(".side")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    };
+    const runCave = (action: CaveAction): void => {
+      switch (action) {
+        case "focus": return doFocus();
+        case "brew": return showTab("make");
+        case "bag": return showTab("pack");
+        case "pill": return handlers.onUseItem(QUICK_PILL);
+        case "scrolls": return overlays.openCodex();
+        case "map": return overlays.openMap();
+        case "schedule": return toggleSchedulePicker(caveEl);
+      }
+    };
+    mountCave(caveEl, runCave, () => { if (lastState) updateCave(caveEl, stageEl.querySelector<HTMLElement>("#scene"), lastState, data, handlers.onSchedule); });
     stageEl.querySelectorAll<HTMLButtonElement>("#sideTabs button").forEach((b) => b.addEventListener("click", () => showSideTab(b.dataset.go as SideTab)));
     showSideTab(sideTab);
     els.marketLink.addEventListener("click", overlays.openMap);
@@ -762,6 +784,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       hint.hidden = hint.textContent === "";
     }
     updateScene(stageEl.querySelector<HTMLElement>("#scene"), state, data);
+    updateCave(stageEl.querySelector<HTMLElement>("#cave"), stageEl.querySelector<HTMLElement>("#scene"), state, data, handlers.onSchedule);
     const fb = stageEl.querySelector<HTMLButtonElement>("#focusBtn");
     if (fb) {
       const ok = canFocus(state, data);
@@ -822,6 +845,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
         if (entry.kind === "breakthroughSuccess" || entry.kind === "realmUp") {
           panels.flash(".status", "flash-up");
           burstScene(stageEl.querySelector<HTMLElement>("#scene"));
+          burstScene(stageEl.querySelector<HTMLElement>("#cave"));
           if (entry.kind === "breakthroughSuccess") veil.play("success", formatLogEntry(entry, data, state.name, slotsOf(state)));
         }
         else if (entry.kind === "breakthroughFail") {
