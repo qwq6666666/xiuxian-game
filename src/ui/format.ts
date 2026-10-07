@@ -236,7 +236,7 @@ export function formatLogEntry(entry: LogEntry, data: GameData, name = "我", sl
       } else template = pick(log.breakthroughFail);
       break;
     case "buy":
-      template = pick(log.buy);
+      template = pick(entry.outcome === 1 ? log.buyRemote : log.buy);
       break;
     case "find":
       template = pick(log.find);

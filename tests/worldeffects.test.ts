@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { canBuyItem, buyItem } from "../src/core/actions";
 import { eventAvailable } from "../src/core/events";
 import { generateWorld, worldAt } from "../src/core/world";
-import { activeWorldEffects, effectApplies, itemPrice, worldFlagsOf } from "../src/core/worldeffects";
+import { activeWorldEffects, effectApplies, itemPrice, priceBeforeFreight, worldFlagsOf } from "../src/core/worldeffects";
 import { gameData } from "../src/data/load";
 import { validateGameData, validateWorldEffects } from "../src/data/validate";
 import { living } from "./helpers";
@@ -40,7 +40,7 @@ describe("世局效果", () => {
       if (gameData.worldEffects.some((e) => effectApplies(snap, e))) continue;
       const s = at(seed, 20);
       expect(activeWorldEffects(s)).toEqual([]);
-      for (const item of gameData.items) expect(itemPrice(s, item.id)).toBe(item.price);
+      for (const item of gameData.items) expect(priceBeforeFreight(s, item.id)).toBe(item.price);
       return;
     }
     throw new Error("找不到沒有效果的世界");

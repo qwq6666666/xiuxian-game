@@ -22,6 +22,8 @@
   "eventIntervalMin": 16,
   "eventIntervalMax": 48,
   "eventCooldownYears": 6,
+  "freightPerMonth": 0.03,
+  "freightMax": 0.2,
   "fortuneGoodWeight": 0.05,
   "daoYunFirstTimeMult": 2,
   "nameMaxLength": 6,

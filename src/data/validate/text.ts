@@ -40,6 +40,7 @@ export function validateText(raw: unknown, file = "text.json"): TextData {
       breakthroughSuccess: strRecord("breakthroughSuccess"),
       breakthroughFail: strList(log, "breakthroughFail", where),
       buy: strList(log, "buy", where),
+      buyRemote: strList(log, "buyRemote", where),
       find: strList(log, "find", where),
       adventureDeath: str(log, "adventureDeath", where),
       zuohua: str(log, "zuohua", where),

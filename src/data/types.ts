@@ -41,6 +41,10 @@ export interface GameConfig {
   eventIntervalMax: number;
   /** 能重複出現（maxPerLife 大於 1）的事件，兩次之間至少隔幾年；事件可用 cooldownYears 覆寫，0 代表不冷卻 */
   eventCooldownYears: number;
+  /** 不在坊市時買東西的運費：到最近坊市或商行的路程每個月加這個比例（M63） */
+  freightPerMonth: number;
+  /** 運費比例的上限 */
+  freightMax: number;
   /** 好事件的權重 ×(1 + 氣運 × 此值) */
   fortuneGoodWeight: number;
   /** 首次達成某階段時，該階段道韻的倍率（2 = 加倍） */
@@ -464,6 +468,8 @@ export interface TextData {
     breakthroughSuccess: Record<string, string>;
     breakthroughFail: string[];
     buy: string[];
+    /** 不在坊市、由行腳商送來的購買 */
+    buyRemote: string[];
     find: string[];
     adventureDeath: string;
     /** 閉關坐化的日誌 */

@@ -62,7 +62,8 @@ describe("日常安排", () => {
 
 describe("坊市", () => {
   it("購買：扣靈石、加物品、記日誌", () => {
-    const s = living(1, { spiritStones: 50 });
+    // 在坊市買，沒有運費（運費見 freight.test.ts）
+    const s = living(1, { spiritStones: 50, travel: { locationId: "market", targetId: null, totalMonths: 0, remainingMonths: 0, trail: ["market"] } });
     expect(canBuyItem(s, "juqi_dan")).toBe(true);
     const t = buyItem(s, "juqi_dan");
     expect(t.spiritStones).toBe(30);

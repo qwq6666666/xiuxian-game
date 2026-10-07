@@ -8,7 +8,7 @@ import {
 } from "../core/breakthrough";
 import { eventOf } from "../core/events";
 import { placesAt } from "../core/travel";
-import { activeWorldEffects, itemPrice } from "../core/worldeffects";
+import { activeWorldEffects, freightRate, itemFreight, itemPrice } from "../core/worldeffects";
 import { marketRelation, marketTerritory } from "../core/travel";
 import { fillSlots, type SlotValues } from "../data/slots";
 import { goalStatuses } from "../core/goals";
@@ -848,9 +848,11 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     for (const m of e.market) {
       const item = data.items.find((i) => i.id === m.id)!;
       const price = itemPrice(state, m.id, data);
-      m.price.textContent = `${price} 靈石${price > item.price ? "　↑ 較平日貴" : price < item.price ? "　↓ 較平日便宜" : ""}`;
-      m.price.classList.toggle("price-up", price > item.price);
-      m.price.classList.toggle("price-down", price < item.price);
+      const freight = itemFreight(state, m.id, data);
+      const goods = price - freight; // 不含運費，才好和平日價比
+      m.price.textContent = `${price} 靈石${goods > item.price ? "　↑ 較平日貴" : goods < item.price ? "　↓ 較平日便宜" : ""}${freight > 0 ? `　（含運費 ${freight}）` : ""}`;
+      m.price.classList.toggle("price-up", goods > item.price);
+      m.price.classList.toggle("price-down", goods < item.price);
       m.owned.textContent = `持有 ${state.items[m.id] ?? 0}`;
       m.b.disabled = !canBuyItem(state, m.id, data);
       const used = state.itemsUsed[m.id] ?? 0;
@@ -867,6 +869,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     const marketRel = marketRelation(state, data);
     if (marketRel === "feud") reasons.push(`坊市所在的國與我的宗門有舊怨，物價約漲 ${Math.round((data.worldRelations.effects.feudPriceMult - 1) * 100)}%。`);
     if (marketRel === "ally") reasons.push(`坊市所在的國與我的宗門互惠，物價約減 ${Math.round((1 - data.worldRelations.effects.allyPriceMult) * 100)}%。`);
+    const freight = freightRate(state, data);
+    if (freight > 0) reasons.push(`人不在坊市，貨由行腳商送來，運費約 ${Math.round(freight * 100)}%；親自到坊市或商行買，就不用付。`);
     e.marketNote.hidden = reasons.length === 0;
     e.marketNote.textContent = reasons.join("　");
     e.marketLink.hidden = reasons.length === 0;

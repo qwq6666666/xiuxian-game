@@ -2,7 +2,7 @@
 import { gameData } from "../data/load";
 import type { GameData } from "../data/types";
 import { pillPower, stageNeed, talentCost } from "./formulas";
-import { itemPrice } from "./worldeffects";
+import { itemFreight, itemPrice } from "./worldeffects";
 import type { GameState } from "./state";
 import { endLife } from "./review";
 import { addLog, atBottleneck, lifespanYears, realmOf, resolveStages, scheduleOpen } from "./tick";
@@ -40,7 +40,8 @@ export function buyItem(state: GameState, itemId: string, data: GameData = gameD
       spiritStones: state.spiritStones - itemPrice(state, itemId, data),
       items: { ...state.items, [itemId]: (state.items[itemId] ?? 0) + 1 },
     },
-    { month: state.ageMonths, kind: "buy", realmId: state.realmId, stage: state.stage, itemId },
+    // outcome 1 代表不在坊市、由行腳商送來（M63）
+    { month: state.ageMonths, kind: "buy", realmId: state.realmId, stage: state.stage, itemId, ...(itemFreight(state, itemId, data) > 0 ? { outcome: 1 } : {}) },
     data.config.logLimit,
   );
 }
