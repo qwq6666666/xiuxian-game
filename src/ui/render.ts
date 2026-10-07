@@ -22,6 +22,7 @@ import { neighbourOf, onSwipe } from "./gesture";
 import { resetRolls, rollNumber } from "./tween";
 import { keepView } from "./keepview";
 import { createAchievementWatch } from "./achievementWatch";
+import { createSlotsModal } from "./slotsModal";
 
 const reducedMotion = (): boolean => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 import { haptic, hapticsEnabled, setHapticsEnabled } from "./haptics";
@@ -118,6 +119,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
             <button id="odds-toggle" type="button" aria-pressed="false">機率提示：關</button>
             <button id="haptics-toggle" type="button" aria-pressed="true">觸覺回饋：開</button>
             <button id="sound-toggle" type="button" aria-pressed="false">音效：關</button>
+            <button id="slots-open" type="button">存檔槽</button>
             <button id="export" type="button">匯出存檔</button>
             <button id="import" type="button">匯入存檔</button>
             <button id="reset" type="button" class="danger">重新開始</button>
@@ -131,6 +133,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
     ${gameNavHtml()}
     <div class="modal codex" id="codex" role="dialog" aria-modal="true" aria-label="殘卷錄" hidden><div class="card review" id="codex-card"></div></div>
     <div class="modal codex" id="map" role="dialog" aria-modal="true" aria-label="天下圖" hidden><div class="card review map-card" id="map-card"></div></div>
+    <div class="modal codex" id="slots" role="dialog" aria-modal="true" aria-label="存檔槽" hidden><div class="card review" id="slots-card"></div></div>
     <div class="modal codex" id="collection" role="dialog" aria-modal="true" aria-label="收藏" hidden><div class="card review" id="collection-card"></div></div>
   `;
   const stageEl = root.querySelector<HTMLElement>("#stage")!;
@@ -252,6 +255,7 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
   });
 
   const watchModal = installModalFocus(root, ["codex", "map", "collection"]);
+  createSlotsModal({ root, handlers, menuEl, watchModal });
 
   /** 當世的名稱欄位值，用來填入事件、殘卷、日誌裡的名稱 */
   // 名稱欄位含入宗者的同門名字，所以走 slotsFor

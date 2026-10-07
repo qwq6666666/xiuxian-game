@@ -1,10 +1,19 @@
 import type { WaveChoice } from "../core/character/breakthrough";
 import type { HuntChoice } from "../core/combat/encounter";
 import type { GameState } from "../core/state";
+import type { SlotInfo } from "../slots";
 import type { ArtifactSlot } from "../data/types";
 
 // 介面共用的型別：事件處理器、對外介面、側欄分頁與修行畫面的節點集合。
+/** 存檔槽（M68）：沒提供就不顯示入口 */
+export interface SlotHandlers {
+  list(): SlotInfo[];
+  onSwitch(slot: number): void;
+  onClear(slot: number): void;
+}
+
 export interface UiHandlers {
+  slots?: SlotHandlers;
   onBuyTalent(talentId: string): void;
   onAutoChoice(enabled: boolean): void;
   onChoose(choiceIndex: number): void;

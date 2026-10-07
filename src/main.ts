@@ -25,10 +25,12 @@ import { formatOffline } from "./ui/format";
 import { holdFor } from "./ui/hold";
 import { mountUi } from "./ui/render";
 import { isFree, isWaiting, settleEncounter } from "./core/pause";
+import { clearSlot, describeState, readActiveSlot, slotInfos, slotKeys, writeActiveSlot } from "./slots";
 
-const SAVE_KEY = "xiuxian-save";
-// 最後一次存檔的現實時間，離線進度由此計算（不放進存檔本體，core 不碰時間）
-const SEEN_KEY = "xiuxian-last-seen";
+// 存檔槽（M68）：目前使用的槽決定這一次載入用哪一組鍵，換槽後重新載入頁面
+const ACTIVE_SLOT = readActiveSlot();
+const { save: SAVE_KEY, seen: SEEN_KEY } = slotKeys(ACTIVE_SLOT);
+// 最後一次存檔的現實時間（SEEN_KEY）離線進度由此計算，不放進存檔本體，core 不碰時間
 // 「關鍵時刻暫停」是介面偏好，不進存檔；預設開
 const HOLD_KEY = "xiuxian-hold";
 
@@ -116,6 +118,21 @@ function afterTrialStep(s: GameState): GameState {
 }
 
 const ui = mountUi(document.getElementById("app")!, data, {
+  slots: {
+    list: () => slotInfos(data, ACTIVE_SLOT, describeState(state, data)),
+    onSwitch(slot) {
+      save(state);
+      writeActiveSlot(slot);
+      location.reload();
+    },
+    onClear(slot) {
+      if (slot !== ACTIVE_SLOT) return clearSlot(slot);
+      // 清掉使用中的槽等於重新開始這一槽
+      clearSlot(slot);
+      ui.notice("");
+      update(newGame());
+    },
+  },
   onSpeed: (speed) => update({ ...state, speed }),
   onHold(enabled) {
     holdEnabled = enabled;
