@@ -6,7 +6,7 @@ import { monthlyGain } from "./gain";
 import { addLog, atBottleneck, resolveStages } from "./progress";
 import { deriveSeed, nextRandom } from "./rng";
 import type { BestiaryEntry, Changes, GameState } from "./state";
-import { advanceTrial } from "./trial";
+import { advanceTrial, trialAutoRest, trialContinue, trialRest, trialRuleOf } from "./trial";
 
 /** 遇怪亂數的雜湊鹽值，與材料掉落、世界生成用的編號錯開 */
 const HUNT_SALT = 8_000_000;
@@ -44,8 +44,10 @@ export function powerRatio(state: GameState, monster: MonsterDef, data: GameData
 export function actionHit(state: GameState, action: HuntAction, data: GameData = gameData): number {
   const e = state.encounter;
   const a = data.monsters.rules.actions[action];
-  if (!e || a.hit >= 1) return a.hit;
-  return clamp(a.hit + data.monsters.rules.ratioHit * (powerRatio(state, monsterOf(e.monsterId, data), data) - 1), 0.1, 0.95);
+  if (!e) return a.hit;
+  const penalty = trialRuleOf(state, data)?.hitPenalty ?? 0;
+  if (a.hit >= 1) return a.hit - penalty;
+  return clamp(a.hit + data.monsters.rules.ratioHit * (powerRatio(state, monsterOf(e.monsterId, data), data) - 1) - penalty, 0.1, 0.95);
 }
 
 /** 逃跑成功率 */
@@ -83,13 +85,15 @@ export function actionPreview(state: GameState, choice: "steady" | "fierce" | "w
   const r = powerRatio(state, m, data);
   const trait = traitOf(m, data);
   const hit = actionHit(state, choice, data);
-  const dealt = hit * a.dmg * (choice === "steady" ? (trait?.steadyDmg ?? 1) : 1) * clamp(r, 0.6, 1.5);
-  const taken = a.taken * (trait?.takenMul ?? 1) * clamp(1 / r, 0.5, 2);
+  const rule = trialRuleOf(state, data);
+  const dealt = hit * a.dmg * (choice === "steady" ? (trait?.steadyDmg ?? 1) : 1) * (choice === "ward" ? (rule?.wardDmgMul ?? 1) : 1) * clamp(r, 0.6, 1.5);
+  const taken = a.taken * (trait?.takenMul ?? 1) * clamp(1 / r, 0.5, 2) + (rule?.extraTaken ?? 0);
   return { hit, dealt, taken, roundsToKill: dealt > 0 ? Math.ceil(e.monsterHp / dealt - 1e-9) : null };
 }
 
 export function canHunt(state: GameState, choice: HuntChoice, data: GameData = gameData): boolean {
-  if (state.encounter === null || state.phase !== "living") return false;
+  if (state.encounter === null || state.phase !== "living" || state.encounter.rest === true) return false;
+  if (choice === "flee") return trialRuleOf(state, data)?.noFlee !== true;
   if (choice !== "ward") return true;
   const id = huntTalisman(data);
   return id !== null && (state.items[id] ?? 0) > 0;
@@ -130,7 +134,7 @@ function finish(state: GameState, kind: HuntLog, data: GameData, extra: { outcom
     data.config.logLimit,
   );
   // 秘境試煉中：這一層結束，由秘境決定接下來進下一層、通關或結束（M47）
-  return done.trial ? advanceTrial(done, kind, extra.outcome, data) : done;
+  return done.trial ? advanceTrial(done, kind, extra.outcome, data, e.myHp) : done;
 }
 
 /** 損失目前修為的一部分 */
@@ -187,10 +191,11 @@ export function huntChoose(state: GameState, choice: HuntChoice, data: GameData 
   const swing = (v: number): number => 1 + rules.variance * (2 * v - 1);
   const hit = draw(e.seed, e.round * 3) < actionHit(state, choice, data);
   const trait = traitOf(m, data);
-  const dmg = a.dmg * (choice === "steady" ? (trait?.steadyDmg ?? 1) : 1);
+  const rule = trialRuleOf(state, data);
+  const dmg = a.dmg * (choice === "steady" ? (trait?.steadyDmg ?? 1) : 1) * (choice === "ward" ? (rule?.wardDmgMul ?? 1) : 1);
   const monsterHp = e.monsterHp - (hit ? dmg * clamp(r, 0.6, 1.5) * swing(draw(e.seed, e.round * 3 + 1)) : 0);
   if (monsterHp <= 1e-9) return win({ ...s, encounter: { ...e, monsterHp: 0 } }, data);
-  const myHp = e.myHp - a.taken * (trait?.takenMul ?? 1) * clamp(1 / r, 0.5, 2) * swing(draw(e.seed, e.round * 3 + 2));
+  const myHp = e.myHp - (a.taken * (trait?.takenMul ?? 1) * clamp(1 / r, 0.5, 2) * swing(draw(e.seed, e.round * 3 + 2)) + (rule?.extraTaken ?? 0));
   if (myHp <= 1e-9) {
     const [lost, loss] = lose({ ...s, encounter: { ...e, monsterHp, myHp: 0 } }, rules.lossFrac);
     return finish(lost, "huntLose", data, { changes: loss > 0 ? { cultivation: -loss } : {} });
@@ -206,11 +211,17 @@ export function huntChoose(state: GameState, choice: HuntChoice, data: GameData 
 export function autoEncounter(state: GameState, data: GameData = gameData): GameState {
   let s = state;
   while (s.encounter !== null) {
+    // 秘境層間休整：氣血不到一半且還能調息就調息，否則繼續
+    if (s.encounter.rest === true) {
+      s = trialAutoRest(s, data) ? trialRest(s, data) : trialContinue(s);
+      continue;
+    }
     const m = monsterOf(s.encounter.monsterId, data);
     const ok = powerRatio(s, m, data) >= data.monsters.rules.autoMinRatio;
     // 厚皮的怪穩打傷不透：秘境裡一律強攻，一般歷練戰力有餘裕（≥1.1）才強攻
     const attack = traitOf(m, data)?.steadyDmg !== undefined && (s.trial !== null || powerRatio(s, m, data) >= 1.1) ? "fierce" : "steady";
-    s = huntChoose(s, ok ? attack : "flee", data);
+    // 狹窄的秘境不能逃，只能硬打
+    s = huntChoose(s, ok || !canHunt(s, "flee", data) ? attack : "flee", data);
   }
   return s;
 }

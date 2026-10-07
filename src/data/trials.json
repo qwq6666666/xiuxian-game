@@ -1,6 +1,7 @@
 {
   "rules": {
     "lifespanBuffer": 12,
+    "rest": { "months": 3, "heal": 0.5, "max": 1 },
     "text": {
       "enter": "你備足乾糧，走進{trial}。",
       "clear": "你走出{trial}時，衣上都是塵土，囊中多了些東西。",
@@ -11,6 +12,7 @@
   "trials": [
     {
       "id": "trial_lianqi",
+      "rule": { "name": "落石", "desc": "崖壁不時掉下碎石，每回合都要多挨一下。", "extraTaken": 0.04 },
       "name": "斷崖洞",
       "desc": "山壁上一處荒廢的洞府，淺處練氣期的人也走得進去。",
       "realm": "lianqi",
@@ -34,6 +36,7 @@
     },
     {
       "id": "trial_zhuji",
+      "rule": { "name": "狹窄", "desc": "洞窟窄得轉不開身，進來就退不得。", "noFlee": true },
       "name": "裂石窟",
       "desc": "山腹裡被妖物占去的石窟，沒有築基的底子進不了深處。",
       "realm": "zhuji",
@@ -57,6 +60,7 @@
     },
     {
       "id": "trial_jindan",
+      "rule": { "name": "碑文", "desc": "斷碑上的刻痕引動符力，符籙威力大增。", "wardDmgMul": 1.8 },
       "name": "沉碑壑",
       "desc": "一道沉著斷碑的深壑，金丹期的修士也得步步留心。",
       "realm": "jindan",
@@ -81,6 +85,7 @@
     },
     {
       "id": "trial_yuanying",
+      "rule": { "name": "罡風", "desc": "裂隙裡罡風亂吹，出手更難命中。", "hitPenalty": 0.1 },
       "name": "雲裂淵",
       "desc": "雲層像被劈開一道口子，底下是只有元嬰期的人才敢看的深淵。",
       "realm": "yuanying",

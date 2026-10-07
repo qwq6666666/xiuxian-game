@@ -60,7 +60,7 @@ describe("國家數可調（M51）", () => {
   it("存檔往返保留；v28 的舊檔補上 5 國，旅行位置在舊都的退回出生村", () => {
     const s = setNationCount(createInitialState(5), 7, data);
     expect(deserialize(serialize(s)).nationCount).toBe(7);
-    expect(SAVE_VERSION).toBe(30);
+    expect(SAVE_VERSION).toBe(31);
     const old = JSON.parse(serialize(startLife(createInitialState(5))));
     old.version = 28;
     delete old.nationCount;

@@ -14,7 +14,7 @@ import {
 } from "../core/breakthrough";
 import { haptic } from "./haptics";
 import { keepView } from "./keepview";
-import { trialBlockReason, trialOf, trialsFor } from "../core/trial";
+import { canTrialRest, trialBlockReason, trialOf, trialRuleOf, trialsFor } from "../core/trial";
 import { actionPreview, canHunt, fleeChance, monsterOf, powerRatio, traitOf, type HuntChoice, huntTalisman } from "../core/encounter";
 import type { GameState, LogEntry } from "../core/state";
 import { atBottleneck } from "../core/tick";
@@ -341,6 +341,30 @@ export function createPanels(ctx: PanelContext): Panels {
       }
     }
     lastHuntHealth = { monsterId: h.monsterId, monsterHp: h.monsterHp, myHp: h.myHp };
+    // 秘境層間休整：氣血帶進下一層，先選繼續、調息或撤退
+    if (h.rest && state.trial) {
+      const def = trialOf(state.trial.id, data);
+      const r = data.trials.rules.rest;
+      e.huntTitle.textContent = `${def.name}・第 ${state.trial.floor + 1} 層之前`;
+      e.huntText.textContent = `前方是${m.name}。氣血只有眼下這些，帶進去多少，就剩多少。${def.rule.desc}`;
+      e.huntBars.innerHTML = bar(`你 ${Math.round(h.myHp * 100)}%`, h.myHp, previous?.myHp, "me");
+      e.huntInfo.textContent = `【${def.rule.name}】${def.rule.desc}　調息還剩 ${Math.max(0, r.max - state.trial.rests)} 次。`;
+      const restRows: { name: string; note: string; disabled: boolean; run: () => void }[] = [
+        { name: "繼續", note: `帶著 ${Math.round(h.myHp * 100)}% 氣血直接進去`, disabled: false, run: handlers.onTrialContinue },
+        { name: "調息", note: canTrialRest(state, data) ? `花 ${r.months} 個月，回復 ${Math.round(r.heal * 100)}% 氣血` : h.myHp >= 1 ? "氣血已滿" : "這座秘境的調息已用完", disabled: !canTrialRest(state, data), run: handlers.onTrialRest },
+        { name: "撤退", note: "已入袋的收穫保留，拿不到通關獎勵，這一世不再入", disabled: false, run: handlers.onTrialRetreat },
+      ];
+      for (const row of restRows) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.innerHTML = `<strong>${esc(row.name)}</strong><small>${esc(row.note)}</small>`;
+        b.disabled = row.disabled;
+        b.addEventListener("click", row.run);
+        e.huntChoices.append(b);
+      }
+      lastHuntHealth = { monsterId: h.monsterId, monsterHp: h.monsterHp, myHp: h.myHp };
+      return;
+    }
     const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";
     if (state.trial) {
       const def = trialOf(state.trial.id, data);
@@ -358,7 +382,8 @@ export function createPanels(ctx: PanelContext): Panels {
       lastTrialFloor = null;
     }
     const trait = traitOf(m, data);
-    e.huntInfo.textContent = `${trait ? `【${trait.name}】${trait.desc}　` : ""}${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。三回合內沒打倒對手，整座秘境即止步。" : "勝了有修為與靈石，打不贏可以逃。"}`;
+    const rule = trialRuleOf(state, data);
+    e.huntInfo.textContent = `${rule ? `【${rule.name}】${rule.desc}　` : ""}${trait ? `【${trait.name}】${trait.desc}　` : ""}${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。三回合內沒打倒對手，整座秘境即止步。" : "勝了有修為與靈石，打不贏可以逃。"}`;
     const pct = (v: number): string => `${Math.round(v * 100)}%`;
     const left = rules.rounds - h.round;
     /** 一招的預覽：命中、期望每回合傷敵與自傷、照期望還要幾回合，來得及與否一眼看清 */
@@ -371,7 +396,7 @@ export function createPanels(ctx: PanelContext): Panels {
       { choice: "steady", name: rules.actions.steady.name, note: previewNote("steady") },
       { choice: "fierce", name: rules.actions.fierce.name, note: previewNote("fierce") },
       { choice: "ward", name: `祭出${talisman ? itemName(talisman) : "符籙"}`, note: have > 0 ? previewNote("ward", `・持有 ${have}`) : "沒有符籙，坊市可買" },
-      { choice: "flee", name: "逃", note: `成功約 ${pct(fleeChance(state, data))}・失敗損 ${Math.round(rules.flee.failLoss * 100)}% 修為` },
+      { choice: "flee", name: "逃", note: rule?.noFlee ? "此地無路可退" : `成功約 ${pct(fleeChance(state, data))}・失敗損 ${Math.round(rules.flee.failLoss * 100)}% 修為` },
     ];
     for (const r of rows) {
       const b = document.createElement("button");
@@ -410,7 +435,7 @@ export function createPanels(ctx: PanelContext): Panels {
     e.trialBox.hidden = rows.length === 0 || state.phase !== "living";
     e.trialBox.replaceChildren();
     if (e.trialBox.hidden) return;
-    e.trialBox.append(el("h2", undefined, "秘境"), el("p", "desc", "每世每座只能入一次，進去就要耗上整段時間，過關才有一次性的收穫。每層三回合內沒打倒對手，整座秘境即止步。"));
+    e.trialBox.append(el("h2", undefined, "秘境"), el("p", "desc", "每世每座只能入一次，進去就要耗上整段時間，過關才有一次性的收穫。每層三回合內沒打倒對手，整座秘境即止步；氣血帶進下一層，層間可調息一次，或撤退保住已得的收穫。"));
     for (const { t, reason } of rows) {
       const row = el("div", "trial-row");
       const info = el("div");

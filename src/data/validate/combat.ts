@@ -7,6 +7,7 @@ import {
   type MonsterDef,
   type MonstersData,
   type TribulationData,
+  type TrialRule,
   type TrialsData,
 } from "../types";
 import { fail, intRecord, obj, list, num, str, strList, uniqueIds } from "./common";
@@ -137,6 +138,12 @@ export function validateTrials(raw: unknown, monsters: MonsterDef[], realmIds: s
   const t = obj(r.text, tw);
   const text = { enter: str(t, "enter", tw), clear: str(t, "clear", tw), fail: str(t, "fail", tw), abandon: str(t, "abandon", tw) };
   for (const [k, v] of Object.entries(text)) if (!v.includes("{trial}")) fail(tw, k, "必須含 {trial}");
+  const rest = { months: 0, heal: 0, max: 0 };
+  const restW = `${rw}.rest`;
+  const ro0 = obj(r.rest, restW);
+  rest.months = num(ro0, "months", restW, { min: 1, max: 12, integer: true });
+  rest.heal = num(ro0, "heal", restW, { gt: 0, max: 1 });
+  rest.max = num(ro0, "max", restW, { min: 0, max: 5, integer: true });
   const trials = list(o.trials, `${file} 欄位 trials`).map((raw2, i) => {
     const where = `${file} 第 ${i + 1} 筆`;
     const m = obj(raw2, where);
@@ -159,16 +166,28 @@ export function validateTrials(raw: unknown, monsters: MonsterDef[], realmIds: s
     if (stones.min > stones.max) fail(sw, "min", "不可大於 max");
     const items = intRecord(ro, "items", rewardW, 1);
     for (const itemId of Object.keys(items)) if (!itemIds.includes(itemId)) fail(rewardW, "items", `找不到物品 ${itemId}`);
+    const ruleW = `${w}.rule`;
+    const rule0 = obj(m.rule, ruleW);
+    const rule: TrialRule = { name: str(rule0, "name", ruleW), desc: str(rule0, "desc", ruleW) };
+    if (rule0.extraTaken !== undefined) rule.extraTaken = num(rule0, "extraTaken", ruleW, { gt: 0, max: 0.2 });
+    if (rule0.noFlee !== undefined) {
+      if (rule0.noFlee !== true) fail(ruleW, "noFlee", "只能寫 true");
+      rule.noFlee = true;
+    }
+    if (rule0.wardDmgMul !== undefined) rule.wardDmgMul = num(rule0, "wardDmgMul", ruleW, { min: 1, max: 3 });
+    if (rule0.hitPenalty !== undefined) rule.hitPenalty = num(rule0, "hitPenalty", ruleW, { gt: 0, max: 0.3 });
+    if (rule.extraTaken === undefined && !rule.noFlee && rule.wardDmgMul === undefined && rule.hitPenalty === undefined) fail(ruleW, "extraTaken", "至少要寫一項效果");
     return {
       id,
       name: str(m, "name", w),
       desc: str(m, "desc", w),
       realm,
+      rule,
       months: num(m, "months", w, { min: 1, max: 24, integer: true }),
       floors,
       reward: { cultivationMonths: num(ro, "cultivationMonths", rewardW, { min: 0, max: 6 }), stones, items },
     };
   });
   uniqueIds(trials, file);
-  return { rules: { lifespanBuffer: num(r, "lifespanBuffer", rw, { min: 0, max: 60, integer: true }), text }, trials };
+  return { rules: { lifespanBuffer: num(r, "lifespanBuffer", rw, { min: 0, max: 60, integer: true }), rest, text }, trials };
 }

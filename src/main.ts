@@ -4,7 +4,7 @@ import { buyItem, renameCharacter, buyTalent, setSchedule, useAll, useItem, zuoh
 import { equip, forge, unequip } from "./core/forge";
 import { focus } from "./core/focus";
 import { autoEncounter, huntChoose } from "./core/encounter";
-import { enterTrial } from "./core/trial";
+import { enterTrial, trialContinue, trialRest, trialRetreat } from "./core/trial";
 import { setMethod } from "./core/method";
 import { cancelBrew, startBrew } from "./core/alchemy";
 import { attemptBreakthrough, faceWave } from "./core/breakthrough";
@@ -111,6 +111,10 @@ function update(next: GameState, throttled = false): void {
   ui.render(state);
 }
 
+function afterTrialStep(s: GameState): GameState {
+  return s.encounter !== null && s.autoChoice ? autoEncounter(s, data) : s;
+}
+
 const ui = mountUi(document.getElementById("app")!, data, {
   onSpeed: (speed) => update({ ...state, speed }),
   onHold(enabled) {
@@ -141,6 +145,10 @@ const ui = mountUi(document.getElementById("app")!, data, {
   onBuyItem: (id) => update(buyItem(state, id, data)),
   onWave: (choice, focused) => update(faceWave(state, choice, data, focused)),
   onHunt: (choice) => update(huntChoose(state, choice, data)),
+  // 秘境層間休整：自動抉擇開著時，選完直接把剩下的層打完
+  onTrialContinue: () => update(afterTrialStep(trialContinue(state))),
+  onTrialRest: () => update(trialRest(state, data)),
+  onTrialRetreat: () => update(trialRetreat(state, data)),
   // 入秘境：開著自動抉擇時，一路用預設打法打到秘境結束
   onEnterTrial: (id) => {
     const entered = enterTrial(state, id, data);

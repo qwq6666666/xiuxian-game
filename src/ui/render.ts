@@ -81,6 +81,9 @@ export interface UiHandlers {
   onTravel(targetId: string): void;
   onWave(choice: WaveChoice, focused: boolean): void;
   onHunt(choice: HuntChoice): void;
+  onTrialContinue(): void;
+  onTrialRest(): void;
+  onTrialRetreat(): void;
   onEnterTrial(trialId: string): void;
   onFocus(): void;
   onMethod(methodId: string): void;

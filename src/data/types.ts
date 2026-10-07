@@ -738,12 +738,30 @@ export interface TrialDef {
   /** 每層的怪物 id，依序打；怪物須屬於同一境界 */
   floors: string[];
   reward: TrialReward;
+  /** 這座秘境自己的地形規則（M58）；至少寫一項效果 */
+  rule: TrialRule;
+}
+
+/** 秘境的地形規則：只在這座秘境的戰鬥裡生效 */
+export interface TrialRule {
+  name: string;
+  desc: string;
+  /** 每回合額外承受的氣血比例（落石、罡風） */
+  extraTaken?: number;
+  /** 不能逃跑（狹窄的洞窟） */
+  noFlee?: boolean;
+  /** 戰鬥符籙的傷害倍數（> 1） */
+  wardDmgMul?: number;
+  /** 所有招式的命中率扣掉的值 */
+  hitPenalty?: number;
 }
 
 export interface TrialsData {
   rules: {
     /** 進入後壽元至少還要剩「花費月數 + 這個值」，免得在秘境裡耗盡壽元 */
     lifespanBuffer: number;
+    /** 層間休整（M58）：每次調息花 months 個月、回復 heal 氣血，每座最多 max 次 */
+    rest: { months: number; heal: number; max: number };
     /** 日誌用句，{trial} 換成秘境名稱 */
     text: { enter: string; clear: string; fail: string; abandon: string };
   };

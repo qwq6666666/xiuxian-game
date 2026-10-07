@@ -2,7 +2,7 @@
 // 每一層就是一場現有的遇怪（encounter.ts），這裡只負責進入、逐層推進與結算。
 // 亂數全由進入時抽定的種子衍生，不消耗 rngSeed；沒有入過秘境的世界，亂數序列與修為都不受影響。
 import { gameData } from "../data/load";
-import type { GameData, TrialDef } from "../data/types";
+import type { GameData, TrialDef, TrialRule } from "../data/types";
 import { stepAlchemy } from "./alchemy";
 import { advanceStreak } from "./fatigue";
 import { accrueFocus } from "./focus";
@@ -47,8 +47,13 @@ export function canEnterTrial(state: GameState, trialId: string, data: GameData 
 }
 
 /** 這一層的遇怪狀態：怪物由秘境指定，亂數由進入時的種子衍生 */
-function floorEncounter(def: TrialDef, floor: number, seed: number): EncounterState {
-  return { monsterId: def.floors[floor], round: 0, monsterHp: 1, myHp: 1, seed: deriveSeed(seed, 100 + floor) };
+function floorEncounter(def: TrialDef, floor: number, seed: number, myHp = 1): EncounterState {
+  return { monsterId: def.floors[floor], round: 0, monsterHp: 1, myHp, seed: deriveSeed(seed, 100 + floor) };
+}
+
+/** 目前秘境的地形規則；不在秘境裡回傳 undefined */
+export function trialRuleOf(state: GameState, data: GameData = gameData): TrialRule | undefined {
+  return state.trial ? trialOf(state.trial.id, data).rule : undefined;
 }
 
 /**
@@ -80,7 +85,7 @@ export function enterTrial(state: GameState, trialId: string, data: GameData = g
   const spent = passMonths(entered, def.months, data);
   return {
     ...spent,
-    trial: { id: trialId, floor: 0, seed },
+    trial: { id: trialId, floor: 0, seed, rests: 0 },
     trialsDone: [...spent.trialsDone, trialId],
     encounter: floorEncounter(def, 0, seed),
   };
@@ -108,13 +113,45 @@ function endTrial(state: GameState, def: TrialDef, outcome: 0 | 1, data: GameDat
  * 一層（一場遇怪）結束後呼叫：勝了進下一層或通關；敗、平手、逃跑失敗都結束，逃跑成功算中途抽身（不另損修為）。
  * outcome 沿用遇怪的定義：逃跑時 0 成功、1 失敗。
  */
-export function advanceTrial(state: GameState, kind: "huntWin" | "huntLose" | "huntFlee" | "huntDraw", outcome: number | undefined, data: GameData = gameData): GameState {
+export function advanceTrial(state: GameState, kind: "huntWin" | "huntLose" | "huntFlee" | "huntDraw", outcome: number | undefined, data: GameData = gameData, carryHp = 1): GameState {
   const t = state.trial;
   if (!t || state.encounter !== null) return state;
   const def = trialOf(t.id, data);
   if (kind === "huntWin") {
-    if (t.floor + 1 < def.floors.length) return { ...state, trial: { ...t, floor: t.floor + 1 }, encounter: floorEncounter(def, t.floor + 1, t.seed) };
+    // 氣血帶進下一層；下一層先停在休整，等玩家選繼續、調息或撤退
+    if (t.floor + 1 < def.floors.length) return { ...state, trial: { ...t, floor: t.floor + 1 }, encounter: { ...floorEncounter(def, t.floor + 1, t.seed, carryHp), rest: true } };
     return clearTrial(state, def, data);
   }
   return endTrial(state, def, kind === "huntFlee" && outcome === 0 ? 1 : 0, data);
+}
+
+/** 休整中且還能調息 */
+export function canTrialRest(state: GameState, data: GameData = gameData): boolean {
+  return state.trial !== null && state.encounter?.rest === true && state.trial.rests < data.trials.rules.rest.max && state.encounter.myHp < 1;
+}
+
+/** 層間休整：直接開打下一層，氣血照舊 */
+export function trialContinue(state: GameState): GameState {
+  if (!state.encounter?.rest) return state;
+  const { rest: _rest, ...fight } = state.encounter;
+  return { ...state, encounter: fight };
+}
+
+/** 層間調息：花幾個月回復部分氣血，每座限次；仍停在休整 */
+export function trialRest(state: GameState, data: GameData = gameData): GameState {
+  if (!canTrialRest(state, data) || !state.trial || !state.encounter) return state;
+  const r = data.trials.rules.rest;
+  const spent = passMonths(state, r.months, data);
+  return { ...spent, trial: { ...state.trial, rests: state.trial.rests + 1 }, encounter: { ...state.encounter, myHp: Math.min(1, state.encounter.myHp + r.heal) } };
+}
+
+/** 層間撤退：已過樓層的靈石與掉落早已入袋，只是拿不到通關獎勵；算中途抽身，這一世不再入 */
+export function trialRetreat(state: GameState, data: GameData = gameData): GameState {
+  if (!state.trial || !state.encounter?.rest) return state;
+  return endTrial({ ...state, encounter: null }, trialOf(state.trial.id, data), 1, data);
+}
+
+/** 自動抉擇的休整決定：氣血不到一半且還能調息就調息 */
+export function trialAutoRest(state: GameState, data: GameData = gameData): boolean {
+  return canTrialRest(state, data) && (state.encounter?.myHp ?? 1) < 0.5;
 }

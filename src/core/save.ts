@@ -148,6 +148,8 @@ const migrations: Record<number, (data: Obj, gd: GameData) => Obj> = {
   },
   // v29 沒有秘境試煉：補上沒有進行中的秘境、本世沒入過
   29: (d) => ({ ...d, version: 30, trial: null, trialsDone: [] }),
+  // v31（M58）：進行中的秘境加上層間調息次數
+  30: (d) => ({ ...d, version: 31, trial: d.trial ? { ...(d.trial as object), rests: 0 } : d.trial }),
   26: (d) => ({ ...d, version: 27 }),
   25: (d) => ({ ...d, version: 26, altCharts: [], wishId: null, omenLeft: 0, omen: [] }),
   // v24 運功是冷卻制：冷卻已過的舊檔補一次存量，起點移到現在；還在冷卻的維持原計時
@@ -571,7 +573,8 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     const monsterHp = num(eo, "monsterHp", { min: 0 }, "encounter.monsterHp");
     const myHp = num(eo, "myHp", { min: 0 }, "encounter.myHp");
     if (monsterHp > 1 || myHp > 1 || monsterHp === 0 || myHp === 0) fail("encounter", "monsterHp、myHp 必須大於 0 且不超過 1");
-    encounter = { monsterId, round, monsterHp, myHp, seed: num(eo, "seed", { integer: true, min: 0 }, "encounter.seed") };
+    if (eo.rest !== undefined && typeof eo.rest !== "boolean") fail("encounter.rest", "必須是 true 或 false");
+    encounter = { monsterId, round, monsterHp, myHp, seed: num(eo, "seed", { integer: true, min: 0 }, "encounter.seed"), ...(eo.rest === true ? { rest: true } : {}) };
   } else if (o.encounter === undefined) {
     fail("encounter", "不可缺少（沒有遇怪時為 null）");
   }
@@ -590,10 +593,12 @@ export function deserialize(text: string, data: GameData = gameData): GameState 
     if (encounter === null) fail("trial", "進行中的秘境必須同時有遇怪（encounter）");
     if (encounter.monsterId !== def.floors[floor]) fail("trial.floor", `第 ${floor + 1} 層應是 ${def.floors[floor]}，遇怪卻是 ${encounter.monsterId}`);
     if (!(trialsDone as string[]).includes(trialId)) fail("trialsDone", `進行中的秘境 ${trialId} 必須已記入`);
-    trial = { id: trialId, floor, seed: num(to, "seed", { integer: true, min: 0 }, "trial.seed") };
+    trial = { id: trialId, floor, seed: num(to, "seed", { integer: true, min: 0 }, "trial.seed"), rests: num(to, "rests", { integer: true, min: 0 }, "trial.rests") };
+    if (trial.rests > data.trials.rules.rest.max) fail("trial.rests", `不可超過 ${data.trials.rules.rest.max}，目前為 ${trial.rests}`);
   } else if (o.trial === undefined) {
     fail("trial", "不可缺少（沒有秘境時為 null）");
   }
+  if (encounter?.rest === true && trial === null) fail("encounter.rest", "層間休整只會出現在秘境裡");
   let alchemy: GameState["alchemy"] = null;
   if (o.alchemy !== null && o.alchemy !== undefined) {
     const ao = obj(o.alchemy, "alchemy");

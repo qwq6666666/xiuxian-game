@@ -1,6 +1,6 @@
 import type { ArtifactSlot, AttributeKey, Omen, ReviewCause } from "../data/types";
 
-export const SAVE_VERSION = 30;
+export const SAVE_VERSION = 31;
 
 /** 沒有選擇過時的國家數（與 map.json 的 nations.default 相同，由載入檢查守住） */
 export const DEFAULT_NATIONS = 5;
@@ -213,6 +213,8 @@ export interface TrialState {
   id: string;
   floor: number;
   seed: number;
+  /** 本座已用掉幾次層間調息（M58） */
+  rests: number;
 }
 
 export interface EncounterState {
@@ -221,6 +223,8 @@ export interface EncounterState {
   monsterHp: number;
   myHp: number;
   seed: number;
+  /** 秘境層間休整中（M58）：這份遇怪是「下一層」，還沒開打；時間照遇怪一樣暫停 */
+  rest?: boolean;
 }
 
 /** 進行中的煉丹（M29）：paid 表示這一爐的材料已經投進爐裡，progress 是已煉的月數 */

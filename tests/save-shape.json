@@ -1,5 +1,5 @@
 {
-  "version": 30,
+  "version": 31,
   "shape": {
     "TravelState": [
       "locationId",
@@ -100,12 +100,14 @@
     "TrialState": [
       "floor",
       "id",
+      "rests",
       "seed"
     ],
     "EncounterState": [
       "monsterHp",
       "monsterId",
       "myHp",
+      "rest",
       "round",
       "seed"
     ],

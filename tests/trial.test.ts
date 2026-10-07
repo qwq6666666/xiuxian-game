@@ -7,8 +7,8 @@ import { realmOf } from "../src/core/progress";
 import { deserialize, serialize } from "../src/core/save";
 import type { GameState } from "../src/core/state";
 import { tick } from "../src/core/tick";
-import { monsterOf, traitOf } from "../src/core/encounter";
-import { advanceTrial, canEnterTrial, enterTrial, trialBlockReason, trialsFor } from "../src/core/trial";
+import { canHunt, monsterOf, traitOf } from "../src/core/encounter";
+import { advanceTrial, canEnterTrial, canTrialRest, enterTrial, trialBlockReason, trialContinue, trialRest, trialRetreat, trialRuleOf, trialsFor } from "../src/core/trial";
 import { gameData } from "../src/data/load";
 import worldNames from "../src/data/worldNames.json";
 import { validateTrials } from "../src/data/validate";
@@ -26,7 +26,7 @@ const ready = (seed = 1, patch: Partial<GameState> = {}): GameState => living(se
 /** 一路穩打到秘境結束（不管勝負） */
 function fightThrough(state: GameState): GameState {
   let s = state;
-  for (let guard = 0; s.trial !== null && guard < 100; guard++) s = huntChoose(s, traitOf(monsterOf(s.encounter!.monsterId, data), data)?.steadyDmg !== undefined ? "fierce" : "steady", data);
+  for (let guard = 0; s.trial !== null && guard < 100; guard++) s = s.encounter?.rest ? trialContinue(s) : huntChoose(s, traitOf(monsterOf(s.encounter!.monsterId, data), data)?.steadyDmg !== undefined ? "fierce" : "steady", data);
   return s;
 }
 
@@ -217,5 +217,74 @@ describe("存檔", () => {
     const s = deserialize(JSON.stringify({ ...cur, version: 29 }));
     expect(s.trial).toBeNull();
     expect(s.trialsDone).toEqual([]);
+  });
+});
+
+describe("層間休整與地形規則（M58）", () => {
+  /** 打贏第一層，停在第二層前的休整 */
+  function atRest(seed = 1): GameState {
+    let s = enterTrial(ready(seed, { stage: 8 }), lianqi.id);
+    s = { ...s, encounter: { ...s.encounter!, myHp: 0.4 } };
+    return advanceTrial({ ...s, encounter: null }, "huntWin", undefined, data, 0.4);
+  }
+
+  it("贏了一層先停在休整：氣血帶進下一層，時間與遇怪一樣暫停", () => {
+    const s = atRest();
+    expect(s.trial?.floor).toBe(1);
+    expect(s.encounter?.rest).toBe(true);
+    expect(s.encounter?.myHp).toBeCloseTo(0.4);
+    expect(s.encounter?.monsterId).toBe(lianqi.floors[1]);
+    expect(tick(s, 5, data).ageMonths).toBe(s.ageMonths);
+    expect(canHunt(s, "steady", data)).toBe(false);
+  });
+
+  it("繼續：直接開打，氣血不變；調息：花月數回氣血，每座限次", () => {
+    const s = atRest();
+    const go = trialContinue(s);
+    expect(go.encounter?.rest).toBeUndefined();
+    expect(go.encounter?.myHp).toBeCloseTo(0.4);
+    expect(canTrialRest(s, data)).toBe(true);
+    const rested = trialRest(s, data);
+    expect(rested.encounter?.myHp).toBeCloseTo(0.4 + data.trials.rules.rest.heal);
+    expect(rested.ageMonths).toBe(s.ageMonths + data.trials.rules.rest.months);
+    expect(rested.encounter?.rest).toBe(true);
+    expect(canTrialRest(rested, data)).toBe(false);
+    expect(trialRest(rested, data)).toBe(rested);
+  });
+
+  it("撤退：算中途抽身，不再能入；已得的靈石掉落不受影響", () => {
+    const s = atRest();
+    const out = trialRetreat(s, data);
+    expect(out.trial).toBeNull();
+    expect(out.encounter).toBeNull();
+    expect(out.log.at(-1)).toMatchObject({ kind: "trialFail", outcome: 1 });
+    expect(canEnterTrial(out, lianqi.id)).toBe(false);
+  });
+
+  it("四座秘境各有一條地形規則", () => {
+    for (const t of data.trials.trials) expect(t.rule.name.length).toBeGreaterThan(0);
+    const inTrial = (realm: string) => {
+      const def = data.trials.trials.find((x) => x.realm === realm)!;
+      const s = living(1, { realmId: realm, stage: 0, trial: { id: def.id, floor: 0, seed: 1, rests: 0 }, encounter: { monsterId: def.floors[0], round: 0, monsterHp: 1, myHp: 1, seed: 1 } });
+      return s;
+    };
+    expect(trialRuleOf(inTrial("lianqi"), data)?.extraTaken).toBeGreaterThan(0);
+    expect(canHunt(inTrial("zhuji"), "flee", data)).toBe(false);
+    expect(trialRuleOf(inTrial("jindan"), data)?.wardDmgMul).toBeGreaterThan(1);
+    expect(trialRuleOf(inTrial("yuanying"), data)?.hitPenalty).toBeGreaterThan(0);
+  });
+
+  it("v30 的舊檔：進行中的秘境補上 rests", () => {
+    const s = enterTrial(ready(1), lianqi.id);
+    const raw = JSON.parse(serialize(s));
+    raw.version = 30;
+    delete raw.trial.rests;
+    const back = deserialize(JSON.stringify(raw));
+    expect(back.trial?.rests).toBe(0);
+  });
+
+  it("休整中存檔往返", () => {
+    const s = atRest();
+    expect(deserialize(serialize(s)).encounter?.rest).toBe(true);
   });
 });
