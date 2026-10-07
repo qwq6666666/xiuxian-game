@@ -40,7 +40,7 @@
 - 色碼只寫在 `tokens.css`。
 - 375×812 與桌面寬度都實際開瀏覽器看過，註明速度（×1、×4）；手機不掉幀。
 - `npm run verify` 全過；`tests/style.test.ts` 加上守住 `prefers-reduced-motion` 的規則。
-- 交接寫進 `docs/handoff/chatgpt.md`，註明驗證了什麼、沒驗證什麼；由 Claude 審後合併。
+- 交接寫進 `docs/archive/handoff-chatgpt.md`，註明驗證了什麼、沒驗證什麼；由 Claude 審後合併。
 
 **完成紀錄（2026-10-07）**
 
@@ -138,7 +138,7 @@
 
 ## 兩位助手的分工（2026-10-06）
 
-- [x] 規則寫入 `AGENTS.md`「兩位助手的職責」，交接檔在 `docs/handoff/`，事件可分檔載入（`src/data/events/`）。
+- [x] 規則寫入 `CLAUDE.md`「兩位助手的職責」，交接檔在 `docs/handoff/`，事件可分檔載入（`src/data/events/`）。
 - 這一批的指派（M20 化神、動畫第三批、階段 5 插畫、手機實測）都已完成，進度見 `docs/handoff/` 與下面各里程碑。
 
 ## M28–M32：修仙要素擴充（GDD 第 30–36 節，使用者已同意開工）
@@ -201,5 +201,5 @@
 - [x] 元嬰累計遊玩時間（M54，GDD 第 23.15 節）：神光起始價 250 → 200，目標上限 12 → 13 小時；`post` 100 場 × 3 個種子約 12.4 小時。
 - [ ] 手機天下圖：彈窗與內部側欄雙層捲軸、首屏先看到插畫與行跡面板而不是地圖（`src/ui/`，由 ChatGPT 或本機處理，雲端無瀏覽器預覽）。
 - [ ] 第一世偏被動：約 34% 玩家第一世看到築基突破，×1 的前 20 多分鐘主要在等待；引路事件已緩解教學，尚未解決主動性（需另案設計）。
-- [ ] 拆分 `src/ui/render.ts`（約 1,740 行、集中在 `mountUi`）；`validate.ts` 已拆成 `validate/`，`events.json` 已於 2026-10-08 依原順序拆成四份（`events/base2–4.json`），新事件寫進新檔。新增更多系統前先做。
+- [ ] 拆分 `src/ui/render.ts`（約 1,160 行、集中在 `mountUi`）；`validate.ts` 已拆成 `validate/`，`events.json` 已於 2026-10-08 依原順序拆成四份（`events/base2–4.json`），新事件寫進新檔。新增更多系統前先做。
 - [x] `dist/index.html` 容量：合併場景圖後曾到 1463 KB，本機把天下圖改成 900px WebP 後降到約 1136 KB（上限 1500 KB），尚有約 360 KB 空間；加圖前仍要先壓縮。
