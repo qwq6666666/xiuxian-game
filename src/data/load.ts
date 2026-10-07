@@ -7,6 +7,7 @@ import openingEventsJson from "./events/opening.json";
 import lianqiEventsJson from "./events/lianqi.json";
 import sectEventsJson from "./events/sect.json";
 import zhujiEventsJson from "./events/zhuji.json";
+import prepEventsJson from "./events/prep.json";
 import fragmentsJson from "./fragments.json";
 import itemsJson from "./items.json";
 import erasJson from "./eras.json";
@@ -96,6 +97,7 @@ export const gameData: GameData = validateGameData({
     { file: "events/chains.json", raw: chainsEventsJson },
     { file: "events/sect.json", raw: sectEventsJson },
     { file: "events/zhuji.json", raw: zhujiEventsJson },
+    { file: "events/prep.json", raw: prepEventsJson },
   ]),
   talents: validateTalents(talentsJson),
   spiritRoots: validateSpiritRoots(spiritRootsJson),

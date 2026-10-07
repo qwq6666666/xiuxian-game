@@ -163,3 +163,22 @@ describe("天賦頁的推薦與預覽", () => {
     expect(talentPreview(sg, 3, 0, gameData).some((l) => l.includes("已達門檻"))).toBe(true);
   });
 });
+
+describe("壽元預算", () => {
+  it("練氣中的玩家有預測；圓滿後與死亡後沒有", async () => {
+    const { lifeForecast, formatForecast } = await import("../src/ui/derived");
+    const { living } = await import("./helpers");
+    const s = living(1, { realmId: "lianqi" });
+    const f = lifeForecast(s, gameData)!;
+    expect(f.monthsToFull).toBeGreaterThan(0);
+    expect(f.pill?.name).toBe("築基丹");
+    expect(formatForecast(f)).toContain("築基丹");
+    expect(lifeForecast({ ...s, phase: "dead" }, gameData)).toBeNull();
+  });
+  it("壽元不夠時直說來不及", async () => {
+    const { lifeForecast, formatForecast } = await import("../src/ui/derived");
+    const { living } = await import("./helpers");
+    const old = living(1, { realmId: "lianqi", ageMonths: 12 * 59 });
+    expect(formatForecast(lifeForecast(old, gameData)!)).toContain("來不及");
+  });
+});

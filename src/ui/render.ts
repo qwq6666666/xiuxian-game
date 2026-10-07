@@ -33,7 +33,7 @@ import { createOverlays } from "./overlays";
 import { itemIcon, scheduleIcon } from "./icons";
 import { vignetteHtml } from "./vignette";
 import { type HuntChoice } from "../core/encounter";
-import { formatDuration, formatGain, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
+import { formatDuration, formatForecast, formatGain, lifeForecast, paceHint, scheduleFactLines, scheduleFacts, scheduleHints, yearsLeft } from "./derived";
 import { eraName, lifeIndex } from "../core/era";
 import { pillPower, splitAge, stageNeed } from "../core/formulas";
 import type { GameState } from "../core/state";
@@ -711,7 +711,8 @@ export function mountUi(root: HTMLElement, data: GameData, handlers: UiHandlers,
       // 練氣階段提示離突破還差幾層（M32：讓前期有看得見的目標）
       const toBreakthrough = state.realmId === lianqi.id ? lianqi.stageNames.length - 1 - state.stage : 0;
       const tail = toBreakthrough > 0 ? `再 ${toBreakthrough} 層築基。` : "";
-      e.pace.textContent = `每月約 +${formatGain(pace.perMonth)}，約 ${formatDuration(pace.seconds)}後升階。${tail}`;
+      const forecast = lifeForecast(state, data);
+      e.pace.textContent = `每月約 +${formatGain(pace.perMonth)}，約 ${formatDuration(pace.seconds)}後升階。${tail}${forecast ? formatForecast(forecast) : ""}`;
     } else if (pace.kind === "bottleneck") {
       e.pace.textContent = "修為已圓滿，不再增長，要靠突破才能再進一步。";
     } else {

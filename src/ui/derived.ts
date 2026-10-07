@@ -1,5 +1,6 @@
 // 主畫面的衍生顯示：只讀狀態，不改任何數值、不碰時間。
-import { stageNeed } from "../core/formulas";
+import { lifespanMonths, stageNeed } from "../core/formulas";
+import { breakthroughRuleOf } from "../core/breakthrough";
 import { atBottleneck, realmOf, scheduleOf } from "../core/progress";
 import type { GameState } from "../core/state";
 import { monthlyGain } from "../core/tick";
@@ -34,6 +35,41 @@ export function paceHint(state: GameState, data: GameData): PaceHint {
   const months = Math.ceil(remaining / perMonth);
   const seconds = (months * data.config.msPerMonth) / 1000 / Math.max(1, state.speed);
   return { kind: "eta", perMonth, months, seconds };
+}
+
+export interface LifeForecast {
+  /** 照目前安排，修為圓滿還要幾個月 */
+  monthsToFull: number;
+  /** 圓滿時壽元還剩幾個月（負數代表來不及） */
+  leftAtFull: number;
+  /** 突破要用的丹藥：缺的靈石（已持有或不需要則為 0）；不需要丹藥時為 null */
+  pill: { name: string; price: number; missing: number } | null;
+}
+
+/** 壽元預算：照目前的安排推算何時圓滿、屆時壽元剩多少、突破丹藥還差多少靈石；只在需要手動突破的境界給 */
+export function lifeForecast(state: GameState, data: GameData): LifeForecast | null {
+  if (state.phase !== "living" || atBottleneck(state, data)) return null;
+  const realm = realmOf(state, data);
+  if (realm.breakthrough !== "manual") return null;
+  const perMonth = monthlyGain(state, scheduleOf(state, data), data);
+  if (!(perMonth > 0)) return null;
+  let need = 0;
+  for (let i = state.stage; i < realm.stageNames.length; i++) need += stageNeed(realm, i) - (i === state.stage ? state.cultivation : 0);
+  const monthsToFull = Math.ceil(Math.max(0, need) / perMonth);
+  const leftAtFull = lifespanMonths(realm, state.lifespanBonus) - state.ageMonths - monthsToFull;
+  const pillId = breakthroughRuleOf(state, data)?.pillId;
+  const item = pillId ? data.items.find((i) => i.id === pillId) : undefined;
+  const pill = item && pillId ? { name: item.name, price: itemPrice(state, pillId, data), missing: 0 } : null;
+  if (pill && pillId && (state.items[pillId] ?? 0) === 0) pill.missing = Math.max(0, pill.price - state.spiritStones);
+  return { monthsToFull, leftAtFull, pill };
+}
+
+/** 壽元預算的一句話；來不及圓滿時直說 */
+export function formatForecast(f: LifeForecast): string {
+  const years = (m: number): number => Math.max(1, Math.round(m / 12));
+  const head = f.leftAtFull < 0 ? "照目前的安排，壽元耗盡前來不及圓滿。" : `照目前的安排，約 ${years(f.monthsToFull)} 年後圓滿，屆時壽元約剩 ${Math.round(f.leftAtFull / 12)} 年。`;
+  const pill = f.pill === null ? "" : f.pill.missing > 0 ? `${f.pill.name}要 ${f.pill.price} 靈石，還差 ${f.pill.missing}。` : `${f.pill.name}的錢備足了。`;
+  return `${head}${pill}`;
 }
 
 /** 修為增量的顯示：十以上取整，其餘一位小數 */

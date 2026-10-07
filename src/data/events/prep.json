@@ -1,0 +1,274 @@
+[
+  {
+    "id": "prep_lianqi_001",
+    "type": "choice",
+    "title": "叩關前夜",
+    "text": "九層的修為已快滿了，剩下的是那道關。你把能用的東西攤在榻上，數了兩遍，數字還是原來那個。",
+    "weight": 30,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "realmMax": "lianqi",
+      "stageMin": 8
+    },
+    "choices": [
+      {
+        "text": "照常閉關，不多想",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你收起東西，繼續打坐。該來的總會來，這句話聽起來比實際上有用一些。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "閉門推演三個月，把心神理順",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "三個月沒見人，出關時鬍子長了半寸。腦子倒是清楚了許多。",
+            "effects": {
+              "lifespan": -1,
+              "attributes": {
+                "insight": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "text": "下山託人說合一顆築基丹",
+        "requires": {
+          "spiritStones": 300
+        },
+        "outcomes": [
+          {
+            "weight": 65,
+            "text": "對方收了錢，從袖裡摸出一只小瓷瓶，說是自家存貨。你當場驗過，不假。",
+            "effects": {
+              "spiritStones": -300,
+              "items": {
+                "zhuji_dan": 1
+              }
+            }
+          },
+          {
+            "weight": 35,
+            "text": "對方收了錢，說貨還在路上。你等了半個月，才明白路上是什麼意思。",
+            "effects": {
+              "spiritStones": -300
+            }
+          }
+        ]
+      },
+      {
+        "text": "進山採一味傳說中的偏方藥",
+        "outcomes": [
+          {
+            "weight": 50,
+            "text": "你在崖縫裡尋著了那株藥，回程腳都軟了。藥倒是真的。",
+            "effects": {
+              "items": {
+                "huxin_dan": 1
+              }
+            }
+          },
+          {
+            "weight": 50,
+            "text": "你在山裡轉了三天，什麼也沒採到，還吸進一口濁氣，運功調了好幾日。",
+            "effects": {
+              "cultivation": -0.15
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prep_zhuji_001",
+    "type": "choice",
+    "title": "劫雲前的準備",
+    "text": "後期的修為已近圓滿，往上是天劫。有人說備得越足越好，也有人說備得再足，雷也不會先看一眼。",
+    "weight": 30,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 2,
+    "conditions": {
+      "realmMin": "zhuji",
+      "realmMax": "zhuji",
+      "stageMin": 2
+    },
+    "choices": [
+      {
+        "text": "不多備，順其自然",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你照舊閉關。劫要來，就讓它來，備與不備，雷聲是一樣大的。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "靜養三個月，把氣血養足",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你整日只是吃飯、睡覺與吐納，被人看見大概會當成偷懶。氣色倒是好了。",
+            "effects": {
+              "lifespan": -1,
+              "attributes": {
+                "mind": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "text": "出重金請人煉一張避雷符",
+        "requires": {
+          "spiritStones": 200
+        },
+        "outcomes": [
+          {
+            "weight": 70,
+            "text": "煉符的人收了錢，捧著一張符回來，說這是他這個月最體面的一張。",
+            "effects": {
+              "spiritStones": -200,
+              "items": {
+                "bilei_fu": 1
+              }
+            }
+          },
+          {
+            "weight": 30,
+            "text": "符煉到一半炸了。對方賠著笑臉，錢卻不好意思退。",
+            "effects": {
+              "spiritStones": -200
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "prep_jindan_001",
+    "type": "choice",
+    "title": "五道雷之前",
+    "text": "金丹後期，雷數是五道。你反覆算過，每一道的餘裕都不大，算到後來連自己也不信。",
+    "weight": 30,
+    "tone": "neutral",
+    "maxPerLife": 1,
+    "highlight": 2,
+    "conditions": {
+      "realmMin": "jindan",
+      "realmMax": "jindan",
+      "stageMin": 2
+    },
+    "choices": [
+      {
+        "text": "不再算了，繼續閉關",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你把算稿燒了，換來一夜好眠。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "守在洞中，再把心境磨一磨",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你一遍遍回想從前失手的地方，像在翻一本寫得很糟的舊帳。看完後，心定了。",
+            "effects": {
+              "lifespan": -2,
+              "attributes": {
+                "insight": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "text": "尋人買一張避雷符",
+        "requires": {
+          "spiritStones": 300
+        },
+        "outcomes": [
+          {
+            "weight": 80,
+            "text": "賣符的人報了價，你沒還價。這種時候還價，是對自己命的不敬。",
+            "effects": {
+              "spiritStones": -300,
+              "items": {
+                "bilei_fu": 1
+              }
+            }
+          },
+          {
+            "weight": 20,
+            "text": "符是真的，只是被人先用過一半。你這才想起，貨色不能只看價錢。",
+            "effects": {
+              "spiritStones": -300
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mind_fork_001",
+    "type": "choice",
+    "title": "靜坐岔路",
+    "text": "周天走到一半，氣機忽然亂了一拍。往前再推一把，或是退回原處，都只是一念之差。",
+    "weight": 3,
+    "tone": "neutral",
+    "maxPerLife": 2,
+    "conditions": {
+      "realmMin": "lianqi",
+      "schedules": [
+        "retreat"
+      ],
+      "ageMin": 30
+    },
+    "choices": [
+      {
+        "text": "穩住氣機，退回原處",
+        "outcomes": [
+          {
+            "weight": 100,
+            "text": "你把氣一點點收回丹田，沒有進，也沒有退。這在修行裡算是勝了一半。",
+            "effects": {}
+          }
+        ]
+      },
+      {
+        "text": "順勢強行再推一把",
+        "outcomes": [
+          {
+            "weight": 55,
+            "text": "氣機像被誰推了一把，豁然貫通。你睜開眼，天色已亮。",
+            "effects": {
+              "cultivation": 0.25
+            },
+            "weightPerAttribute": {
+              "insight": 6
+            }
+          },
+          {
+            "weight": 45,
+            "text": "氣機撞在經脈上，疼得你半天說不出話。調息了許久，才算穩住。",
+            "effects": {
+              "cultivation": -0.1
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
