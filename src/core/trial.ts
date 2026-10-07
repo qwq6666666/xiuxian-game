@@ -155,3 +155,16 @@ export function trialRetreat(state: GameState, data: GameData = gameData): GameS
 export function trialAutoRest(state: GameState, data: GameData = gameData): boolean {
   return canTrialRest(state, data) && (state.encounter?.myHp ?? 1) < 0.5;
 }
+
+/** 這次入秘境以來已入袋的收穫（每層勝利的靈石與掉落）；撤退也保得住 */
+export function trialBanked(state: GameState): { spiritStones: number; items: Record<string, number> } {
+  const start = state.log.map((e) => e.kind).lastIndexOf("trialEnter");
+  const banked = { spiritStones: 0, items: {} as Record<string, number> };
+  if (start < 0 || state.trial === null) return banked;
+  for (const e of state.log.slice(start + 1)) {
+    if (e.kind !== "huntWin" || !e.changes) continue;
+    banked.spiritStones += e.changes.spiritStones ?? 0;
+    for (const [id, n] of Object.entries(e.changes.items ?? {})) banked.items[id] = (banked.items[id] ?? 0) + n;
+  }
+  return banked;
+}

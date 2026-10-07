@@ -315,5 +315,10 @@ describe("圖鑑摘要（介面用）", () => {
       expect(p.dealt).toBeGreaterThan(0);
       expect(p.roundsToKill).toBe(Math.ceil(1 / p.dealt - 1e-9));
     });
+    it("最大傷害：命中且浮動取最高，比期望高、等於期望除以命中率乘上浮動上限", () => {
+      const p = actionPreview(inFight("hungry_wolf"), "fierce")!;
+      expect(p.maxDealt).toBeGreaterThan(p.dealt);
+      expect(p.maxDealt).toBeCloseTo((p.dealt / p.hit) * (1 + gameData.monsters.rules.variance), 6);
+    });
   });
 });

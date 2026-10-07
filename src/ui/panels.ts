@@ -14,7 +14,7 @@ import {
 } from "../core/breakthrough";
 import { haptic } from "./haptics";
 import { keepView } from "./keepview";
-import { canTrialRest, trialBlockReason, trialOf, trialRuleOf, trialsFor } from "../core/trial";
+import { canTrialRest, trialBanked, trialBlockReason, trialOf, trialRuleOf, trialsFor } from "../core/trial";
 import { actionPreview, canHunt, fleeChance, monsterOf, powerRatio, traitOf, type HuntChoice, huntTalisman } from "../core/encounter";
 import type { GameState, LogEntry } from "../core/state";
 import { atBottleneck } from "../core/tick";
@@ -348,7 +348,11 @@ export function createPanels(ctx: PanelContext): Panels {
       e.huntTitle.textContent = `${def.name}・第 ${state.trial.floor + 1} 層之前`;
       e.huntText.textContent = `前方是${m.name}。氣血只有眼下這些，帶進去多少，就剩多少。${def.rule.desc}`;
       e.huntBars.innerHTML = bar(`我 ${Math.round(h.myHp * 100)}%`, h.myHp, previous?.myHp, "me");
-      e.huntInfo.textContent = `【${def.rule.name}】${def.rule.desc}　調息還剩 ${Math.max(0, r.max - state.trial.rests)} 次。`;
+      const banked = trialBanked(state);
+      const bankedText = [...(banked.spiritStones > 0 ? [`靈石 ${banked.spiritStones}`] : []), ...Object.entries(banked.items).map(([id, n]) => `${itemName(id)} ×${n}`)];
+      const reward = def.reward;
+      const rewardText = [`修為（閉關 ${reward.cultivationMonths} 個月）`, `靈石 ${reward.stones.min}–${reward.stones.max}`, ...Object.entries(reward.items).map(([id, n]) => `${itemName(id)} ×${n}`)];
+      e.huntInfo.textContent = `【${def.rule.name}】${def.rule.desc}　調息還剩 ${Math.max(0, r.max - state.trial.rests)} 次。已入袋：${bankedText.length > 0 ? bankedText.join("、") : "尚無"}。通關後另得：${rewardText.join("、")}。`;
       const restRows: { name: string; note: string; disabled: boolean; run: () => void }[] = [
         { name: "繼續", note: `帶著 ${Math.round(h.myHp * 100)}% 氣血直接進去`, disabled: false, run: handlers.onTrialContinue },
         { name: "調息", note: canTrialRest(state, data) ? `花 ${r.months} 個月，回復 ${Math.round(r.heal * 100)}% 氣血` : h.myHp >= 1 ? "氣血已滿" : "這座秘境的調息已用完", disabled: !canTrialRest(state, data), run: handlers.onTrialRest },
@@ -387,9 +391,10 @@ export function createPanels(ctx: PanelContext): Panels {
     const pct = (v: number): string => `${Math.round(v * 100)}%`;
     const left = rules.rounds - h.round;
     /** 一招的預覽：命中、期望每回合傷敵與自傷、照期望還要幾回合，來得及與否一眼看清 */
+    const hopeless = (choice: "steady" | "fierce" | "ward"): boolean => left <= 1 && h.monsterHp > actionPreview(state, choice, data)!.maxDealt + 1e-9;
     const previewNote = (choice: "steady" | "fierce" | "ward", extra = ""): string => {
       const p = actionPreview(state, choice, data)!;
-      const kill = p.roundsToKill === null ? "打不動" : p.roundsToKill <= left ? `約 ${p.roundsToKill} 回合可倒` : `約需 ${p.roundsToKill} 回合，來不及`;
+      const kill = hopeless(choice) ? "即使命中也來不及" : p.roundsToKill === null ? "打不動" : p.roundsToKill <= left ? `約 ${p.roundsToKill} 回合可倒` : `約需 ${p.roundsToKill} 回合，來不及`;
       return `命中 ${pct(p.hit)}・每回合傷敵約 ${pct(p.dealt)}、自傷約 ${pct(p.taken)}・${kill}${extra}`;
     };
     const rows: { choice: HuntChoice; name: string; note: string }[] = [
@@ -402,7 +407,9 @@ export function createPanels(ctx: PanelContext): Panels {
       const b = document.createElement("button");
       b.type = "button";
       b.innerHTML = `<strong>${esc(r.name)}</strong><small>${esc(r.note)}</small>`;
-      b.disabled = !canHunt(state, r.choice, data);
+      // 最後一回合打不倒時，攻擊只是白耗；只在還有路可逃時停用，無路可退就留著（備註已說明）
+      const futile = r.choice !== "flee" && hopeless(r.choice) && canHunt(state, "flee", data);
+      b.disabled = !canHunt(state, r.choice, data) || futile;
       b.addEventListener("click", () => handlers.onHunt(r.choice));
       e.huntChoices.append(b);
     }
@@ -435,7 +442,7 @@ export function createPanels(ctx: PanelContext): Panels {
     e.trialBox.hidden = rows.length === 0 || state.phase !== "living";
     e.trialBox.replaceChildren();
     if (e.trialBox.hidden) return;
-    e.trialBox.append(el("h2", undefined, "秘境"), el("p", "desc", "每世每座只能入一次，進去就要耗上整段時間，過關才有一次性的收穫。每層三回合內沒打倒對手，整座秘境即止步；氣血帶進下一層，層間可調息一次，或撤退保住已得的收穫。"));
+    e.trialBox.append(el("h2", undefined, "秘境"), el("p", "desc", "層層連戰，氣血帶入下一層；每世每座只能挑戰一次。"));
     for (const { t, reason } of rows) {
       const row = el("div", "trial-row");
       const info = el("div");

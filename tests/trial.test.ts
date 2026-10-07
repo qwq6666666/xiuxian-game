@@ -8,7 +8,7 @@ import { deserialize, serialize } from "../src/core/save";
 import type { GameState } from "../src/core/state";
 import { tick } from "../src/core/tick";
 import { canHunt, monsterOf, traitOf } from "../src/core/encounter";
-import { advanceTrial, canEnterTrial, canTrialRest, enterTrial, trialBlockReason, trialContinue, trialRest, trialRetreat, trialRuleOf, trialsFor } from "../src/core/trial";
+import { advanceTrial, canEnterTrial, canTrialRest, enterTrial, trialBlockReason, trialContinue, trialBanked, trialRest, trialRetreat, trialRuleOf, trialsFor } from "../src/core/trial";
 import { gameData } from "../src/data/load";
 import worldNames from "../src/data/worldNames.json";
 import { validateTrials } from "../src/data/validate";
@@ -259,6 +259,14 @@ describe("層間休整與地形規則（M58）", () => {
     expect(out.encounter).toBeNull();
     expect(out.log.at(-1)).toMatchObject({ kind: "trialFail", outcome: 1 });
     expect(canEnterTrial(out, lianqi.id)).toBe(false);
+  });
+
+  it("已入袋的收穫：只加總這次入秘境以來每層勝利的靈石與掉落", () => {
+    const s = atRest();
+    expect(trialBanked(s)).toEqual({ spiritStones: 0, items: {} });
+    const withWin = { ...s, log: [...s.log, { month: s.ageMonths, kind: "huntWin" as const, realmId: s.realmId, stage: s.stage, changes: { spiritStones: 3, items: { qi_pill: 1 } } }, { month: s.ageMonths, kind: "huntWin" as const, realmId: s.realmId, stage: s.stage, changes: { spiritStones: 2 } }] };
+    expect(trialBanked(withWin)).toEqual({ spiritStones: 5, items: { qi_pill: 1 } });
+    expect(trialBanked(trialRetreat(withWin, data))).toEqual({ spiritStones: 0, items: {} });
   });
 
   it("四座秘境各有一條地形規則", () => {
