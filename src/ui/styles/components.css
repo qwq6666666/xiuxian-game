@@ -137,7 +137,20 @@ blockquote.fragment-text small { display: block; margin-top: var(--sp-1); }
 .chip .ico { margin-right: 0.25em; }
 .event-art:empty, #eventArt:empty { display: none; }
 
-/* 秘境（M47）：每座一列，說明在左、入秘境鈕在右；不能入時寫出原因 */
-.trial-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-2); padding: var(--sp-2) 0; border-top: 1px dashed var(--line); }
+/* 秘境（M47）：每座一列，樓層軌同時用文字與形狀表示狀態，不只靠顏色 */
+.trial-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: var(--sp-3) 0; border-top: 1px dashed var(--line); }
 .trial-row > div { flex: 1; }
 .trial-reason { color: var(--warn); }
+.trial-time { margin-top: var(--sp-1); }
+.trial-progress { margin: var(--sp-2) 0; }
+.trial-progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); }
+.trial-progress-head > strong { color: var(--accent); font-size: var(--fs-sm); }
+.trial-steps { display: flex; gap: 0; margin: var(--sp-2) 0 0; padding: 0; list-style: none; counter-reset: trial-floor; }
+.trial-steps li { position: relative; flex: 1 1 0; min-width: 0; padding-top: 20px; color: var(--muted); font-size: 0; text-align: center; counter-increment: trial-floor; }
+.trial-steps li::before { content: counter(trial-floor); position: absolute; z-index: 1; top: 0; left: 50%; width: 18px; height: 18px; border: 1px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--muted); font-size: 11px; line-height: 18px; transform: translateX(-50%); }
+.trial-steps li::after { content: ""; position: absolute; top: 9px; right: 50%; width: 100%; border-top: 1px solid var(--line); }
+.trial-steps li:first-child::after { display: none; }
+.trial-steps li.done::before { content: "✓"; border-color: var(--good); color: var(--good); }
+.trial-steps li.done::after, .trial-steps li.current::after { border-color: var(--good); }
+.trial-steps li.current::before { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); animation: trial-step-in var(--dur-slow) var(--ease); }
+@keyframes trial-step-in { from { opacity: 0; transform: translateX(-50%) scale(1.55); } to { opacity: 1; transform: translateX(-50%) scale(1); } }

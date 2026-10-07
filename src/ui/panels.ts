@@ -15,13 +15,13 @@ import {
 import { haptic } from "./haptics";
 import { trialBlockReason, trialOf, trialsFor } from "../core/trial";
 import { canHunt, fleeChance, actionHit, monsterOf, powerRatio, type HuntChoice, huntTalisman } from "../core/encounter";
-import type { GameState } from "../core/state";
+import type { GameState, LogEntry } from "../core/state";
 import { atBottleneck } from "../core/tick";
 import { ARTIFACT_SLOTS, type GameData } from "../data/types";
 import type { SlotValues } from "../data/slots";
 import { alchemyPanel } from "./alchemyinfo";
 import { button, el, esc } from "./dom";
-import { BESTIARY_LORE_WINS } from "./format";
+import { BESTIARY_LORE_WINS, formatChanges } from "./format";
 import { icon, itemIcon } from "./icons";
 import { sectPanel } from "./sectinfo";
 import { statPanel } from "./statinfo";
@@ -48,6 +48,7 @@ export interface Panels {
   renderHunt(state: GameState, e: LifeEls): void;
   renderSect(state: GameState, e: LifeEls): void;
   renderTrial(state: GameState, e: LifeEls): void;
+  showTrialResult(state: GameState, entry: LogEntry, e: LifeEls): void;
   renderResources(state: GameState): void;
   renderStatDetail(state: GameState): void;
   renderAlchemy(state: GameState, e: LifeEls): void;
@@ -271,6 +272,7 @@ export function createPanels(ctx: PanelContext): Panels {
   /** 遇怪視窗：時間暫停，選穩打、強攻、符籙或逃。內容沒變就不重畫 */
   let huntKey = "";
   let lastHuntHealth: { monsterId: string; monsterHp: number; myHp: number } | null = null;
+  let lastTrialFloor: { id: string; floor: number } | null = null;
   function renderHunt(state: GameState, e: LifeEls): void {
     const h = state.encounter;
     const talisman = huntTalisman(data);
@@ -282,6 +284,8 @@ export function createPanels(ctx: PanelContext): Panels {
     e.huntChoices.replaceChildren();
     if (!h) {
       lastHuntHealth = null;
+      lastTrialFloor = null;
+      e.huntTrial.hidden = true;
       return;
     }
     const rules = data.monsters.rules;
@@ -320,8 +324,22 @@ export function createPanels(ctx: PanelContext): Panels {
     }
     lastHuntHealth = { monsterId: h.monsterId, monsterHp: h.monsterHp, myHp: h.myHp };
     const power = ratio >= 1.2 ? "你的修為勝過牠" : ratio >= rules.autoMinRatio ? "與你勢均力敵" : "牠比你強，小心";
-    const floorNote = state.trial ? `${trialOf(state.trial.id, data).name}・第 ${state.trial.floor + 1}／${trialOf(state.trial.id, data).floors.length} 層・` : "";
-    e.huntInfo.textContent = `${floorNote}${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。" : "勝了有修為與靈石，打不贏可以逃。"}`;
+    if (state.trial) {
+      const def = trialOf(state.trial.id, data);
+      const floorChanged = lastTrialFloor === null || lastTrialFloor.id !== state.trial.id || lastTrialFloor.floor !== state.trial.floor;
+      e.huntTrial.hidden = false;
+      e.huntTrial.replaceChildren(trialProgress(def.name, def.floors.length, state.trial.floor));
+      if (floorChanged) {
+        flash("#huntModal .card", "trial-floor-in");
+        if (lastTrialFloor?.id === state.trial.id && state.trial.floor > lastTrialFloor.floor) haptic("good");
+      }
+      lastTrialFloor = { ...state.trial };
+    } else {
+      e.huntTrial.hidden = true;
+      e.huntTrial.replaceChildren();
+      lastTrialFloor = null;
+    }
+    e.huntInfo.textContent = `${power}・第 ${h.round + 1} 回合，共 ${rules.rounds} 回合・${state.trial ? "逃跑等於中途抽身，這一世不能再入。" : "勝了有修為與靈石，打不贏可以逃。"}`;
     const pct = (v: number): string => `${Math.round(v * 100)}%`;
     const rows: { choice: HuntChoice; name: string; note: string }[] = [
       { choice: "steady", name: rules.actions.steady.name, note: `命中約 ${pct(actionHit(state, "steady", data))}・傷己較輕` },
@@ -339,6 +357,23 @@ export function createPanels(ctx: PanelContext): Panels {
     }
   }
 
+  /** 樓層進度：文字與 aria-current 讓狀態不只靠顏色表達。 */
+  function trialProgress(name: string, floors: number, current?: number): HTMLElement {
+    const wrap = el("div", "trial-progress");
+    const head = el("div", "trial-progress-head");
+    head.append(el("strong", undefined, name), el("small", undefined, current === undefined ? `${floors} 層` : `第 ${current + 1}／${floors} 層`));
+    const steps = el("ol", "trial-steps");
+    steps.setAttribute("aria-label", current === undefined ? `${floors} 層秘境` : `目前在第 ${current + 1} 層，共 ${floors} 層`);
+    for (let i = 0; i < floors; i += 1) {
+      const step = el("li", current === undefined ? "future" : i < current ? "done" : i === current ? "current" : "future");
+      step.textContent = current !== undefined && i < current ? `第 ${i + 1} 層，已通過` : current === i ? `第 ${i + 1} 層，目前` : `第 ${i + 1} 層`;
+      if (current === i) step.setAttribute("aria-current", "step");
+      steps.append(step);
+    }
+    wrap.append(head, steps);
+    return wrap;
+  }
+
   /** 秘境面板（M47）：目前境界有秘境才顯示；內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
   let trialKey = "";
   function renderTrial(state: GameState, e: LifeEls): void {
@@ -353,13 +388,52 @@ export function createPanels(ctx: PanelContext): Panels {
     for (const { t, reason } of rows) {
       const row = el("div", "trial-row");
       const info = el("div");
-      info.append(el("strong", undefined, t.name), el("small", undefined, t.desc), el("small", "changes", `${t.floors.length} 層・耗時 ${t.months} 個月`));
+      const rewardItems = Object.entries(t.reward.items).map(([id, amount]) => `${itemName(id)} ×${amount}`);
+      info.append(
+        el("strong", undefined, t.name),
+        el("small", undefined, t.desc),
+        trialProgress("樓層進度", t.floors.length),
+        el("small", "trial-time", `踏入即耗時 ${t.months} 個月`),
+        el("small", "changes", `通關：閉關 ${t.reward.cultivationMonths} 個月的修為・靈石 ${t.reward.stones.min}–${t.reward.stones.max}${rewardItems.length > 0 ? `・${rewardItems.join("・")}` : ""}`),
+      );
       if (reason) info.append(el("small", "trial-reason", reason));
       const go = button("入秘境", () => handlers.onEnterTrial(t.id), true);
       go.disabled = reason !== null;
       row.append(info, go);
       e.trialBox.append(row);
     }
+  }
+
+  let trialResultKey = "";
+  function showTrialResult(state: GameState, entry: LogEntry, e: LifeEls): void {
+    if (!entry.trialId || (entry.kind !== "trialClear" && entry.kind !== "trialFail")) return;
+    const key = `${entry.month}:${entry.kind}:${entry.trialId}:${entry.outcome ?? ""}`;
+    if (key === trialResultKey) return;
+    trialResultKey = key;
+    const def = trialOf(entry.trialId, data);
+    const cleared = entry.kind === "trialClear";
+    const withdrew = !cleared && entry.outcome === 1;
+    e.trialResultModal.dataset.result = cleared ? "clear" : withdrew ? "withdraw" : "fail";
+    e.trialResultMark.textContent = cleared ? "通" : withdrew ? "返" : "止";
+    e.trialResultTitle.textContent = cleared ? `${def.name}・通關` : withdrew ? `${def.name}・中途抽身` : `${def.name}・試煉止步`;
+    e.trialResultText.textContent = cleared
+      ? "你一步步走到盡頭。衣上都是塵土，至少囊中沒有也一樣空。"
+      : withdrew
+        ? "你認得回頭的路，也還走得動。這一世不再入內。"
+        : "這一回沒能走到底。秘境仍在，只是此世不再等你。";
+    e.trialResultRewards.replaceChildren();
+    const rewards = cleared ? formatChanges(entry.changes, data, slotsOf(state)) : [];
+    if (rewards.length > 0) {
+      e.trialResultRewards.append(el("small", "trial-result-label", "此行所得"));
+      const list = el("ul");
+      for (const reward of rewards) list.append(el("li", undefined, reward));
+      e.trialResultRewards.append(list);
+    } else {
+      e.trialResultRewards.append(el("p", "desc", withdrew ? "及時抽身，沒有額外損失。" : "所得止於沿途，通關獎勵未得。"));
+    }
+    e.trialResultClose.onclick = () => { e.trialResultModal.hidden = true; };
+    e.trialResultModal.hidden = false;
+    haptic(cleared ? "good" : "bad");
   }
 
   /** 宗門面板：只有入宗者才顯示；內容沒變就不重畫，避免按鈕在每個 tick 被換掉 */
@@ -604,10 +678,11 @@ export function createPanels(ctx: PanelContext): Panels {
   function reset(): void {
     sectKey = "";
     trialKey = "";
+    trialResultKey = "";
     tribKey = "";
     bagKey = "";
     lastBag = null;
   }
 
-  return { renderBreakthrough, renderBag, renderTribulation, renderHunt, renderSect, renderTrial, renderResources, renderStatDetail, renderAlchemy, markMake, flash, floatDelta, reset };
+  return { renderBreakthrough, renderBag, renderTribulation, renderHunt, renderSect, renderTrial, showTrialResult, renderResources, renderStatDetail, renderAlchemy, markMake, flash, floatDelta, reset };
 }
